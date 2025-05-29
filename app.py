@@ -50,6 +50,62 @@ def current_user(req: Request) -> User:
 def is_admin(user: User) -> bool:
     return user.id == "admin"   # first user gets id 'admin' (see startup)
 
+def get_feed_counts(user_id: str) -> dict:
+    """Get counts for different feed types"""
+    with Session(engine) as s:
+        counts = {}
+        
+        # All prayers
+        counts['all'] = s.exec(select(func.count(Prayer.id)).where(Prayer.flagged == False)).first()
+        
+        # New & unprayed
+        stmt = (
+            select(func.count(Prayer.id))
+            .select_from(Prayer)
+            .outerjoin(PrayerMark, Prayer.id == PrayerMark.prayer_id)
+            .where(Prayer.flagged == False)
+            .group_by(Prayer.id)
+            .having(func.count(PrayerMark.id) == 0)
+        )
+        unprayed_prayers = s.exec(stmt).all()
+        counts['new_unprayed'] = len(unprayed_prayers)
+        
+        # Most prayed (prayers with at least 1 mark)
+        counts['most_prayed'] = s.exec(
+            select(func.count(func.distinct(Prayer.id)))
+            .select_from(Prayer)
+            .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
+            .where(Prayer.flagged == False)
+        ).first()
+        
+        # My prayers (prayers user has marked)
+        counts['my_prayers'] = s.exec(
+            select(func.count(func.distinct(Prayer.id)))
+            .select_from(Prayer)
+            .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
+            .where(Prayer.flagged == False)
+            .where(PrayerMark.user_id == user_id)
+        ).first()
+        
+        # My requests
+        counts['my_requests'] = s.exec(
+            select(func.count(Prayer.id))
+            .where(Prayer.flagged == False)
+            .where(Prayer.author_id == user_id)
+        ).first()
+        
+        # Recent activity (prayers with marks in last 7 days)
+        week_ago = datetime.utcnow() - timedelta(days=7)
+        counts['recent_activity'] = s.exec(
+            select(func.count(func.distinct(Prayer.id)))
+            .select_from(Prayer)
+            .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
+            .where(Prayer.flagged == False)
+            .where(PrayerMark.created_at >= week_ago)
+        ).first()
+        
+        return counts
+
 # ───────── Prompt of the day ─────────
 def todays_prompt() -> str:
     try:
@@ -92,15 +148,76 @@ IMPORTANT: Do NOT use first person ("me", "my", "I"). Instead, write the prayer 
 
 # ───────── Routes ─────────
 @app.get("/", response_class=HTMLResponse)
-def feed(request: Request, user: User = Depends(current_user)):
+def feed(request: Request, feed_type: str = "all", user: User = Depends(current_user)):
+    # Ensure feed_type has a valid default
+    if not feed_type:
+        feed_type = "all"
+        
     with Session(engine) as s:
-        # Join Prayer and User tables to get author display names
-        stmt = (
-            select(Prayer, User.display_name)
-            .join(User, Prayer.author_id == User.id)
-            .where(Prayer.flagged == False)
-            .order_by(Prayer.created_at.desc())
-        )
+        prayers_with_authors = []
+        
+        if feed_type == "new_unprayed":
+            # New prayers and prayers that have never been prayed
+            stmt = (
+                select(Prayer, User.display_name)
+                .join(User, Prayer.author_id == User.id)
+                .outerjoin(PrayerMark, Prayer.id == PrayerMark.prayer_id)
+                .where(Prayer.flagged == False)
+                .group_by(Prayer.id)
+                .having(func.count(PrayerMark.id) == 0)
+                .order_by(Prayer.created_at.desc())
+            )
+        elif feed_type == "most_prayed":
+            # Most prayed prayers (by total prayer count)
+            stmt = (
+                select(Prayer, User.display_name, func.count(PrayerMark.id).label('mark_count'))
+                .join(User, Prayer.author_id == User.id)
+                .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
+                .where(Prayer.flagged == False)
+                .group_by(Prayer.id)
+                .order_by(func.count(PrayerMark.id).desc())
+                .limit(50)
+            )
+        elif feed_type == "my_prayers":
+            # Prayers the current user has marked as prayed
+            stmt = (
+                select(Prayer, User.display_name)
+                .join(User, Prayer.author_id == User.id)
+                .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
+                .where(Prayer.flagged == False)
+                .where(PrayerMark.user_id == user.id)
+                .group_by(Prayer.id)
+                .order_by(func.max(PrayerMark.created_at).desc())
+            )
+        elif feed_type == "my_requests":
+            # Prayer requests submitted by the current user
+            stmt = (
+                select(Prayer, User.display_name)
+                .join(User, Prayer.author_id == User.id)
+                .where(Prayer.flagged == False)
+                .where(Prayer.author_id == user.id)
+                .order_by(Prayer.created_at.desc())
+            )
+        elif feed_type == "recent_activity":
+            # Prayers with recent prayer marks (most recently prayed)
+            stmt = (
+                select(Prayer, User.display_name)
+                .join(User, Prayer.author_id == User.id)
+                .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
+                .where(Prayer.flagged == False)
+                .group_by(Prayer.id)
+                .order_by(func.max(PrayerMark.created_at).desc())
+                .limit(50)
+            )
+        else:  # "all" or default
+            # All prayers (existing behavior)
+            stmt = (
+                select(Prayer, User.display_name)
+                .join(User, Prayer.author_id == User.id)
+                .where(Prayer.flagged == False)
+                .order_by(Prayer.created_at.desc())
+            )
+            
         results = s.exec(stmt).all()
         
         # Get all prayer marks for the current user
@@ -119,8 +236,12 @@ def feed(request: Request, user: User = Depends(current_user)):
         distinct_user_counts = {prayer_id: count for prayer_id, count in distinct_user_counts_results}
         
         # Create a list of prayers with author names and mark data
-        prayers_with_authors = []
-        for prayer, author_name in results:
+        for result in results:
+            if len(result) == 3:  # most_prayed query includes mark_count
+                prayer, author_name, _ = result
+            else:
+                prayer, author_name = result
+                
             prayer_dict = {
                 'id': prayer.id,
                 'author_id': prayer.author_id,
@@ -136,9 +257,13 @@ def feed(request: Request, user: User = Depends(current_user)):
             }
             prayers_with_authors.append(prayer_dict)
     
+    # Get feed counts
+    feed_counts = get_feed_counts(user.id)
+    
     return templates.TemplateResponse(
         "feed.html",
-        {"request": request, "prayers": prayers_with_authors, "prompt": todays_prompt(), "me": user}
+        {"request": request, "prayers": prayers_with_authors, "prompt": todays_prompt(), 
+         "me": user, "current_feed": feed_type, "feed_counts": feed_counts}
     )
 
 @app.post("/prayers")
@@ -358,4 +483,51 @@ def prayer_marks(prayer_id: str, request: Request, user: User = Depends(current_
         "prayer_marks.html",
         {"request": request, "prayer": prayer, "marks": marks_with_users, "me": user, 
          "total_marks": total_marks, "distinct_users": distinct_users}
+    )
+
+@app.get("/activity", response_class=HTMLResponse)
+def recent_activity(request: Request, user: User = Depends(current_user)):
+    with Session(engine) as s:
+        # Get recent prayer marks with prayer and user info
+        stmt = (
+            select(PrayerMark, Prayer, User.display_name.label('marker_name'), User.display_name.label('author_name'))
+            .join(Prayer, PrayerMark.prayer_id == Prayer.id)
+            .join(User, PrayerMark.user_id == User.id)
+            .join(User, Prayer.author_id == User.id)
+            .where(Prayer.flagged == False)
+            .order_by(PrayerMark.created_at.desc())
+            .limit(100)
+        )
+        
+        # This query is complex, let's do it in steps
+        recent_marks_stmt = (
+            select(PrayerMark)
+            .join(Prayer, PrayerMark.prayer_id == Prayer.id)
+            .where(Prayer.flagged == False)
+            .order_by(PrayerMark.created_at.desc())
+            .limit(100)
+        )
+        recent_marks = s.exec(recent_marks_stmt).all()
+        
+        activity_items = []
+        for mark in recent_marks:
+            # Get prayer info
+            prayer = s.get(Prayer, mark.prayer_id)
+            # Get marker name
+            marker = s.get(User, mark.user_id)
+            # Get author name
+            author = s.get(User, prayer.author_id)
+            
+            activity_items.append({
+                'mark': mark,
+                'prayer': prayer,
+                'marker_name': marker.display_name,
+                'author_name': author.display_name,
+                'is_my_mark': mark.user_id == user.id,
+                'is_my_prayer': prayer.author_id == user.id
+            })
+    
+    return templates.TemplateResponse(
+        "activity.html",
+        {"request": request, "activity_items": activity_items, "me": user}
     )
