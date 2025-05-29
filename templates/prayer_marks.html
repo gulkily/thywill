@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Prayer Marks{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="mb-6">
+    <a href="/" class="text-purple-600 hover:underline">← Back to Feed</a>
+  </div>
+  
+  <!-- Prayer Details -->
+  <section class="mb-8 bg-white p-6 rounded-lg shadow border-l-4 border-purple-300">
+    {% if prayer.generated_prayer %}
+    <div class="mb-4">
+      <h3 class="text-sm font-medium text-purple-600 mb-2">🙏 Prayer</h3>
+      <p class="text-lg leading-relaxed text-gray-800 whitespace-pre-wrap italic">{{ prayer.generated_prayer }}</p>
+    </div>
+    {% endif %}
+    
+    <!-- Original Request -->
+    <div class="bg-gray-50 p-3 rounded border-l-2 border-gray-300">
+      <h4 class="text-xs font-medium text-gray-500 mb-1">Original Request</h4>
+      <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ prayer.text }}</p>
+    </div>
+  </section>
+
+  <!-- Prayer Marks -->
+  <section class="bg-white p-6 rounded-lg shadow">
+    <h2 class="font-semibold text-lg mb-4">Who Has Prayed This Prayer</h2>
+    
+    {% if marks %}
+      <div class="space-y-3">
+        {% for mark in marks %}
+          <div class="flex justify-between items-center p-3 bg-gray-50 rounded border-l-2 {% if mark.is_me %}border-green-400 bg-green-50{% else %}border-purple-300{% endif %}">
+            <span class="font-medium {% if mark.is_me %}text-green-700{% else %}text-gray-800{% endif %}">
+              {% if mark.is_me %}You{% else %}{{ mark.user_name }}{% endif %}
+            </span>
+            <span class="text-xs text-gray-500">{{ mark.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+          </div>
+        {% endfor %}
+      </div>
+      
+      <div class="mt-4 text-center text-sm text-gray-600">
+        <strong>{{ marks|length }}</strong> people have prayed this prayer
+      </div>
+    {% else %}
+      <p class="text-gray-600 text-center py-8">No one has marked this prayer as prayed yet.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %} 

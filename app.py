@@ -8,9 +8,9 @@ import anthropic
 from fastapi import FastAPI, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 
-from models import engine, User, Prayer, InviteToken, Session as SessionModel
+from models import engine, User, Prayer, InviteToken, Session as SessionModel, PrayerMark
 
 # Load environment variables
 load_dotenv()
@@ -103,7 +103,17 @@ def feed(request: Request, user: User = Depends(current_user)):
         )
         results = s.exec(stmt).all()
         
-        # Create a list of prayers with author names
+        # Get all prayer marks for the current user
+        user_marks_stmt = select(PrayerMark).where(PrayerMark.user_id == user.id)
+        user_marks = s.exec(user_marks_stmt).all()
+        user_marked_prayers = {mark.prayer_id: True for mark in user_marks}
+        
+        # Get mark counts for all prayers
+        mark_counts_stmt = select(PrayerMark.prayer_id, func.count(PrayerMark.id)).group_by(PrayerMark.prayer_id)
+        mark_counts_results = s.exec(mark_counts_stmt).all()
+        mark_counts = {prayer_id: count for prayer_id, count in mark_counts_results}
+        
+        # Create a list of prayers with author names and mark data
         prayers_with_authors = []
         for prayer, author_name in results:
             prayer_dict = {
@@ -114,7 +124,9 @@ def feed(request: Request, user: User = Depends(current_user)):
                 'project_tag': prayer.project_tag,
                 'created_at': prayer.created_at,
                 'flagged': prayer.flagged,
-                'author_name': author_name
+                'author_name': author_name,
+                'marked_by_user': user_marked_prayers.get(prayer.id, False),
+                'mark_count': mark_counts.get(prayer.id, 0)
             }
             prayers_with_authors.append(prayer_dict)
     
@@ -237,4 +249,64 @@ def new_invite(request: Request, user: User = Depends(current_user)):
         f'<p class="text-sm">Share this invite:</p>'
         f'<a href="{url}" class="text-blue-600 break-all hover:underline">{url}</a>'
         f'</div>'
+    )
+
+@app.post("/mark/{prayer_id}")
+def mark_prayer(prayer_id: str, request: Request, user: User = Depends(current_user)):
+    with Session(engine) as s:
+        # Check if prayer exists
+        prayer = s.get(Prayer, prayer_id)
+        if not prayer:
+            raise HTTPException(404, "Prayer not found")
+        
+        # Add a new prayer mark
+        mark = PrayerMark(user_id=user.id, prayer_id=prayer_id)
+        s.add(mark)
+        s.commit()
+        
+        # If this is an HTMX request, return just the updated prayer mark section
+        if request.headers.get("HX-Request"):
+            # Get updated mark count
+            mark_count_stmt = select(func.count(PrayerMark.id)).where(PrayerMark.prayer_id == prayer_id)
+            mark_count = s.exec(mark_count_stmt).first()
+            
+            # Return the updated prayer mark section HTML
+            return HTMLResponse(f'''
+                <div class="flex items-center gap-2">
+                  <a href="/prayer/{prayer_id}/marks" class="text-purple-600 hover:text-purple-800 hover:underline">🙏 {mark_count} prayed</a>
+                  <span class="text-green-600 text-xs bg-green-100 px-2 py-1 rounded border border-green-300">✓ Prayed</span>
+                </div>
+            ''')
+    
+    # For non-HTMX requests, redirect back to the specific prayer
+    return RedirectResponse(f"/#prayer-{prayer_id}", 303)
+
+@app.get("/prayer/{prayer_id}/marks", response_class=HTMLResponse)
+def prayer_marks(prayer_id: str, request: Request, user: User = Depends(current_user)):
+    with Session(engine) as s:
+        # Get the prayer
+        prayer = s.get(Prayer, prayer_id)
+        if not prayer:
+            raise HTTPException(404, "Prayer not found")
+        
+        # Get all marks for this prayer with user info
+        stmt = (
+            select(PrayerMark, User.display_name)
+            .join(User, PrayerMark.user_id == User.id)
+            .where(PrayerMark.prayer_id == prayer_id)
+            .order_by(PrayerMark.created_at.desc())
+        )
+        marks_results = s.exec(stmt).all()
+        
+        marks_with_users = []
+        for mark, user_name in marks_results:
+            marks_with_users.append({
+                'user_name': user_name,
+                'created_at': mark.created_at,
+                'is_me': mark.user_id == user.id
+            })
+    
+    return templates.TemplateResponse(
+        "prayer_marks.html",
+        {"request": request, "prayer": prayer, "marks": marks_with_users, "me": user}
     )

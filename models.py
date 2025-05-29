@@ -16,6 +16,12 @@ class Prayer(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     flagged: bool = False
 
+class PrayerMark(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
+    user_id: str
+    prayer_id: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 class Session(SQLModel, table=True):
     id: str = Field(primary_key=True)          # random hex
     user_id: str
