@@ -4,46 +4,72 @@
 {% block content %}
 <!-- Feed Navigation -->
 <section class="mb-6">
-  <nav class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-    <a href="/?feed_type=all" 
-       class="px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 {% if current_feed == 'all' %}bg-white text-purple-700 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
-      All Prayers
-      <span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">{{ feed_counts.all or 0 }}</span>
-    </a>
-    <a href="/?feed_type=new_unprayed" 
-       class="px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 {% if current_feed == 'new_unprayed' %}bg-white text-purple-700 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
-      New & Unprayed
-      {% if feed_counts.new_unprayed > 0 %}
-        <span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full">{{ feed_counts.new_unprayed }}</span>
-      {% else %}
-        <span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">0</span>
-      {% endif %}
-    </a>
-    <a href="/?feed_type=most_prayed" 
-       class="px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 {% if current_feed == 'most_prayed' %}bg-white text-purple-700 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
-      Most Prayed
-      <span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">{{ feed_counts.most_prayed or 0 }}</span>
-    </a>
-    <a href="/?feed_type=my_prayers" 
-       class="px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 {% if current_feed == 'my_prayers' %}bg-white text-purple-700 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
-      My Prayers
-      <span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">{{ feed_counts.my_prayers or 0 }}</span>
-    </a>
-    <a href="/?feed_type=my_requests" 
-       class="px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 {% if current_feed == 'my_requests' %}bg-white text-purple-700 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
-      My Requests
-      <span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">{{ feed_counts.my_requests or 0 }}</span>
-    </a>
-    <a href="/?feed_type=recent_activity" 
-       class="px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 {% if current_feed == 'recent_activity' %}bg-white text-purple-700 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
-      Recent Activity
-      <span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">{{ feed_counts.recent_activity or 0 }}</span>
-    </a>
-    <a href="/activity" 
-       class="px-3 py-2 text-sm font-medium rounded-md transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-50">
-      Activity Feed
-    </a>
-  </nav>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+    <nav class="flex overflow-x-auto scrollbar-hide space-x-1" style="scrollbar-width: none; -ms-overflow-style: none;">
+      <style>
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      </style>
+      
+      <a href="/?feed_type=all" 
+         class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'all' %}bg-purple-100 text-purple-700 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+        <span>All</span>
+        <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold {% if current_feed == 'all' %}bg-purple-200 text-purple-800{% else %}bg-gray-200 text-gray-700{% endif %} rounded-full">{{ feed_counts.all or 0 }}</span>
+      </a>
+      
+      <a href="/?feed_type=new_unprayed" 
+         class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'new_unprayed' %}bg-purple-100 text-purple-700 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+        <span>New</span>
+        {% if feed_counts.new_unprayed > 0 %}
+          <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold bg-red-100 text-red-700 rounded-full animate-pulse">{{ feed_counts.new_unprayed }}</span>
+        {% else %}
+          <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold {% if current_feed == 'new_unprayed' %}bg-purple-200 text-purple-800{% else %}bg-gray-200 text-gray-700{% endif %} rounded-full">0</span>
+        {% endif %}
+      </a>
+      
+      <a href="/?feed_type=most_prayed" 
+         class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'most_prayed' %}bg-purple-100 text-purple-700 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+        <span>Popular</span>
+        <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold {% if current_feed == 'most_prayed' %}bg-purple-200 text-purple-800{% else %}bg-gray-200 text-gray-700{% endif %} rounded-full">{{ feed_counts.most_prayed or 0 }}</span>
+      </a>
+      
+      <a href="/?feed_type=my_prayers" 
+         class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'my_prayers' %}bg-purple-100 text-purple-700 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+        <span>My Prayers</span>
+        <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold {% if current_feed == 'my_prayers' %}bg-purple-200 text-purple-800{% else %}bg-gray-200 text-gray-700{% endif %} rounded-full">{{ feed_counts.my_prayers or 0 }}</span>
+      </a>
+      
+      <a href="/?feed_type=my_requests" 
+         class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'my_requests' %}bg-purple-100 text-purple-700 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+        <span>My Requests</span>
+        <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold {% if current_feed == 'my_requests' %}bg-purple-200 text-purple-800{% else %}bg-gray-200 text-gray-700{% endif %} rounded-full">{{ feed_counts.my_requests or 0 }}</span>
+      </a>
+      
+      <a href="/?feed_type=recent_activity" 
+         class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'recent_activity' %}bg-purple-100 text-purple-700 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+        <span>Recent</span>
+        <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold {% if current_feed == 'recent_activity' %}bg-purple-200 text-purple-800{% else %}bg-gray-200 text-gray-700{% endif %} rounded-full">{{ feed_counts.recent_activity or 0 }}</span>
+      </a>
+      
+      <div class="flex-shrink-0 w-px bg-gray-300 mx-2 self-stretch"></div>
+      
+      <a href="/activity" 
+         class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50">
+        <span>Activity Feed</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+        </svg>
+      </a>
+    </nav>
+  </div>
+  
+  <!-- Scroll hint for mobile -->
+  <div class="flex justify-center mt-2 sm:hidden">
+    <div class="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-full">
+      ← Swipe to see more tabs →
+    </div>
+  </div>
 </section>
 
 <!-- Prompt of the day -->
