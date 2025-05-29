@@ -40,4 +40,6 @@ Thumbs.db
 *.log
 
 # Project-specific
-thywill.db 
+thywill.db
+__pycache__/app.cpython-310.pyc
+__pycache__/models.cpython-310.pyc
