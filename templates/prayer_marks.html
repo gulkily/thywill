@@ -40,7 +40,15 @@
       </div>
       
       <div class="mt-4 text-center text-sm text-gray-600">
-        <strong>{{ marks|length }}</strong> people have prayed this prayer
+        {% if distinct_users == 1 %}
+          {% if total_marks == 1 %}
+            <strong>1</strong> person has prayed this prayer <strong>once</strong>
+          {% else %}
+            <strong>1</strong> person has prayed this prayer <strong>{{ total_marks }}</strong> times
+          {% endif %}
+        {% else %}
+          <strong>{{ distinct_users }}</strong> people have prayed this prayer <strong>{{ total_marks }}</strong> times total
+        {% endif %}
       </div>
     {% else %}
       <p class="text-gray-600 text-center py-8">No one has marked this prayer as prayed yet.</p>

@@ -104,14 +104,19 @@ def feed(request: Request, user: User = Depends(current_user)):
         results = s.exec(stmt).all()
         
         # Get all prayer marks for the current user
-        user_marks_stmt = select(PrayerMark).where(PrayerMark.user_id == user.id)
-        user_marks = s.exec(user_marks_stmt).all()
-        user_marked_prayers = {mark.prayer_id: True for mark in user_marks}
+        user_marks_stmt = select(PrayerMark.prayer_id, func.count(PrayerMark.id)).where(PrayerMark.user_id == user.id).group_by(PrayerMark.prayer_id)
+        user_marks_results = s.exec(user_marks_stmt).all()
+        user_mark_counts = {prayer_id: count for prayer_id, count in user_marks_results}
         
-        # Get mark counts for all prayers
+        # Get mark counts for all prayers (total times prayed)
         mark_counts_stmt = select(PrayerMark.prayer_id, func.count(PrayerMark.id)).group_by(PrayerMark.prayer_id)
         mark_counts_results = s.exec(mark_counts_stmt).all()
         mark_counts = {prayer_id: count for prayer_id, count in mark_counts_results}
+        
+        # Get distinct user counts for all prayers (how many people prayed)
+        distinct_user_counts_stmt = select(PrayerMark.prayer_id, func.count(func.distinct(PrayerMark.user_id))).group_by(PrayerMark.prayer_id)
+        distinct_user_counts_results = s.exec(distinct_user_counts_stmt).all()
+        distinct_user_counts = {prayer_id: count for prayer_id, count in distinct_user_counts_results}
         
         # Create a list of prayers with author names and mark data
         prayers_with_authors = []
@@ -125,8 +130,9 @@ def feed(request: Request, user: User = Depends(current_user)):
                 'created_at': prayer.created_at,
                 'flagged': prayer.flagged,
                 'author_name': author_name,
-                'marked_by_user': user_marked_prayers.get(prayer.id, False),
-                'mark_count': mark_counts.get(prayer.id, 0)
+                'marked_by_user': user_mark_counts.get(prayer.id, 0),
+                'mark_count': mark_counts.get(prayer.id, 0),
+                'distinct_user_count': distinct_user_counts.get(prayer.id, 0)
             }
             prayers_with_authors.append(prayer_dict)
     
@@ -266,15 +272,53 @@ def mark_prayer(prayer_id: str, request: Request, user: User = Depends(current_u
         
         # If this is an HTMX request, return just the updated prayer mark section
         if request.headers.get("HX-Request"):
-            # Get updated mark count
+            # Get updated mark count for all users (total times)
             mark_count_stmt = select(func.count(PrayerMark.id)).where(PrayerMark.prayer_id == prayer_id)
-            mark_count = s.exec(mark_count_stmt).first()
+            total_mark_count = s.exec(mark_count_stmt).first()
+            
+            # Get updated distinct user count (how many people)
+            distinct_user_count_stmt = select(func.count(func.distinct(PrayerMark.user_id))).where(PrayerMark.prayer_id == prayer_id)
+            distinct_user_count = s.exec(distinct_user_count_stmt).first()
+            
+            # Get updated mark count for current user
+            user_mark_count_stmt = select(func.count(PrayerMark.id)).where(
+                PrayerMark.prayer_id == prayer_id,
+                PrayerMark.user_id == user.id
+            )
+            user_mark_count = s.exec(user_mark_count_stmt).first()
+            
+            # Build the prayer stats display
+            prayer_stats = ""
+            if total_mark_count > 0:
+                if distinct_user_count == 1:
+                    if total_mark_count == 1:
+                        prayer_stats = f'<a href="/prayer/{prayer_id}/marks" class="text-purple-600 hover:text-purple-800 hover:underline">🙏 1 person prayed this once</a>'
+                    else:
+                        prayer_stats = f'<a href="/prayer/{prayer_id}/marks" class="text-purple-600 hover:text-purple-800 hover:underline">🙏 1 person prayed this {total_mark_count} times</a>'
+                else:
+                    prayer_stats = f'<a href="/prayer/{prayer_id}/marks" class="text-purple-600 hover:text-purple-800 hover:underline">🙏 {distinct_user_count} people prayed this {total_mark_count} times</a>'
             
             # Return the updated prayer mark section HTML
+            user_mark_text = ""
+            if user_mark_count > 0:
+                if user_mark_count == 1:
+                    user_mark_text = f'<span class="text-green-600 text-xs bg-green-100 px-2 py-1 rounded border border-green-300">✓ You prayed this</span>'
+                else:
+                    user_mark_text = f'<span class="text-green-600 text-xs bg-green-100 px-2 py-1 rounded border border-green-300">✓ You prayed this {user_mark_count} times</span>'
+            
             return HTMLResponse(f'''
                 <div class="flex items-center gap-2">
-                  <a href="/prayer/{prayer_id}/marks" class="text-purple-600 hover:text-purple-800 hover:underline">🙏 {mark_count} prayed</a>
-                  <span class="text-green-600 text-xs bg-green-100 px-2 py-1 rounded border border-green-300">✓ Prayed</span>
+                  {prayer_stats}
+                  <form method="post" action="/mark/{prayer_id}" class="inline">
+                    <button hx-post="/mark/{prayer_id}" 
+                            hx-target="#prayer-marks-{prayer_id}"
+                            hx-swap="innerHTML"
+                            type="submit" 
+                            class="bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs px-2 py-1 rounded border border-purple-300 focus:outline-none focus:ring-1 focus:ring-purple-500">
+                      Mark as Prayed
+                    </button>
+                  </form>
+                  {user_mark_text}
                 </div>
             ''')
     
@@ -305,8 +349,13 @@ def prayer_marks(prayer_id: str, request: Request, user: User = Depends(current_
                 'created_at': mark.created_at,
                 'is_me': mark.user_id == user.id
             })
+        
+        # Calculate statistics
+        total_marks = len(marks_with_users)
+        distinct_users = len(set(mark['user_name'] for mark in marks_with_users))
     
     return templates.TemplateResponse(
         "prayer_marks.html",
-        {"request": request, "prayer": prayer, "marks": marks_with_users, "me": user}
+        {"request": request, "prayer": prayer, "marks": marks_with_users, "me": user, 
+         "total_marks": total_marks, "distinct_users": distinct_users}
     )
