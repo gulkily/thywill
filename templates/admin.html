@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-800">Admin Panel</h1>
+  <p class="text-gray-600">Manage flagged prayers and community content</p>
+</div>
+
+<section>
+  <h2 class="font-semibold mb-4">Flagged Prayers</h2>
+  
+  {% if flagged %}
+    <ul class="space-y-6">
+      {% for p in flagged %}
+      <li class="bg-red-50 p-6 rounded-lg shadow border-l-4 border-red-400">
+        <!-- Generated Prayer -->
+        {% if p.generated_prayer %}
+        <div class="mb-4">
+          <h3 class="text-sm font-medium text-red-600 mb-2">🙏 Generated Prayer</h3>
+          <p class="text-lg leading-relaxed text-gray-800 whitespace-pre-wrap italic">{{ p.generated_prayer }}</p>
+        </div>
+        {% endif %}
+        
+        <!-- Original Request -->
+        <div class="bg-white p-3 rounded border-l-2 border-red-300">
+          <h4 class="text-xs font-medium text-red-500 mb-1">Original Request</h4>
+          <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ p.text }}</p>
+        </div>
+        
+        <footer class="mt-4 flex justify-between items-center">
+          <span class="text-xs text-gray-500">
+            by {{ p.author_name }} · {{ p.created_at.strftime('%Y-%m-%d %H:%M') }}
+          </span>
+          <form method="post" action="/flag/{{ p.id }}" class="inline">
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-1 rounded">
+              Unflag
+            </button>
+          </form>
+        </footer>
+      </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-gray-500 text-center py-8">No flagged prayers at the moment.</p>
+  {% endif %}
+</section>
+
+<div class="mt-8">
+  <a href="/" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-2 rounded">
+    Back to Feed
+  </a>
+</div>
+{% endblock %} 

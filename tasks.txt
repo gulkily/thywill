@@ -1,0 +1,7 @@
+
+
+transform new prayer requests into properly formed prayers with llm
+
+tell user we're going to do this
+
+display original request in expando under llm-generated prayer

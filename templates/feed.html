@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Prayer Feed{% endblock %}
+
+{% block content %}
+<!-- Prompt of the day -->
+<section class="mb-8 bg-yellow-100 border-l-4 border-yellow-400 p-4 rounded">
+  <h2 class="font-semibold text-lg mb-1">Today's Prompt</h2>
+  <p>{{ prompt }}</p>
+</section>
+
+<!-- Generate invite link -->
+<section class="mb-6 bg-white p-4 rounded shadow" id="invite-area">
+  <button hx-post="/invites"
+          hx-swap="outerHTML"
+          class="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500">
+    Generate new invite link
+  </button>
+</section>
+
+<!-- Submit new prayer -->
+<section class="mb-10 bg-white p-6 rounded shadow">
+  <h2 class="font-semibold mb-3">Add a Prayer Request</h2>
+  <p class="text-sm text-gray-600 mb-4">Share your prayer request, and we'll craft a beautiful prayer for the community.</p>
+  <form method="post" action="/prayers" class="space-y-4">
+    <div>
+      <label for="text" class="sr-only">Prayer request</label>
+      <textarea id="text" name="text" rows="3" maxlength="500" required
+        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        placeholder="What would you like to pray for today?"></textarea>
+    </div>
+    <div>
+      <label for="tag" class="sr-only">Project tag (optional)</label>
+      <input id="tag" name="tag" placeholder="#Milestone (optional)" class="w-full border border-gray-300 rounded px-3 py-2" />
+    </div>
+    <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-purple-500">
+      Submit Prayer Request
+    </button>
+  </form>
+</section>
+
+<!-- Prayer list -->
+<section>
+  <h2 class="font-semibold mb-4">Community Prayers</h2>
+  <ul class="space-y-6">
+    {% for p in prayers %}
+    <li class="bg-white p-6 rounded-lg shadow border-l-4 border-purple-300">
+      <!-- Generated Prayer (prominent) -->
+      {% if p.generated_prayer %}
+      <div class="mb-4">
+        <h3 class="text-sm font-medium text-purple-600 mb-2">🙏 Prayer</h3>
+        <p class="text-lg leading-relaxed text-gray-800 whitespace-pre-wrap italic">{{ p.generated_prayer }}</p>
+      </div>
+      {% endif %}
+      
+      <!-- Original Request (smaller, secondary) -->
+      <div class="bg-gray-50 p-3 rounded border-l-2 border-gray-300">
+        <h4 class="text-xs font-medium text-gray-500 mb-1">Original Request</h4>
+        <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ p.text }}</p>
+      </div>
+      
+      <footer class="mt-4 text-xs text-gray-500 flex justify-between items-center">
+        <span>by {{ 'you' if p.author_id == me.id else p.author_name }} · {{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        {% if me.id == 'admin' %}
+          <a href="/flag/{{ p.id }}" class="text-red-600 hover:underline">Flag</a>
+        {% endif %}
+      </footer>
+    </li>
+    {% else %}
+    <li class="text-sm text-gray-500">No prayers yet. Be the first to lift one up.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}
