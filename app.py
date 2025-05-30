@@ -1040,7 +1040,7 @@ def recent_activity(request: Request, user_session: tuple = Depends(current_user
 @app.get("/profile", response_class=HTMLResponse)
 def my_profile(request: Request, user_session: tuple = Depends(current_user)):
     user, session = user_session
-    return user_profile(request, user.id, user)
+    return user_profile(request, user.id, user_session)
 
 @app.get("/user/{user_id}", response_class=HTMLResponse)
 def user_profile(request: Request, user_id: str, user_session: tuple = Depends(current_user)):
