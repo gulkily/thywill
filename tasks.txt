@@ -6,3 +6,5 @@ Allow multiple sessions/devices for one user (low-friction auth)
 
 Allow export of database for community cloning
 
+Allow users to mark prayers as done and/or answered and/or successful
+
