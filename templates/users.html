@@ -7,61 +7,61 @@
   <!-- Page Header -->
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">Community Members</h1>
-      <p class="text-gray-600 text-sm mt-1">Our prayer community family</p>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Community Members</h1>
+      <p class="text-gray-600 dark:text-gray-300 text-sm mt-1">Our prayer community family</p>
     </div>
-    <a href="/" class="text-purple-600 hover:text-purple-800 font-medium">← Back to Feed</a>
+    <a href="/" class="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-medium">← Back to Feed</a>
   </div>
 
   <!-- Users Grid -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     {% for user_data in users %}
-    <div class="bg-white rounded-lg shadow p-6 {% if user_data.is_me %}ring-2 ring-purple-200 bg-purple-50{% endif %}">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 {% if user_data.is_me %}ring-2 ring-purple-200 dark:ring-purple-600 bg-purple-50 dark:bg-purple-900/20{% endif %}">
       <!-- User Avatar & Name -->
       <div class="flex items-center space-x-3 mb-4">
-        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-          <span class="text-lg text-purple-600 font-bold">{{ user_data.user.display_name[0]|upper }}</span>
+        <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+          <span class="text-lg text-purple-600 dark:text-purple-400 font-bold">{{ user_data.user.display_name[0]|upper }}</span>
         </div>
         <div class="flex-1 min-w-0">
-          <h3 class="text-lg font-medium text-gray-900 truncate">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 truncate">
             {% if user_data.is_me %}
-              <a href="/profile" class="text-purple-600 hover:text-purple-800 hover:underline">{{ user_data.user.display_name }}</a>
-              <span class="text-sm text-purple-600 font-normal">(You)</span>
+              <a href="/profile" class="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 hover:underline">{{ user_data.user.display_name }}</a>
+              <span class="text-sm text-purple-600 dark:text-purple-400 font-normal">(You)</span>
             {% else %}
-              <a href="/user/{{ user_data.user.id }}" class="text-purple-600 hover:text-purple-800 hover:underline">{{ user_data.user.display_name }}</a>
+              <a href="/user/{{ user_data.user.id }}" class="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 hover:underline">{{ user_data.user.display_name }}</a>
             {% endif %}
           </h3>
           {% if user_data.user.id == 'admin' %}
-            <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">Admin</span>
+            <span class="inline-block bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs px-2 py-1 rounded-full">Admin</span>
           {% endif %}
-          <p class="text-sm text-gray-500">Member since {{ user_data.user.created_at.strftime('%B %Y') }}</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Member since {{ user_data.user.created_at.strftime('%B %Y') }}</p>
         </div>
       </div>
 
       <!-- Statistics -->
       <div class="space-y-2 mb-4">
         <div class="flex justify-between text-sm">
-          <span class="text-gray-600">Prayer Requests:</span>
-          <span class="font-medium text-purple-600">{{ user_data.prayers_authored }}</span>
+          <span class="text-gray-600 dark:text-gray-300">Prayer Requests:</span>
+          <span class="font-medium text-purple-600 dark:text-purple-400">{{ user_data.prayers_authored }}</span>
         </div>
         <div class="flex justify-between text-sm">
-          <span class="text-gray-600">Times Prayed:</span>
-          <span class="font-medium text-green-600">{{ user_data.prayers_marked }}</span>
+          <span class="text-gray-600 dark:text-gray-300">Times Prayed:</span>
+          <span class="font-medium text-green-600 dark:text-green-400">{{ user_data.prayers_marked }}</span>
         </div>
         <div class="flex justify-between text-sm">
-          <span class="text-gray-600">Unique Prayers:</span>
-          <span class="font-medium text-blue-600">{{ user_data.distinct_prayers_marked }}</span>
+          <span class="text-gray-600 dark:text-gray-300">Unique Prayers:</span>
+          <span class="font-medium text-blue-600 dark:text-blue-400">{{ user_data.distinct_prayers_marked }}</span>
         </div>
       </div>
 
       <!-- Last Activity -->
-      <div class="border-t pt-3">
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
         {% if user_data.last_activity %}
-          <p class="text-xs text-gray-500">
+          <p class="text-xs text-gray-500 dark:text-gray-400">
             Last active: {{ user_data.last_activity.strftime('%B %d, %Y') }}
           </p>
         {% else %}
-          <p class="text-xs text-gray-400">No activity yet</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500">No activity yet</p>
         {% endif %}
       </div>
     </div>
@@ -69,20 +69,20 @@
   </div>
 
   <!-- Community Stats -->
-  <div class="bg-white rounded-lg shadow p-6">
-    <h3 class="text-lg font-medium text-gray-900 mb-4">Community Overview</h3>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Community Overview</h3>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="text-center">
-        <div class="text-2xl font-bold text-purple-600">{{ users|length }}</div>
-        <div class="text-sm text-gray-600">Total Members</div>
+        <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ users|length }}</div>
+        <div class="text-sm text-gray-600 dark:text-gray-300">Total Members</div>
       </div>
       <div class="text-center">
-        <div class="text-2xl font-bold text-green-600">{{ users|sum(attribute='prayers_marked') }}</div>
-        <div class="text-sm text-gray-600">Total Prayers</div>
+        <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ users|sum(attribute='prayers_marked') }}</div>
+        <div class="text-sm text-gray-600 dark:text-gray-300">Total Prayers</div>
       </div>
       <div class="text-center">
-        <div class="text-2xl font-bold text-blue-600">{{ users|sum(attribute='prayers_authored') }}</div>
-        <div class="text-sm text-gray-600">Prayer Requests</div>
+        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ users|sum(attribute='prayers_authored') }}</div>
+        <div class="text-sm text-gray-600 dark:text-gray-300">Prayer Requests</div>
       </div>
     </div>
   </div>
