@@ -520,6 +520,7 @@ def prayer_marks(prayer_id: str, request: Request, user: User = Depends(current_
         for mark, user_name in marks_results:
             marks_with_users.append({
                 'user_name': user_name,
+                'user_id': mark.user_id,
                 'created_at': mark.created_at,
                 'is_me': mark.user_id == user.id
             })
@@ -595,7 +596,133 @@ def user_profile(request: Request, user_id: str, user: User = Depends(current_us
         
         is_own_profile = user_id == user.id
         
+        # Get prayer statistics
+        stats = {}
+        
+        # Total prayers authored
+        stats['prayers_authored'] = s.exec(
+            select(func.count(Prayer.id))
+            .where(Prayer.author_id == user_id)
+            .where(Prayer.flagged == False)
+        ).first() or 0
+        
+        # Total prayers marked (how many times they've prayed)
+        stats['prayers_marked'] = s.exec(
+            select(func.count(PrayerMark.id))
+            .where(PrayerMark.user_id == user_id)
+        ).first() or 0
+        
+        # Distinct prayers marked (unique prayers they've prayed)
+        stats['distinct_prayers_marked'] = s.exec(
+            select(func.count(func.distinct(PrayerMark.prayer_id)))
+            .where(PrayerMark.user_id == user_id)
+        ).first() or 0
+        
+        # Recent prayer requests (last 5)
+        recent_requests_stmt = (
+            select(Prayer)
+            .where(Prayer.author_id == user_id)
+            .where(Prayer.flagged == False)
+            .order_by(Prayer.created_at.desc())
+            .limit(5)
+        )
+        recent_requests = s.exec(recent_requests_stmt).all()
+        
+        # Recent prayers marked (last 5 unique prayers)
+        recent_marks_stmt = (
+            select(Prayer, func.max(PrayerMark.created_at).label('last_marked'))
+            .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
+            .join(User, Prayer.author_id == User.id)
+            .where(PrayerMark.user_id == user_id)
+            .where(Prayer.flagged == False)
+            .group_by(Prayer.id)
+            .order_by(func.max(PrayerMark.created_at).desc())
+            .limit(5)
+        )
+        recent_marks_results = s.exec(recent_marks_stmt).all()
+        recent_marked_prayers = []
+        for prayer, last_marked in recent_marks_results:
+            # Get author name
+            author = s.get(User, prayer.author_id)
+            recent_marked_prayers.append({
+                'prayer': prayer,
+                'author_name': author.display_name if author else "Unknown",
+                'last_marked': last_marked
+            })
+        
         return templates.TemplateResponse(
             "profile.html",
-            {"request": request, "profile_user": profile_user, "me": user, "is_own_profile": is_own_profile}
+            {
+                "request": request, 
+                "profile_user": profile_user, 
+                "me": user, 
+                "is_own_profile": is_own_profile,
+                "stats": stats,
+                "recent_requests": recent_requests,
+                "recent_marked_prayers": recent_marked_prayers
+            }
+        )
+
+@app.get("/users", response_class=HTMLResponse)
+def users_list(request: Request, user: User = Depends(current_user)):
+    with Session(engine) as s:
+        # Get all users with their statistics
+        users_stmt = select(User).order_by(User.created_at.desc())
+        all_users = s.exec(users_stmt).all()
+        
+        users_with_stats = []
+        for profile_user in all_users:
+            # Get statistics for each user
+            prayers_authored = s.exec(
+                select(func.count(Prayer.id))
+                .where(Prayer.author_id == profile_user.id)
+                .where(Prayer.flagged == False)
+            ).first() or 0
+            
+            prayers_marked = s.exec(
+                select(func.count(PrayerMark.id))
+                .where(PrayerMark.user_id == profile_user.id)
+            ).first() or 0
+            
+            distinct_prayers_marked = s.exec(
+                select(func.count(func.distinct(PrayerMark.prayer_id)))
+                .where(PrayerMark.user_id == profile_user.id)
+            ).first() or 0
+            
+            # Get last activity
+            last_activity = None
+            last_prayer_mark = s.exec(
+                select(PrayerMark.created_at)
+                .where(PrayerMark.user_id == profile_user.id)
+                .order_by(PrayerMark.created_at.desc())
+                .limit(1)
+            ).first()
+            
+            last_prayer_request = s.exec(
+                select(Prayer.created_at)
+                .where(Prayer.author_id == profile_user.id)
+                .where(Prayer.flagged == False)
+                .order_by(Prayer.created_at.desc())
+                .limit(1)
+            ).first()
+            
+            if last_prayer_mark and last_prayer_request:
+                last_activity = max(last_prayer_mark, last_prayer_request)
+            elif last_prayer_mark:
+                last_activity = last_prayer_mark
+            elif last_prayer_request:
+                last_activity = last_prayer_request
+            
+            users_with_stats.append({
+                'user': profile_user,
+                'prayers_authored': prayers_authored,
+                'prayers_marked': prayers_marked,
+                'distinct_prayers_marked': distinct_prayers_marked,
+                'last_activity': last_activity,
+                'is_me': profile_user.id == user.id
+            })
+        
+        return templates.TemplateResponse(
+            "users.html",
+            {"request": request, "users": users_with_stats, "me": user}
         )

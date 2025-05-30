@@ -32,7 +32,7 @@
         {% for mark in marks %}
           <div class="flex justify-between items-center p-3 bg-gray-50 rounded border-l-2 {% if mark.is_me %}border-green-400 bg-green-50{% else %}border-purple-300{% endif %}">
             <span class="font-medium {% if mark.is_me %}text-green-700{% else %}text-gray-800{% endif %}">
-              {% if mark.is_me %}You{% else %}{{ mark.user_name }}{% endif %}
+              {% if mark.is_me %}You{% else %}<a href="/user/{{ mark.user_id }}" class="text-purple-600 hover:text-purple-800 hover:underline">{{ mark.user_name }}</a>{% endif %}
             </span>
             <span class="text-xs text-gray-500">{{ mark.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
           </div>

@@ -27,7 +27,7 @@
    <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
     <a href="/" class="font-bold tracking-wide text-lg">Thy&nbsp;Will</a>
     {% if me %}
-    <span class="text-sm">Hi {{ me.display_name }} ({{ me.id }}){% if me.id == 'admin' %} <a href="/admin" class="text-purple-200 hover:text-white underline"><em>(admin)</em></a>{% endif %}</span>
+    <span class="text-sm">Hi <a href="/profile" class="text-purple-200 hover:text-white underline">{{ me.display_name }}</a> ({{ me.id }}){% if me.id == 'admin' %} <a href="/admin" class="text-purple-200 hover:text-white underline"><em>(admin)</em></a>{% endif %}</span>
     {% endif %}
    </div>
   </header>
