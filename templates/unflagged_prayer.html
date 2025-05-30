@@ -1,0 +1,43 @@
+<li id="prayer-{{ prayer.id }}" class="bg-white p-6 rounded-lg shadow border-l-4 border-purple-300">
+  {% if prayer.generated_prayer %}
+  <div class='mb-4'>
+    <h3 class='text-sm font-medium text-purple-600 mb-2'>🙏 Prayer</h3>
+    <p class='text-lg leading-relaxed text-gray-800 whitespace-pre-wrap italic'>{{ prayer.generated_prayer }}</p>
+  </div>
+  {% endif %}
+  
+  <div class="bg-gray-50 p-3 rounded border-l-2 border-gray-300">
+    <h4 class="text-xs font-medium text-gray-500 mb-1">Original Request</h4>
+    <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ prayer.text }}</p>
+  </div>
+  
+  <footer class="mt-4 text-xs text-gray-500 flex justify-between items-center">
+    <span>by {% if prayer.author_id == user.id %}you{% else %}{{ author_name }}{% endif %} · {{ prayer.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+    <div class="flex items-center gap-4">
+      <div id="prayer-marks-{{ prayer.id }}" class="flex items-center gap-2">
+        {% if prayer_stats %}{{ prayer_stats | safe }}{% endif %}
+        <form method="post" action="/mark/{{ prayer.id }}" class="inline">
+          <button hx-post="/mark/{{ prayer.id }}" 
+                  hx-target="#prayer-marks-{{ prayer.id }}"
+                  hx-swap="innerHTML"
+                  type="submit" 
+                  class="bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs px-2 py-1 rounded border border-purple-300 focus:outline-none focus:ring-1 focus:ring-purple-500">
+            Mark as Prayed
+          </button>
+        </form>
+        {% if user_mark_text %}{{ user_mark_text | safe }}{% endif %}
+      </div>
+      <form method="post" action="/flag/{{ prayer.id }}" class="inline">
+        <button type="submit" 
+                hx-post="/flag/{{ prayer.id }}"
+                hx-target="#prayer-{{ prayer.id }}"
+                hx-swap="outerHTML"
+                hx-indicator="#loading-{{ prayer.id }}"
+                class="text-red-600 hover:text-red-800 hover:underline text-xs px-1 py-0.5 rounded transition-colors duration-200">
+          <span class="htmx-indicator" id="loading-{{ prayer.id }}">🔄</span>
+          <span>Flag</span>
+        </button>
+      </form>
+    </div>
+  </footer>
+</li>

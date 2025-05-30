@@ -305,38 +305,9 @@ def flag_prayer(pid: str, request: Request, user: User = Depends(current_user)):
             
             if p.flagged:
                 # Return shielded version when flagging
-                unflag_button = ""
-                if is_admin(user):
-                    unflag_button = f'''
-                          <form method="post" action="/flag/{p.id}" class="inline">
-                            <button type="submit" 
-                                    hx-post="/flag/{p.id}"
-                                    hx-target="#prayer-{p.id}"
-                                    hx-swap="outerHTML"
-                                    class="text-xs text-red-600 hover:text-red-800 underline">
-                              Unflag
-                            </button>
-                          </form>
-                    '''
-                
-                return HTMLResponse(f'''
-                    <li id="prayer-{p.id}" class="bg-red-50 p-6 rounded-lg shadow border-l-4 border-red-400">
-                      <div class="mb-4">
-                        <div class="flex items-center gap-2 mb-3">
-                          <span class="text-red-600 text-sm font-medium">⚠️ Content Flagged</span>
-                          {unflag_button}
-                        </div>
-                        <p class="text-gray-600 italic">This content has been flagged by a community member and is hidden from public view.</p>
-                        <div class="mt-3 p-3 bg-gray-100 rounded border">
-                          <p class="text-xs text-gray-500 mb-1">Preview (admin only):</p>
-                          <p class="text-sm text-gray-700 line-clamp-2">{p.text[:100]}{"..." if len(p.text) > 100 else ""}</p>
-                        </div>
-                      </div>
-                      <footer class="text-xs text-gray-500">
-                        Flagged content • Originally by user ID {p.author_id}
-                      </footer>
-                    </li>
-                ''')
+                return HTMLResponse(templates.get_template("flagged_prayer.html").render(
+                    prayer=p, is_admin=is_admin(user)
+                ))
             else:
                 # When unflagging (admin only)
                 if is_admin_panel:
@@ -379,46 +350,10 @@ def flag_prayer(pid: str, request: Request, user: User = Depends(current_user)):
                         else:
                             user_mark_text = f'<span class="text-green-600 text-xs bg-green-100 px-2 py-1 rounded border border-green-300">✓ You prayed this {user_mark_count} times</span>'
                     
-                    return HTMLResponse(f'''
-                        <li id="prayer-{p.id}" class="bg-white p-6 rounded-lg shadow border-l-4 border-purple-300">
-                          {"<div class='mb-4'><h3 class='text-sm font-medium text-purple-600 mb-2'>🙏 Prayer</h3><p class='text-lg leading-relaxed text-gray-800 whitespace-pre-wrap italic'>" + (p.generated_prayer or "") + "</p></div>" if p.generated_prayer else ""}
-                          
-                          <div class="bg-gray-50 p-3 rounded border-l-2 border-gray-300">
-                            <h4 class="text-xs font-medium text-gray-500 mb-1">Original Request</h4>
-                            <p class="text-sm text-gray-700 whitespace-pre-wrap">{p.text}</p>
-                          </div>
-                          
-                          <footer class="mt-4 text-xs text-gray-500 flex justify-between items-center">
-                            <span>by {"you" if p.author_id == user.id else author_name} · {p.created_at.strftime('%Y-%m-%d %H:%M')}</span>
-                            <div class="flex items-center gap-4">
-                              <div id="prayer-marks-{p.id}" class="flex items-center gap-2">
-                                {prayer_stats}
-                                <form method="post" action="/mark/{p.id}" class="inline">
-                                  <button hx-post="/mark/{p.id}" 
-                                          hx-target="#prayer-marks-{p.id}"
-                                          hx-swap="innerHTML"
-                                          type="submit" 
-                                          class="bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs px-2 py-1 rounded border border-purple-300 focus:outline-none focus:ring-1 focus:ring-purple-500">
-                                    Mark as Prayed
-                                  </button>
-                                </form>
-                                {user_mark_text}
-                              </div>
-                              <form method="post" action="/flag/{p.id}" class="inline">
-                                <button type="submit" 
-                                        hx-post="/flag/{p.id}"
-                                        hx-target="#prayer-{p.id}"
-                                        hx-swap="outerHTML"
-                                        hx-indicator="#loading-{p.id}"
-                                        class="text-red-600 hover:text-red-800 hover:underline text-xs px-1 py-0.5 rounded transition-colors duration-200">
-                                  <span class="htmx-indicator" id="loading-{p.id}">🔄</span>
-                                  <span>Flag</span>
-                                </button>
-                              </form>
-                            </div>
-                          </footer>
-                        </li>
-                    ''')
+                    return HTMLResponse(templates.get_template("unflagged_prayer.html").render(
+                        prayer=p, user=user, author_name=author_name, 
+                        prayer_stats=prayer_stats, user_mark_text=user_mark_text
+                    ))
             
     # For non-HTMX requests, redirect appropriately
     if p.flagged:
@@ -506,30 +441,7 @@ def new_invite(request: Request, user: User = Depends(current_user)):
 
     url = request.url_for("claim_get", token=token)  # absolute link
     # Return a modal-style overlay that doesn't shift layout
-    return HTMLResponse(f'''
-        <div id="invite-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <div class="flex justify-between items-start mb-4">
-              <h3 class="text-lg font-semibold text-gray-900">Invite Link Generated</h3>
-              <button onclick="closeInviteModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
-            </div>
-            <div class="mb-4">
-              <p class="text-sm text-gray-600 mb-3">Share this link with someone you'd like to invite to join the community:</p>
-              <div class="bg-gray-50 p-3 rounded border">
-                <a href="{url}" class="text-blue-600 break-all hover:underline text-sm" target="_blank">{url}</a>
-              </div>
-            </div>
-            <div class="flex gap-3">
-              <button onclick="copyInviteLink('{url}')" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-purple-500">
-                Copy Link
-              </button>
-              <button onclick="closeInviteModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-gray-500">
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-    ''')
+    return HTMLResponse(templates.get_template("invite_modal.html").render(url=url))
 
 @app.post("/mark/{prayer_id}")
 def mark_prayer(prayer_id: str, request: Request, user: User = Depends(current_user)):
@@ -580,21 +492,9 @@ def mark_prayer(prayer_id: str, request: Request, user: User = Depends(current_u
                 else:
                     user_mark_text = f'<span class="text-green-600 text-xs bg-green-100 px-2 py-1 rounded border border-green-300">✓ You prayed this {user_mark_count} times</span>'
             
-            return HTMLResponse(f'''
-                <div class="flex items-center gap-2">
-                  {prayer_stats}
-                  <form method="post" action="/mark/{prayer_id}" class="inline">
-                    <button hx-post="/mark/{prayer_id}" 
-                            hx-target="#prayer-marks-{prayer_id}"
-                            hx-swap="innerHTML"
-                            type="submit" 
-                            class="bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs px-2 py-1 rounded border border-purple-300 focus:outline-none focus:ring-1 focus:ring-purple-500">
-                      Mark as Prayed
-                    </button>
-                  </form>
-                  {user_mark_text}
-                </div>
-            ''')
+            return HTMLResponse(templates.get_template("prayer_marks_section.html").render(
+                prayer_id=prayer_id, prayer_stats=prayer_stats, user_mark_text=user_mark_text
+            ))
     
     # For non-HTMX requests, redirect back to the specific prayer
     return RedirectResponse(f"/#prayer-{prayer_id}", 303)
