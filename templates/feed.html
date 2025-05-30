@@ -16,7 +16,8 @@
       <!-- Compact invite button -->
       <div id="invite-area">
         <button hx-post="/invites"
-                hx-swap="outerHTML"
+                hx-target="body"
+                hx-swap="beforeend"
                 class="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500">
           📧 Invite Someone
         </button>
@@ -278,6 +279,55 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('submitted') === 'true') {
         document.getElementById('add-prayer-form').style.display = 'none';
+    }
+});
+
+// Invite modal functions
+function closeInviteModal() {
+    const modal = document.getElementById('invite-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function copyInviteLink(url) {
+    navigator.clipboard.writeText(url).then(function() {
+        // Show temporary success feedback
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = '✓ Copied!';
+        button.classList.remove('bg-purple-600', 'hover:bg-purple-700');
+        button.classList.add('bg-green-600', 'hover:bg-green-700');
+        
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.classList.remove('bg-green-600', 'hover:bg-green-700');
+            button.classList.add('bg-purple-600', 'hover:bg-purple-700');
+        }, 2000);
+    }).catch(function() {
+        // Fallback: select the text for manual copying
+        const linkElement = document.querySelector('#invite-modal a');
+        if (linkElement) {
+            const range = document.createRange();
+            range.selectNode(linkElement);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+        }
+    });
+}
+
+// Close modal when clicking on backdrop
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('invite-modal');
+    if (modal && event.target === modal) {
+        closeInviteModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeInviteModal();
     }
 });
 </script>

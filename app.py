@@ -505,13 +505,31 @@ def new_invite(request: Request, user: User = Depends(current_user)):
         db.commit()
 
     url = request.url_for("claim_get", token=token)  # absolute link
-    # Return a small fragment HTMX will swap in for the button
-    return (
-        f'<div class="bg-green-100 border border-green-300 p-4 rounded">'
-        f'<p class="text-sm">Share this invite:</p>'
-        f'<a href="{url}" class="text-blue-600 break-all hover:underline">{url}</a>'
-        f'</div>'
-    )
+    # Return a modal-style overlay that doesn't shift layout
+    return HTMLResponse(f'''
+        <div id="invite-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div class="flex justify-between items-start mb-4">
+              <h3 class="text-lg font-semibold text-gray-900">Invite Link Generated</h3>
+              <button onclick="closeInviteModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+            </div>
+            <div class="mb-4">
+              <p class="text-sm text-gray-600 mb-3">Share this link with someone you'd like to invite to join the community:</p>
+              <div class="bg-gray-50 p-3 rounded border">
+                <a href="{url}" class="text-blue-600 break-all hover:underline text-sm" target="_blank">{url}</a>
+              </div>
+            </div>
+            <div class="flex gap-3">
+              <button onclick="copyInviteLink('{url}')" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-purple-500">
+                Copy Link
+              </button>
+              <button onclick="closeInviteModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-gray-500">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+    ''')
 
 @app.post("/mark/{prayer_id}")
 def mark_prayer(prayer_id: str, request: Request, user: User = Depends(current_user)):
