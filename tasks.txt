@@ -1,2 +1,8 @@
+Allow admin to admin other users
 
+Invite tree 
+
+Allow multiple sessions/devices for one user (low-friction auth)
+
+Allow export of database for community cloning
 
