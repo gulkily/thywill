@@ -68,7 +68,7 @@
 - `GET /admin` - Admin panel (admin only)
 - `POST /flag/{prayer_id}` - Flag/unflag content (community flagging, admin unflagging)
 - `GET /claim/{token}` - Claim invite and create account
-- `POST /invites` - Generate new invite tokens (HTMX enabled)
+- `POST /invites` - Generate new invite tokens (HTMX enabled, returns modal overlay)
 - `GET /prayer/{prayer_id}/marks` - View who prayed for specific prayer
 
 ### Moderation Flow
@@ -110,7 +110,7 @@ JWT_SECRET=your_jwt_secret_for_tokens
 ### HTMX Integration
 - **Prayer Marking**: Seamless marking without page reload
 - **Content Flagging**: Immediate content shielding with visual feedback
-- **Invite Generation**: Dynamic invite link creation
+- **Invite Generation**: Modal-based invite link creation with copy functionality and no layout shifts
 - **Loading Indicators**: Visual feedback during async operations
 - **Context-Aware Responses**: Different behavior for admin panel vs main feed
 
@@ -126,6 +126,12 @@ JWT_SECRET=your_jwt_secret_for_tokens
 1. Add logic to main feed route in `app.py`
 2. Update `get_feed_counts()` function
 3. Add UI option in templates
+
+### Creating Modal Interactions
+1. Use HTMX `hx-target="body"` and `hx-swap="beforeend"` for modals
+2. Return HTML with fixed positioning and backdrop
+3. Add JavaScript functions for close/escape/click-away behavior
+4. Include copy functionality with clipboard API and fallback selection
 
 ### Modifying Prayer Generation
 - Edit system prompt in `generate_prayer()` function
@@ -171,6 +177,7 @@ JWT_SECRET=your_jwt_secret_for_tokens
 ### Design Principles
 - **Prayer-First**: Prayer content is the primary focus, other features are secondary
 - **Progressive Disclosure**: Advanced features (form, invites) are accessible but not prominent
+- **Layout Stability**: Modal overlays prevent layout shifts during interactions
 - **Mobile-Responsive**: Horizontal scrolling navigation, stacked mobile layout
 - **Clean Typography**: Clear visual hierarchy between prayers, requests, and metadata
 - **Accessible Colors**: Purple/gray theme with proper contrast ratios
@@ -178,6 +185,9 @@ JWT_SECRET=your_jwt_secret_for_tokens
 ### Interactive Elements
 - **Toggle-based Form**: JavaScript-powered show/hide for prayer submission
 - **HTMX Integration**: Dynamic prayer marking, flagging, and invite generation without page reloads
+- **Modal Overlays**: Invite generation uses modal overlay to prevent layout shifts
+- **Copy Functionality**: One-click invite link copying with visual feedback
+- **Click-Away Interactions**: Modals can be dismissed by clicking backdrop or pressing Escape
 - **Visual Feedback**: Clear states for prayed/unprayed items, flagged content, loading indicators
 - **Responsive Navigation**: Auto-hiding scrollbars, mobile swipe hints
 - **Immediate Actions**: No confirmation dialogs for smoother community moderation
@@ -198,5 +208,7 @@ JWT_SECRET=your_jwt_secret_for_tokens
 ---
 
 **📝 Note for AI Assistants**: This guide reflects the community-driven moderation system with flag functionality accessible to all users, while maintaining admin oversight. The platform emphasizes immediate community response to inappropriate content while preserving admin authority for final decisions.
+
+**🔄 Recent Updates**: The invite generation system has been improved to use modal overlays instead of layout-shifting replacements, providing a better user experience with copy functionality, click-away dismissal, and keyboard shortcuts (Escape key).
 
 This is a faith-focused community platform emphasizing reverence, simplicity, meaningful prayer sharing, and community self-moderation. 
