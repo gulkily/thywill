@@ -1,0 +1,74 @@
+<script>
+function toggleAddPrayer() {
+    const form = document.getElementById('add-prayer-form');
+    const isVisible = form.style.display !== 'none';
+    
+    if (isVisible) {
+        form.style.display = 'none';
+    } else {
+        form.style.display = 'block';
+        // Focus on the textarea when opening
+        setTimeout(() => {
+            document.getElementById('text').focus();
+        }, 100);
+    }
+}
+
+// Close form after successful submission
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if there's a success message (you could add this logic)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('submitted') === 'true') {
+        document.getElementById('add-prayer-form').style.display = 'none';
+    }
+});
+
+// Invite modal functions
+function closeInviteModal() {
+    const modal = document.getElementById('invite-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function copyInviteLink(url) {
+    navigator.clipboard.writeText(url).then(function() {
+        // Show temporary success feedback
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = '✓ Copied!';
+        button.classList.remove('bg-purple-600', 'hover:bg-purple-700');
+        button.classList.add('bg-green-600', 'hover:bg-green-700');
+        
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.classList.remove('bg-green-600', 'hover:bg-green-700');
+            button.classList.add('bg-purple-600', 'hover:bg-purple-700');
+        }, 2000);
+    }).catch(function() {
+        // Fallback: select the text for manual copying
+        const linkElement = document.querySelector('#invite-modal a');
+        if (linkElement) {
+            const range = document.createRange();
+            range.selectNode(linkElement);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+        }
+    });
+}
+
+// Close modal when clicking on backdrop
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('invite-modal');
+    if (modal && event.target === modal) {
+        closeInviteModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeInviteModal();
+    }
+});
+</script>

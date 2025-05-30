@@ -1,0 +1,14 @@
+<!-- Today's Prompt -->
+{% if prompt %}
+<section class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 shadow-sm">
+  <div class="flex items-start gap-3">
+    <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+      <span class="text-blue-600 text-lg">💡</span>
+    </div>
+    <div class="flex-1">
+      <h2 class="font-semibold text-blue-900 mb-2">Today's Reflection</h2>
+      <p class="text-blue-800 leading-relaxed">{{ prompt }}</p>
+    </div>
+  </div>
+</section>
+{% endif %}
