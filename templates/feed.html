@@ -216,9 +216,17 @@
             {% endif %}
           </div>
           
-          {% if me.id == 'admin' %}
-            <a href="/flag/{{ p.id }}" class="text-red-600 hover:underline">Flag</a>
-          {% endif %}
+          <form method="post" action="/flag/{{ p.id }}" class="inline">
+            <button type="submit" 
+                    hx-post="/flag/{{ p.id }}"
+                    hx-target="#prayer-{{ p.id }}"
+                    hx-swap="outerHTML"
+                    hx-indicator="#loading-{{ p.id }}"
+                    class="text-red-600 hover:text-red-800 hover:underline text-xs px-1 py-0.5 rounded transition-colors duration-200">
+              <span class="htmx-indicator" id="loading-{{ p.id }}">🔄</span>
+              <span>Flag</span>
+            </button>
+          </form>
         </div>
       </footer>
     </li>

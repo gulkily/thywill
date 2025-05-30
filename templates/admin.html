@@ -13,7 +13,7 @@
   {% if flagged %}
     <ul class="space-y-6">
       {% for p in flagged %}
-      <li class="bg-red-50 p-6 rounded-lg shadow border-l-4 border-red-400">
+      <li class="bg-red-50 p-6 rounded-lg shadow border-l-4 border-red-400" id="flagged-prayer-{{ p.id }}">
         <!-- Generated Prayer -->
         {% if p.generated_prayer %}
         <div class="mb-4">
@@ -33,8 +33,14 @@
             by {{ p.author_name }} · {{ p.created_at.strftime('%Y-%m-%d %H:%M') }}
           </span>
           <form method="post" action="/flag/{{ p.id }}" class="inline">
-            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-1 rounded">
-              Unflag
+            <button type="submit" 
+                    hx-post="/flag/{{ p.id }}"
+                    hx-target="#flagged-prayer-{{ p.id }}"
+                    hx-swap="outerHTML"
+                    hx-indicator="#unflag-loading-{{ p.id }}"
+                    class="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-1 rounded transition-colors duration-200">
+              <span class="htmx-indicator" id="unflag-loading-{{ p.id }}">🔄</span>
+              <span>Unflag</span>
             </button>
           </form>
         </footer>

@@ -1,7 +1,7 @@
 # ThyWill - AI Assistant Project Guide
 
 ## Project Overview
-**ThyWill** is a community prayer platform built with FastAPI and SQLModel. It allows users to submit prayer requests, generate proper prayers using AI (Anthropic's Claude), and track community prayer activity.
+**ThyWill** is a community prayer platform built with FastAPI and SQLModel. It allows users to submit prayer requests, generate proper prayers using AI (Anthropic's Claude), track community prayer activity, and moderate content through community-driven flagging.
 
 ## Core Architecture
 
@@ -9,14 +9,14 @@
 - **Backend**: FastAPI (Python web framework)
 - **Database**: SQLite with SQLModel ORM
 - **AI Integration**: Anthropic Claude API for prayer generation
-- **Frontend**: Jinja2 templates with HTML/CSS/JavaScript
+- **Frontend**: Jinja2 templates with HTML/CSS/JavaScript + HTMX
 - **Authentication**: Cookie-based sessions with JWT tokens for invites
 
 ### Key Files
-- `app.py` (533 lines) - Main application with all routes and business logic
-- `models.py` (39 lines) - Database models and schema
+- `app.py` (665 lines) - Main application with all routes and business logic
+- `models.py` (40 lines) - Database models and schema
 - `templates/` - HTML templates for UI
-- `requirements.txt` - Python dependencies (8 packages)
+- `requirements.txt` - Python dependencies
 - `generate_token.py` - Utility for creating invite tokens
 
 ## Database Schema
@@ -37,6 +37,13 @@
 - Community members can mark prayers as "prayed"
 - Multiple feed views: all, new/unprayed, most prayed, my prayers, my requests
 
+### Community Moderation System
+- **Community Flagging**: All users can flag inappropriate content
+- **Content Shielding**: Flagged prayers are hidden but not deleted, showing warning message
+- **Admin Review**: Only admins can unflag content after review
+- **Immediate Response**: Flagged content is instantly shielded from public view
+- **Preview Access**: Admins can see preview of flagged content for review
+
 ### Authentication & Access
 - Invite-only system (requires valid invite token to join)
 - First user becomes admin (id = "admin")
@@ -55,18 +62,25 @@
 
 ### Main Routes
 - `GET /` - Main feed (supports feed_type parameter)
-- `POST /` - Submit new prayer request
-- `POST /pray/{prayer_id}` - Mark prayer as prayed
+- `POST /prayers` - Submit new prayer request
+- `POST /mark/{prayer_id}` - Mark prayer as prayed (HTMX enabled)
 - `GET /activity` - View prayer activity/marks
 - `GET /admin` - Admin panel (admin only)
-- `POST /admin/flag/{prayer_id}` - Flag inappropriate content
+- `POST /flag/{prayer_id}` - Flag/unflag content (community flagging, admin unflagging)
 - `GET /claim/{token}` - Claim invite and create account
+- `POST /invites` - Generate new invite tokens (HTMX enabled)
+- `GET /prayer/{prayer_id}/marks` - View who prayed for specific prayer
+
+### Moderation Flow
+1. **Any user flags content** → Prayer immediately shielded with warning
+2. **Admin reviews flagged content** → Can see preview and unflag if appropriate
+3. **Unflagged content** → Restored to full visibility with all functionality
 
 ### Authentication Flow
 1. User visits `/claim/{token}` with valid invite
 2. Creates account with display name
 3. Gets session cookie (14-day expiration)
-4. Can access main features
+4. Can access main features including community moderation
 
 ## Environment Variables
 ```bash
@@ -91,12 +105,20 @@ JWT_SECRET=your_jwt_secret_for_tokens
 ### Database Queries
 - Uses SQLModel select statements with joins
 - Complex aggregations for feed counts
-- Proper filtering for flagged content
+- Proper filtering for flagged content across all views
+
+### HTMX Integration
+- **Prayer Marking**: Seamless marking without page reload
+- **Content Flagging**: Immediate content shielding with visual feedback
+- **Invite Generation**: Dynamic invite link creation
+- **Loading Indicators**: Visual feedback during async operations
+- **Context-Aware Responses**: Different behavior for admin panel vs main feed
 
 ### Error Handling
 - HTTPException for authentication failures
 - Graceful fallbacks for AI generation
 - Database transaction safety
+- Permission checks for sensitive operations
 
 ## Common Development Tasks
 
@@ -115,18 +137,27 @@ JWT_SECRET=your_jwt_secret_for_tokens
 2. Handle migration manually (SQLite)
 3. Update related queries in `app.py`
 
+### Moderation Features
+- Flagging logic in `/flag/{pid}` endpoint
+- Shielded content HTML templates
+- Admin panel management tools
+- Community safety measures
+
 ## Security Considerations
-- Invite-only system prevents spam
-- Admin flagging system for moderation
-- Session expiration (14 days)
-- Input validation for prayer content
-- No direct database exposure
+- **Invite-only system** prevents spam and unauthorized access
+- **Community moderation** with immediate content shielding
+- **Admin oversight** for final moderation decisions
+- **Granular permissions**: Users can flag, only admins can unflag
+- **Session expiration** (14 days) with secure cookies
+- **Input validation** for prayer content and user data
+- **No direct database exposure** through proper ORM usage
 
 ## Deployment Notes
 - SQLite database file: `thywill.db`
 - Run with: `uvicorn app:app --reload`
 - Requires valid Anthropic API key
 - Static files served from templates directory
+- HTMX CDN dependency for interactive features
 
 ## UI/UX Design Patterns
 
@@ -146,18 +177,26 @@ JWT_SECRET=your_jwt_secret_for_tokens
 
 ### Interactive Elements
 - **Toggle-based Form**: JavaScript-powered show/hide for prayer submission
-- **HTMX Integration**: Dynamic prayer marking without page reloads
-- **Visual Feedback**: Clear states for prayed/unprayed items, hover effects
+- **HTMX Integration**: Dynamic prayer marking, flagging, and invite generation without page reloads
+- **Visual Feedback**: Clear states for prayed/unprayed items, flagged content, loading indicators
 - **Responsive Navigation**: Auto-hiding scrollbars, mobile swipe hints
+- **Immediate Actions**: No confirmation dialogs for smoother community moderation
 
 ### Content Organization
 - Generated prayers are prominently displayed in larger text
 - Original requests are shown in secondary gray boxes
 - Prayer statistics and actions are in footer area
+- **Flagged content** shown with warning banners and admin controls
 - Empty states provide clear guidance for next actions
+
+### Community Moderation UI
+- **Accessible Flag Button**: Available to all users for community moderation
+- **Shielded Content Display**: Clear warning with admin-only preview
+- **Context-Aware Controls**: Different buttons and actions based on user role
+- **Immediate Visual Feedback**: Loading states and seamless content updates
 
 ---
 
-**📝 Note for AI Assistants**: This guide reflects the simplified UI changes made to prioritize prayer content while maintaining easy access to submission and invite functionality. The interface emphasizes progressive disclosure and clean design patterns.
+**📝 Note for AI Assistants**: This guide reflects the community-driven moderation system with flag functionality accessible to all users, while maintaining admin oversight. The platform emphasizes immediate community response to inappropriate content while preserving admin authority for final decisions.
 
-This is a faith-focused community platform emphasizing reverence, simplicity, and meaningful prayer sharing. 
+This is a faith-focused community platform emphasizing reverence, simplicity, meaningful prayer sharing, and community self-moderation. 

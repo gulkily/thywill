@@ -284,16 +284,147 @@ def submit_prayer(text: str = Form(...),
     return RedirectResponse("/", 303)
 
 @app.post("/flag/{pid}")
-def flag_prayer(pid: str, user: User = Depends(current_user)):
-    if not is_admin(user):
-        raise HTTPException(403)
+def flag_prayer(pid: str, request: Request, user: User = Depends(current_user)):
     with Session(engine) as s:
         p = s.get(Prayer, pid)
         if not p:
             raise HTTPException(404)
+        
+        # Only allow unflagging if user is admin
+        if p.flagged and not is_admin(user):
+            raise HTTPException(403, "Only admins can unflag content")
+            
         p.flagged = not p.flagged
         s.add(p); s.commit()
-    return RedirectResponse("/admin", 303)
+        
+        # If this is an HTMX request, return appropriate content
+        if request.headers.get("HX-Request"):
+            # Check if this is coming from admin panel by looking at the referer
+            referer = request.headers.get("referer", "")
+            is_admin_panel = "/admin" in referer
+            
+            if p.flagged:
+                # Return shielded version when flagging
+                unflag_button = ""
+                if is_admin(user):
+                    unflag_button = f'''
+                          <form method="post" action="/flag/{p.id}" class="inline">
+                            <button type="submit" 
+                                    hx-post="/flag/{p.id}"
+                                    hx-target="#prayer-{p.id}"
+                                    hx-swap="outerHTML"
+                                    class="text-xs text-red-600 hover:text-red-800 underline">
+                              Unflag
+                            </button>
+                          </form>
+                    '''
+                
+                return HTMLResponse(f'''
+                    <li id="prayer-{p.id}" class="bg-red-50 p-6 rounded-lg shadow border-l-4 border-red-400">
+                      <div class="mb-4">
+                        <div class="flex items-center gap-2 mb-3">
+                          <span class="text-red-600 text-sm font-medium">⚠️ Content Flagged</span>
+                          {unflag_button}
+                        </div>
+                        <p class="text-gray-600 italic">This content has been flagged by a community member and is hidden from public view.</p>
+                        <div class="mt-3 p-3 bg-gray-100 rounded border">
+                          <p class="text-xs text-gray-500 mb-1">Preview (admin only):</p>
+                          <p class="text-sm text-gray-700 line-clamp-2">{p.text[:100]}{"..." if len(p.text) > 100 else ""}</p>
+                        </div>
+                      </div>
+                      <footer class="text-xs text-gray-500">
+                        Flagged content • Originally by user ID {p.author_id}
+                      </footer>
+                    </li>
+                ''')
+            else:
+                # When unflagging (admin only)
+                if is_admin_panel:
+                    # If unflagging from admin panel, just remove the item
+                    return HTMLResponse("")
+                else:
+                    # If unflagging from main feed, restore the full prayer view
+                    # Get author name and prayer marks
+                    author = s.get(User, p.author_id)
+                    author_name = author.display_name if author else "Unknown"
+                    
+                    # Get mark counts
+                    mark_count_stmt = select(func.count(PrayerMark.id)).where(PrayerMark.prayer_id == p.id)
+                    total_mark_count = s.exec(mark_count_stmt).first() or 0
+                    
+                    distinct_user_count_stmt = select(func.count(func.distinct(PrayerMark.user_id))).where(PrayerMark.prayer_id == p.id)
+                    distinct_user_count = s.exec(distinct_user_count_stmt).first() or 0
+                    
+                    user_mark_count_stmt = select(func.count(PrayerMark.id)).where(
+                        PrayerMark.prayer_id == p.id,
+                        PrayerMark.user_id == user.id
+                    )
+                    user_mark_count = s.exec(user_mark_count_stmt).first() or 0
+                    
+                    # Build prayer stats display
+                    prayer_stats = ""
+                    if total_mark_count > 0:
+                        if distinct_user_count == 1:
+                            if total_mark_count == 1:
+                                prayer_stats = f'<a href="/prayer/{p.id}/marks" class="text-purple-600 hover:text-purple-800 hover:underline">🙏 1 person prayed this once</a>'
+                            else:
+                                prayer_stats = f'<a href="/prayer/{p.id}/marks" class="text-purple-600 hover:text-purple-800 hover:underline">🙏 1 person prayed this {total_mark_count} times</a>'
+                        else:
+                            prayer_stats = f'<a href="/prayer/{p.id}/marks" class="text-purple-600 hover:text-purple-800 hover:underline">🙏 {distinct_user_count} people prayed this {total_mark_count} times</a>'
+                    
+                    user_mark_text = ""
+                    if user_mark_count > 0:
+                        if user_mark_count == 1:
+                            user_mark_text = f'<span class="text-green-600 text-xs bg-green-100 px-2 py-1 rounded border border-green-300">✓ You prayed this</span>'
+                        else:
+                            user_mark_text = f'<span class="text-green-600 text-xs bg-green-100 px-2 py-1 rounded border border-green-300">✓ You prayed this {user_mark_count} times</span>'
+                    
+                    return HTMLResponse(f'''
+                        <li id="prayer-{p.id}" class="bg-white p-6 rounded-lg shadow border-l-4 border-purple-300">
+                          {"<div class='mb-4'><h3 class='text-sm font-medium text-purple-600 mb-2'>🙏 Prayer</h3><p class='text-lg leading-relaxed text-gray-800 whitespace-pre-wrap italic'>" + (p.generated_prayer or "") + "</p></div>" if p.generated_prayer else ""}
+                          
+                          <div class="bg-gray-50 p-3 rounded border-l-2 border-gray-300">
+                            <h4 class="text-xs font-medium text-gray-500 mb-1">Original Request</h4>
+                            <p class="text-sm text-gray-700 whitespace-pre-wrap">{p.text}</p>
+                          </div>
+                          
+                          <footer class="mt-4 text-xs text-gray-500 flex justify-between items-center">
+                            <span>by {"you" if p.author_id == user.id else author_name} · {p.created_at.strftime('%Y-%m-%d %H:%M')}</span>
+                            <div class="flex items-center gap-4">
+                              <div id="prayer-marks-{p.id}" class="flex items-center gap-2">
+                                {prayer_stats}
+                                <form method="post" action="/mark/{p.id}" class="inline">
+                                  <button hx-post="/mark/{p.id}" 
+                                          hx-target="#prayer-marks-{p.id}"
+                                          hx-swap="innerHTML"
+                                          type="submit" 
+                                          class="bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs px-2 py-1 rounded border border-purple-300 focus:outline-none focus:ring-1 focus:ring-purple-500">
+                                    Mark as Prayed
+                                  </button>
+                                </form>
+                                {user_mark_text}
+                              </div>
+                              <form method="post" action="/flag/{p.id}" class="inline">
+                                <button type="submit" 
+                                        hx-post="/flag/{p.id}"
+                                        hx-target="#prayer-{p.id}"
+                                        hx-swap="outerHTML"
+                                        hx-indicator="#loading-{p.id}"
+                                        class="text-red-600 hover:text-red-800 hover:underline text-xs px-1 py-0.5 rounded transition-colors duration-200">
+                                  <span class="htmx-indicator" id="loading-{p.id}">🔄</span>
+                                  <span>Flag</span>
+                                </button>
+                              </form>
+                            </div>
+                          </footer>
+                        </li>
+                    ''')
+            
+    # For non-HTMX requests, redirect appropriately
+    if p.flagged:
+        return RedirectResponse("/", 303)  # Back to main feed when flagging
+    else:
+        return RedirectResponse("/admin", 303)  # Back to admin when unflagging
 
 @app.get("/admin", response_class=HTMLResponse)
 def admin(request: Request, user: User = Depends(current_user)):
