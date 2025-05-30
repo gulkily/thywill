@@ -7,8 +7,8 @@
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <!-- Page Title -->
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">Community Prayers</h1>
-      <p class="text-sm text-gray-600">Join our community in prayer</p>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Community Prayers</h1>
+      <p class="text-sm text-gray-600 dark:text-gray-400">Join our community in prayer</p>
     </div>
     
     <!-- Quick Actions -->
@@ -18,14 +18,14 @@
         <button hx-post="/invites"
                 hx-target="body"
                 hx-swap="beforeend"
-                class="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500">
+                class="text-sm bg-green-600 hover:bg-green-700 dark:bg-green-800 dark:hover:bg-green-900 text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400">
           📧 Invite Someone
         </button>
       </div>
       
       <!-- Add prayer button that toggles form -->
       <button onclick="toggleAddPrayer()" 
-              class="text-sm bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-purple-500">
+              class="text-sm bg-purple-600 hover:bg-purple-700 dark:bg-purple-800 dark:hover:bg-purple-900 text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400">
         ✏️ Add Prayer Request
       </button>
     </div>
@@ -41,20 +41,20 @@
 <!-- Prayer list (now the main focus) -->
 <section>
   {% if current_feed == "new_unprayed" %}
-    <h2 class="font-semibold mb-2">New & Unprayed Requests</h2>
-    <p class="text-sm text-gray-600 mb-4">Prayer requests that need your attention - new submissions and prayers that haven't been prayed by anyone yet.</p>
+    <h2 class="font-semibold mb-2 dark:text-gray-100">New & Unprayed Requests</h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayer requests that need your attention - new submissions and prayers that haven't been prayed by anyone yet.</p>
   {% elif current_feed == "most_prayed" %}
-    <h2 class="font-semibold mb-2">Most Prayed Prayers</h2>
-    <p class="text-sm text-gray-600 mb-4">The prayers that have touched the most hearts in our community.</p>
+    <h2 class="font-semibold mb-2 dark:text-gray-100">Most Prayed Prayers</h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">The prayers that have touched the most hearts in our community.</p>
   {% elif current_feed == "my_prayers" %}
-    <h2 class="font-semibold mb-2">Prayers I've Prayed</h2>
-    <p class="text-sm text-gray-600 mb-4">All the prayers you've marked as prayed, ordered by when you last prayed them.</p>
+    <h2 class="font-semibold mb-2 dark:text-gray-100">Prayers I've Prayed</h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">All the prayers you've marked as prayed, ordered by when you last prayed them.</p>
   {% elif current_feed == "my_requests" %}
-    <h2 class="font-semibold mb-2">My Prayer Requests</h2>
-    <p class="text-sm text-gray-600 mb-4">Prayer requests you've submitted to the community.</p>
+    <h2 class="font-semibold mb-2 dark:text-gray-100">My Prayer Requests</h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayer requests you've submitted to the community.</p>
   {% elif current_feed == "recent_activity" %}
-    <h2 class="font-semibold mb-2">Recent Prayer Activity</h2>
-    <p class="text-sm text-gray-600 mb-4">Prayers that have been recently prayed by the community.</p>
+    <h2 class="font-semibold mb-2 dark:text-gray-100">Recent Prayer Activity</h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayers that have been recently prayed by the community.</p>
   {% endif %}
   
   <ul class="space-y-6">
@@ -63,23 +63,23 @@
     {% else %}
     <li class="text-center py-8">
       {% if current_feed == "new_unprayed" %}
-        <p class="text-gray-500 mb-2">Great news! All prayers have been prayed for.</p>
-        <p class="text-sm text-gray-400">Check back later for new prayer requests that need attention.</p>
+        <p class="text-gray-500 dark:text-gray-400 mb-2">Great news! All prayers have been prayed for.</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500">Check back later for new prayer requests that need attention.</p>
       {% elif current_feed == "most_prayed" %}
-        <p class="text-gray-500 mb-2">No prayers have been marked as prayed yet.</p>
-        <p class="text-sm text-gray-400">Be the first to pray for someone's request!</p>
+        <p class="text-gray-500 dark:text-gray-400 mb-2">No prayers have been marked as prayed yet.</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500">Be the first to pray for someone's request!</p>
       {% elif current_feed == "my_prayers" %}
-        <p class="text-gray-500 mb-2">You haven't marked any prayers as prayed yet.</p>
-        <p class="text-sm text-gray-400">Visit the <a href="/?feed_type=all" class="text-purple-600 hover:underline">All Prayers</a> feed to start praying.</p>
+        <p class="text-gray-500 dark:text-gray-400 mb-2">You haven't marked any prayers as prayed yet.</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500">Visit the <a href="/?feed_type=all" class="text-purple-600 dark:text-purple-400 hover:underline">All Prayers</a> feed to start praying.</p>
       {% elif current_feed == "my_requests" %}
-        <p class="text-gray-500 mb-2">You haven't submitted any prayer requests yet.</p>
-        <p class="text-sm text-gray-400">Click the "Add Prayer Request" button above to share what's on your heart.</p>
+        <p class="text-gray-500 dark:text-gray-400 mb-2">You haven't submitted any prayer requests yet.</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500">Click the "Add Prayer Request" button above to share what's on your heart.</p>
       {% elif current_feed == "recent_activity" %}
-        <p class="text-gray-500 mb-2">No recent prayer activity.</p>
-        <p class="text-sm text-gray-400">Check the <a href="/?feed_type=all" class="text-purple-600 hover:underline">All Prayers</a> feed to start praying.</p>
+        <p class="text-gray-500 dark:text-gray-400 mb-2">No recent prayer activity.</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500">Check the <a href="/?feed_type=all" class="text-purple-600 dark:text-purple-400 hover:underline">All Prayers</a> feed to start praying.</p>
       {% else %}
-        <p class="text-gray-500 mb-2">No prayers yet. Be the first to lift one up.</p>
-        <p class="text-sm text-gray-400">Click "Add Prayer Request" above to get started.</p>
+        <p class="text-gray-500 dark:text-gray-400 mb-2">No prayers yet. Be the first to lift one up.</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500">Click "Add Prayer Request" above to get started.</p>
       {% endif %}
     </li>
     {% endfor %}
