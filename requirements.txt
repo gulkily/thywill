@@ -7,3 +7,9 @@ httpx   # optional stub for future AI
 anthropic
 python-dotenv
 
+# Testing dependencies
+pytest
+pytest-cov
+pytest-mock
+python-multipart
+
