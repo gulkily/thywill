@@ -8,3 +8,4 @@ Allow export of database for community cloning
 
 Allow users to mark prayers as done and/or answered and/or successful
 
+Remove tailwind dependency
