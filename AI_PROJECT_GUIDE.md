@@ -13,11 +13,12 @@
 - **Authentication**: Cookie-based sessions with JWT tokens for invites
 
 ### Key Files
-- `app.py` (665 lines) - Main application with all routes and business logic
-- `models.py` (40 lines) - Database models and schema
-- `templates/` - HTML templates for UI
+- `app.py` (1500+ lines) - Main application with all routes and business logic
+- `models.py` (120+ lines) - Database models and schema including multi-device auth
+- `templates/` - HTML templates for UI including authentication flows
 - `requirements.txt` - Python dependencies
 - `generate_token.py` - Utility for creating invite tokens
+- `MULTI_DEVICE_AUTH_GUIDE.md` - Comprehensive documentation for authentication system
 
 ## Database Schema
 
@@ -25,8 +26,14 @@
 1. **User**: Basic user profile (id, display_name, created_at)
 2. **Prayer**: Prayer requests (id, author_id, text, generated_prayer, project_tag, flagged)
 3. **PrayerMark**: Tracks when users pray for requests (user_id, prayer_id, created_at)
-4. **Session**: User authentication sessions (id, user_id, expires_at)
+4. **Session**: Enhanced user sessions (id, user_id, expires_at, auth_request_id, device_info, ip_address, is_fully_authenticated)
 5. **InviteToken**: Invitation system for new users (token, created_by_user, used, expires_at)
+
+### Multi-Device Authentication Models
+6. **AuthenticationRequest**: Login requests from new devices (id, user_id, device_info, ip_address, status, expires_at)
+7. **AuthApproval**: Individual approval votes (id, auth_request_id, approver_user_id, created_at)
+8. **AuthAuditLog**: Complete audit trail for authentication actions (id, auth_request_id, action, actor_user_id, actor_type, details)
+9. **SecurityLog**: Security events and monitoring (id, event_type, user_id, ip_address, user_agent, details)
 
 ## Key Features
 
@@ -45,10 +52,14 @@
 - **Preview Access**: Admins can see preview of flagged content for review
 
 ### Authentication & Access
-- Invite-only system (requires valid invite token to join)
-- First user becomes admin (id = "admin")
-- Cookie-based sessions (14-day expiration)
-- Admin can generate invite tokens and manage flagged content
+- **Invite-only system** (requires valid invite token to join)
+- **First user becomes admin** (id = "admin")
+- **Multi-device authentication** with approval workflows
+- **Half-authenticated state** for pending approvals
+- **Three approval methods**: Admin instant approval, self-approval from trusted devices, peer approval by community
+- **Configurable approval requirements** via environment variables
+- **Cookie-based sessions** (14-day expiration) with device tracking
+- **Security monitoring** with rate limiting and audit logging
 
 ### Feed Types
 1. **All**: All unflagged prayers
@@ -62,14 +73,26 @@
 
 ### Main Routes
 - `GET /` - Main feed (supports feed_type parameter)
-- `POST /prayers` - Submit new prayer request
-- `POST /mark/{prayer_id}` - Mark prayer as prayed (HTMX enabled)
+- `POST /prayers` - Submit new prayer request (requires full authentication)
+- `POST /mark/{prayer_id}` - Mark prayer as prayed (HTMX enabled, requires full authentication)
 - `GET /activity` - View prayer activity/marks
-- `GET /admin` - Admin panel (admin only)
+- `GET /admin` - Admin panel with flagged content and auth requests (admin only)
 - `POST /flag/{prayer_id}` - Flag/unflag content (community flagging, admin unflagging)
-- `GET /claim/{token}` - Claim invite and create account
-- `POST /invites` - Generate new invite tokens (HTMX enabled, returns modal overlay)
+- `GET /claim/{token}` - Claim invite and create account (supports multi-device flow)
+- `POST /invites` - Generate new invite tokens (HTMX enabled, requires full authentication)
 - `GET /prayer/{prayer_id}/marks` - View who prayed for specific prayer
+
+### Multi-Device Authentication Routes
+- `POST /auth/request` - Create authentication request for existing username
+- `GET /auth/status` - View authentication status (half-authenticated users)
+- `GET /auth/pending` - View pending requests for approval (requires full authentication)
+- `POST /auth/approve/{request_id}` - Approve an authentication request
+- `POST /auth/reject/{request_id}` - Reject an authentication request (admin only)
+- `GET /auth/my-requests` - View own authentication requests for self-approval
+
+### Admin Authentication Routes
+- `GET /admin/auth-audit` - View comprehensive audit log (admin only)
+- `POST /admin/bulk-approve` - Bulk approve all pending requests (admin only)
 
 ### Moderation Flow
 1. **Any user flags content** → Prayer immediately shielded with warning
@@ -77,16 +100,41 @@
 3. **Unflagged content** → Restored to full visibility with all functionality
 
 ### Authentication Flow
+
+#### New User Registration
 1. User visits `/claim/{token}` with valid invite
-2. Creates account with display name
-3. Gets session cookie (14-day expiration)
-4. Can access main features including community moderation
+2. Creates account with unique display name
+3. Gets full authentication session cookie (14-day expiration)
+4. Can access all features immediately
+
+#### Existing User Multi-Device Login
+1. User visits `/claim/{token}` with existing display name
+2. System creates authentication request (if enabled via config)
+3. User enters half-authenticated state with limited access
+4. Approval required via one of three methods:
+   - **Admin approval**: Instant approval by any administrator
+   - **Self approval**: Approval from user's existing fully-authenticated device
+   - **Peer approval**: Approval from configured number of community members
+5. Once approved, session upgraded to full authentication
 
 ## Environment Variables
 ```bash
+# Required
 ANTHROPIC_API_KEY=your_claude_api_key
-JWT_SECRET=your_jwt_secret_for_tokens
+
+# Authentication Configuration (Optional - defaults shown)
+MULTI_DEVICE_AUTH_ENABLED=true              # Enable/disable multi-device authentication
+REQUIRE_APPROVAL_FOR_EXISTING_USERS=true    # Require approval for existing users
+PEER_APPROVAL_COUNT=2                       # Number of peer approvals needed
+
+# Optional
+JWT_SECRET=your_jwt_secret_for_tokens       # For invite token generation
 ```
+
+### Configuration Options
+- **MULTI_DEVICE_AUTH_ENABLED**: `false` disables multi-device auth entirely, users login directly
+- **REQUIRE_APPROVAL_FOR_EXISTING_USERS**: `false` allows existing users to login from new devices without approval
+- **PEER_APPROVAL_COUNT**: Any positive integer, controls how many community members need to approve
 
 ## AI Prayer Generation
 - Uses Claude 3.5 Sonnet model
@@ -98,9 +146,19 @@ JWT_SECRET=your_jwt_secret_for_tokens
 ## Development Patterns
 
 ### Session Management
-- `create_session(user_id)` - Creates new session
-- `current_user(request)` - Dependency injection for auth
+- `create_session(user_id, auth_request_id, device_info, ip_address, is_fully_authenticated)` - Creates new session with device tracking
+- `current_user(request)` - Returns (User, Session) tuple with authentication status
+- `require_full_auth(request)` - Dependency that requires full authentication
 - `is_admin(user)` - Check admin privileges
+
+### Multi-Device Authentication Functions
+- `create_auth_request(user_id, device_info, ip_address)` - Create authentication request
+- `approve_auth_request(request_id, approver_id)` - Process approval with configurable logic
+- `check_rate_limit(user_id, ip_address)` - Validate request frequency (3/hour limit)
+- `validate_session_security(session, request)` - Session security monitoring
+- `log_auth_action()` - Comprehensive audit logging
+- `log_security_event()` - Security event monitoring
+- `cleanup_expired_requests()` - Automatic cleanup of expired requests (7 days)
 
 ### Database Queries
 - Uses SQLModel select statements with joins
@@ -150,6 +208,8 @@ JWT_SECRET=your_jwt_secret_for_tokens
 - Community safety measures
 
 ## Security Considerations
+
+### Core Security
 - **Invite-only system** prevents spam and unauthorized access
 - **Community moderation** with immediate content shielding
 - **Admin oversight** for final moderation decisions
@@ -158,12 +218,23 @@ JWT_SECRET=your_jwt_secret_for_tokens
 - **Input validation** for prayer content and user data
 - **No direct database exposure** through proper ORM usage
 
+### Multi-Device Authentication Security
+- **Rate limiting**: 3 authentication requests per hour per user/IP
+- **Session hijacking detection**: IP address monitoring and logging
+- **Device fingerprinting**: Browser and device information tracking
+- **Audit trail**: Complete logging of all authentication actions
+- **Request expiration**: 7-day automatic expiration of pending requests
+- **Configurable approval requirements**: Flexible security based on community needs
+- **Security event monitoring**: Comprehensive logging of suspicious activity
+
 ## Deployment Notes
-- SQLite database file: `thywill.db`
+- SQLite database file: `thywill.db` (auto-migrates for multi-device auth)
 - Run with: `uvicorn app:app --reload`
 - Requires valid Anthropic API key
 - Static files served from templates directory
 - HTMX CDN dependency for interactive features
+- Automatic database migration on startup for existing installations
+- Environment variables configurable via `.env` file (see `.env.example`)
 
 ## UI/UX Design Patterns
 
@@ -207,8 +278,12 @@ JWT_SECRET=your_jwt_secret_for_tokens
 
 ---
 
-**📝 Note for AI Assistants**: This guide reflects the community-driven moderation system with flag functionality accessible to all users, while maintaining admin oversight. The platform emphasizes immediate community response to inappropriate content while preserving admin authority for final decisions.
+**📝 Note for AI Assistants**: This guide reflects both the community-driven moderation system and comprehensive multi-device authentication system. The platform balances security with usability through configurable approval workflows while maintaining admin oversight for both content moderation and authentication management.
 
-**🔄 Recent Updates**: The invite generation system has been improved to use modal overlays instead of layout-shifting replacements, providing a better user experience with copy functionality, click-away dismissal, and keyboard shortcuts (Escape key).
+**🔄 Recent Updates**: 
+- **Multi-Device Authentication System**: Comprehensive implementation with half-authenticated states, configurable approval workflows (admin/self/peer), security monitoring, and audit logging
+- **Configurable Security**: Environment variables control authentication requirements and approval counts
+- **Enhanced UI**: Authentication status pages, approval interfaces, and device management screens
+- **Automatic Migration**: Seamless upgrade for existing installations with preserved data
 
-This is a faith-focused community platform emphasizing reverence, simplicity, meaningful prayer sharing, and community self-moderation. 
+This is a faith-focused community platform emphasizing reverence, simplicity, meaningful prayer sharing, community self-moderation, and secure multi-device access. 

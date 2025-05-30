@@ -10,6 +10,35 @@
     <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">Access site features and tools</p>
   </div>
 
+  <!-- Authentication Status (for half-authenticated users) -->
+  {% if not session.is_fully_authenticated %}
+  <div class="bg-yellow-50 dark:bg-yellow-900/50 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-6">
+    <div class="flex items-start">
+      <div class="flex-shrink-0">
+        <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+        </svg>
+      </div>
+      <div class="ml-3 flex-1">
+        <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Limited Access Mode</h3>
+        <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+          <p>Your login is pending approval. Some features are limited until your account is fully authenticated.</p>
+        </div>
+        <div class="mt-3">
+          <div class="flex space-x-3">
+            <a href="/auth/status" class="bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-600 text-white text-xs font-medium px-3 py-1.5 rounded transition">
+              Check Status
+            </a>
+            <a href="/auth/pending" class="bg-gray-600 hover:bg-gray-700 dark:bg-gray-600 dark:hover:bg-gray-500 text-white text-xs font-medium px-3 py-1.5 rounded transition">
+              Help Others
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Main Menu Grid -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     
@@ -66,6 +95,31 @@
         View Activity →
       </a>
     </div>
+
+    <!-- Authentication Requests Section (for fully authenticated users) -->
+    {% if session.is_fully_authenticated %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div class="flex items-center mb-4">
+        <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center mr-4">
+          <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Authentication Requests</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400">Help approve pending login requests from community members</p>
+        </div>
+      </div>
+      <div class="flex space-x-2">
+        <a href="/auth/pending" class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900 hover:bg-orange-200 dark:hover:bg-orange-800 transition-colors">
+          Community →
+        </a>
+        <a href="/auth/my-requests" class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 transition-colors">
+          My Devices →
+        </a>
+      </div>
+    </div>
+    {% endif %}
 
     <!-- Admin Section (if admin) -->
     {% if me.id == 'admin' %}

@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}Pending Authentication Requests{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Authentication Requests</h1>
+    <p class="text-gray-600 dark:text-gray-400">Help community members by approving their login requests</p>
+    
+    <!-- Approval System Info -->
+    <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+      <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">How Approval Works</h3>
+      <div class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+        <p>• <strong>Admin approval:</strong> Admins can instantly approve any request</p>
+        <p>• <strong>Self approval:</strong> Users can approve their own requests from other devices</p>
+        <p>• <strong>Peer approval:</strong> Any {{ peer_approval_count }} community members can approve a request together</p>
+      </div>
+    </div>
+  </div>
+
+  {% if pending_requests %}
+  <div class="space-y-4">
+    {% for item in pending_requests %}
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <div class="flex items-center mb-3">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mr-3">{{ item.requester_name }}</h3>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+              Pending
+            </span>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Requested</p>
+              <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ item.request.created_at.strftime('%b %d, %Y at %I:%M %p') }}</p>
+            </div>
+            
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Expires</p>
+              <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ item.request.expires_at.strftime('%b %d, %Y at %I:%M %p') }}</p>
+            </div>
+            
+            {% if item.request.device_info %}
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Device</p>
+              <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" title="{{ item.request.device_info }}">
+                {% if 'Chrome' in item.request.device_info %}
+                  <span class="inline-flex items-center">
+                    <svg class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.568 7.568A6.976 6.976 0 0119 12a6.976 6.976 0 01-1.432 4.432L12 12V5.568c1.83.263 3.482 1.263 4.568 2.5z"/>
+                    </svg>
+                    Chrome
+                  </span>
+                {% elif 'Firefox' in item.request.device_info %}
+                  <span class="inline-flex items-center">
+                    <svg class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2z"/>
+                    </svg>
+                    Firefox
+                  </span>
+                {% elif 'Safari' in item.request.device_info %}
+                  <span class="inline-flex items-center">
+                    <svg class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2z"/>
+                    </svg>
+                    Safari
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                    Unknown Browser
+                  </span>
+                {% endif %}
+              </p>
+            </div>
+            {% endif %}
+            
+            {% if item.request.ip_address %}
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">IP Address</p>
+              <p class="text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">{{ item.request.ip_address }}</p>
+            </div>
+            {% endif %}
+          </div>
+
+          {% if item.approval_count > 0 %}
+          <div class="mb-4">
+            <div class="flex items-center mb-2">
+              <svg class="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+              <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ item.approval_count }} approval{{ 's' if item.approval_count != 1 else '' }} so far</span>
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              {% set needed = peer_approval_count - item.approval_count %}
+              {% if needed > 1 %}
+                Needs {{ needed }} more peer approvals to be automatically approved
+              {% elif needed == 1 %}
+                Needs 1 more peer approval to be automatically approved
+              {% else %}
+                Will be automatically approved with the next approval
+              {% endif %}
+            </div>
+            
+            <!-- Progress bar for peer approvals -->
+            <div class="mt-2">
+              <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <span>Peer Approval Progress</span>
+                <span>{{ item.approval_count }}/{{ peer_approval_count }}</span>
+              </div>
+              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div class="bg-green-600 h-2 rounded-full transition-all duration-300" style="width: {{ (item.approval_count / peer_approval_count * 100)|round }}%"></div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if item.requester_name == me.display_name %}
+          <div class="bg-blue-50 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-700 rounded-lg p-3 mb-4">
+            <div class="flex items-center">
+              <svg class="w-4 h-4 text-blue-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+              </svg>
+              <span class="text-sm text-blue-800 dark:text-blue-200 font-medium">This is your own authentication request</span>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Expires in {{ ((item.request.expires_at - item.request.created_at).days) }} days
+        </div>
+
+        <div class="flex space-x-2">
+          {% if me.id == 'admin' %}
+          <form method="post" action="/auth/reject/{{ item.request.id }}" class="inline">
+            <button type="submit" 
+                    onclick="return confirm('Are you sure you want to reject this authentication request?')"
+                    class="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded transition focus:outline-none focus:ring-2 focus:ring-red-500">
+              Reject
+            </button>
+          </form>
+          {% endif %}
+
+          <form method="post" action="/auth/approve/{{ item.request.id }}" class="inline">
+            <button type="submit" 
+                    class="px-4 py-1.5 text-sm bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded transition focus:outline-none focus:ring-2 focus:ring-green-500">
+              {% if me.id == 'admin' %}
+                Approve (Admin)
+              {% elif item.requester_name == me.display_name %}
+                Approve (Self)
+              {% else %}
+                Approve ({{ peer_approval_count - item.approval_count }}/{{ peer_approval_count }})
+              {% endif %}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="text-center py-12">
+    <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+    </div>
+    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No pending requests</h3>
+    <p class="text-gray-500 dark:text-gray-400">All authentication requests have been processed.</p>
+  </div>
+  {% endif %}
+
+  <div class="mt-8 text-center">
+    <a href="/" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
+      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+      </svg>
+      Back to Feed
+    </a>
+  </div>
+</div>
+
+<script>
+// Auto-refresh every 60 seconds to show new requests
+setInterval(function() {
+  window.location.reload();
+}, 60000);
+</script>
+{% endblock %}

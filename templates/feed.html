@@ -2,6 +2,35 @@
 {% block title %}Prayer Feed{% endblock %}
 
 {% block content %}
+<!-- Authentication Status Banner for Half-Authenticated Users -->
+{% if not session.is_fully_authenticated %}
+<div class="mb-6 bg-yellow-50 dark:bg-yellow-900/50 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+  <div class="flex items-start">
+    <div class="flex-shrink-0">
+      <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+      </svg>
+    </div>
+    <div class="ml-3 flex-1">
+      <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Limited Access Mode</h3>
+      <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+        <p>Your login is pending approval. You can view prayers but cannot submit new ones or mark prayers as prayed.</p>
+      </div>
+      <div class="mt-3">
+        <div class="flex space-x-3">
+          <a href="/auth/status" class="bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-600 text-white text-xs font-medium px-3 py-1.5 rounded transition">
+            Check Status
+          </a>
+          <a href="/auth/pending" class="bg-gray-600 hover:bg-gray-700 dark:bg-gray-600 dark:hover:bg-gray-500 text-white text-xs font-medium px-3 py-1.5 rounded transition">
+            Help Others
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- Compact Header with Main Actions -->
 <section class="mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -11,7 +40,8 @@
       <p class="text-sm text-gray-600 dark:text-gray-400">Join our community in prayer</p>
     </div>
     
-    <!-- Quick Actions -->
+    <!-- Quick Actions (only for fully authenticated users) -->
+    {% if session.is_fully_authenticated %}
     <div class="flex flex-col sm:flex-row gap-2">
       <!-- Compact invite button -->
       <div id="invite-area">
@@ -29,6 +59,7 @@
         ✏️ Add Prayer Request
       </button>
     </div>
+    {% endif %}
   </div>
 </section>
 
@@ -59,6 +90,7 @@
   
   <ul class="space-y-6">
     {% for p in prayers %}
+      {% set prayer_session = session %}
       {% include "components/prayer_card.html" %}
     {% else %}
     <li class="text-center py-8">

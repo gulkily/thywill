@@ -22,11 +22,53 @@ class PrayerMark(SQLModel, table=True):
     prayer_id: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+class AuthenticationRequest(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
+    user_id: str  # User requesting authentication
+    device_info: str | None = None  # Browser/device identifier
+    ip_address: str | None = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    expires_at: datetime  # 7 days from creation
+    status: str = "pending"  # "pending", "approved", "rejected", "expired"
+    approved_by_user_id: str | None = None
+    approved_at: datetime | None = None
+
+class AuthApproval(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
+    auth_request_id: str
+    approver_user_id: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class AuthAuditLog(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
+    auth_request_id: str
+    action: str  # "approved", "rejected", "created", "expired"
+    actor_user_id: str | None = None  # Who performed the action
+    actor_type: str | None = None  # "admin", "self", "peer", "system"
+    details: str | None = None  # Additional context
+    ip_address: str | None = None
+    user_agent: str | None = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SecurityLog(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
+    event_type: str  # "failed_login", "rate_limit", "suspicious_activity"
+    user_id: str | None = None
+    ip_address: str | None = None
+    user_agent: str | None = None
+    details: str | None = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 class Session(SQLModel, table=True):
     id: str = Field(primary_key=True)          # random hex
     user_id: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     expires_at: datetime
+    # New fields for multi-device auth
+    auth_request_id: str | None = None  # Link to authentication request
+    device_info: str | None = None
+    ip_address: str | None = None
+    is_fully_authenticated: bool = Field(default=True)  # For existing sessions
 
 class InviteToken(SQLModel, table=True):
     token: str = Field(primary_key=True)

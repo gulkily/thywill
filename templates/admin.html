@@ -3,33 +3,131 @@
 
 {% block content %}
 <div class="mb-6">
-  <h1 class="text-2xl font-bold text-gray-800">Admin Panel</h1>
-  <p class="text-gray-600">Manage flagged prayers and community content</p>
+  <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Admin Panel</h1>
+  <p class="text-gray-600 dark:text-gray-400">Manage flagged prayers, authentication requests, and community content</p>
 </div>
 
+<!-- Authentication Requests Section -->
+<section class="mb-8">
+  <h2 class="font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
+    <svg class="w-5 h-5 mr-2 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+    </svg>
+    Pending Authentication Requests
+  </h2>
+  
+  {% if auth_requests %}
+    <div class="mb-4 flex justify-between items-center">
+      <span class="text-sm text-gray-600 dark:text-gray-400">{{ auth_requests|length }} pending request{{ 's' if auth_requests|length != 1 else '' }}</span>
+      {% if auth_requests|length > 1 %}
+      <form method="post" action="/admin/bulk-approve" class="inline">
+        <button type="submit" 
+                onclick="return confirm('Are you sure you want to approve ALL {{ auth_requests|length }} pending authentication requests?')"
+                class="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded transition focus:outline-none focus:ring-2 focus:ring-green-500">
+          ✓ Bulk Approve All
+        </button>
+      </form>
+      {% endif %}
+    </div>
+    <div class="space-y-4">
+      {% for item in auth_requests %}
+      <div class="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg shadow border-l-4 border-orange-400 dark:border-orange-500">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <div class="flex items-center mb-2">
+              <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mr-3">{{ item.requester_name }}</h3>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                {{ item.approval_count }}/2 approvals
+              </span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3 text-sm">
+              <div>
+                <span class="text-gray-500 dark:text-gray-400">Requested:</span>
+                <span class="block font-medium text-gray-900 dark:text-gray-100">{{ item.request.created_at.strftime('%m/%d %I:%M %p') }}</span>
+              </div>
+              <div>
+                <span class="text-gray-500 dark:text-gray-400">Expires:</span>
+                <span class="block font-medium text-gray-900 dark:text-gray-100">{{ item.request.expires_at.strftime('%m/%d %I:%M %p') }}</span>
+              </div>
+              <div>
+                <span class="text-gray-500 dark:text-gray-400">IP:</span>
+                <span class="block font-mono text-xs text-gray-900 dark:text-gray-100">{{ item.request.ip_address }}</span>
+              </div>
+            </div>
+            
+            {% if item.approvers %}
+            <div class="mb-3">
+              <span class="text-sm text-gray-500 dark:text-gray-400">Approved by:</span>
+              <div class="flex flex-wrap gap-2 mt-1">
+                {% for approver in item.approvers %}
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {% if approver.is_admin %}bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200{% else %}bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200{% endif %}">
+                  {% if approver.is_admin %}👑{% endif %} {{ approver.name }}
+                </span>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <div class="flex items-center justify-between pt-3 border-t border-orange-200 dark:border-orange-700">
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            Admin can instantly approve or reject
+          </div>
+          <div class="flex space-x-2">
+            <form method="post" action="/auth/reject/{{ item.request.id }}" class="inline">
+              <button type="submit" 
+                      onclick="return confirm('Are you sure you want to reject this authentication request?')"
+                      class="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded transition focus:outline-none focus:ring-2 focus:ring-red-500">
+                Reject
+              </button>
+            </form>
+            <form method="post" action="/auth/approve/{{ item.request.id }}" class="inline">
+              <button type="submit" 
+                      class="px-4 py-1.5 text-sm bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded transition focus:outline-none focus:ring-2 focus:ring-green-500">
+                Approve (Admin)
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-gray-500 dark:text-gray-400 text-center py-8">No pending authentication requests.</p>
+  {% endif %}
+</section>
+
+<!-- Flagged Prayers Section -->
 <section>
-  <h2 class="font-semibold mb-4">Flagged Prayers</h2>
+  <h2 class="font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
+    <svg class="w-5 h-5 mr-2 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+    </svg>
+    Flagged Prayers
+  </h2>
   
   {% if flagged %}
     <ul class="space-y-6">
       {% for p in flagged %}
-      <li class="bg-red-50 p-6 rounded-lg shadow border-l-4 border-red-400" id="flagged-prayer-{{ p.id }}">
+      <li class="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg shadow border-l-4 border-red-400 dark:border-red-500" id="flagged-prayer-{{ p.id }}">
         <!-- Generated Prayer -->
         {% if p.generated_prayer %}
         <div class="mb-4">
-          <h3 class="text-sm font-medium text-red-600 mb-2">🙏 Generated Prayer</h3>
-          <p class="text-lg leading-relaxed text-gray-800 whitespace-pre-wrap italic">{{ p.generated_prayer }}</p>
+          <h3 class="text-sm font-medium text-red-600 dark:text-red-400 mb-2">🙏 Generated Prayer</h3>
+          <p class="text-lg leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap italic">{{ p.generated_prayer }}</p>
         </div>
         {% endif %}
         
         <!-- Original Request -->
-        <div class="bg-white p-3 rounded border-l-2 border-red-300">
-          <h4 class="text-xs font-medium text-red-500 mb-1">Original Request</h4>
-          <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ p.text }}</p>
+        <div class="bg-white dark:bg-gray-800 p-3 rounded border-l-2 border-red-300 dark:border-red-600">
+          <h4 class="text-xs font-medium text-red-500 dark:text-red-400 mb-1">Original Request</h4>
+          <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ p.text }}</p>
         </div>
         
         <footer class="mt-4 flex justify-between items-center">
-          <span class="text-xs text-gray-500">
+          <span class="text-xs text-gray-500 dark:text-gray-400">
             by {{ p.author_name }} · {{ p.created_at.strftime('%Y-%m-%d %H:%M') }}
           </span>
           <form method="post" action="/flag/{{ p.id }}" class="inline">
@@ -48,12 +146,15 @@
       {% endfor %}
     </ul>
   {% else %}
-    <p class="text-gray-500 text-center py-8">No flagged prayers at the moment.</p>
+    <p class="text-gray-500 dark:text-gray-400 text-center py-8">No flagged prayers at the moment.</p>
   {% endif %}
 </section>
 
-<div class="mt-8">
-  <a href="/" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-2 rounded">
+<div class="mt-8 flex space-x-4">
+  <a href="/admin/auth-audit" class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded transition">
+    📋 View Audit Log
+  </a>
+  <a href="/" class="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white font-semibold px-4 py-2 rounded transition">
     Back to Feed
   </a>
 </div>

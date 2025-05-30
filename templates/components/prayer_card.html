@@ -30,6 +30,7 @@
           {% endif %}
         {% endif %}
         
+        {% if prayer_session.is_fully_authenticated %}
         <form method="post" action="/mark/{{ p.id }}" class="inline">
           <button hx-post="/mark/{{ p.id }}" 
                   hx-target="#prayer-marks-{{ p.id }}"
@@ -39,6 +40,11 @@
             Mark as Prayed
           </button>
         </form>
+        {% else %}
+        <span class="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 cursor-not-allowed" title="Full authentication required">
+          Mark as Prayed
+        </span>
+        {% endif %}
         
         {% if p.marked_by_user > 0 %}
           {% if p.marked_by_user == 1 %}
