@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile_user.display_name }}'s Profile{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Profile Header -->
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center space-x-4">
+      <!-- Profile Avatar Placeholder -->
+      <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
+        <span class="text-2xl text-purple-600 font-bold">{{ profile_user.display_name[0]|upper }}</span>
+      </div>
+      
+      <!-- Profile Info -->
+      <div class="flex-1">
+        <h1 class="text-2xl font-bold text-gray-900">{{ profile_user.display_name }}</h1>
+        {% if profile_user.id == 'admin' %}
+          <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full mt-1">Admin</span>
+        {% endif %}
+        <p class="text-gray-600 text-sm mt-1">
+          Member since {{ profile_user.created_at.strftime('%B %d, %Y') }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Navigation -->
+  <div class="bg-white rounded-lg shadow">
+    <div class="border-b border-gray-200">
+      <nav class="-mb-px flex space-x-8 px-6">
+        <a href="#overview" class="border-purple-500 text-purple-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+          Overview
+        </a>
+      </nav>
+    </div>
+    
+    <!-- Overview Tab Content -->
+    <div id="overview" class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Basic Stats -->
+        <div class="space-y-4">
+          <h3 class="text-lg font-medium text-gray-900">Profile Information</h3>
+          
+          <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Display Name:</span>
+              <span class="font-medium">{{ profile_user.display_name }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 whitespace-nowrap">User ID:</span>
+              <span class="font-mono text-sm">{{ profile_user.id }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Joined:</span>
+              <span>{{ profile_user.created_at.strftime('%B %d, %Y') }}</span>
+            </div>
+            {% if profile_user.id == 'admin' %}
+            <div class="flex justify-between">
+              <span class="text-gray-600">Role:</span>
+              <span class="text-purple-600 font-medium">Administrator</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Placeholder for Future Stats -->
+        <div class="space-y-4">
+          <h3 class="text-lg font-medium text-gray-900">Activity Summary</h3>
+          
+          <div class="bg-gray-50 rounded-lg p-4">
+            <p class="text-gray-600 text-center py-8">
+              Prayer statistics and activity metrics will be available in a future update.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  {% if is_own_profile %}
+  <div class="bg-white rounded-lg shadow p-6">
+    <h3 class="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
+    <div class="flex flex-wrap gap-3">
+      <a href="/?feed_type=my_requests" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+        📝 My Prayer Requests
+      </a>
+      <a href="/?feed_type=my_prayers" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+        🙏 Prayers I've Marked
+      </a>
+      <a href="/activity" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+        📊 Recent Activity
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Back Navigation -->
+  <div class="text-center">
+    <a href="/" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-purple-600 bg-purple-100 hover:bg-purple-200">
+      ← Back to Prayer Feed
+    </a>
+  </div>
+</div>
+{% endblock %}

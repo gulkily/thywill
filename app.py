@@ -580,3 +580,22 @@ def recent_activity(request: Request, user: User = Depends(current_user)):
         "activity.html",
         {"request": request, "activity_items": activity_items, "me": user}
     )
+
+@app.get("/profile", response_class=HTMLResponse)
+def my_profile(request: Request, user: User = Depends(current_user)):
+    return user_profile(request, user.id, user)
+
+@app.get("/user/{user_id}", response_class=HTMLResponse)
+def user_profile(request: Request, user_id: str, user: User = Depends(current_user)):
+    with Session(engine) as s:
+        # Get the profile user
+        profile_user = s.get(User, user_id)
+        if not profile_user:
+            raise HTTPException(404, "User not found")
+        
+        is_own_profile = user_id == user.id
+        
+        return templates.TemplateResponse(
+            "profile.html",
+            {"request": request, "profile_user": profile_user, "me": user, "is_own_profile": is_own_profile}
+        )
