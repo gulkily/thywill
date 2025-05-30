@@ -62,7 +62,7 @@
   </div>
 </section>
 
-<!-- Compact Feed Navigation -->
+<!-- Prayer Feed Navigation -->
 <section class="mb-6">
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-1">
     <nav class="flex overflow-x-auto scrollbar-hide space-x-1" style="scrollbar-width: none; -ms-overflow-style: none;">
@@ -111,32 +111,6 @@
         <span>Recent</span>
         <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'recent_activity' %}bg-purple-200 text-purple-800{% else %}bg-gray-200 text-gray-700{% endif %} rounded-full">{{ feed_counts.recent_activity or 0 }}</span>
       </a>
-      
-      <div class="flex-shrink-0 w-px bg-gray-300 mx-2 self-stretch"></div>
-      
-      <a href="/profile" 
-         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50">
-        <span>My Profile</span>
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-        </svg>
-      </a>
-      
-      <a href="/users" 
-         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50">
-        <span>Community</span>
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"></path>
-        </svg>
-      </a>
-      
-      <a href="/activity" 
-         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50">
-        <span>Activity</span>
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-        </svg>
-      </a>
     </nav>
   </div>
   
@@ -148,14 +122,16 @@
   </div>
 </section>
 
-<!-- Today's Prompt (moved to be more subtle) -->
+<!-- Today's Prompt -->
 {% if prompt %}
-<section class="mb-6 bg-amber-50 border border-amber-200 p-3 rounded">
-  <div class="flex items-start gap-2">
-    <span class="text-amber-600 mt-0.5">💡</span>
-    <div>
-      <h2 class="font-medium text-sm text-amber-800 mb-1">Today's Reflection</h2>
-      <p class="text-sm text-amber-700">{{ prompt }}</p>
+<section class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 shadow-sm">
+  <div class="flex items-start gap-3">
+    <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+      <span class="text-blue-600 text-lg">💡</span>
+    </div>
+    <div class="flex-1">
+      <h2 class="font-semibold text-blue-900 mb-2">Today's Reflection</h2>
+      <p class="text-blue-800 leading-relaxed">{{ prompt }}</p>
     </div>
   </div>
 </section>

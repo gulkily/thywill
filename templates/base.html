@@ -27,7 +27,14 @@
    <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
     <a href="/" class="font-bold tracking-wide text-lg">Thy&nbsp;Will</a>
     {% if me %}
-    <span class="text-sm">Hi <a href="/profile" class="text-purple-200 hover:text-white underline">{{ me.display_name }}</a> ({{ me.id }}){% if me.id == 'admin' %} <a href="/admin" class="text-purple-200 hover:text-white underline"><em>(admin)</em></a>{% endif %}</span>
+    <div class="flex items-center gap-4">
+     <span class="text-sm">Hi <a href="/profile" class="text-purple-200 hover:text-white underline">{{ me.display_name }}</a> ({{ me.id }}){% if me.id == 'admin' %} <a href="/admin" class="text-purple-200 hover:text-white underline"><em>(admin)</em></a>{% endif %}</span>
+     <a href="/menu" class="text-purple-200 hover:text-white">
+       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+       </svg>
+     </a>
+    </div>
     {% endif %}
    </div>
   </header>

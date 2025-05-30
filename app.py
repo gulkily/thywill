@@ -726,3 +726,10 @@ def users_list(request: Request, user: User = Depends(current_user)):
             "users.html",
             {"request": request, "users": users_with_stats, "me": user}
         )
+
+@app.get("/menu", response_class=HTMLResponse)
+def menu(request: Request, user: User = Depends(current_user)):
+    return templates.TemplateResponse(
+        "menu.html",
+        {"request": request, "me": user}
+    )
