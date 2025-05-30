@@ -633,9 +633,9 @@ def flag_prayer(pid: str, request: Request, user_session: tuple = Depends(curren
                     user_mark_text = ""
                     if user_mark_count > 0:
                         if user_mark_count == 1:
-                            user_mark_text = f'<span class="text-green-600 text-xs bg-green-100 px-2 py-1 rounded border border-green-300">✓ You prayed this</span>'
+                            user_mark_text = f'<span class="text-green-600 dark:text-green-400 text-xs bg-green-100 dark:bg-green-900 px-2 py-1 rounded border border-green-300 dark:border-green-600">✓ You prayed this</span>'
                         else:
-                            user_mark_text = f'<span class="text-green-600 text-xs bg-green-100 px-2 py-1 rounded border border-green-300">✓ You prayed this {user_mark_count} times</span>'
+                            user_mark_text = f'<span class="text-green-600 dark:text-green-400 text-xs bg-green-100 dark:bg-green-900 px-2 py-1 rounded border border-green-300 dark:border-green-600">✓ You prayed this {user_mark_count} times</span>'
                     
                     return HTMLResponse(templates.get_template("unflagged_prayer.html").render(
                         prayer=p, user=user, author_name=author_name, 
@@ -941,9 +941,9 @@ def mark_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(
             user_mark_text = ""
             if user_mark_count > 0:
                 if user_mark_count == 1:
-                    user_mark_text = f'<span class="text-green-600 text-xs bg-green-100 px-2 py-1 rounded border border-green-300">✓ You prayed this</span>'
+                    user_mark_text = f'<span class="text-green-600 dark:text-green-400 text-xs bg-green-100 dark:bg-green-900 px-2 py-1 rounded border border-green-300 dark:border-green-600">✓ You prayed this</span>'
                 else:
-                    user_mark_text = f'<span class="text-green-600 text-xs bg-green-100 px-2 py-1 rounded border border-green-300">✓ You prayed this {user_mark_count} times</span>'
+                    user_mark_text = f'<span class="text-green-600 dark:text-green-400 text-xs bg-green-100 dark:bg-green-900 px-2 py-1 rounded border border-green-300 dark:border-green-600">✓ You prayed this {user_mark_count} times</span>'
             
             return HTMLResponse(templates.get_template("prayer_marks_section.html").render(
                 prayer_id=prayer_id, prayer_stats=prayer_stats, user_mark_text=user_mark_text
