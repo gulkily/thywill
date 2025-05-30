@@ -9,7 +9,7 @@
 - **Backend**: FastAPI (Python web framework)
 - **Database**: SQLite with SQLModel ORM
 - **AI Integration**: Anthropic Claude API for prayer generation
-- **Frontend**: Jinja2 templates with HTML/CSS
+- **Frontend**: Jinja2 templates with HTML/CSS/JavaScript
 - **Authentication**: Cookie-based sessions with JWT tokens for invites
 
 ### Key Files
@@ -128,15 +128,36 @@ JWT_SECRET=your_jwt_secret_for_tokens
 - Requires valid Anthropic API key
 - Static files served from templates directory
 
-## UI/UX Patterns
-- Clean, minimal design focused on prayer content
-- Different visual states for prayed/unprayed items
-- Mobile-responsive layout
-- Easy navigation between feed types
-- Clear submission and marking workflows
+## UI/UX Design Patterns
+
+### Simplified Front Page Layout (Current)
+- **Header Section**: Clean title with compact action buttons (Invite & Add Prayer)
+- **Collapsible Prayer Form**: Hidden by default, toggles with JavaScript for cleaner interface
+- **Compact Feed Navigation**: Smaller tabs with counts, mobile-friendly horizontal scroll
+- **Subtle Daily Prompt**: Minimal amber-colored section, only shows when prompt exists
+- **Prayer-Focused Content**: Main feed prominently displays prayers with clear hierarchy
+
+### Design Principles
+- **Prayer-First**: Prayer content is the primary focus, other features are secondary
+- **Progressive Disclosure**: Advanced features (form, invites) are accessible but not prominent
+- **Mobile-Responsive**: Horizontal scrolling navigation, stacked mobile layout
+- **Clean Typography**: Clear visual hierarchy between prayers, requests, and metadata
+- **Accessible Colors**: Purple/gray theme with proper contrast ratios
+
+### Interactive Elements
+- **Toggle-based Form**: JavaScript-powered show/hide for prayer submission
+- **HTMX Integration**: Dynamic prayer marking without page reloads
+- **Visual Feedback**: Clear states for prayed/unprayed items, hover effects
+- **Responsive Navigation**: Auto-hiding scrollbars, mobile swipe hints
+
+### Content Organization
+- Generated prayers are prominently displayed in larger text
+- Original requests are shown in secondary gray boxes
+- Prayer statistics and actions are in footer area
+- Empty states provide clear guidance for next actions
 
 ---
 
-**📝 Note for AI Assistants**: Please update this guide whenever you make changes to the project structure, API endpoints, database models, or core features.
+**📝 Note for AI Assistants**: This guide reflects the simplified UI changes made to prioritize prayer content while maintaining easy access to submission and invite functionality. The interface emphasizes progressive disclosure and clean design patterns.
 
 This is a faith-focused community platform emphasizing reverence, simplicity, and meaningful prayer sharing. 
