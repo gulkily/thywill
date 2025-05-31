@@ -1,4 +1,4 @@
-<li id="prayer-{{ p.id }}" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-900/20 border-l-4 border-purple-300 dark:border-purple-500">
+<li id="prayer-{{ p.id }}" class="{% if p.is_answered %}bg-green-50 dark:bg-green-900/10 border-l-4 border-green-400 dark:border-green-500{% elif p.is_archived %}bg-amber-50 dark:bg-amber-900/10 border-l-4 border-amber-400 dark:border-amber-500{% else %}bg-white dark:bg-gray-800 border-l-4 border-purple-300 dark:border-purple-500{% endif %} p-6 rounded-lg shadow dark:shadow-gray-900/20">
   <!-- Generated Prayer (prominent) -->
   {% if p.generated_prayer %}
   <div class="mb-4">
@@ -12,6 +12,36 @@
     <h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Original Request</h4>
     <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ p.text }}</p>
   </div>
+  
+  <!-- Status indicators -->
+  {% if p.is_answered %}
+  <div class="mt-3 bg-green-100 dark:bg-green-900/30 p-3 rounded-lg border border-green-300 dark:border-green-600">
+    <div class="flex items-start gap-2">
+      <span class="text-2xl">🎉</span>
+      <div class="flex-1">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-sm font-semibold text-green-800 dark:text-green-200">Prayer Answered!</span>
+          {% if p.answer_date %}
+          <span class="text-xs text-green-600 dark:text-green-400">
+            {{ p.answer_date[:10] if p.answer_date else '' }}
+          </span>
+          {% endif %}
+        </div>
+        {% if p.answer_testimony %}
+        <div class="bg-green-50 dark:bg-green-900/20 p-2 rounded text-xs text-green-700 dark:text-green-300 border border-green-200 dark:border-green-700">
+          <strong>How God moved:</strong> {{ p.answer_testimony }}
+        </div>
+        {% else %}
+        <p class="text-xs text-green-700 dark:text-green-300">God has moved in this situation. Praise the Lord!</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% elif p.is_archived %}
+  <div class="mt-3 bg-amber-100 dark:bg-amber-900/30 p-2 rounded border border-amber-300 dark:border-amber-600">
+    <span class="text-xs font-medium text-amber-800 dark:text-amber-200">📁 This prayer has been archived</span>
+  </div>
+  {% endif %}
   
   <footer class="mt-4 text-xs text-gray-500 dark:text-gray-400 flex justify-between items-center">
     <span>by {% if p.author_id == me.id %}you{% else %}<a href="/user/{{ p.author_id }}" class="text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-200 hover:underline">{{ p.author_name }}</a>{% endif %} · {{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
@@ -54,6 +84,40 @@
           {% endif %}
         {% endif %}
       </div>
+      
+      <!-- Prayer management buttons for prayer authors -->
+      {% if prayer_session.is_fully_authenticated and p.author_id == me.id %}
+        <div class="flex items-center gap-2">
+          {% if not p.is_answered %}
+            <button onclick="showAnsweredModal('{{ p.id }}')"
+                    class="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:underline text-xs px-1 py-0.5 rounded transition-colors duration-200">
+              Mark as Answered
+            </button>
+          {% endif %}
+          
+          {% if p.is_archived %}
+            <form method="post" action="/prayer/{{ p.id }}/restore" class="inline">
+              <button type="submit" 
+                      hx-post="/prayer/{{ p.id }}/restore"
+                      hx-target="#prayer-{{ p.id }}"
+                      hx-swap="outerHTML"
+                      class="text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 hover:underline text-xs px-1 py-0.5 rounded transition-colors duration-200">
+                Restore
+              </button>
+            </form>
+          {% else %}
+            <form method="post" action="/prayer/{{ p.id }}/archive" class="inline">
+              <button type="submit" 
+                      hx-post="/prayer/{{ p.id }}/archive"
+                      hx-target="#prayer-{{ p.id }}"
+                      hx-swap="outerHTML"
+                      class="text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 hover:underline text-xs px-1 py-0.5 rounded transition-colors duration-200">
+                Archive
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      {% endif %}
       
       <form method="post" action="/flag/{{ p.id }}" class="inline">
         <button type="submit" 
