@@ -476,13 +476,8 @@ def get_filtered_prayers_for_user(user: User, db: Session, include_archived: boo
         base_query = base_query.where(
             Prayer.target_audience.in_(["all", "christians_only"])
         )
-    elif user.religious_preference == "non_christian":
-        # Non-Christians see: all prayers + non-christian-only prayers  
-        base_query = base_query.where(
-            Prayer.target_audience.in_(["all", "non_christians_only"])
-        )
     else:
-        # Unspecified users see only "all" prayers
+        # All faiths (unspecified) users see only "all" prayers
         base_query = base_query.where(Prayer.target_audience == "all")
     
     return db.exec(base_query.order_by(Prayer.created_at.desc())).all()
@@ -496,8 +491,6 @@ def find_compatible_prayer_partner(prayer: Prayer, db: Session, exclude_user_ids
     # Apply religious compatibility filtering
     if prayer.target_audience == "christians_only":
         user_query = user_query.where(User.religious_preference == "christian")
-    elif prayer.target_audience == "non_christians_only":
-        user_query = user_query.where(User.religious_preference == "non_christian")
     # For "all", no additional religious filtering needed
     
     # Exclude users who have already been assigned this prayer
@@ -598,11 +591,8 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             if user.religious_preference == "christian":
                 # Christians see: all prayers + christian-only prayers
                 return Prayer.target_audience.in_(["all", "christians_only"])
-            elif user.religious_preference == "non_christian":
-                # Non-Christians see: all prayers + non-christian-only prayers  
-                return Prayer.target_audience.in_(["all", "non_christians_only"])
             else:
-                # Unspecified users see only "all" prayers
+                # All faiths (unspecified) users see only "all" prayers
                 return Prayer.target_audience == "all"
         
         if feed_type == "new_unprayed":
@@ -762,7 +752,7 @@ def submit_prayer(text: str = Form(...),
         raise HTTPException(403, "Full authentication required to submit prayers")
     
     # Validate target audience
-    valid_audiences = ["all", "christians_only", "non_christians_only"]
+    valid_audiences = ["all", "christians_only"]
     if target_audience not in valid_audiences:
         target_audience = "all"
     
@@ -1966,7 +1956,7 @@ async def update_religious_preferences(
     user, session = user_session
     
     # Validate religious preference
-    valid_preferences = ["christian", "non_christian", "unspecified"]
+    valid_preferences = ["christian", "unspecified"]
     if religious_preference not in valid_preferences:
         raise HTTPException(400, "Invalid religious preference")
     

@@ -8,8 +8,8 @@ class User(SQLModel, table=True):
     display_name: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     # Religious preference fields
-    religious_preference: str | None = Field(default="unspecified", max_length=50)  # "christian", "non_christian", "unspecified"
-    prayer_style: str | None = Field(default=None, max_length=100)  # e.g., "in_jesus_name", "interfaith", "secular"
+    religious_preference: str | None = Field(default="unspecified", max_length=50)  # "christian", "unspecified"
+    prayer_style: str | None = Field(default=None, max_length=100)  # e.g., "in_jesus_name", "interfaith"
 
 class Prayer(SQLModel, table=True):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
@@ -20,7 +20,7 @@ class Prayer(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     flagged: bool = False  # Will be deprecated after migration
     # Religious targeting fields
-    target_audience: str | None = Field(default="all", max_length=50)  # "christians_only", "all", "non_christians_only"
+    target_audience: str | None = Field(default="all", max_length=50)  # "christians_only", "all"
     prayer_context: str | None = Field(default=None, max_length=100)  # Additional context for prayer style
     
     def has_attribute(self, name: str, session: Session) -> bool:

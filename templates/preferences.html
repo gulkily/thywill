@@ -21,8 +21,8 @@
                                {% if user.religious_preference == "unspecified" %}checked{% endif %}
                                class="w-4 h-4 text-blue-600">
                         <div>
-                            <div class="font-medium text-gray-800 dark:text-gray-200">Prefer not to specify</div>
-                            <div class="text-sm text-gray-500 dark:text-gray-400">You'll see prayers from all backgrounds</div>
+                            <div class="font-medium text-gray-800 dark:text-gray-200">All faiths welcome</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">You'll see prayers open to everyone regardless of faith background</div>
                         </div>
                     </label>
                     
@@ -33,16 +33,6 @@
                         <div>
                             <div class="font-medium text-gray-800 dark:text-gray-200">Christian</div>
                             <div class="text-sm text-gray-500 dark:text-gray-400">You'll see all prayers plus those specifically for Christians</div>
-                        </div>
-                    </label>
-                    
-                    <label class="flex items-center space-x-3 cursor-pointer">
-                        <input type="radio" name="religious_preference" value="non_christian" 
-                               {% if user.religious_preference == "non_christian" %}checked{% endif %}
-                               class="w-4 h-4 text-blue-600">
-                        <div>
-                            <div class="font-medium text-gray-800 dark:text-gray-200">Non-Christian</div>
-                            <div class="text-sm text-gray-500 dark:text-gray-400">You'll see general prayers and those open to all faiths</div>
                         </div>
                     </label>
                 </div>

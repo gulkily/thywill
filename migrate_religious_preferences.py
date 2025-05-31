@@ -2,6 +2,14 @@
 """
 Migration script for religious preference feature
 Run this script to add new database columns for religious preferences
+
+Supports two religious preference options:
+- "christian": Users who identify as Christian
+- "unspecified": All faiths welcome (default)
+
+Prayer targeting options:
+- "all": Visible to everyone (default)
+- "christians_only": Visible only to Christian users
 """
 
 import sys
