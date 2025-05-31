@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select, func
 
-from models import engine, User, Prayer, InviteToken, Session as SessionModel, PrayerMark, AuthenticationRequest, AuthApproval, AuthAuditLog, SecurityLog
+from models import engine, User, Prayer, InviteToken, Session as SessionModel, PrayerMark, AuthenticationRequest, AuthApproval, AuthAuditLog, SecurityLog, PrayerAttribute, PrayerActivityLog
 
 # Load environment variables
 load_dotenv()
@@ -337,8 +337,28 @@ def get_feed_counts(user_id: str) -> dict:
     with Session(engine) as s:
         counts = {}
         
-        # All prayers
-        counts['all'] = s.exec(select(func.count(Prayer.id)).where(Prayer.flagged == False)).first()
+        # Helper to exclude archived and flagged prayers
+        def active_prayer_filter():
+            return (
+                Prayer.flagged == False
+            ).where(
+                ~Prayer.id.in_(
+                    select(PrayerAttribute.prayer_id)
+                    .where(PrayerAttribute.attribute_name.in_(['archived', 'flagged']))
+                )
+            )
+        
+        # All prayers (active only)
+        counts['all'] = s.exec(
+            select(func.count(Prayer.id))
+            .where(Prayer.flagged == False)
+            .where(
+                ~Prayer.id.in_(
+                    select(PrayerAttribute.prayer_id)
+                    .where(PrayerAttribute.attribute_name == 'archived')
+                )
+            )
+        ).first()
         
         # New & unprayed
         stmt = (
@@ -346,6 +366,12 @@ def get_feed_counts(user_id: str) -> dict:
             .select_from(Prayer)
             .outerjoin(PrayerMark, Prayer.id == PrayerMark.prayer_id)
             .where(Prayer.flagged == False)
+            .where(
+                ~Prayer.id.in_(
+                    select(PrayerAttribute.prayer_id)
+                    .where(PrayerAttribute.attribute_name == 'archived')
+                )
+            )
             .group_by(Prayer.id)
             .having(func.count(PrayerMark.id) == 0)
         )
@@ -358,9 +384,15 @@ def get_feed_counts(user_id: str) -> dict:
             .select_from(Prayer)
             .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
             .where(Prayer.flagged == False)
+            .where(
+                ~Prayer.id.in_(
+                    select(PrayerAttribute.prayer_id)
+                    .where(PrayerAttribute.attribute_name == 'archived')
+                )
+            )
         ).first()
         
-        # My prayers (prayers user has marked)
+        # My prayers (prayers user has marked) - include all statuses
         counts['my_prayers'] = s.exec(
             select(func.count(func.distinct(Prayer.id)))
             .select_from(Prayer)
@@ -369,21 +401,46 @@ def get_feed_counts(user_id: str) -> dict:
             .where(PrayerMark.user_id == user_id)
         ).first()
         
-        # My requests
+        # My requests - include all statuses  
         counts['my_requests'] = s.exec(
             select(func.count(Prayer.id))
             .where(Prayer.flagged == False)
             .where(Prayer.author_id == user_id)
         ).first()
         
-        # Recent activity (prayers with marks in last 7 days)
+        # Recent activity (prayers with marks in last 7 days) - active only
         week_ago = datetime.utcnow() - timedelta(days=7)
         counts['recent_activity'] = s.exec(
             select(func.count(func.distinct(Prayer.id)))
             .select_from(Prayer)
             .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
             .where(Prayer.flagged == False)
+            .where(
+                ~Prayer.id.in_(
+                    select(PrayerAttribute.prayer_id)
+                    .where(PrayerAttribute.attribute_name == 'archived')
+                )
+            )
             .where(PrayerMark.created_at >= week_ago)
+        ).first()
+        
+        # Answered prayers count
+        counts['answered'] = s.exec(
+            select(func.count(func.distinct(Prayer.id)))
+            .select_from(Prayer)
+            .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
+            .where(Prayer.flagged == False)
+            .where(PrayerAttribute.attribute_name == 'answered')
+        ).first()
+        
+        # Archived prayers count (user's own only)
+        counts['archived'] = s.exec(
+            select(func.count(func.distinct(Prayer.id)))
+            .select_from(Prayer)
+            .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
+            .where(Prayer.flagged == False)
+            .where(Prayer.author_id == user_id)
+            .where(PrayerAttribute.attribute_name == 'archived')
         ).first()
         
         return counts
@@ -439,30 +496,39 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
     with Session(engine) as s:
         prayers_with_authors = []
         
+        # Base filter to exclude archived prayers for public feeds
+        def exclude_archived():
+            return ~Prayer.id.in_(
+                select(PrayerAttribute.prayer_id)
+                .where(PrayerAttribute.attribute_name == 'archived')
+            )
+        
         if feed_type == "new_unprayed":
-            # New prayers and prayers that have never been prayed
+            # New prayers and prayers that have never been prayed (exclude archived)
             stmt = (
                 select(Prayer, User.display_name)
                 .join(User, Prayer.author_id == User.id)
                 .outerjoin(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
+                .where(exclude_archived())
                 .group_by(Prayer.id)
                 .having(func.count(PrayerMark.id) == 0)
                 .order_by(Prayer.created_at.desc())
             )
         elif feed_type == "most_prayed":
-            # Most prayed prayers (by total prayer count)
+            # Most prayed prayers (by total prayer count, exclude archived)
             stmt = (
                 select(Prayer, User.display_name, func.count(PrayerMark.id).label('mark_count'))
                 .join(User, Prayer.author_id == User.id)
                 .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
+                .where(exclude_archived())
                 .group_by(Prayer.id)
                 .order_by(func.count(PrayerMark.id).desc())
                 .limit(50)
             )
         elif feed_type == "my_prayers":
-            # Prayers the current user has marked as prayed
+            # Prayers the current user has marked as prayed (include all statuses)
             stmt = (
                 select(Prayer, User.display_name)
                 .join(User, Prayer.author_id == User.id)
@@ -473,7 +539,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .order_by(func.max(PrayerMark.created_at).desc())
             )
         elif feed_type == "my_requests":
-            # Prayer requests submitted by the current user
+            # Prayer requests submitted by the current user (include all statuses)
             stmt = (
                 select(Prayer, User.display_name)
                 .join(User, Prayer.author_id == User.id)
@@ -482,22 +548,45 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .order_by(Prayer.created_at.desc())
             )
         elif feed_type == "recent_activity":
-            # Prayers with recent prayer marks (most recently prayed)
+            # Prayers with recent prayer marks (most recently prayed, exclude archived)
             stmt = (
                 select(Prayer, User.display_name)
                 .join(User, Prayer.author_id == User.id)
                 .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
+                .where(exclude_archived())
                 .group_by(Prayer.id)
                 .order_by(func.max(PrayerMark.created_at).desc())
                 .limit(50)
             )
+        elif feed_type == "answered":
+            # Answered prayers (public celebration feed)
+            stmt = (
+                select(Prayer, User.display_name)
+                .join(User, Prayer.author_id == User.id)
+                .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
+                .where(Prayer.flagged == False)
+                .where(PrayerAttribute.attribute_name == 'answered')
+                .order_by(Prayer.created_at.desc())
+            )
+        elif feed_type == "archived":
+            # Archived prayers (personal feed for prayer authors only)
+            stmt = (
+                select(Prayer, User.display_name)
+                .join(User, Prayer.author_id == User.id)
+                .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
+                .where(Prayer.flagged == False)
+                .where(Prayer.author_id == user.id)  # Only user's own prayers
+                .where(PrayerAttribute.attribute_name == 'archived')
+                .order_by(Prayer.created_at.desc())
+            )
         else:  # "all" or default
-            # All prayers (existing behavior)
+            # All prayers (exclude archived)
             stmt = (
                 select(Prayer, User.display_name)
                 .join(User, Prayer.author_id == User.id)
                 .where(Prayer.flagged == False)
+                .where(exclude_archived())
                 .order_by(Prayer.created_at.desc())
             )
             
@@ -536,7 +625,11 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 'author_name': author_name,
                 'marked_by_user': user_mark_counts.get(prayer.id, 0),
                 'mark_count': mark_counts.get(prayer.id, 0),
-                'distinct_user_count': distinct_user_counts.get(prayer.id, 0)
+                'distinct_user_count': distinct_user_counts.get(prayer.id, 0),
+                'is_archived': prayer.is_archived(s),
+                'is_answered': prayer.is_answered(s),
+                'answer_date': prayer.answer_date(s),
+                'answer_testimony': prayer.answer_testimony(s)
             }
             prayers_with_authors.append(prayer_dict)
     
@@ -951,6 +1044,212 @@ def mark_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(
     
     # For non-HTMX requests, redirect back to the specific prayer
     return RedirectResponse(f"/#prayer-{prayer_id}", 303)
+
+@app.post("/prayer/{prayer_id}/archive")
+def archive_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(current_user)):
+    user, session = user_session
+    if not session.is_fully_authenticated:
+        raise HTTPException(403, "Full authentication required")
+    
+    with Session(engine) as s:
+        prayer = s.get(Prayer, prayer_id)
+        if not prayer:
+            raise HTTPException(404, "Prayer not found")
+        
+        # Only prayer author can archive their own prayers
+        if prayer.author_id != user.id:
+            raise HTTPException(403, "Only prayer author can archive their prayer")
+        
+        # Set archived attribute
+        prayer.set_attribute('archived', 'true', user.id, s)
+        s.commit()
+        
+        if request.headers.get("HX-Request"):
+            # Return success message with gentle transition
+            return HTMLResponse(f'''
+                <div class="prayer-archived bg-amber-50 dark:bg-amber-900/20 p-3 rounded border border-amber-200 dark:border-amber-700 text-center">
+                    <span class="text-amber-700 dark:text-amber-300 text-sm font-medium">
+                        📁 Prayer archived successfully
+                    </span>
+                </div>
+            ''')
+    
+    return RedirectResponse("/", 303)
+
+@app.post("/prayer/{prayer_id}/restore")
+def restore_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(current_user)):
+    user, session = user_session
+    if not session.is_fully_authenticated:
+        raise HTTPException(403, "Full authentication required")
+    
+    with Session(engine) as s:
+        prayer = s.get(Prayer, prayer_id)
+        if not prayer:
+            raise HTTPException(404, "Prayer not found")
+        
+        # Only prayer author can restore their own prayers
+        if prayer.author_id != user.id:
+            raise HTTPException(403, "Only prayer author can restore their prayer")
+        
+        # Remove archived attribute
+        prayer.remove_attribute('archived', s, user.id)
+        s.commit()
+        
+        if request.headers.get("HX-Request"):
+            # Return success message
+            return HTMLResponse(f'''
+                <div class="prayer-restored bg-green-50 dark:bg-green-900/20 p-3 rounded border border-green-200 dark:border-green-700 text-center">
+                    <span class="text-green-700 dark:text-green-300 text-sm font-medium">
+                        ✅ Prayer restored successfully
+                    </span>
+                </div>
+            ''')
+    
+    return RedirectResponse("/", 303)
+
+@app.post("/prayer/{prayer_id}/answered")
+def mark_prayer_answered(prayer_id: str, request: Request, 
+                        testimony: Optional[str] = Form(None),
+                        user_session: tuple = Depends(current_user)):
+    user, session = user_session
+    if not session.is_fully_authenticated:
+        raise HTTPException(403, "Full authentication required")
+    
+    with Session(engine) as s:
+        prayer = s.get(Prayer, prayer_id)
+        if not prayer:
+            raise HTTPException(404, "Prayer not found")
+        
+        # Only prayer author can mark their own prayers as answered
+        if prayer.author_id != user.id:
+            raise HTTPException(403, "Only prayer author can mark their prayer as answered")
+        
+        # Set answered attribute with current date
+        from datetime import datetime
+        answer_date = datetime.utcnow().isoformat()
+        prayer.set_attribute('answered', 'true', user.id, s)
+        prayer.set_attribute('answer_date', answer_date, user.id, s)
+        
+        # Add testimony if provided
+        if testimony and testimony.strip():
+            prayer.set_attribute('answer_testimony', testimony.strip(), user.id, s)
+        
+        s.commit()
+        
+        if request.headers.get("HX-Request"):
+            # Return celebration message
+            return HTMLResponse(f'''
+                <div class="prayer-answered bg-green-100 dark:bg-green-900/30 p-4 rounded-lg border border-green-300 dark:border-green-600 text-center">
+                    <div class="flex items-center justify-center gap-2 mb-2">
+                        <span class="text-2xl">🎉</span>
+                        <span class="text-green-800 dark:text-green-200 font-semibold">Prayer Answered!</span>
+                    </div>
+                    <p class="text-green-700 dark:text-green-300 text-sm">
+                        Praise the Lord! This prayer has been moved to the celebration feed.
+                    </p>
+                </div>
+            ''')
+    
+    return RedirectResponse("/", 303)
+
+@app.get("/answered", response_class=HTMLResponse)
+def answered_celebration(request: Request, user_session: tuple = Depends(current_user)):
+    user, session = user_session
+    
+    with Session(engine) as s:
+        # Get recent answered prayers (last 10)
+        recent_stmt = (
+            select(Prayer, User.display_name)
+            .join(User, Prayer.author_id == User.id)
+            .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
+            .where(Prayer.flagged == False)
+            .where(PrayerAttribute.attribute_name == 'answered')
+            .order_by(Prayer.created_at.desc())
+            .limit(10)
+        )
+        recent_results = s.exec(recent_stmt).all()
+        
+        # Get prayer marks for answered prayers
+        answered_prayer_ids = [prayer.id for prayer, _ in recent_results]
+        mark_counts_stmt = select(PrayerMark.prayer_id, func.count(PrayerMark.id)).where(
+            PrayerMark.prayer_id.in_(answered_prayer_ids)
+        ).group_by(PrayerMark.prayer_id)
+        mark_counts_results = s.exec(mark_counts_stmt).all()
+        mark_counts = {prayer_id: count for prayer_id, count in mark_counts_results}
+        
+        distinct_user_counts_stmt = select(PrayerMark.prayer_id, func.count(func.distinct(PrayerMark.user_id))).where(
+            PrayerMark.prayer_id.in_(answered_prayer_ids)
+        ).group_by(PrayerMark.prayer_id)
+        distinct_user_counts_results = s.exec(distinct_user_counts_stmt).all()
+        distinct_user_counts = {prayer_id: count for prayer_id, count in distinct_user_counts_results}
+        
+        # Build recent answered prayers list
+        recent_answered = []
+        for prayer, author_name in recent_results:
+            prayer_dict = {
+                'id': prayer.id,
+                'text': prayer.text,
+                'generated_prayer': prayer.generated_prayer,
+                'created_at': prayer.created_at,
+                'author_name': author_name,
+                'mark_count': mark_counts.get(prayer.id, 0),
+                'distinct_user_count': distinct_user_counts.get(prayer.id, 0),
+                'answer_date': prayer.answer_date(s),
+                'answer_testimony': prayer.answer_testimony(s)
+            }
+            recent_answered.append(prayer_dict)
+        
+        # Calculate statistics
+        total_answered = s.exec(
+            select(func.count(func.distinct(Prayer.id)))
+            .select_from(Prayer)
+            .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
+            .where(Prayer.flagged == False)
+            .where(PrayerAttribute.attribute_name == 'answered')
+        ).first()
+        
+        total_testimonies = s.exec(
+            select(func.count(func.distinct(Prayer.id)))
+            .select_from(Prayer)
+            .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
+            .where(Prayer.flagged == False)
+            .where(PrayerAttribute.attribute_name == 'answer_testimony')
+        ).first()
+        
+        # Recent answered this month
+        from datetime import datetime, timedelta
+        month_ago = datetime.utcnow() - timedelta(days=30)
+        recent_count = s.exec(
+            select(func.count(func.distinct(Prayer.id)))
+            .select_from(Prayer)
+            .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
+            .where(Prayer.flagged == False)
+            .where(PrayerAttribute.attribute_name == 'answered')
+            .where(PrayerAttribute.created_at >= month_ago)
+        ).first()
+        
+        # Community prayer statistics
+        community_prayers = s.exec(select(func.count(PrayerMark.id))).first()
+        total_prayers = s.exec(select(func.count(Prayer.id)).where(Prayer.flagged == False)).first()
+        answered_percentage = round((total_answered / total_prayers * 100)) if total_prayers > 0 else 0
+        
+        avg_prayer_marks = round(community_prayers / total_prayers) if total_prayers > 0 else 0
+    
+    return templates.TemplateResponse(
+        "answered_celebration.html",
+        {
+            "request": request, 
+            "me": user, 
+            "session": session,
+            "recent_answered": recent_answered,
+            "total_answered": total_answered,
+            "total_testimonies": total_testimonies,
+            "recent_count": recent_count,
+            "community_prayers": community_prayers,
+            "answered_percentage": answered_percentage,
+            "avg_prayer_marks": avg_prayer_marks
+        }
+    )
 
 @app.get("/prayer/{prayer_id}/marks", response_class=HTMLResponse)
 def prayer_marks(prayer_id: str, request: Request, user_session: tuple = Depends(current_user)):

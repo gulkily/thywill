@@ -86,6 +86,12 @@
   {% elif current_feed == "recent_activity" %}
     <h2 class="font-semibold mb-2 dark:text-gray-100">Recent Prayer Activity</h2>
     <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayers that have been recently prayed by the community.</p>
+  {% elif current_feed == "answered" %}
+    <h2 class="font-semibold mb-2 text-green-700 dark:text-green-300">🎉 Answered Prayers</h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Celebrating how God has moved in these situations. Praise the Lord!</p>
+  {% elif current_feed == "archived" %}
+    <h2 class="font-semibold mb-2 text-amber-700 dark:text-amber-300">📁 Your Archived Prayers</h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayer requests you've archived for personal reference.</p>
   {% endif %}
   
   <ul class="space-y-6">
@@ -109,6 +115,12 @@
       {% elif current_feed == "recent_activity" %}
         <p class="text-gray-500 dark:text-gray-400 mb-2">No recent prayer activity.</p>
         <p class="text-sm text-gray-400 dark:text-gray-500">Check the <a href="/?feed_type=all" class="text-purple-600 dark:text-purple-400 hover:underline">All Prayers</a> feed to start praying.</p>
+      {% elif current_feed == "answered" %}
+        <p class="text-gray-500 dark:text-gray-400 mb-2">No answered prayers yet.</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500">When prayer authors mark their requests as answered, they'll appear here for the community to celebrate!</p>
+      {% elif current_feed == "archived" %}
+        <p class="text-gray-500 dark:text-gray-400 mb-2">No archived prayers.</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500">When you archive prayer requests, they'll appear here for personal reference.</p>
       {% else %}
         <p class="text-gray-500 dark:text-gray-400 mb-2">No prayers yet. Be the first to lift one up.</p>
         <p class="text-sm text-gray-400 dark:text-gray-500">Click "Add Prayer Request" above to get started.</p>
@@ -117,6 +129,107 @@
     {% endfor %}
   </ul>
 </section>
+
+<!-- Mark as Answered Modal -->
+<div id="answered-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+      <div class="p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="text-2xl">🎉</span>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Prayer Answered!</h3>
+        </div>
+        
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Share how God moved in this situation (optional):
+        </p>
+        
+        <form id="answered-form" method="post" action="">
+          <textarea name="testimony" 
+                    placeholder="Tell the community how this prayer was answered..."
+                    class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-gray-100 resize-none"
+                    rows="4"></textarea>
+          
+          <div class="flex justify-end gap-3 mt-4">
+            <button type="button" onclick="hideAnsweredModal()"
+                    class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 rounded-md transition-colors">
+              Cancel
+            </button>
+            <button type="submit"
+                    class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors">
+              Mark as Answered
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showAnsweredModal(prayerId) {
+  const modal = document.getElementById('answered-modal');
+  const form = document.getElementById('answered-form');
+  form.action = `/prayer/${prayerId}/answered`;
+  modal.classList.remove('hidden');
+}
+
+function hideAnsweredModal() {
+  const modal = document.getElementById('answered-modal');
+  modal.classList.add('hidden');
+  // Clear the form
+  document.querySelector('#answered-form textarea').value = '';
+}
+
+// Close modal on background click
+document.getElementById('answered-modal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    hideAnsweredModal();
+  }
+});
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    hideAnsweredModal();
+  }
+});
+
+// Add smooth transitions for status changes
+function addTransitionEffects() {
+  // Add fade-in animation for new content
+  document.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.target.classList.contains('prayer-archived') || 
+        evt.detail.target.classList.contains('prayer-restored') || 
+        evt.detail.target.classList.contains('prayer-answered')) {
+      evt.detail.target.style.opacity = '0';
+      evt.detail.target.style.transform = 'translateY(-10px)';
+      
+      // Trigger animation
+      setTimeout(() => {
+        evt.detail.target.style.transition = 'all 0.3s ease-out';
+        evt.detail.target.style.opacity = '1';
+        evt.detail.target.style.transform = 'translateY(0)';
+      }, 10);
+      
+      // Auto-hide success messages after 3 seconds
+      setTimeout(() => {
+        evt.detail.target.style.transition = 'all 0.3s ease-in';
+        evt.detail.target.style.opacity = '0';
+        evt.detail.target.style.transform = 'translateY(-10px)';
+        setTimeout(() => {
+          if (evt.detail.target.parentNode) {
+            evt.detail.target.remove();
+          }
+        }, 300);
+      }, 3000);
+    }
+  });
+}
+
+// Initialize transition effects
+addTransitionEffects();
+</script>
 
 {% include "components/feed_scripts.html" %}
 {% endblock %}
