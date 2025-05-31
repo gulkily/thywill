@@ -9,3 +9,6 @@ Allow export of database for community cloning
 Allow users to mark prayers as done and/or answered and/or successful
 
 Remove tailwind dependency
+
+🙏 1 person prayed this 3 times
+this doesn't currently look right in dark mode when it's first added by js
