@@ -41,4 +41,6 @@ Thumbs.db
 
 # Project-specific
 thywill.db
+thywill.db-shm
+thywill.db-wal
 __pycache__
