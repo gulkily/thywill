@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select, func
 
 from models import engine, User, Prayer, InviteToken, Session as SessionModel, PrayerMark, AuthenticationRequest, AuthApproval, AuthAuditLog, SecurityLog, PrayerAttribute, PrayerActivityLog
+from sqlmodel import text
 
 # Load environment variables
 load_dotenv()
@@ -445,6 +446,95 @@ def get_feed_counts(user_id: str) -> dict:
         
         return counts
 
+# ───────── Religious Preference Filtering ─────────
+def get_filtered_prayers_for_user(user: User, db: Session, include_archived: bool = False, include_answered: bool = False) -> list[Prayer]:
+    """Get prayers filtered based on user's religious preferences and attributes"""
+    
+    # Base query for non-flagged prayers
+    base_query = select(Prayer).where(Prayer.flagged == False)
+    
+    # Apply attribute filtering
+    excluded_attributes = []
+    if not include_archived:
+        excluded_attributes.append('archived')
+    if not include_answered:
+        excluded_attributes.append('answered')
+    
+    if excluded_attributes:
+        excluded_prayer_ids = db.exec(
+            select(PrayerAttribute.prayer_id).where(
+                PrayerAttribute.attribute_name.in_(excluded_attributes)
+            )
+        ).all()
+        
+        if excluded_prayer_ids:
+            base_query = base_query.where(~Prayer.id.in_(excluded_prayer_ids))
+    
+    # Apply religious preference filtering
+    if user.religious_preference == "christian":
+        # Christians see: all prayers + christian-only prayers
+        base_query = base_query.where(
+            Prayer.target_audience.in_(["all", "christians_only"])
+        )
+    elif user.religious_preference == "non_christian":
+        # Non-Christians see: all prayers + non-christian-only prayers  
+        base_query = base_query.where(
+            Prayer.target_audience.in_(["all", "non_christians_only"])
+        )
+    else:
+        # Unspecified users see only "all" prayers
+        base_query = base_query.where(Prayer.target_audience == "all")
+    
+    return db.exec(base_query.order_by(Prayer.created_at.desc())).all()
+
+def find_compatible_prayer_partner(prayer: Prayer, db: Session, exclude_user_ids: list[str] = None) -> User | None:
+    """Find a user compatible with the prayer's religious targeting requirements"""
+    
+    # Build user query based on prayer target audience
+    user_query = select(User)
+    
+    # Apply religious compatibility filtering
+    if prayer.target_audience == "christians_only":
+        user_query = user_query.where(User.religious_preference == "christian")
+    elif prayer.target_audience == "non_christians_only":
+        user_query = user_query.where(User.religious_preference == "non_christian")
+    # For "all", no additional religious filtering needed
+    
+    # Exclude users who have already been assigned this prayer
+    assigned_user_ids = db.exec(
+        select(PrayerMark.user_id).where(PrayerMark.prayer_id == prayer.id)
+    ).all()
+    
+    # Add additional exclusions if provided
+    if exclude_user_ids:
+        assigned_user_ids.extend(exclude_user_ids)
+    
+    if assigned_user_ids:
+        user_query = user_query.where(~User.id.in_(assigned_user_ids))
+    
+    # Exclude the prayer author
+    user_query = user_query.where(User.id != prayer.author_id)
+    
+    return db.exec(user_query).first()
+
+def get_religious_preference_stats(db: Session) -> dict:
+    """Get statistics about religious preference distribution"""
+    stats = {}
+    
+    # User preference distribution
+    user_prefs = db.exec(
+        text("SELECT religious_preference, COUNT(*) FROM user GROUP BY religious_preference")
+    ).fetchall()
+    stats['user_preferences'] = {pref: count for pref, count in user_prefs}
+    
+    # Prayer target audience distribution
+    prayer_targets = db.exec(
+        text("SELECT target_audience, COUNT(*) FROM prayer GROUP BY target_audience")
+    ).fetchall()
+    stats['prayer_targets'] = {target: count for target, count in prayer_targets}
+    
+    return stats
+
 # ───────── Prompt of the day ─────────
 def todays_prompt() -> str:
     try:
@@ -503,6 +593,18 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .where(PrayerAttribute.attribute_name == 'archived')
             )
         
+        # Religious preference filtering
+        def apply_religious_filter():
+            if user.religious_preference == "christian":
+                # Christians see: all prayers + christian-only prayers
+                return Prayer.target_audience.in_(["all", "christians_only"])
+            elif user.religious_preference == "non_christian":
+                # Non-Christians see: all prayers + non-christian-only prayers  
+                return Prayer.target_audience.in_(["all", "non_christians_only"])
+            else:
+                # Unspecified users see only "all" prayers
+                return Prayer.target_audience == "all"
+        
         if feed_type == "new_unprayed":
             # New prayers and prayers that have never been prayed (exclude archived)
             stmt = (
@@ -511,6 +613,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .outerjoin(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
+                .where(apply_religious_filter())
                 .group_by(Prayer.id)
                 .having(func.count(PrayerMark.id) == 0)
                 .order_by(Prayer.created_at.desc())
@@ -523,6 +626,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
+                .where(apply_religious_filter())
                 .group_by(Prayer.id)
                 .order_by(func.count(PrayerMark.id).desc())
                 .limit(50)
@@ -555,6 +659,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
+                .where(apply_religious_filter())
                 .group_by(Prayer.id)
                 .order_by(func.max(PrayerMark.created_at).desc())
                 .limit(50)
@@ -567,6 +672,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(PrayerAttribute.attribute_name == 'answered')
+                .where(apply_religious_filter())
                 .order_by(Prayer.created_at.desc())
             )
         elif feed_type == "archived":
@@ -587,6 +693,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .join(User, Prayer.author_id == User.id)
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
+                .where(apply_religious_filter())
                 .order_by(Prayer.created_at.desc())
             )
             
@@ -622,6 +729,8 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 'project_tag': prayer.project_tag,
                 'created_at': prayer.created_at,
                 'flagged': prayer.flagged,
+                'target_audience': prayer.target_audience,
+                'prayer_context': prayer.prayer_context,
                 'author_name': author_name,
                 'marked_by_user': user_mark_counts.get(prayer.id, 0),
                 'mark_count': mark_counts.get(prayer.id, 0),
@@ -645,21 +754,46 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
 @app.post("/prayers")
 def submit_prayer(text: str = Form(...),
                   tag: Optional[str] = Form(None),
+                  target_audience: str = Form("all"),
+                  prayer_context: str = Form(None),
                   user_session: tuple = Depends(current_user)):
     user, session = user_session
     if not session.is_fully_authenticated:
         raise HTTPException(403, "Full authentication required to submit prayers")
+    
+    # Validate target audience
+    valid_audiences = ["all", "christians_only", "non_christians_only"]
+    if target_audience not in valid_audiences:
+        target_audience = "all"
+    
+    # Validate prayer context length
+    if prayer_context and len(prayer_context) > 100:
+        prayer_context = prayer_context[:100]
+    
     # Generate a proper prayer from the user's prompt
     generated_prayer = generate_prayer(text)
     
     with Session(engine) as s:
-        s.add(Prayer(
+        prayer = Prayer(
             author_id=user.id, 
             text=text[:500], 
             generated_prayer=generated_prayer,
-            project_tag=tag
-        ))
+            project_tag=tag,
+            target_audience=target_audience,
+            prayer_context=prayer_context
+        )
+        s.add(prayer)
         s.commit()
+        
+        # Try to find a compatible prayer partner immediately
+        compatible_user = find_compatible_prayer_partner(prayer, s)
+        if compatible_user:
+            # Assign prayer to compatible user
+            mark = PrayerMark(user_id=compatible_user.id, prayer_id=prayer.id)
+            s.add(mark)
+            s.commit()
+            print(f"Prayer {prayer.id} assigned to compatible user {compatible_user.id}")
+    
     return RedirectResponse("/", 303)
 
 @app.post("/flag/{pid}")
@@ -1805,3 +1939,71 @@ def bulk_approve_requests(request: Request, user_session: tuple = Depends(curren
         db.commit()
     
     return RedirectResponse(f"/admin?message=Approved {approved_count} requests", 303)
+
+# ───────── Religious Preference Management API ─────────
+@app.get("/profile/preferences")
+async def get_user_preferences(request: Request, user_session: tuple = Depends(current_user)):
+    """Display user religious preference settings"""
+    user, session = user_session
+    
+    with Session(engine) as db:
+        db_user = db.get(User, user.id)
+        return templates.TemplateResponse("preferences.html", {
+            "request": request,
+            "user": db_user,
+            "me": user,
+            "session": session
+        })
+
+@app.post("/profile/preferences")
+async def update_religious_preferences(
+    request: Request,
+    religious_preference: str = Form(...),
+    prayer_style: str = Form(None),
+    user_session: tuple = Depends(current_user)
+):
+    """Update user's religious preferences"""
+    user, session = user_session
+    
+    # Validate religious preference
+    valid_preferences = ["christian", "non_christian", "unspecified"]
+    if religious_preference not in valid_preferences:
+        raise HTTPException(400, "Invalid religious preference")
+    
+    # Validate prayer style for Christians
+    valid_prayer_styles = ["in_jesus_name", "interfaith", None, ""]
+    if prayer_style and prayer_style not in valid_prayer_styles:
+        raise HTTPException(400, "Invalid prayer style")
+    
+    with Session(engine) as db:
+        db_user = db.get(User, user.id)
+        old_preference = db_user.religious_preference
+        old_style = db_user.prayer_style
+        
+        db_user.religious_preference = religious_preference
+        
+        # Only set prayer style for Christian users
+        if religious_preference == "christian":
+            db_user.prayer_style = prayer_style if prayer_style else None
+        else:
+            db_user.prayer_style = None
+        
+        db.add(db_user)
+        db.commit()
+        
+        # Log the preference change for analytics
+        print(f"User {user.id} changed preference: {old_preference} -> {religious_preference}, style: {old_style} -> {db_user.prayer_style}")
+    
+    return RedirectResponse("/profile", status_code=303)
+
+@app.get("/api/religious-stats")
+async def get_religious_stats(request: Request, user_session: tuple = Depends(current_user)):
+    """Get religious preference statistics (admin only)"""
+    user, session = user_session
+    
+    if not is_admin(user):
+        raise HTTPException(403, "Admin access required")
+    
+    with Session(engine) as db:
+        stats = get_religious_preference_stats(db)
+        return stats

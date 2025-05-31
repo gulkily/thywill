@@ -13,12 +13,16 @@ class UserFactory:
     def create(
         id: Optional[str] = None,
         display_name: str = "Test User",
-        created_at: Optional[datetime] = None
+        created_at: Optional[datetime] = None,
+        religious_preference: str = "unspecified",
+        prayer_style: Optional[str] = None
     ) -> User:
         return User(
             id=id or uuid.uuid4().hex,
             display_name=display_name,
-            created_at=created_at or datetime.utcnow()
+            created_at=created_at or datetime.utcnow(),
+            religious_preference=religious_preference,
+            prayer_style=prayer_style
         )
     
     @staticmethod
@@ -26,7 +30,9 @@ class UserFactory:
         return User(
             id="admin",
             display_name="Admin User",
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
+            religious_preference="unspecified",
+            prayer_style=None
         )
 
 
@@ -41,7 +47,9 @@ class PrayerFactory:
         generated_prayer: Optional[str] = "DEFAULT_PRAYER",
         project_tag: Optional[str] = None,
         created_at: Optional[datetime] = None,
-        flagged: bool = False
+        flagged: bool = False,
+        target_audience: str = "all",
+        prayer_context: Optional[str] = None
     ) -> Prayer:
         # Use a special value to distinguish between None and default
         prayer_text = None if generated_prayer is None else (
@@ -55,7 +63,9 @@ class PrayerFactory:
             generated_prayer=prayer_text,
             project_tag=project_tag,
             created_at=created_at or datetime.utcnow(),
-            flagged=flagged
+            flagged=flagged,
+            target_audience=target_audience,
+            prayer_context=prayer_context
         )
 
 

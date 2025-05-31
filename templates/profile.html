@@ -62,6 +62,21 @@
               <span class="text-purple-600 dark:text-purple-400 font-medium">Administrator</span>
             </div>
             {% endif %}
+            {% if is_own_profile %}
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-300">Prayer Preference:</span>
+              <span class="dark:text-gray-100">
+                {% if profile_user.religious_preference == "christian" %}
+                  Christian
+                  {% if profile_user.prayer_style == "in_jesus_name" %} - Pray in Jesus' name{% endif %}
+                {% elif profile_user.religious_preference == "non_christian" %}
+                  Non-Christian
+                {% else %}
+                  Prefer not to specify
+                {% endif %}
+              </span>
+            </div>
+            {% endif %}
           </div>
         </div>
 
@@ -158,6 +173,9 @@
       </a>
       <a href="/activity" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">
         📊 Recent Activity
+      </a>
+      <a href="/profile/preferences" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">
+        ⚙️ Prayer Preferences
       </a>
     </div>
   </div>

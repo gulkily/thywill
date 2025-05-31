@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Prayer Preferences{% endblock %}
+
+{% block content %}
+<div class="container max-w-2xl mx-auto p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">Prayer Preferences</h1>
+        
+        <form method="POST" action="/profile/preferences" class="space-y-6">
+            <div class="preference-section">
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">Religious Background</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    This helps us match you with prayers that align with your beliefs and prayer style. 
+                    This setting is optional and can be changed at any time.
+                </p>
+                
+                <div class="space-y-3">
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="radio" name="religious_preference" value="unspecified" 
+                               {% if user.religious_preference == "unspecified" %}checked{% endif %}
+                               class="w-4 h-4 text-blue-600">
+                        <div>
+                            <div class="font-medium text-gray-800 dark:text-gray-200">Prefer not to specify</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">You'll see prayers from all backgrounds</div>
+                        </div>
+                    </label>
+                    
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="radio" name="religious_preference" value="christian" 
+                               {% if user.religious_preference == "christian" %}checked{% endif %}
+                               class="w-4 h-4 text-blue-600" id="christian_option">
+                        <div>
+                            <div class="font-medium text-gray-800 dark:text-gray-200">Christian</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">You'll see all prayers plus those specifically for Christians</div>
+                        </div>
+                    </label>
+                    
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="radio" name="religious_preference" value="non_christian" 
+                               {% if user.religious_preference == "non_christian" %}checked{% endif %}
+                               class="w-4 h-4 text-blue-600">
+                        <div>
+                            <div class="font-medium text-gray-800 dark:text-gray-200">Non-Christian</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">You'll see general prayers and those open to all faiths</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="prayer-style-section" id="prayer_style_group" 
+                 style="{% if user.religious_preference != 'christian' %}display: none;{% endif %}">
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">Prayer Style</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    How would you like to approach prayer for others?
+                </p>
+                
+                <div class="space-y-3">
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="radio" name="prayer_style" value="" 
+                               {% if not user.prayer_style %}checked{% endif %}
+                               class="w-4 h-4 text-blue-600">
+                        <div>
+                            <div class="font-medium text-gray-800 dark:text-gray-200">Default approach</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">General Christian prayer style</div>
+                        </div>
+                    </label>
+                    
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="radio" name="prayer_style" value="in_jesus_name" 
+                               {% if user.prayer_style == "in_jesus_name" %}checked{% endif %}
+                               class="w-4 h-4 text-blue-600">
+                        <div>
+                            <div class="font-medium text-gray-800 dark:text-gray-200">Pray in Jesus' name</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Specifically pray through Jesus Christ</div>
+                        </div>
+                    </label>
+                    
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="radio" name="prayer_style" value="interfaith" 
+                               {% if user.prayer_style == "interfaith" %}checked{% endif %}
+                               class="w-4 h-4 text-blue-600">
+                        <div>
+                            <div class="font-medium text-gray-800 dark:text-gray-200">Interfaith approach</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Open to various Christian traditions</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="flex space-x-4 pt-6">
+                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    Save Preferences
+                </button>
+                <a href="/profile" class="bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-6 py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const religiousPreferenceInputs = document.querySelectorAll('input[name="religious_preference"]');
+    const prayerStyleGroup = document.getElementById('prayer_style_group');
+    
+    religiousPreferenceInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            if (this.value === 'christian') {
+                prayerStyleGroup.style.display = 'block';
+            } else {
+                prayerStyleGroup.style.display = 'none';
+                // Clear prayer style selection for non-Christians
+                const prayerStyleInputs = document.querySelectorAll('input[name="prayer_style"]');
+                prayerStyleInputs[0].checked = true; // Select default
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

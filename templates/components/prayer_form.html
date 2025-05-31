@@ -17,6 +17,47 @@
         <label for="tag" class="sr-only">Project tag (optional)</label>
         <input id="tag" name="tag" placeholder="#Milestone (optional)" class="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
       </div>
+      
+      <div class="space-y-3">
+        <div>
+          <label for="target_audience" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Who should see this prayer request?
+          </label>
+          <select name="target_audience" id="target_audience" 
+                  class="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400">
+            <option value="all">Everyone in the community</option>
+            <option value="christians_only">Christians only</option>
+            <option value="non_christians_only">Non-Christians only</option>
+          </select>
+          
+          <div class="help-text mt-2 text-sm text-gray-600 dark:text-gray-400">
+            <div id="help_all" class="help-option">
+              Your prayer will be visible to all community members regardless of their religious background.
+            </div>
+            <div id="help_christians" class="help-option" style="display: none;">
+              Your prayer will only be shown to users who identify as Christian. This is useful when you'd like prayer specifically through Jesus Christ.
+            </div>
+            <div id="help_non_christians" class="help-option" style="display: none;">
+              Your prayer will only be shown to users who identify as non-Christian or prefer not to specify their faith.
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <label for="prayer_context" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Additional Context <span class="text-gray-500 dark:text-gray-400">(optional)</span>
+          </label>
+          <input 
+            type="text" 
+            name="prayer_context" 
+            id="prayer_context"
+            maxlength="100"
+            class="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400"
+            placeholder="e.g., urgent need, ongoing situation..."
+          >
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Helps others understand how to pray for your request</div>
+        </div>
+      </div>
       <div class="flex gap-2">
         <button type="submit" class="bg-purple-600 hover:bg-purple-700 dark:bg-purple-800 dark:hover:bg-purple-900 text-white font-semibold px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400">
           Submit Prayer Request
@@ -28,4 +69,30 @@
     </form>
   </div>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const targetAudienceSelect = document.getElementById('target_audience');
+    const helpTexts = {
+        'all': document.getElementById('help_all'),
+        'christians_only': document.getElementById('help_christians'),
+        'non_christians_only': document.getElementById('help_non_christians')
+    };
+    
+    if (targetAudienceSelect) {
+        targetAudienceSelect.addEventListener('change', function() {
+            // Hide all help texts
+            Object.values(helpTexts).forEach(help => {
+                if (help) help.style.display = 'none';
+            });
+            
+            // Show relevant help text
+            const selectedHelp = helpTexts[this.value];
+            if (selectedHelp) {
+                selectedHelp.style.display = 'block';
+            }
+        });
+    }
+});
+</script>
 {% endif %}

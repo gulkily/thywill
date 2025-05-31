@@ -12,3 +12,5 @@ Remove tailwind dependency
 
 🙏 1 person prayed this 3 times
 this doesn't currently look right in dark mode when it's first added by js
+
+There needs to be an introduction page on the invite claim page
