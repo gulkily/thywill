@@ -717,11 +717,11 @@ def flag_prayer(pid: str, request: Request, user_session: tuple = Depends(curren
                     if total_mark_count > 0:
                         if distinct_user_count == 1:
                             if total_mark_count == 1:
-                                prayer_stats = f'<a href="/prayer/{p.id}/marks" class="text-purple-600 hover:text-purple-800 hover:underline">🙏 1 person prayed this once</a>'
+                                prayer_stats = f'<a href="/prayer/{p.id}/marks" class="text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-200 hover:underline">🙏 1 person prayed this once</a>'
                             else:
-                                prayer_stats = f'<a href="/prayer/{p.id}/marks" class="text-purple-600 hover:text-purple-800 hover:underline">🙏 1 person prayed this {total_mark_count} times</a>'
+                                prayer_stats = f'<a href="/prayer/{p.id}/marks" class="text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-200 hover:underline">🙏 1 person prayed this {total_mark_count} times</a>'
                         else:
-                            prayer_stats = f'<a href="/prayer/{p.id}/marks" class="text-purple-600 hover:text-purple-800 hover:underline">🙏 {distinct_user_count} people prayed this {total_mark_count} times</a>'
+                            prayer_stats = f'<a href="/prayer/{p.id}/marks" class="text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-200 hover:underline">🙏 {distinct_user_count} people prayed this {total_mark_count} times</a>'
                     
                     user_mark_text = ""
                     if user_mark_count > 0:
@@ -1024,11 +1024,11 @@ def mark_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(
             if total_mark_count > 0:
                 if distinct_user_count == 1:
                     if total_mark_count == 1:
-                        prayer_stats = f'<a href="/prayer/{prayer_id}/marks" class="text-purple-600 hover:text-purple-800 hover:underline">🙏 1 person prayed this once</a>'
+                        prayer_stats = f'<a href="/prayer/{prayer_id}/marks" class="text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-200 hover:underline">🙏 1 person prayed this once</a>'
                     else:
-                        prayer_stats = f'<a href="/prayer/{prayer_id}/marks" class="text-purple-600 hover:text-purple-800 hover:underline">🙏 1 person prayed this {total_mark_count} times</a>'
+                        prayer_stats = f'<a href="/prayer/{prayer_id}/marks" class="text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-200 hover:underline">🙏 1 person prayed this {total_mark_count} times</a>'
                 else:
-                    prayer_stats = f'<a href="/prayer/{prayer_id}/marks" class="text-purple-600 hover:text-purple-800 hover:underline">🙏 {distinct_user_count} people prayed this {total_mark_count} times</a>'
+                    prayer_stats = f'<a href="/prayer/{prayer_id}/marks" class="text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-200 hover:underline">🙏 {distinct_user_count} people prayed this {total_mark_count} times</a>'
             
             # Return the updated prayer mark section HTML
             user_mark_text = ""
