@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 
-from models import User, Prayer, Session as SessionModel, InviteToken, PrayerMark, AuthenticationRequest, AuthApproval
+from models import User, Prayer, Session as SessionModel, InviteToken, PrayerMark, AuthenticationRequest, AuthApproval, PrayerAttribute, PrayerActivityLog
 
 
 class UserFactory:
@@ -165,5 +165,89 @@ class AuthApprovalFactory:
             id=id or uuid.uuid4().hex,
             auth_request_id=auth_request_id,
             approver_user_id=approver_user_id,
+            created_at=created_at or datetime.utcnow()
+        )
+
+
+class PrayerAttributeFactory:
+    """Factory for creating test prayer attributes"""
+    
+    @staticmethod
+    def create(
+        id: Optional[str] = None,
+        prayer_id: str = "test_prayer_id",
+        attribute_name: str = "test_attribute",
+        attribute_value: str = "true",
+        created_at: Optional[datetime] = None,
+        created_by: Optional[str] = None
+    ) -> PrayerAttribute:
+        return PrayerAttribute(
+            id=id or uuid.uuid4().hex[:16],
+            prayer_id=prayer_id,
+            attribute_name=attribute_name,
+            attribute_value=attribute_value,
+            created_at=created_at or datetime.utcnow(),
+            created_by=created_by
+        )
+    
+    @staticmethod
+    def create_archived(prayer_id: str, created_by: str) -> PrayerAttribute:
+        return PrayerAttributeFactory.create(
+            prayer_id=prayer_id,
+            attribute_name="archived",
+            attribute_value="true",
+            created_by=created_by
+        )
+    
+    @staticmethod
+    def create_answered(prayer_id: str, created_by: str, testimony: Optional[str] = None) -> list[PrayerAttribute]:
+        attributes = [
+            PrayerAttributeFactory.create(
+                prayer_id=prayer_id,
+                attribute_name="answered",
+                attribute_value="true",
+                created_by=created_by
+            ),
+            PrayerAttributeFactory.create(
+                prayer_id=prayer_id,
+                attribute_name="answer_date",
+                attribute_value=datetime.utcnow().isoformat(),
+                created_by=created_by
+            )
+        ]
+        
+        if testimony:
+            attributes.append(
+                PrayerAttributeFactory.create(
+                    prayer_id=prayer_id,
+                    attribute_name="answer_testimony",
+                    attribute_value=testimony,
+                    created_by=created_by
+                )
+            )
+        
+        return attributes
+
+
+class PrayerActivityLogFactory:
+    """Factory for creating test prayer activity logs"""
+    
+    @staticmethod
+    def create(
+        id: Optional[str] = None,
+        prayer_id: str = "test_prayer_id",
+        user_id: str = "test_user_id",
+        action: str = "set_archived",
+        old_value: Optional[str] = None,
+        new_value: str = "true",
+        created_at: Optional[datetime] = None
+    ) -> PrayerActivityLog:
+        return PrayerActivityLog(
+            id=id or uuid.uuid4().hex[:16],
+            prayer_id=prayer_id,
+            user_id=user_id,
+            action=action,
+            old_value=old_value,
+            new_value=new_value,
             created_at=created_at or datetime.utcnow()
         )
