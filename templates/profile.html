@@ -50,7 +50,13 @@
             </div>
             <div class="flex justify-between">
               <span class="text-gray-600 dark:text-gray-300 whitespace-nowrap">User ID:</span>
-              <span class="font-mono text-sm dark:text-gray-100">{{ profile_user.id[:8] }}...</span>
+              <span class="font-mono text-sm dark:text-gray-100">
+                {% if profile_user.id|length > 10 %}
+                  {{ profile_user.id[:8] }}...
+                {% else %}
+                  {{ profile_user.id[:8] }}
+                {% endif %}
+              </span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-600 dark:text-gray-300">Joined:</span>
