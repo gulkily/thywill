@@ -21,7 +21,6 @@ class Prayer(SQLModel, table=True):
     flagged: bool = False  # Will be deprecated after migration
     # Religious targeting fields
     target_audience: str | None = Field(default="all", max_length=50)  # "christians_only", "all"
-    prayer_context: str | None = Field(default=None, max_length=100)  # Additional context for prayer style
     
     def has_attribute(self, name: str, session: Session) -> bool:
         """Check if prayer has a specific attribute"""

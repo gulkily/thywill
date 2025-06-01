@@ -720,7 +720,6 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 'created_at': prayer.created_at,
                 'flagged': prayer.flagged,
                 'target_audience': prayer.target_audience,
-                'prayer_context': prayer.prayer_context,
                 'author_name': author_name,
                 'marked_by_user': user_mark_counts.get(prayer.id, 0),
                 'mark_count': mark_counts.get(prayer.id, 0),
@@ -745,7 +744,6 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
 def submit_prayer(text: str = Form(...),
                   tag: Optional[str] = Form(None),
                   target_audience: str = Form("all"),
-                  prayer_context: str = Form(None),
                   user_session: tuple = Depends(current_user)):
     user, session = user_session
     if not session.is_fully_authenticated:
@@ -755,10 +753,6 @@ def submit_prayer(text: str = Form(...),
     valid_audiences = ["all", "christians_only"]
     if target_audience not in valid_audiences:
         target_audience = "all"
-    
-    # Validate prayer context length
-    if prayer_context and len(prayer_context) > 100:
-        prayer_context = prayer_context[:100]
     
     # Generate a proper prayer from the user's prompt
     generated_prayer = generate_prayer(text)
@@ -770,7 +764,6 @@ def submit_prayer(text: str = Form(...),
             generated_prayer=generated_prayer,
             project_tag=tag,
             target_audience=target_audience,
-            prayer_context=prayer_context
         )
         s.add(prayer)
         s.commit()
