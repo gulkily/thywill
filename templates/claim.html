@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="max-w-md mx-auto mt-10 p-6 bg-white rounded-xl shadow">
+<div class="max-w-md mx-auto mt-10 p-6 bg-white dark:bg-gray-800 rounded-xl shadow">
   <h1 class="text-2xl font-semibold mb-4 text-center">Join <span class="text-purple-600 font-bold">Thy&nbsp;Will</span></h1>
-  <p class="mb-4 text-sm text-gray-600">Pick a display name—no email required. Your invite link is valid for 12&nbsp;hours.</p>
+  <p class="mb-4 text-sm text-gray-600 dark:text-gray-300">Pick a display name—no email required. Your invite link is valid for 12&nbsp;hours.</p>
 
   <form method="post" action="/claim/{{ token }}" class="space-y-4" aria-label="Claim invite form">
-    <label for="display_name" class="block text-sm font-medium">Display name</label>
+    <label for="display_name" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Display name</label>
     <input id="display_name" name="display_name" maxlength="40" required
-           class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+           class="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500" />
 
     <button type="submit"
             class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 rounded transition focus:outline-none focus:ring-2 focus:ring-purple-500">

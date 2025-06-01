@@ -14,3 +14,7 @@ Remove tailwind dependency
 this doesn't currently look right in dark mode when it's first added by js
 
 There needs to be an introduction page on the invite claim page
+
+Allow user to half-authenticate without an invite link (feature flag)
+
+Option to keep the original request private (or not save it) and generate the prayer text in a way that retains privacy.
