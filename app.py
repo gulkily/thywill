@@ -1905,6 +1905,28 @@ def menu(request: Request, user_session: tuple = Depends(current_user)):
         {"request": request, "me": user, "session": session}
     )
 
+@app.get("/invite-tree", response_class=HTMLResponse)
+def invite_tree(request: Request, user_session: tuple = Depends(current_user)):
+    """Display the complete invite tree for all users to see"""
+    user, session = user_session
+    
+    # Get the complete tree data
+    tree_data = get_invite_tree()
+    
+    # Get current user's invite path
+    user_path = get_user_invite_path(user.id)
+    
+    return templates.TemplateResponse(
+        "invite_tree.html",
+        {
+            "request": request, 
+            "me": user, 
+            "session": session,
+            "tree_data": tree_data,
+            "user_path": user_path
+        }
+    )
+
 # ───────── Authentication request routes ─────────
 @app.post("/auth/request")
 def create_authentication_request(display_name: str = Form(...), request: Request = None):

@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}Invite Tree{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="text-center">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">📊 Community Invite Tree</h1>
+    <p class="text-gray-600 dark:text-gray-400 text-lg mt-2">See how our prayer community has grown through invitations</p>
+  </div>
+
+  <!-- Statistics Cards -->
+  {% if tree_data and tree_data.stats %}
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+            <span class="text-white font-bold text-sm">👥</span>
+          </div>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Members</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ tree_data.stats.total_users }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+            <span class="text-white font-bold text-sm">✉️</span>
+          </div>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Invites Sent</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ tree_data.stats.total_invites_sent }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+            <span class="text-white font-bold text-sm">📈</span>
+          </div>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Success Rate</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ tree_data.stats.invite_success_rate }}%</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center">
+            <span class="text-white font-bold text-sm">🌱</span>
+          </div>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Recent Growth</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ tree_data.stats.recent_growth }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Top Inviters -->
+  {% if tree_data and tree_data.stats.top_inviters %}
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">🏆 Top Community Builders</h3>
+    <div class="space-y-3">
+      {% for inviter in tree_data.stats.top_inviters %}
+      <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div class="flex items-center">
+          <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+            {{ loop.index }}
+          </div>
+          <div>
+            <p class="font-medium text-gray-900 dark:text-gray-100">{{ inviter.display_name }}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Community Builder</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ inviter.invite_count }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">invites</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Your Invite Path -->
+  {% if user_path and user_path|length > 1 %}
+  <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-700">
+    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">🛤️ Your Invitation Path</h3>
+    <div class="flex items-center space-x-2 overflow-x-auto pb-2">
+      {% for step in user_path %}
+        <div class="flex-shrink-0 flex items-center">
+          <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600 min-w-0">
+            <div class="text-center">
+              {% if step.user.is_admin %}
+                <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-1">
+                  <span class="text-white font-bold text-sm">👑</span>
+                </div>
+              {% else %}
+                <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-1">
+                  <span class="text-white font-bold text-sm">{{ step.user.display_name[0]|upper }}</span>
+                </div>
+              {% endif %}
+              <p class="text-xs font-medium text-gray-900 dark:text-gray-100 truncate max-w-20">{{ step.user.display_name }}</p>
+              {% if step.user.id == me.id %}
+                <p class="text-xs text-blue-600 dark:text-blue-400 font-bold">You</p>
+              {% endif %}
+            </div>
+          </div>
+          {% if not loop.last %}
+            <svg class="w-4 h-4 text-gray-400 mx-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Invite Tree Visualization -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-medium text-gray-900 dark:text-gray-100">🌳 Community Tree</h3>
+      <button id="toggleTree" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+        Expand All
+      </button>
+    </div>
+    
+    {% if tree_data and tree_data.tree %}
+      <div id="treeContainer" class="space-y-2">
+        {{ render_tree_node(tree_data.tree, 0) }}
+      </div>
+    {% else %}
+      <div class="text-center py-8">
+        <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+          </svg>
+        </div>
+        <p class="text-gray-500 dark:text-gray-400">No invite tree data available yet.</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">Tree will grow as new members join through invites.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Legend -->
+  <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+    <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Legend:</h4>
+    <div class="flex flex-wrap gap-4 text-sm">
+      <div class="flex items-center">
+        <span class="mr-2">👑</span>
+        <span class="text-gray-700 dark:text-gray-300">Admin (Community Founder)</span>
+      </div>
+      <div class="flex items-center">
+        <span class="mr-2">📱</span>
+        <span class="text-gray-700 dark:text-gray-300">Active Inviter (has invited others)</span>
+      </div>
+      <div class="flex items-center">
+        <span class="mr-2">🙏</span>
+        <span class="text-gray-700 dark:text-gray-300">Community Member</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Back to Menu -->
+  <div class="text-center">
+    <a href="/menu" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-purple-600 dark:bg-purple-800 hover:bg-purple-700 dark:hover:bg-purple-900 transition-colors">
+      ← Back to Menu
+    </a>
+  </div>
+</div>
+
+<!-- Tree Node Macro -->
+{% macro render_tree_node(node, level) %}
+<div class="tree-node" data-level="{{ level }}">
+  <div class="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-600 bg-gradient-to-r {{ 'from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20' if node.user.id == 'admin' else 'from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700' }} {{ 'ring-2 ring-blue-500 ring-opacity-50' if node.user.id == me.id else '' }}" style="margin-left: {{ level * 30 }}px;">
+    
+    <!-- User Icon -->
+    <div class="flex-shrink-0 mr-3">
+      {% if node.user.id == 'admin' %}
+        <div class="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
+          <span class="text-white font-bold">👑</span>
+        </div>
+      {% elif node.children|length > 0 %}
+        <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+          <span class="text-white font-bold">📱</span>
+        </div>
+      {% else %}
+        <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+          <span class="text-white font-bold">🙏</span>
+        </div>
+      {% endif %}
+    </div>
+    
+    <!-- User Info -->
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-lg font-medium text-gray-900 dark:text-gray-100">
+            {{ node.user.display_name }}
+            {% if node.user.id == me.id %}
+              <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">You</span>
+            {% endif %}
+          </p>
+          <div class="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+            <span>Joined {{ node.user.created_at[:10] }}</span>
+            {% if node.invites_sent > 0 %}
+              <span>• {{ node.invites_sent }} invites sent</span>
+            {% endif %}
+            {% if node.total_descendants > 0 %}
+              <span>• {{ node.total_descendants }} descendants</span>
+            {% endif %}
+          </div>
+        </div>
+        
+        <!-- Expand/Collapse Button -->
+        {% if node.children|length > 0 %}
+          <button class="toggle-children p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" data-expanded="false">
+            <svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  
+  <!-- Children Container -->
+  {% if node.children|length > 0 %}
+    <div class="children-container mt-2 hidden">
+      {% for child in node.children %}
+        {{ render_tree_node(child, level + 1) }}
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Toggle individual nodes
+  document.querySelectorAll('.toggle-children').forEach(button => {
+    button.addEventListener('click', function() {
+      const node = this.closest('.tree-node');
+      const children = node.querySelector('.children-container');
+      const isExpanded = this.dataset.expanded === 'true';
+      
+      if (isExpanded) {
+        children.classList.add('hidden');
+        this.dataset.expanded = 'false';
+        this.querySelector('svg').style.transform = 'rotate(0deg)';
+      } else {
+        children.classList.remove('hidden');
+        this.dataset.expanded = 'true';
+        this.querySelector('svg').style.transform = 'rotate(180deg)';
+      }
+    });
+  });
+  
+  // Toggle all nodes
+  document.getElementById('toggleTree').addEventListener('click', function() {
+    const allChildren = document.querySelectorAll('.children-container');
+    const allButtons = document.querySelectorAll('.toggle-children');
+    const isExpanding = this.textContent === 'Expand All';
+    
+    allChildren.forEach(container => {
+      if (isExpanding) {
+        container.classList.remove('hidden');
+      } else {
+        container.classList.add('hidden');
+      }
+    });
+    
+    allButtons.forEach(button => {
+      button.dataset.expanded = isExpanding ? 'true' : 'false';
+      button.querySelector('svg').style.transform = isExpanding ? 'rotate(180deg)' : 'rotate(0deg)';
+    });
+    
+    this.textContent = isExpanding ? 'Collapse All' : 'Expand All';
+  });
+});
+</script>
+{% endblock %} 
