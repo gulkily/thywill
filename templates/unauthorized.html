@@ -78,14 +78,15 @@
           </h2>
           
           <div class="text-sm text-gray-600 dark:text-gray-400 space-y-4">
-            {% if reason == "expired_session" or reason == "invalid_session" %}
             <div class="bg-blue-50 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-700 rounded p-3">
               <p class="font-medium text-blue-800 dark:text-blue-200 mb-2">Existing Member?</p>
+              <p class="text-blue-700 dark:text-blue-300 mb-2">
+                Your community membership is still active, but invite links expire after 12 hours for security.
+              </p>
               <p class="text-blue-700 dark:text-blue-300">
-                Use your original invite link to log back in. Your community membership is still active.
+                You'll need a fresh invite link - either create one yourself from another device, or ask another community member to send you a new invite link.
               </p>
             </div>
-            {% endif %}
             
             <div>
               <p class="font-medium text-gray-800 dark:text-gray-200 mb-2">🔗 Need an invite link?</p>
