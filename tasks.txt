@@ -17,4 +17,5 @@ There needs to be an introduction page on the invite claim page
 
 Allow user to half-authenticate without an invite link (feature flag)
 
-Option to keep the original request private (or not save it) and generate the prayer text in a way that retains privacy.
+Option to keep the original request private (or not save it) 
+	and generate the prayer text in a way that retains privacy.
