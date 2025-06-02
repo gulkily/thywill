@@ -32,6 +32,17 @@ templates = Jinja2Templates(directory="templates")
 
 app = FastAPI()
 
+# Custom exception handler for 401 unauthorized errors
+@app.exception_handler(401)
+async def unauthorized_exception_handler(request: Request, exc: HTTPException):
+    """Custom handler for 401 unauthorized errors to show user-friendly page"""
+    reason = exc.detail if exc.detail else "no_session"
+    return templates.TemplateResponse("unauthorized.html", {
+        "request": request,
+        "reason": reason,
+        "return_url": request.url.path
+    }, status_code=401)
+
 # Initialize Anthropic client
 anthropic_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
@@ -54,11 +65,13 @@ def create_session(user_id: str, auth_request_id: str = None, device_info: str =
 def current_user(req: Request) -> tuple[User, SessionModel]:
     sid = req.cookies.get("sid")
     if not sid:
-        raise HTTPException(401)
+        raise HTTPException(401, detail="no_session")
     with Session(engine) as db:
         sess = db.get(SessionModel, sid)
-        if not sess or sess.expires_at < datetime.utcnow():
-            raise HTTPException(401)
+        if not sess:
+            raise HTTPException(401, detail="invalid_session")
+        if sess.expires_at < datetime.utcnow():
+            raise HTTPException(401, detail="expired_session")
         
         # Security: Validate session
         validate_session_security(sess, req)

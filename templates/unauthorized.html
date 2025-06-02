@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Thy Will – Access Required</title>
+  <!-- Tailwind via CDN for zero‑setup styling -->
+  <script>
+    // Dark mode setup - must run before Tailwind loads
+    const getInitialTheme = () => {
+      const saved = localStorage.getItem('theme');
+      if (saved) return saved;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    };
+    
+    const theme = getInitialTheme();
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {}
+      }
+    }
+  </script>
+ </head>
+ <body class="min-h-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col">
+  <!-- Header -->
+  <header class="bg-purple-600 dark:bg-purple-800 text-white">
+   <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
+    <a href="/" class="font-bold tracking-wide text-lg">Thy&nbsp;Will</a>
+   </div>
+  </header>
+
+  <!-- Page content -->
+  <main class="flex-grow max-w-3xl mx-auto w-full px-4 py-6">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div class="max-w-md w-full space-y-8">
+        <div class="text-center">
+          <!-- Icon -->
+          <div class="mx-auto h-16 w-16 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center mb-6">
+            <svg class="h-8 w-8 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+          </div>
+          
+          <!-- Title -->
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+            Access Required
+          </h1>
+          
+          <!-- Dynamic Message Based on Reason -->
+          {% if reason == "no_session" %}
+          <p class="text-gray-600 dark:text-gray-400 mb-8">
+            You need to be logged in to access this prayer community.
+          </p>
+          {% elif reason == "expired_session" %}
+          <p class="text-gray-600 dark:text-gray-400 mb-8">
+            Your session has expired. Please log in again to continue.
+          </p>
+          {% elif reason == "invalid_session" %}
+          <p class="text-gray-600 dark:text-gray-400 mb-8">
+            Your session is invalid. Please log in again to access the community.
+          </p>
+          {% else %}
+          <p class="text-gray-600 dark:text-gray-400 mb-8">
+            You need to be authenticated to access this prayer community.
+          </p>
+          {% endif %}
+        </div>
+
+        <!-- Access Instructions -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+            How to Access Thy Will
+          </h2>
+          
+          <div class="text-sm text-gray-600 dark:text-gray-400 space-y-4">
+            {% if reason == "expired_session" or reason == "invalid_session" %}
+            <div class="bg-blue-50 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-700 rounded p-3">
+              <p class="font-medium text-blue-800 dark:text-blue-200 mb-2">Existing Member?</p>
+              <p class="text-blue-700 dark:text-blue-300">
+                Use your original invite link to log back in. Your community membership is still active.
+              </p>
+            </div>
+            {% endif %}
+            
+            <div>
+              <p class="font-medium text-gray-800 dark:text-gray-200 mb-2">🔗 Need an invite link?</p>
+              <p>Contact a community member to send you an invite link to join our prayer community.</p>
+            </div>
+            
+            <div>
+              <p class="font-medium text-gray-800 dark:text-gray-200 mb-2">🙏 About Thy Will</p>
+              <p>Thy Will is an invite-only Christian prayer community where members support each other through prayer, encouragement, and fellowship. All who seek sincere spiritual community are welcome.</p>
+            </div>
+            
+            <div>
+              <p class="font-medium text-gray-800 dark:text-gray-200 mb-2">🔒 Private & Secure</p>
+              <p>Our community maintains privacy and confidentiality for all prayer requests and member interactions.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alternative Actions -->
+        <div class="text-center space-y-3">
+          {% if reason == "expired_session" or reason == "invalid_session" %}
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            Having trouble accessing your account? Try using your original invite link.
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center">
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            "Unless the Lord builds the house…" <span class="italic">Psalm 127:1</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-center text-xs text-gray-500 dark:text-gray-400 pb-6">
+   "Unless the Lord builds the house…" <span class="italic">Psalm 127:1</span>
+  </footer>
+ </body>
+</html>
