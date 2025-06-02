@@ -2300,6 +2300,34 @@ async def update_religious_preferences(
     
     return RedirectResponse("/profile", status_code=303)
 
+@app.post("/logout")
+async def logout(request: Request, user_session: tuple = Depends(current_user)):
+    """Log out the current user by clearing their session"""
+    user, session = user_session
+    
+    # Get client info for logging
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+    
+    # Delete the session from database
+    with Session(engine) as db:
+        db.delete(session)
+        db.commit()
+    
+    # Log the logout event
+    log_security_event(
+        event_type="logout",
+        user_id=user.id,
+        ip_address=client_ip,
+        user_agent=user_agent,
+        details=f"User {user.display_name} logged out"
+    )
+    
+    # Clear the session cookie and redirect to home
+    response = RedirectResponse("/", status_code=303)
+    response.delete_cookie("sid")
+    return response
+
 @app.get("/api/religious-stats")
 async def get_religious_stats(request: Request, user_session: tuple = Depends(current_user)):
     """Get religious preference statistics (admin only)"""
