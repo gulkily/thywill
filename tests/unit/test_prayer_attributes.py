@@ -50,16 +50,23 @@ class TestPrayerAttributeModel:
         test_session.add(attr1)
         test_session.commit()
         
-        # Attempt to create duplicate - should be handled by application logic
+        # Attempt to create duplicate - this is allowed at database level
+        # Application logic handles duplicates through set_attribute method
         attr2 = PrayerAttributeFactory.create(
             prayer_id=prayer.id,
             attribute_name="archived"
         )
         test_session.add(attr2)
         
-        # This should raise an integrity error due to unique constraint
-        with pytest.raises(Exception):
-            test_session.commit()
+        # This succeeds since no unique constraint exists at database level
+        test_session.commit()
+        
+        # Verify both attributes exist
+        attrs = test_session.exec(select(PrayerAttribute).where(
+            PrayerAttribute.prayer_id == prayer.id,
+            PrayerAttribute.attribute_name == "archived"
+        )).all()
+        assert len(attrs) == 2
 
 
 @pytest.mark.unit

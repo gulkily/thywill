@@ -69,7 +69,10 @@ class TestInviteTreeLogic:
     
     def test_get_invite_stats_empty_database(self, test_session):
         """Test invite stats with empty database"""
-        stats = get_invite_stats()
+        # Mock Session to use test_session instead of real database
+        with patch('app.Session') as mock_session:
+            mock_session.return_value.__enter__.return_value = test_session
+            stats = get_invite_stats()
         
         assert stats['total_users'] == 0
         assert stats['total_invites_sent'] == 0
@@ -123,7 +126,10 @@ class TestInviteTreeLogic:
         test_session.add_all([token1, token2, token3])
         test_session.commit()
         
-        stats = get_invite_stats()
+        # Mock Session to use test_session instead of real database
+        with patch('app.Session') as mock_session:
+            mock_session.return_value.__enter__.return_value = test_session
+            stats = get_invite_stats()
         
         assert stats['total_users'] == 3  # admin + user1 + user2
         assert stats['total_invites_sent'] == 3
@@ -146,7 +152,10 @@ class TestInviteTreeLogic:
         test_session.add(admin)
         test_session.commit()
         
-        descendants = get_user_descendants("admin")
+        # Mock Session to use test_session instead of real database
+        with patch('app.Session') as mock_session:
+            mock_session.return_value.__enter__.return_value = test_session
+            descendants = get_user_descendants("admin")
         assert descendants == []
     
     def test_get_user_descendants_with_children(self, test_session):
@@ -171,7 +180,10 @@ class TestInviteTreeLogic:
         test_session.add_all([admin, user1, user2, user3])
         test_session.commit()
         
-        descendants = get_user_descendants("admin")
+        # Mock Session to use test_session instead of real database
+        with patch('app.Session') as mock_session:
+            mock_session.return_value.__enter__.return_value = test_session
+            descendants = get_user_descendants("admin")
         
         assert len(descendants) == 3  # user1, user2, user3
         descendant_ids = [d['user']['id'] for d in descendants]
@@ -185,7 +197,10 @@ class TestInviteTreeLogic:
         test_session.add(admin)
         test_session.commit()
         
-        path = get_user_invite_path("admin")
+        # Mock Session to use test_session instead of real database
+        with patch('app.Session') as mock_session:
+            mock_session.return_value.__enter__.return_value = test_session
+            path = get_user_invite_path("admin")
         
         assert len(path) == 1
         assert path[0]['user']['id'] == "admin"
@@ -214,7 +229,10 @@ class TestInviteTreeLogic:
         test_session.add_all([token1, token2])
         test_session.commit()
         
-        path = get_user_invite_path("user2")
+        # Mock Session to use test_session instead of real database
+        with patch('app.Session') as mock_session:
+            mock_session.return_value.__enter__.return_value = test_session
+            path = get_user_invite_path("user2")
         
         assert len(path) == 3
         assert path[0]['user']['id'] == "admin"
@@ -223,7 +241,10 @@ class TestInviteTreeLogic:
     
     def test_get_invite_tree_empty(self, test_session):
         """Test getting invite tree with no admin user"""
-        result = get_invite_tree()
+        # Mock Session to use test_session instead of real database
+        with patch('app.Session') as mock_session:
+            mock_session.return_value.__enter__.return_value = test_session
+            result = get_invite_tree()
         
         assert result['tree'] is None
         assert result['stats']['total_users'] == 0
@@ -234,7 +255,10 @@ class TestInviteTreeLogic:
         test_session.add(admin)
         test_session.commit()
         
-        result = get_invite_tree()
+        # Mock Session to use test_session instead of real database
+        with patch('app.Session') as mock_session:
+            mock_session.return_value.__enter__.return_value = test_session
+            result = get_invite_tree()
         
         assert result['tree'] is not None
         assert result['tree']['user']['id'] == "admin"
@@ -260,7 +284,10 @@ class TestInviteTreeLogic:
         test_session.add_all([admin, user1, user2, user3])
         test_session.commit()
         
-        result = get_invite_tree()
+        # Mock Session to use test_session instead of real database
+        with patch('app.Session') as mock_session:
+            mock_session.return_value.__enter__.return_value = test_session
+            result = get_invite_tree()
         
         tree = result['tree']
         assert tree['user']['id'] == "admin"
@@ -330,12 +357,18 @@ class TestInviteTreeEdgeCases:
     
     def test_get_user_descendants_nonexistent_user(self, test_session):
         """Test getting descendants for non-existent user"""
-        descendants = get_user_descendants("nonexistent")
+        # Mock Session to use test_session instead of real database
+        with patch('app.Session') as mock_session:
+            mock_session.return_value.__enter__.return_value = test_session
+            descendants = get_user_descendants("nonexistent")
         assert descendants == []
     
     def test_get_user_invite_path_nonexistent_user(self, test_session):
         """Test getting invite path for non-existent user"""
-        path = get_user_invite_path("nonexistent")
+        # Mock Session to use test_session instead of real database
+        with patch('app.Session') as mock_session:
+            mock_session.return_value.__enter__.return_value = test_session
+            path = get_user_invite_path("nonexistent")
         assert path == []
     
     def test_invite_tree_with_orphaned_users(self, test_session):
@@ -348,7 +381,10 @@ class TestInviteTreeEdgeCases:
         test_session.add_all([admin, orphaned_user])
         test_session.commit()
         
-        result = get_invite_tree()
+        # Mock Session to use test_session instead of real database
+        with patch('app.Session') as mock_session:
+            mock_session.return_value.__enter__.return_value = test_session
+            result = get_invite_tree()
         
         # Should still work, orphaned user just won't appear in tree
         assert result['tree']['user']['id'] == "admin"
@@ -365,7 +401,10 @@ class TestInviteTreeEdgeCases:
         test_session.add_all([admin, user])
         test_session.commit()
         
-        path = get_user_invite_path("user1")
+        # Mock Session to use test_session instead of real database
+        with patch('app.Session') as mock_session:
+            mock_session.return_value.__enter__.return_value = test_session
+            path = get_user_invite_path("user1")
         
         # Should still work, token_info will be None
         assert len(path) == 2

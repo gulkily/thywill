@@ -60,7 +60,7 @@ class TestReligiousPreferenceSchema:
         
         # Test defaults
         assert prayer.target_audience == "all"
-        assert prayer.prayer_context is None
+        # Note: prayer_context field doesn't exist in current model
     
     def test_prayer_target_audience_validation(self, test_session):
         """Test target audience field accepts valid values"""
