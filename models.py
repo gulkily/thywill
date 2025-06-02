@@ -10,6 +10,9 @@ class User(SQLModel, table=True):
     # Religious preference fields
     religious_preference: str | None = Field(default="unspecified", max_length=50)  # "christian", "unspecified"
     prayer_style: str | None = Field(default=None, max_length=100)  # e.g., "in_jesus_name", "interfaith"
+    # Invite tree fields
+    invited_by_user_id: str | None = Field(default=None)  # ID of the user who invited this user
+    invite_token_used: str | None = Field(default=None)   # Token that was used to create this account
 
 class Prayer(SQLModel, table=True):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
@@ -192,6 +195,7 @@ class InviteToken(SQLModel, table=True):
     created_by_user: str
     used: bool = Field(default=False)
     expires_at: datetime
+    used_by_user_id: str | None = Field(default=None)     # ID of user who claimed this invite
 
 # Performance optimization: Enable WAL mode for better concurrency
 engine = create_engine(

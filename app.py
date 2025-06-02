@@ -1003,8 +1003,14 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
         else:
             # New user - create account normally
             uid = "admin" if s.exec(select(User)).first() is None else uuid.uuid4().hex
-            user = User(id=uid, display_name=display_name[:40])
+            user = User(
+                id=uid, 
+                display_name=display_name[:40],
+                invited_by_user_id=inv.created_by_user if inv.created_by_user != "system" else None,
+                invite_token_used=token
+            )
             inv.used = True
+            inv.used_by_user_id = uid
             s.add_all([user, inv]); s.commit()
 
             sid = create_session(uid)
@@ -1042,6 +1048,26 @@ def migrate_database():
         if 'is_fully_authenticated' not in columns:
             cursor.execute("ALTER TABLE session ADD COLUMN is_fully_authenticated BOOLEAN DEFAULT 1")
             print("✅ Added is_fully_authenticated column to session table")
+        
+        # Check if new User columns exist for invite tree
+        cursor.execute("PRAGMA table_info(user)")
+        user_columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'invited_by_user_id' not in user_columns:
+            cursor.execute("ALTER TABLE user ADD COLUMN invited_by_user_id TEXT")
+            print("✅ Added invited_by_user_id column to user table")
+            
+        if 'invite_token_used' not in user_columns:
+            cursor.execute("ALTER TABLE user ADD COLUMN invite_token_used TEXT")
+            print("✅ Added invite_token_used column to user table")
+        
+        # Check if new InviteToken columns exist for invite tree
+        cursor.execute("PRAGMA table_info(invitetoken)")
+        invite_columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'used_by_user_id' not in invite_columns:
+            cursor.execute("ALTER TABLE invitetoken ADD COLUMN used_by_user_id TEXT")
+            print("✅ Added used_by_user_id column to invitetoken table")
         
         # Check if SecurityLog table exists
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='securitylog'")
