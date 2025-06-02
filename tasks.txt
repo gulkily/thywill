@@ -19,3 +19,5 @@ Allow user to half-authenticate without an invite link (feature flag)
 
 Option to keep the original request private (or not save it) 
 	and generate the prayer text in a way that retains privacy.
+
+** How to achieve impact with little behavioral change? **
