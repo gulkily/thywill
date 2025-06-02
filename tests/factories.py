@@ -15,14 +15,18 @@ class UserFactory:
         display_name: str = "Test User",
         created_at: Optional[datetime] = None,
         religious_preference: str = "unspecified",
-        prayer_style: Optional[str] = None
+        prayer_style: Optional[str] = None,
+        invited_by_user_id: Optional[str] = None,
+        invite_token_used: Optional[str] = None
     ) -> User:
         return User(
             id=id or uuid.uuid4().hex,
             display_name=display_name,
             created_at=created_at or datetime.utcnow(),
             religious_preference=religious_preference,
-            prayer_style=prayer_style
+            prayer_style=prayer_style,
+            invited_by_user_id=invited_by_user_id,
+            invite_token_used=invite_token_used
         )
     
     @staticmethod
@@ -32,7 +36,9 @@ class UserFactory:
             display_name="Admin User",
             created_at=datetime.utcnow(),
             religious_preference="unspecified",
-            prayer_style=None
+            prayer_style=None,
+            invited_by_user_id=None,
+            invite_token_used=None
         )
 
 
@@ -104,13 +110,15 @@ class InviteTokenFactory:
         token: Optional[str] = None,
         created_by_user: str = "admin",
         used: bool = False,
-        expires_at: Optional[datetime] = None
+        expires_at: Optional[datetime] = None,
+        used_by_user_id: Optional[str] = None
     ) -> InviteToken:
         return InviteToken(
             token=token or uuid.uuid4().hex,
             created_by_user=created_by_user,
             used=used,
-            expires_at=expires_at or (datetime.utcnow() + timedelta(hours=12))
+            expires_at=expires_at or (datetime.utcnow() + timedelta(hours=12)),
+            used_by_user_id=used_by_user_id
         )
 
 

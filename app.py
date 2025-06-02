@@ -1913,6 +1913,9 @@ def invite_tree(request: Request, user_session: tuple = Depends(current_user)):
     # Get the complete tree data
     tree_data = get_invite_tree()
     
+    # Get invite statistics
+    stats = get_invite_stats()
+    
     # Get current user's invite path
     user_path = get_user_invite_path(user.id)
     
@@ -1923,6 +1926,7 @@ def invite_tree(request: Request, user_session: tuple = Depends(current_user)):
             "me": user, 
             "session": session,
             "tree_data": tree_data,
+            "stats": stats,
             "user_path": user_path
         }
     )
