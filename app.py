@@ -1468,9 +1468,9 @@ def archive_prayer(prayer_id: str, request: Request, user_session: tuple = Depen
         if not prayer:
             raise HTTPException(404, "Prayer not found")
         
-        # Only prayer author can archive their own prayers
-        if prayer.author_id != user.id:
-            raise HTTPException(403, "Only prayer author can archive their prayer")
+        # Only prayer author or admin can archive prayers
+        if prayer.author_id != user.id and not is_admin(user):
+            raise HTTPException(403, "Only prayer author or admin can archive this prayer")
         
         # Set archived attribute
         prayer.set_attribute('archived', 'true', user.id, s)
@@ -1499,9 +1499,9 @@ def restore_prayer(prayer_id: str, request: Request, user_session: tuple = Depen
         if not prayer:
             raise HTTPException(404, "Prayer not found")
         
-        # Only prayer author can restore their own prayers
-        if prayer.author_id != user.id:
-            raise HTTPException(403, "Only prayer author can restore their prayer")
+        # Only prayer author or admin can restore prayers
+        if prayer.author_id != user.id and not is_admin(user):
+            raise HTTPException(403, "Only prayer author or admin can restore this prayer")
         
         # Remove archived attribute
         prayer.remove_attribute('archived', s, user.id)
@@ -1532,9 +1532,9 @@ def mark_prayer_answered(prayer_id: str, request: Request,
         if not prayer:
             raise HTTPException(404, "Prayer not found")
         
-        # Only prayer author can mark their own prayers as answered
-        if prayer.author_id != user.id:
-            raise HTTPException(403, "Only prayer author can mark their prayer as answered")
+        # Only prayer author or admin can mark prayers as answered
+        if prayer.author_id != user.id and not is_admin(user):
+            raise HTTPException(403, "Only prayer author or admin can mark this prayer as answered")
         
         # Set answered attribute with current date
         from datetime import datetime
