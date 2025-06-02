@@ -2323,10 +2323,19 @@ async def logout(request: Request, user_session: tuple = Depends(current_user)):
         details=f"User {user.display_name} logged out"
     )
     
-    # Clear the session cookie and redirect to home
-    response = RedirectResponse("/", status_code=303)
-    response.delete_cookie("sid")
+    # Clear the session cookie and redirect to logged-out confirmation page
+    response = RedirectResponse("/logged-out", status_code=303)
+    response.delete_cookie("sid", path="/", domain=None)
     return response
+
+@app.get("/logged-out", response_class=HTMLResponse)
+async def logged_out_page(request: Request):
+    """Show logged-out confirmation page - no authentication required"""
+    # Explicitly ensure no user data is passed to template
+    return templates.TemplateResponse("logged_out.html", {
+        "request": request,
+        "me": None  # Explicitly set user to None
+    })
 
 @app.get("/api/religious-stats")
 async def get_religious_stats(request: Request, user_session: tuple = Depends(current_user)):
