@@ -44,3 +44,6 @@ thywill.db
 thywill.db-shm
 thywill.db-wal
 __pycache__
+
+# Temporary screenshot dir used for giving screenshots to coding model
+screenshot/
