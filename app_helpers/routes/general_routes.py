@@ -1,9 +1,13 @@
 # general_routes.py - General application routes
+import os
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from app_helpers.services.auth_helpers import current_user
+
+# Configuration constants
+MULTI_DEVICE_AUTH_ENABLED = os.getenv("MULTI_DEVICE_AUTH_ENABLED", "true").lower() == "true"
 
 templates = Jinja2Templates(directory="templates")
 
@@ -23,5 +27,6 @@ async def logged_out_page(request: Request):
     # Explicitly ensure no user data is passed to template
     return templates.TemplateResponse("logged_out.html", {
         "request": request,
-        "me": None  # Explicitly set user to None
+        "me": None,  # Explicitly set user to None
+        "MULTI_DEVICE_AUTH_ENABLED": MULTI_DEVICE_AUTH_ENABLED
     })

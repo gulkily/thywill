@@ -82,7 +82,8 @@ async def unauthorized_exception_handler(request: Request, exc: HTTPException):
     return templates.TemplateResponse("unauthorized.html", {
         "request": request,
         "reason": reason,
-        "return_url": request.url.path
+        "return_url": request.url.path,
+        "MULTI_DEVICE_AUTH_ENABLED": MULTI_DEVICE_AUTH_ENABLED
     }, status_code=401)
 
 # ───────── Extracted functions now imported from helper modules ─────────
