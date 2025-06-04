@@ -6,9 +6,11 @@
 {% macro render_tree_node(node, level) %}
 <div class="tree-node" data-level="{{ level }}">
   <div class="p-2 text-gray-900 dark:text-gray-100" style="margin-left: {{ level * 20 }}px;">
-    {{ node.user.display_name }}
+    <a href="/user/{{ node.user.id }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline">
+      {{ node.user.display_name }}
+    </a>
     {% if node.user.id == me.id %}
-      <span class="ml-2 text-blue-600 dark:text-blue-400">(You)</span>
+      <span class="ml-2 text-gray-600 dark:text-gray-400">(You)</span>
     {% endif %}
   </div>
   
@@ -102,7 +104,7 @@
     </h3>
     <div class="space-y-3">
       {% for inviter in stats.top_inviters[:5] %}
-        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <a href="/user/{{ inviter.id }}" class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
           <div class="flex items-center">
             <div class="flex-shrink-0 mr-3">
               {% if loop.index == 1 %}
@@ -116,11 +118,11 @@
               {% endif %}
             </div>
             <div>
-              <p class="font-medium text-gray-900 dark:text-gray-100">{{ inviter.display_name }}</p>
+              <p class="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">{{ inviter.display_name }}</p>
               <p class="text-sm text-gray-500 dark:text-gray-400">{{ inviter.invite_count }} successful invites</p>
             </div>
           </div>
-        </div>
+        </a>
       {% endfor %}
     </div>
   </div>
@@ -133,7 +135,7 @@
     <div class="flex items-center space-x-2 overflow-x-auto pb-2">
       {% for step in user_path %}
         <div class="flex-shrink-0 flex items-center">
-          <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600 min-w-0">
+          <a href="/user/{{ step.user.id }}" class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             <div class="text-center">
               {% if step.user.is_admin %}
                 <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-1">
@@ -144,12 +146,12 @@
                   <span class="text-white font-bold text-sm">{{ step.user.display_name[0]|upper }}</span>
                 </div>
               {% endif %}
-              <p class="text-xs font-medium text-gray-900 dark:text-gray-100 truncate max-w-20">{{ step.user.display_name }}</p>
+              <p class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 truncate max-w-20">{{ step.user.display_name }}</p>
               {% if step.user.id == me.id %}
-                <p class="text-xs text-blue-600 dark:text-blue-400 font-bold">You</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400 font-bold">You</p>
               {% endif %}
             </div>
-          </div>
+          </a>
           {% if not loop.last %}
             <svg class="w-4 h-4 text-gray-400 mx-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
