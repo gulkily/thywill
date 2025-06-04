@@ -503,7 +503,12 @@ def login_get(request: Request):
         
     Returns:
         HTMLResponse: login.html template, or redirect if already authenticated
+        HTTPException: 404 if login feature is disabled
     """
+    # Check if login feature is enabled
+    if not MULTI_DEVICE_AUTH_ENABLED:
+        raise HTTPException(404, "Login feature is disabled")
+    
     # Check if user is already authenticated
     try:
         # Try to get current user - if successful, redirect to main page
@@ -523,7 +528,10 @@ def login_get(request: Request):
         # Not authenticated, continue to show login form
         pass
     
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "MULTI_DEVICE_AUTH_ENABLED": MULTI_DEVICE_AUTH_ENABLED
+    })
 
 
 @router.post("/login")

@@ -77,14 +77,26 @@
             How to Access Thy Will
           </h2>
           
+          <!-- Existing User Login Button (only show if feature enabled) -->
+          {% if MULTI_DEVICE_AUTH_ENABLED %}
+          <div class="text-center py-2">
+            <a href="/login" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 dark:bg-purple-700 dark:hover:bg-purple-800">
+              <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+              Login as Existing User
+            </a>
+          </div>
+          {% endif %}
+          
           <div class="text-sm text-gray-600 dark:text-gray-400 space-y-4">
             <div class="bg-blue-50 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-700 rounded p-3">
-              <p class="font-medium text-blue-800 dark:text-blue-200 mb-2">Existing Member?</p>
+              <p class="font-medium text-blue-800 dark:text-blue-200 mb-2">👤 Existing Member?</p>
               <p class="text-blue-700 dark:text-blue-300 mb-2">
-                Your community membership is still active, but invite links expire after 12 hours for security.
+                If you are still logged in on another device, please generate a new invite link and use that to log in.
               </p>
               <p class="text-blue-700 dark:text-blue-300">
-                You'll need a fresh invite link - either create one yourself from another device, or ask another community member to send you a new invite link.
+                If you don't have access to make an invite link, please reach out to another community member or an admin to get a new invite link.
               </p>
             </div>
             

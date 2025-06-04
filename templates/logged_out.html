@@ -65,7 +65,8 @@
         Need to log back in?
       </h2>
       
-      <!-- Existing User Login Button -->
+      <!-- Existing User Login Button (only show if feature enabled) -->
+      {% if MULTI_DEVICE_AUTH_ENABLED %}
       <div class="text-center py-2">
         <a href="/login" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 dark:bg-purple-700 dark:hover:bg-purple-800">
           <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,6 +75,7 @@
           Login as Existing User
         </a>
       </div>
+      {% endif %}
       
       <div class="text-sm text-gray-600 dark:text-gray-400 space-y-3">
         <p>
