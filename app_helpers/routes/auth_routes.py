@@ -487,3 +487,132 @@ def my_auth_requests(request: Request, user_session: tuple = Depends(current_use
         "my_auth_requests.html",
         {"request": request, "my_requests": requests_with_info, "me": user, "session": session, "peer_approval_count": PEER_APPROVAL_COUNT}
     )
+
+
+# ───────── Direct login routes ─────────
+@router.get("/login", response_class=HTMLResponse)
+def login_get(request: Request):
+    """
+    Display the login form for existing users.
+    
+    Shows a simple username form that allows existing users to request
+    access without needing an invite link. Redirects authenticated users.
+    
+    Args:
+        request: FastAPI request object
+        
+    Returns:
+        HTMLResponse: login.html template, or redirect if already authenticated
+    """
+    # Check if user is already authenticated
+    try:
+        # Try to get current user - if successful, redirect to main page
+        sid = request.cookies.get("sid")
+        if sid:
+            with Session(engine) as db:
+                session = db.exec(
+                    select(SessionModel).where(SessionModel.id == sid)
+                ).first()
+                if session and session.expires_at > datetime.utcnow():
+                    if session.is_fully_authenticated:
+                        return RedirectResponse("/", 303)
+                    else:
+                        # Half-authenticated, send to status page
+                        return RedirectResponse("/auth/status", 303)
+    except:
+        # Not authenticated, continue to show login form
+        pass
+    
+    return templates.TemplateResponse("login.html", {"request": request})
+
+
+@router.post("/login")
+def login_post(username: str = Form(...), request: Request = None):
+    """
+    Process login form submission for existing users.
+    
+    Validates the username exists, creates an authentication request,
+    and redirects to the lobby system for approval. This leverages
+    the existing multi-device authentication flow.
+    
+    Args:
+        username: The username to log in as
+        request: FastAPI request object for device/IP tracking
+        
+    Returns:
+        RedirectResponse: To auth status page with half-authenticated session,
+                         or back to login form with error
+    """
+    if not MULTI_DEVICE_AUTH_ENABLED:
+        return templates.TemplateResponse(
+            "login.html", 
+            {
+                "request": request, 
+                "error": "Login is currently disabled. Please use an invite link."
+            }
+        )
+    
+    cleanup_expired_requests()  # Clean up old requests
+    
+    device_info = request.headers.get("User-Agent", "Unknown") if request else "Unknown"
+    ip_address = request.client.host if request else "Unknown"
+    
+    with Session(engine) as db:
+        # Check if user exists
+        existing_user = db.exec(
+            select(User).where(User.display_name == username.strip())
+        ).first()
+        
+        if not existing_user:
+            return templates.TemplateResponse(
+                "login.html", 
+                {
+                    "request": request, 
+                    "error": "Username not found. Please check your username or request an invite link to create a new account."
+                }
+            )
+        
+        # Security: Check rate limits
+        if not check_rate_limit(existing_user.id, ip_address):
+            return templates.TemplateResponse(
+                "login.html", 
+                {
+                    "request": request, 
+                    "error": "Too many login attempts. Please try again later."
+                }
+            )
+        
+        # Check for existing pending request from same IP/device in last hour
+        recent_request = db.exec(
+            select(AuthenticationRequest)
+            .where(AuthenticationRequest.user_id == existing_user.id)
+            .where(AuthenticationRequest.ip_address == ip_address)
+            .where(AuthenticationRequest.status == "pending")
+            .where(AuthenticationRequest.created_at > datetime.utcnow() - timedelta(hours=1))
+        ).first()
+        
+        if recent_request:
+            return templates.TemplateResponse(
+                "login.html", 
+                {
+                    "request": request, 
+                    "error": "You already have a pending login request from this device. Please wait for approval."
+                }
+            )
+        
+        # Create the authentication request (reusing existing helper)
+        request_id = create_auth_request(existing_user.id, device_info, ip_address)
+        
+        # Create a half-authenticated session (reusing existing logic)
+        sid = create_session(
+            user_id=existing_user.id,
+            auth_request_id=request_id,
+            device_info=device_info,
+            ip_address=ip_address,
+            is_fully_authenticated=False
+        )
+        
+        # Redirect to existing lobby page
+        resp = RedirectResponse("/auth/status", 303)
+        resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
+        return resp

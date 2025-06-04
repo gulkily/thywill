@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Thy Will – Login</title>
+  <!-- Tailwind via CDN for zero‑setup styling -->
+  <script>
+    // Dark mode setup - must run before Tailwind loads
+    const getInitialTheme = () => {
+      const saved = localStorage.getItem('theme');
+      if (saved) return saved;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    };
+    
+    const theme = getInitialTheme();
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {}
+      }
+    }
+  </script>
+ </head>
+ <body class="min-h-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col">
+  <!-- Header -->
+  <header class="bg-purple-600 dark:bg-purple-800 text-white">
+   <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
+    <a href="/" class="font-bold tracking-wide text-lg">Thy&nbsp;Will</a>
+   </div>
+  </header>
+
+  <!-- Page content -->
+  <main class="flex-grow max-w-3xl mx-auto w-full px-4 py-6">
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <div class="text-center">
+      <!-- Icon -->
+      <div class="mx-auto h-16 w-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-6">
+        <svg class="h-8 w-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+        </svg>
+      </div>
+      
+      <!-- Title -->
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+        Login to Thy Will
+      </h1>
+      
+      <!-- Message -->
+      <p class="text-gray-600 dark:text-gray-400 mb-8">
+        Enter your username to request access from the community.
+      </p>
+    </div>
+
+    <!-- Error Messages -->
+    {% if error %}
+    <div class="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg p-4 mb-6">
+      <div class="flex">
+        <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div class="ml-3">
+          <p class="text-sm text-red-800 dark:text-red-200">{{ error }}</p>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Login Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <form method="POST" action="/login" class="space-y-6">
+        <div>
+          <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Username
+          </label>
+          <input 
+            type="text" 
+            id="username" 
+            name="username" 
+            required 
+            autocomplete="username"
+            value="{{ request.form.get('username', '') if request and request.form else '' }}"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-gray-100"
+            placeholder="Enter your username"
+          />
+        </div>
+        
+        <button 
+          type="submit" 
+          class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 dark:bg-purple-700 dark:hover:bg-purple-800"
+        >
+          Request Access
+        </button>
+      </form>
+    </div>
+
+    <!-- Help Information -->
+    <div class="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+      <div class="flex">
+        <svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">How it works</h3>
+          <div class="mt-2 text-sm text-blue-700 dark:text-blue-300">
+            <p>After submitting your username, you'll be placed in the community lobby where other members can approve your access. This usually takes a few minutes to a few hours.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alternative Options -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
+      <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+        Other options
+      </h2>
+      
+      <div class="text-sm text-gray-600 dark:text-gray-400 space-y-3">
+        <p>
+          <strong>New to the community?</strong><br>
+          You'll need an invite link from an existing member to join.
+        </p>
+        
+        <p>
+          <strong>Have an invite link?</strong><br>
+          Use your invite link instead of this login form.
+        </p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center">
+      <p class="text-xs text-gray-500 dark:text-gray-400">
+        "Unless the Lord builds the house…" <span class="italic">Psalm 127:1</span>
+      </p>
+    </div>
+  </div>
+</div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-center text-xs text-gray-500 dark:text-gray-400 pb-6">
+   "Unless the Lord builds the house…" <span class="italic">Psalm 127:1</span>
+  </footer>
+ </body>
+</html>
