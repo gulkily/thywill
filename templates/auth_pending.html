@@ -29,7 +29,12 @@
       </div>
     </div>
 
-    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+    <div id="approval-status" 
+         class="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+         hx-get="/auth/status-check" 
+         hx-trigger="every 5s" 
+         hx-target="#approval-status" 
+         hx-swap="outerHTML">
       <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Approval Status</h3>
       
       <div class="space-y-3">
@@ -54,6 +59,12 @@
           <span class="text-sm font-medium text-yellow-600 dark:text-yellow-400">{{ needs_approvals }} more approval{{ 's' if needs_approvals != 1 else '' }}</span>
         </div>
         {% endif %}
+        
+        <!-- Live status indicator -->
+        <div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-600">
+          <span class="text-xs text-gray-500 dark:text-gray-400">Status updates:</span>
+          <span class="text-xs text-green-600 dark:text-green-400">Live (checking every 5s)</span>
+        </div>
       </div>
     </div>
 
@@ -112,36 +123,27 @@
 
     <div class="text-center">
       <p class="text-xs text-gray-500 dark:text-gray-400">
-        This page will automatically refresh when your request is approved.
-      </p>
-      <p id="countdown" class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-        Next check in 30 seconds
+        Status updates automatically every 5 seconds. You'll be redirected when approved.
       </p>
     </div>
   </div>
 </div>
 
 <script>
-// Auto-refresh every 30 seconds to check for approval
-console.log("Setting up auto-refresh for auth status page");
-setInterval(function() {
-  console.log("Auto-refreshing auth status page to check for approval");
-  window.location.reload();
-}, 30000);
+// HTMX handles the live updates, but add some user feedback
+console.log("Authentication status page loaded - live updates enabled via HTMX");
 
-// Also add a visual countdown so users know it's working
-let countdown = 30;
-function updateCountdown() {
-  const countdownEl = document.getElementById('countdown');
-  if (countdownEl) {
-    countdownEl.textContent = `Next check in ${countdown} seconds`;
-    countdown--;
-    if (countdown < 0) countdown = 30;
+// Add subtle visual feedback when HTMX updates occur
+document.addEventListener('htmx:beforeRequest', function(evt) {
+  if (evt.detail.pathInfo.requestPath === '/auth/status-check') {
+    console.log('Checking approval status...');
   }
-}
+});
 
-// Update countdown every second
-setInterval(updateCountdown, 1000);
-updateCountdown(); // Initial call
+document.addEventListener('htmx:afterRequest', function(evt) {
+  if (evt.detail.pathInfo.requestPath === '/auth/status-check') {
+    console.log('Status updated');
+  }
+});
 </script>
 {% endblock %}

@@ -305,6 +305,121 @@ def auth_status(request: Request, user_session: tuple = Depends(current_user)):
         return templates.TemplateResponse("auth_pending.html", context)
 
 
+@router.get("/auth/status-check", response_class=HTMLResponse)
+def auth_status_check(request: Request, user_session: tuple = Depends(current_user)):
+    """
+    HTMX endpoint for checking authentication status updates.
+    
+    Returns just the approval status section for live updates without full page refresh.
+    If user is approved, returns a redirect trigger to main page.
+    
+    Args:
+        request: FastAPI request object
+        user_session: Current user and session from dependency
+        
+    Returns:
+        HTMLResponse: Status section HTML or redirect trigger
+    """
+    user, session = user_session
+    
+    # If already fully authenticated, trigger redirect
+    if session.is_fully_authenticated:
+        return HTMLResponse("""
+            <div hx-trigger="load" hx-get="/" hx-target="body" hx-swap="outerHTML">
+                <div class="text-center text-green-600 dark:text-green-400 font-medium">
+                    ✅ Approved! Redirecting to main page...
+                </div>
+            </div>
+        """)
+    
+    with Session(engine) as db:
+        auth_req = db.get(AuthenticationRequest, session.auth_request_id)
+        if not auth_req:
+            return HTMLResponse('<div class="text-red-600">Authentication request not found</div>')
+        
+        # Check if approved (same logic as main auth_status route)
+        if auth_req.status == "approved":
+            # Upgrade session to full authentication
+            session.is_fully_authenticated = True
+            db.add(session)
+            db.commit()
+            
+            # Return redirect trigger
+            return HTMLResponse("""
+                <div hx-trigger="load" hx-get="/" hx-target="body" hx-swap="outerHTML">
+                    <div class="text-center text-green-600 dark:text-green-400 font-medium">
+                        ✅ Approved! Redirecting to main page...
+                    </div>
+                </div>
+            """)
+        
+        # Get approval info (same as main route)
+        approvals = db.exec(
+            select(AuthApproval, User.display_name)
+            .join(User, AuthApproval.approver_user_id == User.id)
+            .where(AuthApproval.auth_request_id == auth_req.id)
+        ).all()
+        
+        approval_info = []
+        for approval, approver_name in approvals:
+            approval_info.append({
+                'approver_name': approver_name,
+                'approved_at': approval.created_at,
+                'is_admin': approval.approver_user_id == "admin",
+                'is_self': approval.approver_user_id == user.id
+            })
+        
+        context = {
+            "request": request,
+            "user": user,
+            "auth_request": auth_req,
+            "approvals": approval_info,
+            "approval_count": len(approval_info),
+            "needs_approvals": PEER_APPROVAL_COUNT - len(approval_info) if len(approval_info) < PEER_APPROVAL_COUNT else 0,
+            "peer_approval_count": PEER_APPROVAL_COUNT
+        }
+        
+        # Return just the status section HTML
+        return HTMLResponse(f"""
+            <div id="approval-status" 
+                 class="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                 hx-get="/auth/status-check" 
+                 hx-trigger="every 5s" 
+                 hx-target="#approval-status" 
+                 hx-swap="outerHTML">
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Approval Status</h3>
+              
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">Request created:</span>
+                  <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{auth_req.created_at.strftime('%b %d, %Y at %I:%M %p')}</span>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">Expires:</span>
+                  <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{auth_req.expires_at.strftime('%b %d, %Y at %I:%M %p')}</span>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">Current approvals:</span>
+                  <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{len(approval_info)}</span>
+                </div>
+                
+                {f'''<div class="flex items-center justify-between">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">Still needed:</span>
+                  <span class="text-sm font-medium text-yellow-600 dark:text-yellow-400">{PEER_APPROVAL_COUNT - len(approval_info)} more approval{'s' if PEER_APPROVAL_COUNT - len(approval_info) != 1 else ''}</span>
+                </div>''' if len(approval_info) < PEER_APPROVAL_COUNT else ''}
+                
+                <!-- Live status indicator -->
+                <div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-600">
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Status updates:</span>
+                  <span class="text-xs text-green-600 dark:text-green-400">Live (checking every 5s)</span>
+                </div>
+              </div>
+            </div>
+        """)
+
+
 @router.get("/auth/pending", response_class=HTMLResponse)
 def pending_requests(request: Request, user_session: tuple = Depends(current_user)):
     """
