@@ -114,14 +114,34 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">
         This page will automatically refresh when your request is approved.
       </p>
+      <p id="countdown" class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+        Next check in 30 seconds
+      </p>
     </div>
   </div>
 </div>
 
 <script>
 // Auto-refresh every 30 seconds to check for approval
+console.log("Setting up auto-refresh for auth status page");
 setInterval(function() {
+  console.log("Auto-refreshing auth status page to check for approval");
   window.location.reload();
 }, 30000);
+
+// Also add a visual countdown so users know it's working
+let countdown = 30;
+function updateCountdown() {
+  const countdownEl = document.getElementById('countdown');
+  if (countdownEl) {
+    countdownEl.textContent = `Next check in ${countdown} seconds`;
+    countdown--;
+    if (countdown < 0) countdown = 30;
+  }
+}
+
+// Update countdown every second
+setInterval(updateCountdown, 1000);
+updateCountdown(); // Initial call
 </script>
 {% endblock %}

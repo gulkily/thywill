@@ -121,7 +121,8 @@ def approve_auth_request(request_id: str, approver_id: str) -> bool:
             approver_user_id=approver_id
         ))
         
-        # Get current approval count for logging
+        # Get current approval count AFTER adding this approval
+        db.flush()  # Ensure the approval is written to get accurate count
         approval_count = db.exec(
             select(func.count(AuthApproval.id))
             .where(AuthApproval.auth_request_id == request_id)
@@ -173,7 +174,7 @@ def approve_auth_request(request_id: str, approver_id: str) -> bool:
                 action="approval_vote",
                 actor_user_id=approver_id,
                 actor_type=approval_type,
-                details=f"Approval vote cast by {approval_type} ({approval_count + 1}/{PEER_APPROVAL_COUNT} approvals)",
+                details=f"Approval vote cast by {approval_type} ({approval_count}/{PEER_APPROVAL_COUNT} approvals)",
                 db_session=db
             )
         
