@@ -58,7 +58,12 @@ def client(test_session):
     with patch('app.Session', mock_session), \
          patch('app_helpers.services.auth_helpers.Session', mock_session), \
          patch('app_helpers.services.prayer_helpers.Session', mock_session), \
-         patch('app_helpers.services.invite_helpers.Session', mock_session):
+         patch('app_helpers.services.invite_helpers.Session', mock_session), \
+         patch('app_helpers.routes.prayer_routes.Session', mock_session), \
+         patch('app_helpers.routes.auth_routes.Session', mock_session), \
+         patch('app_helpers.routes.admin_routes.Session', mock_session), \
+         patch('app_helpers.routes.user_routes.Session', mock_session), \
+         patch('app_helpers.routes.invite_routes.Session', mock_session):
         yield TestClient(app)
 
 
