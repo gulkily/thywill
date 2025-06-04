@@ -548,7 +548,8 @@ def login_post(username: str = Form(...), request: Request = None):
             "login.html", 
             {
                 "request": request, 
-                "error": "Login is currently disabled. Please use an invite link."
+                "error": "Login is currently disabled. Please use an invite link.",
+                "username": username.strip() if username else ""
             }
         )
     
@@ -568,7 +569,8 @@ def login_post(username: str = Form(...), request: Request = None):
                 "login.html", 
                 {
                     "request": request, 
-                    "error": "Username not found. Please check your username or request an invite link to create a new account."
+                    "error": "Username not found. Please check your username or request an invite link to create a new account.",
+                    "username": username.strip()
                 }
             )
         
@@ -578,7 +580,8 @@ def login_post(username: str = Form(...), request: Request = None):
                 "login.html", 
                 {
                     "request": request, 
-                    "error": "Too many login attempts. Please try again later."
+                    "error": "Too many login attempts. Please try again later.",
+                    "username": username.strip()
                 }
             )
         
@@ -596,7 +599,8 @@ def login_post(username: str = Form(...), request: Request = None):
                 "login.html", 
                 {
                     "request": request, 
-                    "error": "You already have a pending login request from this device. Please wait for approval."
+                    "error": "You already have a pending login request from this device. Please wait for approval.",
+                    "username": username.strip()
                 }
             )
         
