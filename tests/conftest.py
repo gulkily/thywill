@@ -54,8 +54,11 @@ def client(test_session):
         # Return the test session instead of creating a new one
         return test_session
     
-    # Patch Session creation throughout the app
-    with patch('app.Session', mock_session):
+    # Patch Session creation throughout the app and helper modules
+    with patch('app.Session', mock_session), \
+         patch('app_helpers.services.auth_helpers.Session', mock_session), \
+         patch('app_helpers.services.prayer_helpers.Session', mock_session), \
+         patch('app_helpers.services.invite_helpers.Session', mock_session):
         yield TestClient(app)
 
 
