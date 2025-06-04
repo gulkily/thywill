@@ -24,6 +24,7 @@
 - `requirements.txt` - Python dependencies
 - `generate_token.py` - Utility for creating invite tokens
 - `docs/plans/` - Planning documents including successful refactoring strategies
+- `docs/LOGIN_FEATURE_SPECIFICATION.md` - Comprehensive login feature specification and behavior documentation
 
 ## Database Schema
 
@@ -141,6 +142,10 @@ The prayer system now uses a flexible attributes approach instead of simple bool
 - `POST /auth/reject/{request_id}` - Reject an authentication request (admin only)
 - `GET /auth/my-requests` - View own authentication requests for self-approval
 
+### Direct Login Routes (New)
+- `GET /login` - User-friendly login form for existing users (feature-flag controlled)
+- `POST /login` - Process username login and create auth request (feature-flag controlled)
+
 ### Admin Authentication Routes
 - `GET /admin/auth-audit` - View comprehensive audit log (admin only)
 - `POST /admin/bulk-approve` - Bulk approve all pending requests (admin only)
@@ -158,15 +163,24 @@ The prayer system now uses a flexible attributes approach instead of simple bool
 3. Gets full authentication session cookie (14-day expiration)
 4. Can access all features immediately
 
-#### Existing User Multi-Device Login
-1. User visits `/claim/{token}` with existing display name
-2. System creates authentication request (if enabled via config)
+#### Existing User Multi-Device Login (Two Methods)
+
+**Method 1: Direct Login Form (New)**
+1. User visits `/login` and enters username
+2. System validates username exists and creates authentication request
 3. User enters half-authenticated state with limited access
-4. Approval required via one of three methods:
+4. Redirected to `/auth/status` (lobby page) to wait for approval
+5. Approval required via one of three methods:
    - **Admin approval**: Instant approval by any administrator
    - **Self approval**: Approval from user's existing fully-authenticated device
    - **Peer approval**: Approval from configured number of community members
-5. Once approved, session upgraded to full authentication
+6. Once approved, session upgraded to full authentication and redirected to main feed
+
+**Method 2: Invite Link (Original)**
+1. User visits `/claim/{token}` with existing display name
+2. System creates authentication request (if enabled via config)
+3. User enters half-authenticated state with limited access
+4. Same approval process as Method 1
 
 ## Environment Variables
 ```bash
@@ -183,9 +197,13 @@ JWT_SECRET=your_jwt_secret_for_tokens       # For invite token generation
 ```
 
 ### Configuration Options
-- **MULTI_DEVICE_AUTH_ENABLED**: `false` disables multi-device auth entirely, users login directly
+- **MULTI_DEVICE_AUTH_ENABLED**: `false` disables multi-device auth entirely and hides all login options from UI
 - **REQUIRE_APPROVAL_FOR_EXISTING_USERS**: `false` allows existing users to login from new devices without approval
 - **PEER_APPROVAL_COUNT**: Any positive integer, controls how many community members need to approve
+
+### Login Feature Behavior
+- **When MULTI_DEVICE_AUTH_ENABLED=true**: Login buttons visible, `/login` route accessible, full lobby functionality
+- **When MULTI_DEVICE_AUTH_ENABLED=false**: Login buttons hidden, `/login` returns 404, invite-only access
 
 ## AI Prayer Generation
 - Uses Claude 3.5 Sonnet model
@@ -211,6 +229,12 @@ from app_helpers.services.prayer_helpers import get_feed_counts
 ```
 
 #### Helper Module Organization
+- **`app_helpers/routes/auth_routes.py`**: Complete authentication route handlers including login flows
+- **`app_helpers/routes/prayer_routes.py`**: Prayer management and generation routes
+- **`app_helpers/routes/admin_routes.py`**: Administrative interface routes
+- **`app_helpers/routes/user_routes.py`**: User profile and activity routes
+- **`app_helpers/routes/invite_routes.py`**: Invitation system routes
+- **`app_helpers/routes/general_routes.py`**: General application routes (logged-out, menu)
 - **`app_helpers/services/auth_helpers.py`**: 10 authentication & security functions
 - **`app_helpers/services/prayer_helpers.py`**: 6 prayer management & generation functions
 - **`app_helpers/services/invite_helpers.py`**: 7 invite system & tree functions
@@ -256,6 +280,13 @@ from app_helpers.services.prayer_helpers import get_feed_counts
 - **Invite Generation**: Modal-based invite link creation with copy functionality and no layout shifts
 - **Loading Indicators**: Visual feedback during async operations
 - **Context-Aware Responses**: Different behavior for admin panel vs main feed vs celebration pages
+
+### User Authentication Templates (New)
+- **`templates/login.html`**: User-friendly login form with username input and clear messaging
+- **`templates/logged_out.html`**: Enhanced with conditional login button display
+- **`templates/unauthorized.html`**: Access required page with conditional login option
+- **`templates/auth_pending.html`**: Lobby/waiting room for authentication approval
+- **Feature-flag controlled visibility**: All login UI elements respect MULTI_DEVICE_AUTH_ENABLED setting
 
 ### Error Handling
 - HTTPException for authentication failures
@@ -398,7 +429,16 @@ When making significant code changes, follow the successful patterns used in our
 **📝 Note for AI Assistants**: This guide reflects the complete prayer lifecycle management system with flexible attributes architecture, community-driven moderation, and comprehensive multi-device authentication. The platform balances security with usability through configurable approval workflows while maintaining admin oversight for content moderation, authentication management, and prayer status transitions. The prayer attributes system allows unlimited status combinations and extensibility without breaking changes.
 
 **🔄 Recent Updates**: 
-- **Resilient Code Refactoring (Latest)**: Successfully extracted 26+ functions into modular helper files while maintaining 100% backward compatibility and test coverage (265/265 tests passing)
+- **User-Friendly Login System (Latest)**: Direct login form for existing users without requiring invite links
+- **Feature-Flag Controlled UI**: Login options conditionally display based on MULTI_DEVICE_AUTH_ENABLED configuration  
+- **Enhanced Access Points**: Login buttons added to unauthorized.html (Access Required page) and logged_out.html
+- **Comprehensive Login Specification**: Complete documentation of existing vs non-existing username handling behavior
+- **Route Modularization**: Authentication routes extracted to app_helpers/routes/auth_routes.py with full backward compatibility
+- **Template Configuration Management**: Feature flags properly passed to all relevant templates for conditional display
+- **Security Preservation**: All existing security measures maintained (rate limiting, audit logging, device tracking)
+- **Lobby Integration**: New login flow seamlessly integrates with existing authentication approval system
+- **User Experience Enhancement**: Clear error messages, preserved form input, and intuitive navigation flows
+- **Resilient Code Refactoring**: Successfully extracted 26+ functions into modular helper files while maintaining 100% backward compatibility and test coverage (265/265 tests passing)
 - **Modular Architecture**: Business logic organized into focused helper modules with dual import paths for flexibility
 - **Enhanced Test Coverage**: Comprehensive test fixes with proper mocking for modular architecture
 - **Improved Maintainability**: Code organization supports easier development without breaking existing integrations
