@@ -20,7 +20,7 @@ class TestPrayerGeneration:
         mock_content.text = "Divine Creator, we lift up our friend who seeks healing. May your peace be with them. Amen."
         mock_response.content = [mock_content]
         
-        with patch('app.anthropic_client') as mock_client:
+        with patch('app_helpers.services.prayer_helpers.anthropic_client') as mock_client:
             mock_client.messages.create.return_value = mock_response
             
             result = generate_prayer("Please pray for my healing")
@@ -38,7 +38,7 @@ class TestPrayerGeneration:
     
     def test_generate_prayer_api_error(self):
         """Test prayer generation fallback when API fails"""
-        with patch('app.anthropic_client') as mock_client:
+        with patch('app_helpers.services.prayer_helpers.anthropic_client') as mock_client:
             mock_client.messages.create.side_effect = Exception("API Error")
             
             result = generate_prayer("Please pray for my test")
@@ -54,7 +54,7 @@ class TestPrayerGeneration:
         mock_content.text = "Test prayer response"
         mock_response.content = [mock_content]
         
-        with patch('app.anthropic_client') as mock_client:
+        with patch('app_helpers.services.prayer_helpers.anthropic_client') as mock_client:
             mock_client.messages.create.return_value = mock_response
             
             generate_prayer("Test request")
@@ -76,7 +76,7 @@ class TestPrayerGeneration:
         mock_content.text = "Generated prayer"
         mock_response.content = [mock_content]
         
-        with patch('app.anthropic_client') as mock_client:
+        with patch('app_helpers.services.prayer_helpers.anthropic_client') as mock_client:
             mock_client.messages.create.return_value = mock_response
             
             # Test with long input
@@ -99,7 +99,7 @@ class TestFeedCounts:
     
     def test_get_feed_counts_empty_database(self, test_session):
         """Test feed counts with empty database"""
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.prayer_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             counts = get_feed_counts("test_user_id")
@@ -125,7 +125,7 @@ class TestFeedCounts:
         test_session.add_all([user1, user2, prayer1, prayer2, prayer3])
         test_session.commit()
         
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.prayer_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             counts = get_feed_counts("user1")
@@ -153,7 +153,7 @@ class TestFeedCounts:
         test_session.add_all([user1, user2, prayer1, prayer2, prayer3, mark1, mark2, mark3])
         test_session.commit()
         
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.prayer_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             counts = get_feed_counts("user1")
@@ -189,7 +189,7 @@ class TestFeedCounts:
         test_session.add_all([user1, prayer1, prayer2, recent_mark, old_mark])
         test_session.commit()
         
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.prayer_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             counts = get_feed_counts("user1")
@@ -222,7 +222,7 @@ class TestFeedCounts:
         test_session.add_all([user1, normal_prayer, flagged_prayer, normal_mark, flagged_mark])
         test_session.commit()
         
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.prayer_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             counts = get_feed_counts("user1")
@@ -245,7 +245,7 @@ class TestTodaysPrompt:
         }
         
         with patch('builtins.open', mock_open_yaml(mock_yaml_data)):
-            with patch('app.yaml.safe_load', return_value=mock_yaml_data):
+            with patch('app_helpers.services.prayer_helpers.yaml.safe_load', return_value=mock_yaml_data):
                 prompt = todays_prompt()
                 assert prompt == "Today's special prompt"
     
@@ -256,7 +256,7 @@ class TestTodaysPrompt:
         }
         
         with patch('builtins.open', mock_open_yaml(mock_yaml_data)):
-            with patch('app.yaml.safe_load', return_value=mock_yaml_data):
+            with patch('app_helpers.services.prayer_helpers.yaml.safe_load', return_value=mock_yaml_data):
                 prompt = todays_prompt()
                 assert prompt == "Let us pray 🙏"
     
@@ -271,7 +271,7 @@ class TestTodaysPrompt:
         # Mock open to succeed but yaml.safe_load to fail
         mock_file = Mock()
         with patch('builtins.open', return_value=mock_file):
-            with patch('app.yaml.safe_load', side_effect=Exception("YAML Error")):
+            with patch('app_helpers.services.prayer_helpers.yaml.safe_load', side_effect=Exception("YAML Error")):
                 # This will cause an exception not caught by the current function
                 # In practice, this would need to be handled in the app
                 try:

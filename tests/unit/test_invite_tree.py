@@ -70,7 +70,7 @@ class TestInviteTreeLogic:
     def test_get_invite_stats_empty_database(self, test_session):
         """Test invite stats with empty database"""
         # Mock Session to use test_session instead of real database
-        with patch('app.Session') as mock_session:
+        with patch('app_helpers.services.invite_helpers.Session') as mock_session:
             mock_session.return_value.__enter__.return_value = test_session
             stats = get_invite_stats()
         
@@ -127,7 +127,7 @@ class TestInviteTreeLogic:
         test_session.commit()
         
         # Mock Session to use test_session instead of real database
-        with patch('app.Session') as mock_session:
+        with patch('app_helpers.services.invite_helpers.Session') as mock_session:
             mock_session.return_value.__enter__.return_value = test_session
             stats = get_invite_stats()
         
@@ -153,7 +153,7 @@ class TestInviteTreeLogic:
         test_session.commit()
         
         # Mock Session to use test_session instead of real database
-        with patch('app.Session') as mock_session:
+        with patch('app_helpers.services.invite_helpers.Session') as mock_session:
             mock_session.return_value.__enter__.return_value = test_session
             descendants = get_user_descendants("admin")
         assert descendants == []
@@ -181,7 +181,7 @@ class TestInviteTreeLogic:
         test_session.commit()
         
         # Mock Session to use test_session instead of real database
-        with patch('app.Session') as mock_session:
+        with patch('app_helpers.services.invite_helpers.Session') as mock_session:
             mock_session.return_value.__enter__.return_value = test_session
             descendants = get_user_descendants("admin")
         
@@ -198,7 +198,7 @@ class TestInviteTreeLogic:
         test_session.commit()
         
         # Mock Session to use test_session instead of real database
-        with patch('app.Session') as mock_session:
+        with patch('app_helpers.services.invite_helpers.Session') as mock_session:
             mock_session.return_value.__enter__.return_value = test_session
             path = get_user_invite_path("admin")
         
@@ -230,7 +230,7 @@ class TestInviteTreeLogic:
         test_session.commit()
         
         # Mock Session to use test_session instead of real database
-        with patch('app.Session') as mock_session:
+        with patch('app_helpers.services.invite_helpers.Session') as mock_session:
             mock_session.return_value.__enter__.return_value = test_session
             path = get_user_invite_path("user2")
         
@@ -242,7 +242,7 @@ class TestInviteTreeLogic:
     def test_get_invite_tree_empty(self, test_session):
         """Test getting invite tree with no admin user"""
         # Mock Session to use test_session instead of real database
-        with patch('app.Session') as mock_session:
+        with patch('app_helpers.services.invite_helpers.Session') as mock_session:
             mock_session.return_value.__enter__.return_value = test_session
             result = get_invite_tree()
         
@@ -256,7 +256,7 @@ class TestInviteTreeLogic:
         test_session.commit()
         
         # Mock Session to use test_session instead of real database
-        with patch('app.Session') as mock_session:
+        with patch('app_helpers.services.invite_helpers.Session') as mock_session:
             mock_session.return_value.__enter__.return_value = test_session
             result = get_invite_tree()
         
@@ -285,7 +285,7 @@ class TestInviteTreeLogic:
         test_session.commit()
         
         # Mock Session to use test_session instead of real database
-        with patch('app.Session') as mock_session:
+        with patch('app_helpers.services.invite_helpers.Session') as mock_session:
             mock_session.return_value.__enter__.return_value = test_session
             result = get_invite_tree()
         
@@ -358,7 +358,7 @@ class TestInviteTreeEdgeCases:
     def test_get_user_descendants_nonexistent_user(self, test_session):
         """Test getting descendants for non-existent user"""
         # Mock Session to use test_session instead of real database
-        with patch('app.Session') as mock_session:
+        with patch('app_helpers.services.invite_helpers.Session') as mock_session:
             mock_session.return_value.__enter__.return_value = test_session
             descendants = get_user_descendants("nonexistent")
         assert descendants == []
@@ -366,7 +366,7 @@ class TestInviteTreeEdgeCases:
     def test_get_user_invite_path_nonexistent_user(self, test_session):
         """Test getting invite path for non-existent user"""
         # Mock Session to use test_session instead of real database
-        with patch('app.Session') as mock_session:
+        with patch('app_helpers.services.invite_helpers.Session') as mock_session:
             mock_session.return_value.__enter__.return_value = test_session
             path = get_user_invite_path("nonexistent")
         assert path == []
@@ -382,7 +382,7 @@ class TestInviteTreeEdgeCases:
         test_session.commit()
         
         # Mock Session to use test_session instead of real database
-        with patch('app.Session') as mock_session:
+        with patch('app_helpers.services.invite_helpers.Session') as mock_session:
             mock_session.return_value.__enter__.return_value = test_session
             result = get_invite_tree()
         
@@ -402,7 +402,7 @@ class TestInviteTreeEdgeCases:
         test_session.commit()
         
         # Mock Session to use test_session instead of real database
-        with patch('app.Session') as mock_session:
+        with patch('app_helpers.services.invite_helpers.Session') as mock_session:
             mock_session.return_value.__enter__.return_value = test_session
             path = get_user_invite_path("user1")
         

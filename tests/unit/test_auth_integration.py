@@ -44,7 +44,7 @@ class TestUserRegistrationWorkflow:
         test_session.commit()
         
         # Step 5: Create session for new user
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             session_id = create_session(new_user.id)
         
@@ -85,8 +85,8 @@ class TestUserRegistrationWorkflow:
         test_session.commit()
         
         # Step 2: Create authentication request
-        with patch('app.Session') as mock_session_class, \
-             patch('app.log_auth_action') as mock_log:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class, \
+             patch('app_helpers.services.auth_helpers.log_auth_action') as mock_log:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             auth_req_id = create_auth_request(
@@ -102,7 +102,7 @@ class TestUserRegistrationWorkflow:
         assert auth_req.status == "pending"
         
         # Step 3: Create half-authenticated session
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             session_id = create_session(
@@ -143,7 +143,7 @@ class TestSessionAuthenticationWorkflow:
         mock_request.headers.get.return_value = "Test Browser"
         
         # Step 3: Authenticate user
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             authenticated_user, authenticated_session = current_user(mock_request)
@@ -170,7 +170,7 @@ class TestSessionAuthenticationWorkflow:
         mock_request.client.host = "127.0.0.1"
         mock_request.headers.get.return_value = "Test Browser"
         
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             authenticated_user, authenticated_session = current_user(mock_request)
@@ -181,7 +181,7 @@ class TestSessionAuthenticationWorkflow:
         # Step 2: But cannot access full-auth-required features
         from app import require_full_auth
         
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             with pytest.raises(HTTPException) as exc_info:
@@ -201,7 +201,7 @@ class TestRateLimitingWorkflow:
         test_session.commit()
         
         # Step 1: First request - should be allowed
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             result1 = check_rate_limit(user.id, "127.0.0.1")
@@ -222,8 +222,8 @@ class TestRateLimitingWorkflow:
         test_session.commit()
         
         # Step 3: Next request should be blocked
-        with patch('app.Session') as mock_session_class, \
-             patch('app.log_security_event') as mock_log:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class, \
+             patch('app_helpers.services.auth_helpers.log_security_event') as mock_log:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             result2 = check_rate_limit(user.id, "127.0.0.1")
@@ -255,7 +255,7 @@ class TestRateLimitingWorkflow:
         test_session.commit()
         
         # Step 2: New request should be allowed (old ones don't count)
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             result = check_rate_limit(user.id, "127.0.0.1")
@@ -280,7 +280,7 @@ class TestSecurityWorkflow:
         mock_request1.client.host = "192.168.1.100"
         mock_request1.headers.get.return_value = "Test Browser"
         
-        with patch('app.log_security_event') as mock_log:
+        with patch('app_helpers.services.auth_helpers.log_security_event') as mock_log:
             result1 = validate_session_security(session, mock_request1)
             assert result1 is True
             mock_log.assert_not_called()
@@ -290,7 +290,7 @@ class TestSecurityWorkflow:
         mock_request2.client.host = "10.0.0.50"
         mock_request2.headers.get.return_value = "Test Browser"
         
-        with patch('app.log_security_event') as mock_log:
+        with patch('app_helpers.services.auth_helpers.log_security_event') as mock_log:
             result2 = validate_session_security(session, mock_request2)
             assert result2 is True  # Still allowed, just logged
             

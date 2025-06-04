@@ -24,7 +24,7 @@ class TestSessionHelpers:
         test_session.add(user)
         test_session.commit()
         
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             session_id = create_session(user.id)
@@ -44,7 +44,7 @@ class TestSessionHelpers:
         test_session.add(user)
         test_session.commit()
         
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             session_id = create_session(
@@ -77,7 +77,7 @@ class TestSessionHelpers:
         mock_request.client.host = "127.0.0.1"
         mock_request.headers.get.return_value = "Test Browser"
         
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             returned_user, returned_session = current_user(mock_request)
@@ -110,7 +110,7 @@ class TestSessionHelpers:
         mock_request.client.host = "127.0.0.1"
         mock_request.headers.get.return_value = "Test Browser"
         
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             with pytest.raises(HTTPException) as exc_info:
@@ -125,7 +125,7 @@ class TestSessionHelpers:
         mock_request.client.host = "127.0.0.1"
         mock_request.headers.get.return_value = "Test Browser"
         
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             with pytest.raises(HTTPException) as exc_info:
@@ -148,7 +148,7 @@ class TestSessionHelpers:
         mock_request.client.host = "127.0.0.1"
         mock_request.headers.get.return_value = "Test Browser"
         
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             returned_user = require_full_auth(mock_request)
@@ -169,7 +169,7 @@ class TestSessionHelpers:
         mock_request.client.host = "127.0.0.1"
         mock_request.headers.get.return_value = "Test Browser"
         
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             with pytest.raises(HTTPException) as exc_info:
@@ -212,8 +212,8 @@ class TestAuthRequestHelpers:
         test_session.add(user)
         test_session.commit()
         
-        with patch('app.Session') as mock_session_class, \
-             patch('app.log_auth_action') as mock_log:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class, \
+             patch('app_helpers.services.auth_helpers.log_auth_action') as mock_log:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             request_id = create_auth_request(
@@ -242,7 +242,7 @@ class TestAuthRequestHelpers:
         test_session.add(user)
         test_session.commit()
         
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             # No existing requests, should be allowed
@@ -267,8 +267,8 @@ class TestAuthRequestHelpers:
         test_session.add_all([user] + auth_requests)
         test_session.commit()
         
-        with patch('app.Session') as mock_session_class, \
-             patch('app.log_security_event') as mock_log:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class, \
+             patch('app_helpers.services.auth_helpers.log_security_event') as mock_log:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             result = check_rate_limit(user.id, "127.0.0.1")
@@ -295,7 +295,7 @@ class TestAuthRequestHelpers:
         test_session.add_all([user] + old_requests)
         test_session.commit()
         
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             # Should be allowed since old requests don't count
@@ -317,7 +317,7 @@ class TestSecurityHelpers:
         mock_request.client.host = "127.0.0.1"
         mock_request.headers.get.return_value = "Test Browser"
         
-        with patch('app.log_security_event') as mock_log:
+        with patch('app_helpers.services.auth_helpers.log_security_event') as mock_log:
             result = validate_session_security(session, mock_request)
             assert result is True
             
@@ -334,7 +334,7 @@ class TestSecurityHelpers:
         mock_request.client.host = "10.0.0.50"  # Different IP
         mock_request.headers.get.return_value = "Test Browser"
         
-        with patch('app.log_security_event') as mock_log:
+        with patch('app_helpers.services.auth_helpers.log_security_event') as mock_log:
             result = validate_session_security(session, mock_request)
             assert result is True  # Still returns True, just logs
             
@@ -354,7 +354,7 @@ class TestSecurityHelpers:
         mock_request.client.host = "127.0.0.1"
         mock_request.headers.get.return_value = "Test Browser"
         
-        with patch('app.log_security_event') as mock_log:
+        with patch('app_helpers.services.auth_helpers.log_security_event') as mock_log:
             result = validate_session_security(session, mock_request)
             assert result is True
             
@@ -363,7 +363,7 @@ class TestSecurityHelpers:
     
     def test_log_security_event(self, test_session):
         """Test security event logging"""
-        with patch('app.Session') as mock_session_class:
+        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             log_security_event(

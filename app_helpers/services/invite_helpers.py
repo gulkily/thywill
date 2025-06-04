@@ -8,7 +8,7 @@ from sqlmodel import Session, select, func
 from models import User, InviteToken, engine
 
 # Constants (these should match app.py)
-TOKEN_EXP_H = 168  # 7 days
+TOKEN_EXP_H = 12  # invite links valid 12 h
 
 
 def get_invite_tree() -> dict:
