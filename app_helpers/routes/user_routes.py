@@ -30,6 +30,11 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
         
         is_own_profile = user_id == user.id
         
+        # Get inviter information
+        inviter = None
+        if profile_user.invited_by_user_id:
+            inviter = s.get(User, profile_user.invited_by_user_id)
+        
         # Get prayer statistics
         stats = {}
         
@@ -94,7 +99,8 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
                 "is_own_profile": is_own_profile,
                 "stats": stats,
                 "recent_requests": recent_requests,
-                "recent_marked_prayers": recent_marked_prayers
+                "recent_marked_prayers": recent_marked_prayers,
+                "inviter": inviter
             }
         )
 
