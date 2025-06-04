@@ -212,7 +212,7 @@
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
     <div class="flex items-center justify-between mb-6">
       <h3 class="text-xl font-medium text-gray-900 dark:text-gray-100">🌳 Community Tree</h3>
-      <button id="toggleTree" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+      <button id="toggleTree" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors" data-state="collapsed">
         Expand All
       </button>
     </div>
@@ -286,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('toggleTree').addEventListener('click', function() {
     const allChildren = document.querySelectorAll('.children-container');
     const allButtons = document.querySelectorAll('.toggle-children');
-    const isExpanding = this.textContent === 'Expand All';
+    const isExpanding = this.dataset.state === 'collapsed';
     
     allChildren.forEach(container => {
       if (isExpanding) {
@@ -301,6 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
       button.querySelector('svg').style.transform = isExpanding ? 'rotate(180deg)' : 'rotate(0deg)';
     });
     
+    this.dataset.state = isExpanding ? 'expanded' : 'collapsed';
     this.textContent = isExpanding ? 'Collapse All' : 'Expand All';
   });
 });
