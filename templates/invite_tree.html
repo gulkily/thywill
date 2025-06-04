@@ -5,7 +5,16 @@
 <!-- Tree Node Macro - Define at top before use -->
 {% macro render_tree_node(node, level) %}
 <div class="tree-node" data-level="{{ level }}">
-  <div class="p-2 text-gray-900 dark:text-gray-100" style="margin-left: {{ level * 20 }}px;">
+  <div class="flex items-center p-2 text-gray-900 dark:text-gray-100" style="margin-left: {{ level * 20 }}px;">
+    <span class="mr-2">
+      {% if node.user.id == 'admin' or node.user.is_admin %}
+        👑
+      {% elif node.children|length > 0 %}
+        📱
+      {% else %}
+        🙏
+      {% endif %}
+    </span>
     <a href="/user/{{ node.user.id }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline">
       {{ node.user.display_name }}
     </a>
