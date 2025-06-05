@@ -82,7 +82,61 @@
   <!-- Header -->
   <header class="bg-purple-600 dark:bg-purple-800 text-white">
    <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
-    <a href="/" class="font-bold tracking-wide text-lg">Thy&nbsp;Will</a>
+    <a href="/" class="font-bold tracking-wide text-lg flex items-center gap-2">
+     <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" class="w-8 h-8">
+      <defs>
+       <linearGradient id="goldPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#EACD5E"/>
+        <stop offset="100%" stop-color="#815FA9"/>
+       </linearGradient>
+       <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="60%" stop-color="#F8EFBF"/>
+        <stop offset="100%" stop-color="#EACD5E"/>
+       </radialGradient>
+       <style>
+        .ray {
+         stroke: url(#goldPurple);
+         stroke-linecap: round;
+         animation: pulse 3s ease-in-out infinite;
+         transform-origin: 60px 60px;
+        }
+        .ray.cardinal { stroke-width: 3.4; }
+        .ray.diagonal { stroke-width: 2.4; }
+        .node {
+         fill: url(#goldPurple);
+         animation: pulse 3s ease-in-out infinite;
+         transform-origin: 60px 60px;
+        }
+        @keyframes pulse {
+         0%,100% { opacity: .85; transform: scale(1); }
+         50%      { opacity: 1;   transform: scale(1.05); }
+        }
+       </style>
+      </defs>
+      <line x1="60" y1="60" x2="60" y2="18" class="ray cardinal"/>
+      <line x1="60" y1="60" x2="102" y2="60" class="ray cardinal"/>
+      <line x1="60" y1="60" x2="60" y2="98" class="ray cardinal"/>
+      <line x1="60" y1="60" x2="18" y2="60" class="ray cardinal"/>
+      <line x1="60" y1="60" x2="90" y2="30" class="ray diagonal"/>
+      <line x1="60" y1="60" x2="86" y2="90" class="ray diagonal"/>
+      <line x1="60" y1="60" x2="34" y2="92" class="ray diagonal"/>
+      <line x1="60" y1="60" x2="28" y2="28" class="ray diagonal"/>
+      <circle cx="60" cy="18" r="5.3"  class="node"/>
+      <circle cx="102" cy="60" r="4.8" class="node"/>
+      <circle cx="60" cy="98" r="5"   class="node"/>
+      <circle cx="18" cy="60" r="5"   class="node"/>
+      <circle cx="90" cy="30" r="3.8" class="node"/>
+      <circle cx="86" cy="90" r="4.2" class="node"/>
+      <circle cx="34" cy="92" r="3.6" class="node"/>
+      <circle cx="28" cy="28" r="4"   class="node"/>
+      <circle cx="60" cy="60" r="18" fill="none" stroke="url(#goldPurple)" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="10" fill="none" stroke="url(#goldPurple)" stroke-width="1.5" opacity=".8"/>
+      <circle cx="60" cy="60" r="7"  fill="url(#coreGlow)"/>
+      <circle cx="60" cy="60" r="3"  fill="#ffffff"/>
+     </svg>
+     Thy&nbsp;Will
+    </a>
     {% if me %}
     <div class="flex items-center gap-4">
      <span class="text-sm">Hi <a href="/profile" class="text-purple-200 hover:text-white underline">{{ me.display_name }}</a>{% if me.id == 'admin' %} <a href="/admin" class="text-purple-200 hover:text-white underline"><em>(admin)</em></a>{% endif %}</span>
