@@ -69,13 +69,17 @@ def is_admin(user: User) -> bool:
 
 def create_auth_request(user_id: str, device_info: str = None, ip_address: str = None) -> str:
     """Create a new authentication request for an existing user"""
+    import random
     request_id = uuid.uuid4().hex
+    verification_code = f"{random.randint(100000, 999999):06d}"  # 6-digit code
+    
     with Session(engine) as db:
         db.add(AuthenticationRequest(
             id=request_id,
             user_id=user_id,
             device_info=device_info,
             ip_address=ip_address,
+            verification_code=verification_code,
             expires_at=datetime.utcnow() + timedelta(days=7)
         ))
         db.commit()

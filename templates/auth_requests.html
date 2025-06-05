@@ -40,6 +40,13 @@
               <p class="text-sm text-gray-500 dark:text-gray-400">Expires</p>
               <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ item.request.expires_at.strftime('%b %d, %Y at %I:%M %p') }}</p>
             </div>
+
+            {% if item.request.verification_code %}
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Verification Code</p>
+              <p class="text-lg font-mono font-bold text-green-600 dark:text-green-400 tracking-wider">{{ item.request.verification_code }}</p>
+            </div>
+            {% endif %}
             
             {% if item.request.device_info %}
             <div>
