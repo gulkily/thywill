@@ -136,6 +136,7 @@ class AuthenticationRequest(SQLModel, table=True):
     user_id: str  # User requesting authentication
     device_info: str | None = None  # Browser/device identifier
     ip_address: str | None = None
+    verification_code: str | None = None  # 6-digit verification code for user verification
     created_at: datetime = Field(default_factory=datetime.utcnow)
     expires_at: datetime  # 7 days from creation
     status: str = "pending"  # "pending", "approved", "rejected", "expired"
