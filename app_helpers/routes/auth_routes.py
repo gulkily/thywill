@@ -127,29 +127,8 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             device_info = request.headers.get("User-Agent", "Unknown") if request else "Unknown"
             ip_address = request.client.host if request else "Unknown"
             
-            # Check for recent requests
-            recent_request = s.exec(
-                select(AuthenticationRequest)
-                .where(AuthenticationRequest.user_id == existing_user.id)
-                .where(AuthenticationRequest.ip_address == ip_address)
-                .where(AuthenticationRequest.status == "pending")
-                .where(AuthenticationRequest.created_at > datetime.utcnow() - timedelta(hours=1))
-            ).first()
-            
-            if recent_request:
-                # User already has a pending request, redirect to status page with existing session
-                sid = create_session(
-                    user_id=existing_user.id,
-                    auth_request_id=recent_request.id,
-                    device_info=device_info,
-                    ip_address=ip_address,
-                    is_fully_authenticated=False
-                )
-                resp = RedirectResponse("/auth/status", 303)
-                resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
-                return resp
-            
-            # Create auth request
+            # Always create a fresh auth request for invite claims
+            # (Each invite link represents a distinct login attempt)
             request_id = create_auth_request(existing_user.id, device_info, ip_address)
             
             # Create half-authenticated session
