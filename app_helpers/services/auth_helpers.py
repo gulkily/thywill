@@ -15,7 +15,7 @@ from models import (
 # Constants (these should match app.py)
 SESSION_DAYS = 14
 PEER_APPROVAL_COUNT = 2
-MAX_AUTH_REQUESTS_PER_HOUR = 3
+MAX_AUTH_REQUESTS_PER_HOUR = 10
 
 
 def create_session(user_id: str, auth_request_id: str = None, device_info: str = None, ip_address: str = None, is_fully_authenticated: bool = True) -> str:

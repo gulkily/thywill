@@ -81,12 +81,8 @@ async function autoApprove(notificationId, verificationCode) {
         const result = await response.json();
         
         if (response.ok && result.success) {
-            showVerificationSuccess(notificationId, 'Authentication approved successfully!');
-            
-            // Refresh notifications after 1 second
-            setTimeout(() => {
-                htmx.trigger(document.querySelector('[hx-get="/auth/notifications"]'), 'refresh');
-            }, 1000);
+            // Refresh notifications immediately without showing success message
+            refreshNotifications();
             
         } else {
             showVerificationError(notificationId, result.message || 'Approval failed. Please try again.');
@@ -125,12 +121,8 @@ async function verifyAndApprove(notificationId) {
         const result = await response.json();
         
         if (response.ok && result.success) {
-            showVerificationSuccess(notificationId, 'Authentication approved successfully!');
-            
-            // Refresh notifications after 1 second
-            setTimeout(() => {
-                htmx.trigger(document.querySelector('[hx-get="/auth/notifications"]'), 'refresh');
-            }, 1000);
+            // Refresh notifications immediately without showing success message
+            refreshNotifications();
             
         } else {
             // Handle specific error cases
@@ -270,6 +262,15 @@ if (!document.getElementById('notification-verification-styles')) {
         }
     `;
     document.head.appendChild(style);
+}
+
+// Utility function to refresh notifications immediately
+function refreshNotifications() {
+    // Directly trigger HTMX AJAX request for fastest refresh
+    htmx.ajax('GET', '/auth/notifications', {
+        target: '#notification-content',
+        swap: 'innerHTML'
+    });
 }
 
 console.log('Notification verification system loaded successfully');
