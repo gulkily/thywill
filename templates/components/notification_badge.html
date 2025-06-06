@@ -1,0 +1,158 @@
+<!-- Enhanced Notification Badge Component -->
+<!-- Only show for fully authenticated users -->
+<!-- DEBUG: Session check - is_fully_authenticated: {{ session.is_fully_authenticated if session else 'No session' }} -->
+{% if session and session.is_fully_authenticated %}
+<div class="relative" 
+     hx-get="/auth/notifications" 
+     hx-trigger="load, every 10s"
+     hx-target="#notification-content"
+     hx-swap="innerHTML"
+     hx-timeout="5000">
+  
+  <!-- Bell icon with badge -->
+  <button onclick="toggleNotifications()" 
+          class="relative p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
+          aria-label="Authentication notifications">
+    <svg class="w-6 h-6 text-purple-200 hover:text-white" 
+         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+    </svg>
+    
+    <!-- Enhanced notification badge with pulsing animation -->
+    <span id="notification-badge" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs w-6 h-6 flex items-center justify-center animate-pulse hidden">
+      <span id="notification-count">0</span>
+    </span>
+  </button>
+  
+  <!-- Desktop Dropdown (hidden by default) -->
+  <div id="notification-dropdown" 
+       class="hidden absolute right-0 mt-2 w-96 min-h-[200px] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 max-h-96 overflow-y-auto">
+    <div id="notification-content" class="min-h-[180px] p-4">
+      <!-- Notifications loaded via HTMX -->
+      <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+        <div class="flex flex-col items-center">
+          <svg class="w-6 h-6 animate-spin mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Loading notifications...
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile Modal (hidden by default) -->
+<div id="mobile-notification-modal" 
+     class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+  <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-xl max-h-[80vh] overflow-y-auto">
+    <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          Authentication Requests
+        </h3>
+        <button onclick="closeMobileNotifications()" 
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div id="mobile-notification-content" class="p-4">
+      <!-- Mobile notifications loaded here -->
+    </div>
+  </div>
+</div>
+
+<script>
+// Basic notification functionality
+function toggleNotifications() {
+    const dropdown = document.getElementById('notification-dropdown');
+    const mobileModal = document.getElementById('mobile-notification-modal');
+    
+    if (window.innerWidth < 640) { // Mobile
+        mobileModal.classList.remove('hidden');
+        // Copy content to mobile view
+        const desktopContent = document.getElementById('notification-content').innerHTML;
+        document.getElementById('mobile-notification-content').innerHTML = desktopContent;
+    } else { // Desktop
+        dropdown.classList.toggle('hidden');
+        
+        // Don't auto-refresh on click - let HTMX handle it
+    }
+}
+
+// Function to manually load notifications
+function loadNotifications() {
+    const notificationContainer = document.querySelector('[hx-get="/auth/notifications"]');
+    if (notificationContainer) {
+        // Show loading indicator
+        const content = document.getElementById('notification-content');
+        content.innerHTML = `
+          <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+            <div class="flex flex-col items-center">
+              <svg class="w-6 h-6 animate-spin mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+              Refreshing...
+            </div>
+          </div>
+        `;
+        htmx.trigger(notificationContainer, 'refresh');
+    }
+}
+
+function closeMobileNotifications() {
+    document.getElementById('mobile-notification-modal').classList.add('hidden');
+}
+
+// Update notification badge when HTMX loads new content
+document.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.pathInfo.requestPath === '/auth/notifications') {
+        // Count notifications in the response
+        const content = evt.detail.xhr.responseText;
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(content, 'text/html');
+        const notificationCards = doc.querySelectorAll('[id^="verify-section-"]');
+        const count = notificationCards.length;
+        
+        // Update badge
+        const badge = document.getElementById('notification-badge');
+        const countSpan = document.getElementById('notification-count');
+        
+        if (count > 0) {
+            badge.classList.remove('hidden');
+            countSpan.textContent = count;
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+});
+
+// Note: Initial load now handled by HTMX "load" trigger
+
+// Close notifications when clicking outside
+document.addEventListener('click', (event) => {
+    const dropdown = document.getElementById('notification-dropdown');
+    const button = event.target.closest('[onclick="toggleNotifications()"]');
+    const dropdownContent = event.target.closest('#notification-dropdown');
+    
+    if (!button && !dropdownContent && !dropdown.classList.contains('hidden')) {
+        dropdown.classList.add('hidden');
+    }
+});
+
+// Auto-resize on window resize
+window.addEventListener('resize', () => {
+    const dropdown = document.getElementById('notification-dropdown');
+    const mobileModal = document.getElementById('mobile-notification-modal');
+    
+    if (window.innerWidth >= 640 && !mobileModal.classList.contains('hidden')) {
+        // Switching to desktop view
+        mobileModal.classList.add('hidden');
+        dropdown.classList.remove('hidden');
+    }
+});
+</script>
+{% endif %}

@@ -180,6 +180,17 @@ class Session(SQLModel, table=True):
     ip_address: str | None = None
     is_fully_authenticated: bool = Field(default=True)  # For existing sessions
 
+class NotificationState(SQLModel, table=True):
+    __tablename__ = 'notification_state'
+    
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
+    user_id: str = Field(foreign_key="user.id")  # User who should receive the notification
+    auth_request_id: str = Field(foreign_key="authenticationrequest.id")  # Associated auth request
+    notification_type: str = Field(default="auth_request", max_length=50)  # Type of notification
+    is_read: bool = Field(default=False)  # Whether notification has been read
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    read_at: datetime | None = Field(default=None)  # When notification was marked as read
+
 class PrayerActivityLog(SQLModel, table=True):
     __tablename__ = 'prayer_activity_log'
     

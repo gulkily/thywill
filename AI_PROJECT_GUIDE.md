@@ -40,10 +40,11 @@
 7. **PrayerActivityLog**: Audit trail for prayer status changes (id, prayer_id, user_id, action, old_value, new_value, created_at)
 
 ### Multi-Device Authentication Models
-8. **AuthenticationRequest**: Login requests from new devices (id, user_id, device_info, ip_address, status, expires_at)
+8. **AuthenticationRequest**: Login requests from new devices (id, user_id, device_info, ip_address, status, expires_at, verification_code)
 9. **AuthApproval**: Individual approval votes (id, auth_request_id, approver_user_id, created_at)
 10. **AuthAuditLog**: Complete audit trail for authentication actions (id, auth_request_id, action, actor_user_id, actor_type, details)
 11. **SecurityLog**: Security events and monitoring (id, event_type, user_id, ip_address, user_agent, details)
+12. **NotificationState**: Real-time notifications for authentication requests (id, user_id, auth_request_id, notification_type, is_read, created_at, read_at)
 
 ### Prayer Attributes System
 The prayer system now uses a flexible attributes approach instead of simple boolean flags:
@@ -191,6 +192,7 @@ ANTHROPIC_API_KEY=your_claude_api_key
 MULTI_DEVICE_AUTH_ENABLED=true              # Enable/disable multi-device authentication
 REQUIRE_APPROVAL_FOR_EXISTING_USERS=true    # Require approval for existing users
 PEER_APPROVAL_COUNT=2                       # Number of peer approvals needed
+REQUIRE_VERIFICATION_CODE=false             # Enhanced security for verification codes
 
 # Optional
 JWT_SECRET=your_jwt_secret_for_tokens       # For invite token generation
@@ -200,10 +202,51 @@ JWT_SECRET=your_jwt_secret_for_tokens       # For invite token generation
 - **MULTI_DEVICE_AUTH_ENABLED**: `false` disables multi-device auth entirely and hides all login options from UI
 - **REQUIRE_APPROVAL_FOR_EXISTING_USERS**: `false` allows existing users to login from new devices without approval
 - **PEER_APPROVAL_COUNT**: Any positive integer, controls how many community members need to approve
+- **REQUIRE_VERIFICATION_CODE**: Enhanced security mode for verification codes (see notification system below)
 
 ### Login Feature Behavior
 - **When MULTI_DEVICE_AUTH_ENABLED=true**: Login buttons visible, `/login` route accessible, full lobby functionality
 - **When MULTI_DEVICE_AUTH_ENABLED=false**: Login buttons hidden, `/login` returns 404, invite-only access
+
+## Real-Time Notification System
+
+The platform includes a real-time notification system for authentication requests, providing immediate alerts when someone needs approval to access their account.
+
+### Notification Features
+- **Real-time updates**: HTMX-powered notifications that update automatically every 10 seconds
+- **Smart targeting**: Notifications sent to all potential approvers (admins, peers, and other devices of same user)
+- **Verification workflow**: Secure code-based approval process with input validation
+- **Mobile responsive**: Dropdown on desktop, modal on mobile devices
+- **Performance optimized**: Fast loading with database query optimization and template caching
+
+### Verification Code Security Modes
+
+The system supports two verification code display modes controlled by `REQUIRE_VERIFICATION_CODE`:
+
+#### Standard Mode (`REQUIRE_VERIFICATION_CODE=false` - Default)
+- **Verification codes displayed** in both requesting device and approval notifications
+- **Convenient approval process** - users can see the code directly in notifications
+- **Suitable for trusted environments** where convenience is prioritized
+- **Quick approval workflow** - click notification, see code, enter to confirm
+
+#### Enhanced Security Mode (`REQUIRE_VERIFICATION_CODE=true`)
+- **Verification codes only shown** on the requesting device
+- **Enhanced security** - approvers must get code directly from the requester
+- **Prevents unauthorized approvals** even if approval device is compromised
+- **Recommended for high-security environments** or sensitive deployments
+- **Direct communication required** between requester and approver
+
+### Notification API Endpoints
+- `GET /auth/notifications` - Get unread notifications (HTMX endpoint)
+- `POST /auth/notifications/{id}/read` - Mark notification as read
+- `POST /auth/notifications/{id}/verify` - Validate verification code
+- `POST /auth/notifications/{id}/approve` - Approve request with verified code
+
+### Frontend Components
+- `templates/components/notification_badge.html` - Bell icon with live badge count
+- `templates/components/notification_dropdown.html` - Desktop notification dropdown
+- `templates/components/notification_content.html` - Reusable notification content
+- `static/js/notification-verification.js` - Verification workflow JavaScript
 
 ## AI Prayer Generation
 - Uses Claude 3.5 Sonnet model
@@ -235,7 +278,7 @@ from app_helpers.services.prayer_helpers import get_feed_counts
 - **`app_helpers/routes/user_routes.py`**: User profile and activity routes
 - **`app_helpers/routes/invite_routes.py`**: Invitation system routes
 - **`app_helpers/routes/general_routes.py`**: General application routes (logged-out, menu)
-- **`app_helpers/services/auth_helpers.py`**: 10 authentication & security functions
+- **`app_helpers/services/auth_helpers.py`**: 15+ authentication, security & notification functions
 - **`app_helpers/services/prayer_helpers.py`**: 6 prayer management & generation functions
 - **`app_helpers/services/invite_helpers.py`**: 7 invite system & tree functions
 - **`app_helpers/utils/database_helpers.py`**: 3 database utility functions

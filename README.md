@@ -52,6 +52,7 @@ A community-driven prayer platform that creates a safe, faith-based environment 
    MULTI_DEVICE_AUTH_ENABLED=true
    REQUIRE_APPROVAL_FOR_EXISTING_USERS=true
    PEER_APPROVAL_COUNT=2
+   REQUIRE_VERIFICATION_CODE=false
    ```
 
 5. **Run the application**
@@ -156,11 +157,27 @@ pytest tests/integration/
 ## 🔒 Security Features
 
 - **Multi-device authentication** with peer approval system
+- **Verification code system** for enhanced login security
 - **Rate limiting** on authentication requests
 - **Session validation** with device fingerprinting
 - **Security audit logs** for all authentication events
 - **Invite-only registration** to prevent spam
 - **Content moderation** through community flagging
+
+### Authentication Security Options
+
+The platform supports two verification modes controlled by the `REQUIRE_VERIFICATION_CODE` environment variable:
+
+**Standard Mode** (`REQUIRE_VERIFICATION_CODE=false`, default):
+- Verification codes are displayed to both requesting and approving devices
+- Users can approve requests by confirming the displayed code
+- Suitable for trusted environments
+
+**Enhanced Security Mode** (`REQUIRE_VERIFICATION_CODE=true`):
+- Verification codes are only shown on the requesting device
+- Approving users must enter the code from the requesting device
+- Prevents unauthorized approvals even if approval device is compromised
+- Recommended for high-security environments
 
 ## 📊 Admin Features
 
