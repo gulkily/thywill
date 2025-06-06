@@ -90,6 +90,23 @@ async def unauthorized_exception_handler(request: Request, exc: HTTPException):
         "MULTI_DEVICE_AUTH_ENABLED": MULTI_DEVICE_AUTH_ENABLED
     }, status_code=401)
 
+# Custom exception handler for 404 not found errors (especially auth-related)
+@app.exception_handler(404)
+async def not_found_exception_handler(request: Request, exc: HTTPException):
+    """Custom handler for 404 not found errors to show user-friendly page"""
+    # Check if this is an auth-related 404
+    if request.url.path.startswith("/auth/") and "Authentication request not found" in str(exc.detail):
+        return templates.TemplateResponse("auth_not_found.html", {
+            "request": request,
+            "MULTI_DEVICE_AUTH_ENABLED": MULTI_DEVICE_AUTH_ENABLED
+        }, status_code=404)
+    
+    # For other 404s, return default behavior
+    return JSONResponse(
+        status_code=404,
+        content={"detail": str(exc.detail)}
+    )
+
 # ───────── Extracted functions now imported from helper modules ─────────
 # Auth functions: create_session, current_user, require_full_auth, is_admin, etc.
 # Prayer functions: get_feed_counts, get_filtered_prayers_for_user, etc.
