@@ -1,0 +1,148 @@
+{% if me and not me.welcome_message_dismissed %}
+<div id="welcome-banner" class="bg-gradient-to-r from-purple-500 to-purple-600 dark:from-purple-700 dark:to-purple-800 text-white">
+  <div class="max-w-3xl mx-auto px-4 py-4">
+    <div class="flex items-start justify-between">
+      <div class="flex-1 pr-4">
+        <div class="flex items-center gap-2 mb-2">
+          <svg class="w-5 h-5 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+          </svg>
+          <h3 class="font-semibold text-lg">Welcome to Thy Will!</h3>
+        </div>
+        <p class="text-purple-100 text-sm leading-relaxed">
+          A community prayer platform where believers come together to share prayer requests, offer support, and celebrate answered prayers. 
+          <a href="#" onclick="showSiteGuide(event)" class="underline hover:text-white font-medium">Read our quick site guide</a> to get started.
+        </p>
+      </div>
+      <button 
+        onclick="dismissWelcome()" 
+        class="text-purple-200 hover:text-white p-1 ml-2 flex-shrink-0"
+        title="Dismiss welcome message"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Site Guide Modal -->
+<div id="site-guide-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Site Guide</h2>
+          <button onclick="hideSiteGuide()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="space-y-4 text-gray-700 dark:text-gray-300">
+          <section>
+            <h3 class="font-semibold text-lg text-gray-900 dark:text-white mb-2">📿 Sharing Prayer Requests</h3>
+            <p class="text-sm leading-relaxed">Share your prayer needs with our community. You can add project tags to organize your prayers and specify your target audience (all believers or Christians specifically).</p>
+          </section>
+          
+          <section>
+            <h3 class="font-semibold text-lg text-gray-900 dark:text-white mb-2">🤝 Supporting Others</h3>
+            <p class="text-sm leading-relaxed">Mark prayers you're praying for to let others know they have support. Your marks are private but help track community engagement.</p>
+          </section>
+          
+          <section>
+            <h3 class="font-semibold text-lg text-gray-900 dark:text-white mb-2">🎉 Celebrating Answers</h3>
+            <p class="text-sm leading-relaxed">Mark your prayers as answered when God responds! Share your testimony to encourage others and build faith in the community.</p>
+          </section>
+          
+          <section>
+            <h3 class="font-semibold text-lg text-gray-900 dark:text-white mb-2">👥 Inviting Friends</h3>
+            <p class="text-sm leading-relaxed">Invite others to join through the menu. Each user can generate invite tokens to grow our prayer community thoughtfully.</p>
+          </section>
+          
+          <section>
+            <h3 class="font-semibold text-lg text-gray-900 dark:text-white mb-2">⚙️ Personalization</h3>
+            <p class="text-sm leading-relaxed">Set your religious preferences and prayer style in your profile to see content that resonates with your faith tradition.</p>
+          </section>
+        </div>
+        
+        <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+          <p class="text-xs text-gray-500 dark:text-gray-400 italic text-center">
+            "Where two or three gather in my name, there am I with them." - Matthew 18:20
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showSiteGuide(event) {
+  if (event) event.stopPropagation();
+  document.getElementById('site-guide-modal').classList.remove('hidden');
+}
+
+function hideSiteGuide() {
+  document.getElementById('site-guide-modal').classList.add('hidden');
+}
+
+function dismissWelcome(event) {
+  console.log('dismissWelcome called', event ? 'with event' : 'without event');
+  
+  fetch('/dismiss-welcome', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => {
+    console.log('Response status:', response.status);
+    if (response.ok) {
+      document.getElementById('welcome-banner').style.display = 'none';
+      console.log('Welcome banner hidden');
+    } else {
+      console.error('Failed to dismiss welcome message:', response.status);
+    }
+  })
+  .catch(error => {
+    console.error('Error dismissing welcome:', error);
+  });
+}
+
+// Set up event listeners when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('Welcome message script loaded!');
+  // Welcome banner click-outside-to-dismiss
+  const welcomeBanner = document.getElementById('welcome-banner');
+  const welcomeContent = welcomeBanner?.querySelector('.max-w-3xl');
+  
+  if (welcomeBanner && welcomeContent) {
+    welcomeBanner.addEventListener('click', function(e) {
+      console.log('Banner clicked, target:', e.target.className);
+      // Only dismiss if clicking on the banner background, not the content
+      if (e.target === welcomeBanner) {
+        dismissWelcome(e);
+      }
+    });
+    
+    // Prevent dismissal when clicking on content
+    welcomeContent.addEventListener('click', function(e) {
+      console.log('Content clicked, stopping propagation');
+      e.stopPropagation();
+    });
+  }
+  
+  // Close modal when clicking outside
+  const siteGuideModal = document.getElementById('site-guide-modal');
+  if (siteGuideModal) {
+    siteGuideModal.addEventListener('click', function(e) {
+      if (e.target === this) {
+        hideSiteGuide();
+      }
+    });
+  }
+});
+</script>
+{% endif %}

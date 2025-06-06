@@ -13,6 +13,8 @@ class User(SQLModel, table=True):
     # Invite tree fields
     invited_by_user_id: str | None = Field(default=None)  # ID of the user who invited this user
     invite_token_used: str | None = Field(default=None)   # Token that was used to create this account
+    # Welcome message tracking
+    welcome_message_dismissed: bool = Field(default=False)  # Whether user has dismissed the welcome message
 
 class Prayer(SQLModel, table=True):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)

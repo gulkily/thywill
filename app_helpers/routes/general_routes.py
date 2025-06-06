@@ -1,10 +1,11 @@
 # general_routes.py - General application routes
 import os
 from fastapi import APIRouter, Request, Depends
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from app_helpers.services.auth_helpers import current_user
+from models import engine, Session
 
 # Configuration constants
 MULTI_DEVICE_AUTH_ENABLED = os.getenv("MULTI_DEVICE_AUTH_ENABLED", "true").lower() == "true"
@@ -30,3 +31,16 @@ async def logged_out_page(request: Request):
         "me": None,  # Explicitly set user to None
         "MULTI_DEVICE_AUTH_ENABLED": MULTI_DEVICE_AUTH_ENABLED
     })
+
+@router.post("/dismiss-welcome")
+async def dismiss_welcome(user_session: tuple = Depends(current_user)):
+    """Dismiss the welcome message for the current user"""
+    user, session = user_session
+    
+    with Session(engine) as db_session:
+        # Update user's welcome message dismissal status
+        user.welcome_message_dismissed = True
+        db_session.add(user)
+        db_session.commit()
+    
+    return JSONResponse({"success": True})
