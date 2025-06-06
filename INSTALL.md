@@ -27,13 +27,15 @@ pip install -r requirements.txt
 ### 4. Set Up Environment Variables
 Create a `.env` file in the project root:
 ```bash
-cp .env.example .env  # If .env.example exists, or create manually
+cp .env.example .env
 ```
 
-Add your Anthropic API key to the `.env` file:
+Edit the `.env` file and add your Anthropic API key:
 ```
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 ```
+
+Optional configuration variables are documented in `.env.example`.
 
 ### 5. Initialize Database
 The SQLite database will be created automatically when you first run the application.
@@ -78,6 +80,14 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 
 Required:
 - `ANTHROPIC_API_KEY` - Your Anthropic API key for prayer generation
+
+Optional:
+- `MULTI_DEVICE_AUTH_ENABLED` - Enable/disable multi-device authentication (default: true)
+- `REQUIRE_APPROVAL_FOR_EXISTING_USERS` - Require approval for existing users on new devices (default: true)  
+- `PEER_APPROVAL_COUNT` - Number of peer approvals needed for authentication (default: 2)
+- `REQUIRE_VERIFICATION_CODE` - Enhanced security mode for verification codes (default: false)
+
+See `.env.example` for detailed descriptions of all configuration options.
 
 ### Development Mode
 

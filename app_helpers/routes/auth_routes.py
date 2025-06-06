@@ -44,10 +44,11 @@ from models import (
 
 # Import helper functions
 from app_helpers.services.auth_helpers import (
-    create_session, current_user, is_admin,
+    create_session, current_user, is_admin, require_full_auth,
     create_auth_request, approve_auth_request, get_pending_requests_for_approval,
     log_auth_action, log_security_event, check_rate_limit,
-    cleanup_expired_requests
+    cleanup_expired_requests, get_unread_auth_notifications, get_notification_count,
+    mark_notification_read, validate_verification_code
 )
 
 # Configuration constants - these should match app.py values
@@ -55,6 +56,7 @@ SESSION_DAYS = 14
 MULTI_DEVICE_AUTH_ENABLED = os.getenv("MULTI_DEVICE_AUTH_ENABLED", "true").lower() == "true"
 REQUIRE_APPROVAL_FOR_EXISTING_USERS = os.getenv("REQUIRE_APPROVAL_FOR_EXISTING_USERS", "true").lower() == "true"
 PEER_APPROVAL_COUNT = int(os.getenv("PEER_APPROVAL_COUNT", "2"))
+REQUIRE_VERIFICATION_CODE = os.getenv("REQUIRE_VERIFICATION_CODE", "false").lower() == "true"
 
 # Initialize templates - this should point to the same template directory as main app
 templates = Jinja2Templates(directory="templates")
@@ -101,7 +103,11 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
     with Session(engine) as s:
         inv = s.get(InviteToken, token)
         if not inv or inv.used or inv.expires_at < datetime.utcnow():
-            raise HTTPException(400, "Invite expired")
+            return templates.TemplateResponse("claim.html", {
+                "request": request, 
+                "token": token,
+                "error": "This invite link has expired or has already been used. Please request a new invite link."
+            })
 
         # Check if username already exists
         existing_user = s.exec(
@@ -131,7 +137,17 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             ).first()
             
             if recent_request:
-                raise HTTPException(429, "Authentication request already pending. Please wait.")
+                # User already has a pending request, redirect to status page with existing session
+                sid = create_session(
+                    user_id=existing_user.id,
+                    auth_request_id=recent_request.id,
+                    device_info=device_info,
+                    ip_address=ip_address,
+                    is_fully_authenticated=False
+                )
+                resp = RedirectResponse("/auth/status", 303)
+                resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
+                return resp
             
             # Create auth request
             request_id = create_auth_request(existing_user.id, device_info, ip_address)
@@ -220,7 +236,17 @@ def create_authentication_request(display_name: str = Form(...), request: Reques
         ).first()
         
         if recent_request:
-            raise HTTPException(429, "Authentication request already pending for this device.")
+            # Redirect to existing auth status with the pending request
+            sid = create_session(
+                user_id=existing_user.id,
+                auth_request_id=recent_request.id,
+                device_info=device_info,
+                ip_address=ip_address,
+                is_fully_authenticated=False
+            )
+            resp = RedirectResponse("/auth/status", 303)
+            resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
+            return resp
         
         # Create the authentication request
         request_id = create_auth_request(existing_user.id, device_info, ip_address)
@@ -299,7 +325,8 @@ def auth_status(request: Request, user_session: tuple = Depends(current_user)):
             "approvals": approval_info,
             "approval_count": len(approval_info),
             "needs_approvals": PEER_APPROVAL_COUNT - len(approval_info) if len(approval_info) < PEER_APPROVAL_COUNT else 0,
-            "peer_approval_count": PEER_APPROVAL_COUNT
+            "peer_approval_count": PEER_APPROVAL_COUNT,
+            "require_verification_code": REQUIRE_VERIFICATION_CODE
         }
         
         return templates.TemplateResponse("auth_pending.html", context)
@@ -376,7 +403,8 @@ def auth_status_check(request: Request, user_session: tuple = Depends(current_us
             "approvals": approval_info,
             "approval_count": len(approval_info),
             "needs_approvals": PEER_APPROVAL_COUNT - len(approval_info) if len(approval_info) < PEER_APPROVAL_COUNT else 0,
-            "peer_approval_count": PEER_APPROVAL_COUNT
+            "peer_approval_count": PEER_APPROVAL_COUNT,
+            "require_verification_code": REQUIRE_VERIFICATION_CODE
         }
         
         # Return just the status section HTML
@@ -743,3 +771,143 @@ def login_post(username: str = Form(...), request: Request = None):
         resp = RedirectResponse("/auth/status", 303)
         resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
         return resp
+
+
+# ───────── Notification API endpoints ─────────
+@router.get("/auth/notifications-test", response_class=HTMLResponse)
+def get_notifications_test(request: Request, user_session: tuple = Depends(current_user)):
+    """Simple test endpoint for notifications"""
+    user, session = user_session
+    return HTMLResponse(content=f'<div class="p-4">Test response for {user.display_name} at {datetime.utcnow()}</div>')
+
+@router.get("/auth/notifications", response_class=HTMLResponse)
+def get_notifications(request: Request, user_session: tuple = Depends(current_user)):
+    """Get unread notifications for current user (HTMX endpoint)"""
+    import time
+    start_time = time.time()
+    
+    user, session = user_session
+    
+    # Check if user is fully authenticated
+    if not session.is_fully_authenticated:
+        return HTMLResponse(content='<div class="p-4 text-center text-gray-500">Full authentication required</div>')
+    
+    try:
+        # Get notifications (always use template for consistency)
+        db_start = time.time()
+        notifications = get_unread_auth_notifications(user.id)
+        notification_count = len(notifications)
+        db_time = time.time() - db_start
+        
+        context = {
+            "request": request,
+            "notifications": notifications,
+            "notification_count": notification_count,
+            "user": user,
+            "require_verification_code": REQUIRE_VERIFICATION_CODE
+        }
+        
+        template_start = time.time()
+        response = templates.TemplateResponse("components/notification_content.html", context)
+        template_time = time.time() - template_start
+        
+        total_time = time.time() - start_time
+        print(f"Notification endpoint timing: DB={db_time:.3f}s, Template={template_time:.3f}s, Total={total_time:.3f}s ({notification_count} notifications)")
+        
+        return response
+    
+    except Exception as e:
+        print(f"Error in get_notifications: {e}")
+        # Return error content
+        error_html = f"""
+        <div class="p-4 text-center">
+            <div class="text-red-500 mb-2">Error loading notifications</div>
+            <div class="text-xs text-gray-500">Please try refreshing the page</div>
+        </div>
+        """
+        return HTMLResponse(content=error_html)
+
+
+@router.post("/auth/notifications/{notification_id}/read")
+def mark_notification_as_read(
+    notification_id: str, 
+    request: Request,
+    user_session: tuple = Depends(current_user)
+):
+    """Mark notification as read"""
+    user, session = user_session
+    
+    if not session.is_fully_authenticated:
+        raise HTTPException(403, "Full authentication required")
+    
+    success = mark_notification_read(notification_id, user.id)
+    if not success:
+        raise HTTPException(404, "Notification not found")
+    
+    # Return updated notifications
+    return get_notifications(request, user_session)
+
+
+@router.post("/auth/notifications/{notification_id}/verify")
+def verify_notification_code(
+    notification_id: str,
+    verification_code: str = Form(...),
+    user_session: tuple = Depends(current_user)
+):
+    """Validate verification code before approval"""
+    user, session = user_session
+    
+    if not session.is_fully_authenticated:
+        return {"success": False, "error_type": "auth_required", "message": "Full authentication required"}
+    
+    result = validate_verification_code(notification_id, user.id, verification_code)
+    return result
+
+
+@router.post("/auth/notifications/{notification_id}/approve")
+def approve_from_notification(
+    notification_id: str,
+    verification_code: str = Form(...),
+    request: Request = None,
+    user_session: tuple = Depends(current_user)
+):
+    """Approve auth request with mandatory verification code validation"""
+    user, session = user_session
+    
+    # Check if user is fully authenticated
+    if not session.is_fully_authenticated:
+        return {
+            "success": False,
+            "error_type": "auth_required",
+            "message": "Full authentication required"
+        }
+    
+    # First validate the verification code
+    validation_result = validate_verification_code(notification_id, user.id, verification_code)
+    
+    if not validation_result["success"]:
+        return {
+            "success": False,
+            "error_type": validation_result["error_type"],
+            "message": validation_result["message"],
+            "similar_codes": validation_result.get("similar_codes", [])
+        }
+    
+    # If validation passed, approve the request
+    auth_req = validation_result["auth_request"]
+    approval_success = approve_auth_request(auth_req.id, user.id)
+    
+    if approval_success:
+        # Mark notification as read
+        mark_notification_read(notification_id, user.id)
+        
+        return {
+            "success": True,
+            "message": "Authentication request approved successfully"
+        }
+    else:
+        return {
+            "success": False,
+            "error_type": "approval_failed",
+            "message": "Failed to approve authentication request"
+        }

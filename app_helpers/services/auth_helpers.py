@@ -5,11 +5,11 @@ This module contains authentication, authorization, and security-related functio
 
 import uuid
 from datetime import datetime, timedelta
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, Depends
 from sqlmodel import Session, select, func
 from models import (
     User, Session as SessionModel, AuthenticationRequest, AuthApproval, 
-    AuthAuditLog, SecurityLog, engine
+    AuthAuditLog, SecurityLog, NotificationState, engine
 )
 
 # Constants (these should match app.py)
@@ -74,14 +74,42 @@ def create_auth_request(user_id: str, device_info: str = None, ip_address: str =
     verification_code = f"{random.randint(100000, 999999):06d}"  # 6-digit code
     
     with Session(engine) as db:
-        db.add(AuthenticationRequest(
+        # Create the authentication request
+        auth_request = AuthenticationRequest(
             id=request_id,
             user_id=user_id,
             device_info=device_info,
             ip_address=ip_address,
             verification_code=verification_code,
             expires_at=datetime.utcnow() + timedelta(days=7)
-        ))
+        )
+        db.add(auth_request)
+        
+        # Create notifications for all potential approvers
+        # 1. Self-notification (for other authenticated devices of same user)
+        self_notification = NotificationState(
+            id=uuid.uuid4().hex,
+            user_id=user_id,
+            auth_request_id=request_id,
+            notification_type="auth_request"
+        )
+        db.add(self_notification)
+        
+        # 2. Notifications for all other users (for peer approval)
+        other_users = db.exec(
+            select(User.id)
+            .where(User.id != user_id)
+        ).all()
+        
+        for other_user_id in other_users:
+            other_notification = NotificationState(
+                id=uuid.uuid4().hex,
+                user_id=other_user_id,
+                auth_request_id=request_id,
+                notification_type="auth_request"
+            )
+            db.add(other_notification)
+        
         db.commit()
         
         # Log the creation
@@ -335,3 +363,176 @@ def cleanup_expired_requests() -> None:
             )
         
         db.commit()
+
+
+# ═══════════════════════════════════════════════════════════════
+# NOTIFICATION SYSTEM FUNCTIONS
+# ═══════════════════════════════════════════════════════════════
+
+def create_auth_notification(user_id: str, auth_request_id: str) -> str:
+    """Create notification when auth request is created for user"""
+    notification_id = uuid.uuid4().hex
+    with Session(engine) as db:
+        notification = NotificationState(
+            id=notification_id,
+            user_id=user_id,
+            auth_request_id=auth_request_id,
+            notification_type="auth_request"
+        )
+        db.add(notification)
+        db.commit()
+    return notification_id
+
+
+def get_unread_auth_notifications(user_id: str) -> list:
+    """Get unread authentication notifications for user with auth request details"""
+    with Session(engine) as db:
+        stmt = (
+            select(NotificationState, AuthenticationRequest, User.display_name)
+            .join(AuthenticationRequest, NotificationState.auth_request_id == AuthenticationRequest.id)
+            .join(User, AuthenticationRequest.user_id == User.id)
+            .where(NotificationState.user_id == user_id)
+            .where(NotificationState.is_read == False)
+            .where(AuthenticationRequest.status == "pending")
+            .where(AuthenticationRequest.expires_at > datetime.utcnow())
+            .order_by(NotificationState.created_at.desc())
+        )
+        
+        results = db.exec(stmt).all()
+        notifications = []
+        
+        for notification, auth_req, requester_name in results:
+            notifications.append({
+                'id': notification.id,
+                'created_at': notification.created_at,
+                'auth_request': auth_req,
+                'requester_name': requester_name,
+                'notification_type': notification.notification_type
+            })
+        
+        return notifications
+
+
+def mark_notification_read(notification_id: str, user_id: str) -> bool:
+    """Mark notification as read"""
+    with Session(engine) as db:
+        notification = db.get(NotificationState, notification_id)
+        if not notification or notification.user_id != user_id:
+            return False
+        
+        notification.is_read = True
+        notification.read_at = datetime.utcnow()
+        db.commit()
+        return True
+
+
+def get_notification_count(user_id: str) -> int:
+    """Get count of unread notifications for user"""
+    with Session(engine) as db:
+        count = db.exec(
+            select(func.count(NotificationState.id))
+            .where(NotificationState.user_id == user_id)
+            .where(NotificationState.is_read == False)
+            .join(AuthenticationRequest, NotificationState.auth_request_id == AuthenticationRequest.id)
+            .where(AuthenticationRequest.status == "pending")
+            .where(AuthenticationRequest.expires_at > datetime.utcnow())
+        ).first() or 0
+        return count
+
+
+def validate_verification_code(notification_id: str, user_id: str, input_code: str) -> dict:
+    """Comprehensive verification code validation with error handling"""
+    with Session(engine) as db:
+        # Get notification and validate ownership
+        notification = db.get(NotificationState, notification_id)
+        if not notification or notification.user_id != user_id:
+            return {"success": False, "error_type": "unauthorized", "message": "Not authorized"}
+        
+        # Get auth request
+        auth_req = db.get(AuthenticationRequest, notification.auth_request_id)
+        if not auth_req:
+            return {"success": False, "error_type": "not_found", "message": "Authentication request not found"}
+        
+        # Check if already processed
+        if auth_req.status != "pending":
+            return {"success": False, "error_type": "already_processed", "message": "Request already processed"}
+        
+        # Check if expired
+        if auth_req.expires_at < datetime.utcnow():
+            return {"success": False, "error_type": "expired", "message": "Authentication request has expired"}
+        
+        # Validate verification code
+        if auth_req.verification_code != input_code:
+            # Check for similar codes
+            similar_codes = detect_similar_verification_codes(user_id, input_code)
+            if len(similar_codes) > 1:
+                return {
+                    "success": False, 
+                    "error_type": "similar_codes", 
+                    "message": "Multiple similar codes found",
+                    "similar_codes": similar_codes
+                }
+            
+            # Log failed verification attempt
+            log_auth_action(
+                auth_request_id=auth_req.id,
+                action="verification_failed",
+                actor_user_id=user_id,
+                actor_type="self",
+                details=f"Invalid verification code entered: {input_code}",
+                db_session=db
+            )
+            
+            return {"success": False, "error_type": "invalid_code", "message": "Invalid verification code"}
+        
+        return {"success": True, "auth_request": auth_req}
+
+
+def detect_similar_verification_codes(user_id: str, input_code: str) -> list:
+    """Detect similar verification codes to prevent confusion"""
+    with Session(engine) as db:
+        # Get all pending requests for this user
+        pending_requests = db.exec(
+            select(AuthenticationRequest)
+            .where(AuthenticationRequest.user_id == user_id)
+            .where(AuthenticationRequest.status == "pending")
+            .where(AuthenticationRequest.expires_at > datetime.utcnow())
+        ).all()
+        
+        similar_codes = []
+        for req in pending_requests:
+            code = req.verification_code
+            # Check for similarity (same first 3 digits, etc.)
+            if code and input_code and len(code) >= 3 and len(input_code) >= 3:
+                if code[:3] == input_code[:3] or code[-3:] == input_code[-3:]:
+                    similar_codes.append(code)
+        
+        return similar_codes
+
+
+def cleanup_expired_notifications() -> int:
+    """Remove notifications for expired/completed auth requests"""
+    with Session(engine) as db:
+        # Get expired or completed auth requests
+        completed_requests = db.exec(
+            select(AuthenticationRequest.id)
+            .where(
+                (AuthenticationRequest.expires_at < datetime.utcnow()) |
+                (AuthenticationRequest.status.in_(["approved", "rejected", "expired"]))
+            )
+        ).all()
+        
+        if not completed_requests:
+            return 0
+        
+        # Delete associated notifications
+        deleted_notifications = db.exec(
+            select(NotificationState)
+            .where(NotificationState.auth_request_id.in_(completed_requests))
+        ).all()
+        
+        for notification in deleted_notifications:
+            db.delete(notification)
+        
+        db.commit()
+        return len(deleted_notifications)

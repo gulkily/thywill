@@ -8,6 +8,7 @@ import anthropic
 from fastapi import FastAPI, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select, func
 
 from models import engine, User, Prayer, InviteToken, Session as SessionModel, PrayerMark, AuthenticationRequest, AuthApproval, AuthAuditLog, SecurityLog, PrayerAttribute, PrayerActivityLog
@@ -60,6 +61,9 @@ from app_helpers.routes.invite_routes import router as invite_router
 from app_helpers.routes.general_routes import router as general_router
 
 app = FastAPI()
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Include authentication routes
 app.include_router(auth_router)
