@@ -27,6 +27,7 @@ BLOCK_DURATION_MINUTES = 15  # How long to block after max failed attempts
 # Multi-device authentication settings
 MULTI_DEVICE_AUTH_ENABLED = os.getenv("MULTI_DEVICE_AUTH_ENABLED", "true").lower() == "true"
 REQUIRE_APPROVAL_FOR_EXISTING_USERS = os.getenv("REQUIRE_APPROVAL_FOR_EXISTING_USERS", "true").lower() == "true"
+REQUIRE_INVITE_LOGIN_VERIFICATION = os.getenv("REQUIRE_INVITE_LOGIN_VERIFICATION", "false").lower() == "true"
 PEER_APPROVAL_COUNT = int(os.getenv("PEER_APPROVAL_COUNT", "2"))
 
 templates = Jinja2Templates(directory="templates")
