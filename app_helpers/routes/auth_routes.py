@@ -55,6 +55,7 @@ from app_helpers.services.auth_helpers import (
 SESSION_DAYS = 14
 MULTI_DEVICE_AUTH_ENABLED = os.getenv("MULTI_DEVICE_AUTH_ENABLED", "true").lower() == "true"
 REQUIRE_APPROVAL_FOR_EXISTING_USERS = os.getenv("REQUIRE_APPROVAL_FOR_EXISTING_USERS", "true").lower() == "true"
+REQUIRE_INVITE_LOGIN_VERIFICATION = os.getenv("REQUIRE_INVITE_LOGIN_VERIFICATION", "false").lower() == "true"
 PEER_APPROVAL_COUNT = int(os.getenv("PEER_APPROVAL_COUNT", "2"))
 REQUIRE_VERIFICATION_CODE = os.getenv("REQUIRE_VERIFICATION_CODE", "false").lower() == "true"
 
@@ -117,11 +118,33 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
         if existing_user:
             # Username exists - check if multi-device auth is enabled and required
             if not MULTI_DEVICE_AUTH_ENABLED or not REQUIRE_APPROVAL_FOR_EXISTING_USERS:
-                # Allow direct login without approval
-                sid = create_session(existing_user.id)
-                resp = RedirectResponse("/", 303)
-                resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
-                return resp
+                # Check if invite login verification is required
+                if REQUIRE_INVITE_LOGIN_VERIFICATION:
+                    # Force verification even for direct logins via invite
+                    device_info = request.headers.get("User-Agent", "Unknown") if request else "Unknown"
+                    ip_address = request.client.host if request else "Unknown"
+                    
+                    request_id = create_auth_request(existing_user.id, device_info, ip_address)
+                    
+                    # Create half-authenticated session
+                    sid = create_session(
+                        user_id=existing_user.id,
+                        auth_request_id=request_id,
+                        device_info=device_info,
+                        ip_address=ip_address,
+                        is_fully_authenticated=False
+                    )
+                    
+                    # Don't mark invite as used for existing users
+                    resp = RedirectResponse("/auth/status", 303)
+                    resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
+                    return resp
+                else:
+                    # Allow direct login without approval (original behavior)
+                    sid = create_session(existing_user.id)
+                    resp = RedirectResponse("/", 303)
+                    resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
+                    return resp
             
             # Multi-device auth required - create authentication request
             device_info = request.headers.get("User-Agent", "Unknown") if request else "Unknown"

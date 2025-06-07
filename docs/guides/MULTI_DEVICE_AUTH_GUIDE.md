@@ -113,7 +113,30 @@ TOKEN_EXP_H = 12                     # Invite link expiration
 MAX_AUTH_REQUESTS_PER_HOUR = 3       # Rate limit
 MAX_FAILED_ATTEMPTS = 5              # Future: failed login blocking
 BLOCK_DURATION_MINUTES = 15          # Future: block duration
+
+# Multi-Device Authentication Control
+MULTI_DEVICE_AUTH_ENABLED = true               # Enable/disable multi-device auth system
+REQUIRE_APPROVAL_FOR_EXISTING_USERS = true     # Whether existing users need approval
+REQUIRE_INVITE_LOGIN_VERIFICATION = false      # Force verification for invite link logins
+PEER_APPROVAL_COUNT = 2                        # Number of peer approvals required
+REQUIRE_VERIFICATION_CODE = false              # Enhanced security mode for verification codes
 ```
+
+### Invite Link Authentication Behavior
+
+The `REQUIRE_INVITE_LOGIN_VERIFICATION` flag controls how existing users are handled when logging in via invite links:
+
+**When `false` (default - Convenience Mode):**
+- Existing users can login directly via invite links without verification
+- Only bypasses verification when `MULTI_DEVICE_AUTH_ENABLED=false` OR `REQUIRE_APPROVAL_FOR_EXISTING_USERS=false`
+- Maintains backward compatibility for easy invite-based access
+
+**When `true` (Secure Mode):**
+- Forces all existing users to go through verification process, even via invite links
+- Ensures consistent security policy regardless of how users access the system
+- Recommended when you want uniform authentication requirements
+
+**Security Note:** This flag only affects the path when multi-device auth would normally be bypassed. If multi-device auth is fully enabled with approvals required, existing users will always need verification regardless of this setting.
 
 ## Implementation Details
 
