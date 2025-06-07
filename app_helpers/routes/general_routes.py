@@ -5,7 +5,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from app_helpers.services.auth_helpers import current_user
-from models import engine, Session
+from models import engine, Session as SessionModel
+from sqlmodel import Session
 
 # Configuration constants
 MULTI_DEVICE_AUTH_ENABLED = os.getenv("MULTI_DEVICE_AUTH_ENABLED", "true").lower() == "true"
