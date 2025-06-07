@@ -769,14 +769,17 @@ def login_post(username: str = Form(...), request: Request = None):
         ).first()
         
         if recent_request:
-            return templates.TemplateResponse(
-                "login.html", 
-                {
-                    "request": request, 
-                    "error": "You already have a pending login request from this device. Please wait for approval.",
-                    "username": username.strip()
-                }
+            # Redirect to existing auth status with the pending request
+            sid = create_session(
+                user_id=existing_user.id,
+                auth_request_id=recent_request.id,
+                device_info=device_info,
+                ip_address=ip_address,
+                is_fully_authenticated=False
             )
+            resp = RedirectResponse("/auth/status", 303)
+            resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
+            return resp
         
         # Create the authentication request (reusing existing helper)
         request_id = create_auth_request(existing_user.id, device_info, ip_address)
