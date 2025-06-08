@@ -1,7 +1,5 @@
 Allow admin to admin other users
 
-Invite tree 
-
 Allow multiple sessions/devices for one user (low-friction auth)
 
 Allow export of database for community cloning
@@ -13,19 +11,9 @@ Remove tailwind dependency
 🙏 1 person prayed this 3 times
 this doesn't currently look right in dark mode when it's first added by js
 
-There needs to be an introduction page on the invite claim page
-
-Allow user to half-authenticate without an invite link (feature flag)
-
 Option to keep the original request private (or not save it) 
 	and generate the prayer text in a way that retains privacy.
 
 ** How to achieve impact with little behavioral change? **
 
-Bugs
-
-this appears twice on the authenticate page:
-"Unless the Lord builds the house…" Psalm 127:1
-
-Expand All button doesn't work on first click
 
