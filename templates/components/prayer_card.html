@@ -83,70 +83,79 @@
                   hx-target="#prayer-marks-{{ p.id }}"
                   hx-swap="innerHTML"
                   type="submit" 
-                  class="bg-purple-100 dark:bg-purple-900 hover:bg-purple-200 dark:hover:bg-purple-800 text-purple-700 dark:text-purple-200 text-xs px-2 py-1 rounded border border-purple-300 dark:border-purple-700 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:focus:ring-purple-400">
-            I Prayed This
+                  class="{% if p.marked_by_user > 0 %}bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 border-green-300 dark:border-green-600{% else %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 border-purple-300 dark:border-purple-700{% endif %} hover:opacity-80 text-xs px-2 py-1 rounded border focus:outline-none focus:ring-1 focus:ring-purple-500 dark:focus:ring-purple-400 flex items-center gap-1">
+            <span>{% if p.marked_by_user > 0 %}✓{% else %}🙏{% endif %} I Prayed This</span>
+            <span class="bg-white dark:bg-gray-800 px-1 rounded text-xs font-medium">{{ p.marked_by_user|default(0) }}</span>
           </button>
         </form>
         {% else %}
-        <span class="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 cursor-not-allowed" title="Full authentication required">
-          I Prayed This
+        <span class="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 cursor-not-allowed flex items-center gap-1" title="Full authentication required">
+          <span>🙏 I Prayed This</span>
+          <span class="bg-white dark:bg-gray-800 px-1 rounded text-xs font-medium">{{ p.marked_by_user|default(0) }}</span>
         </span>
-        {% endif %}
-        
-        {% if p.marked_by_user > 0 %}
-          {% if p.marked_by_user == 1 %}
-            <span class="text-green-600 dark:text-green-400 text-xs bg-green-100 dark:bg-green-900 px-2 py-1 rounded border border-green-300 dark:border-green-600">✓ You prayed this</span>
-          {% else %}
-            <span class="text-green-600 dark:text-green-400 text-xs bg-green-100 dark:bg-green-900 px-2 py-1 rounded border border-green-300 dark:border-green-600">✓ You prayed this {{ p.marked_by_user }} times</span>
-          {% endif %}
         {% endif %}
       </div>
       
-      <!-- Prayer management buttons for prayer authors -->
-      {% if prayer_session.is_fully_authenticated and p.author_id == me.id %}
-        <div class="flex items-center gap-2">
-          {% if not p.is_answered %}
-            <button onclick="showAnsweredModal('{{ p.id }}')"
-                    class="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:underline text-xs px-1 py-0.5 rounded transition-colors duration-200">
-              Mark as Answered
-            </button>
-          {% endif %}
-          
-          {% if p.is_archived %}
-            <form method="post" action="/prayer/{{ p.id }}/restore" class="inline">
-              <button type="submit" 
-                      hx-post="/prayer/{{ p.id }}/restore"
-                      hx-target="#prayer-{{ p.id }}"
-                      hx-swap="outerHTML"
-                      class="text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 hover:underline text-xs px-1 py-0.5 rounded transition-colors duration-200">
-                Restore
-              </button>
-            </form>
-          {% else %}
-            <form method="post" action="/prayer/{{ p.id }}/archive" class="inline">
-              <button type="submit" 
-                      hx-post="/prayer/{{ p.id }}/archive"
-                      hx-target="#prayer-{{ p.id }}"
-                      hx-swap="outerHTML"
-                      class="text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 hover:underline text-xs px-1 py-0.5 rounded transition-colors duration-200">
-                Archive
-              </button>
-            </form>
-          {% endif %}
-        </div>
-      {% endif %}
-      
-      <form method="post" action="/flag/{{ p.id }}" class="inline">
-        <button type="submit" 
-                hx-post="/flag/{{ p.id }}"
-                hx-target="#prayer-{{ p.id }}"
-                hx-swap="outerHTML"
-                hx-indicator="#loading-{{ p.id }}"
-                class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:underline text-xs px-1 py-0.5 rounded transition-colors duration-200">
-          <span class="htmx-indicator" id="loading-{{ p.id }}">🔄</span>
-          <span>Flag</span>
+      <!-- More Actions Dropdown -->
+      <div class="relative flex-shrink-0">
+        <button id="dropdown-button-{{ p.id }}" 
+                data-prayer-id="{{ p.id }}"
+                type="button"
+                class="dropdown-toggle text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300 text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 whitespace-nowrap"
+                style="min-width: 90px; min-height: 24px; display: block !important;">
+          More Actions ▼
         </button>
-      </form>
+        
+        <div id="dropdown-{{ p.id }}" 
+             class="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg z-50 hidden"
+             onclick="event.stopPropagation();">
+          <div class="py-1">
+            <!-- Prayer management buttons for prayer authors -->
+            {% if prayer_session.is_fully_authenticated and p.author_id == me.id %}
+              {% if not p.is_answered %}
+                <button onclick="showAnsweredModal('{{ p.id }}'); hideDropdown('{{ p.id }}')"
+                        class="block w-full text-left px-3 py-2 text-xs text-green-600 dark:text-green-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-green-800 dark:hover:text-green-300">
+                  Mark as Answered
+                </button>
+              {% endif %}
+              
+              {% if p.is_archived %}
+                <form method="post" action="/prayer/{{ p.id }}/restore" class="block">
+                  <button type="submit" 
+                          hx-post="/prayer/{{ p.id }}/restore"
+                          hx-target="#prayer-{{ p.id }}"
+                          hx-swap="outerHTML"
+                          class="block w-full text-left px-3 py-2 text-xs text-amber-600 dark:text-amber-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-amber-800 dark:hover:text-amber-300">
+                    Restore
+                  </button>
+                </form>
+              {% else %}
+                <form method="post" action="/prayer/{{ p.id }}/archive" class="block">
+                  <button type="submit" 
+                          hx-post="/prayer/{{ p.id }}/archive"
+                          hx-target="#prayer-{{ p.id }}"
+                          hx-swap="outerHTML"
+                          class="block w-full text-left px-3 py-2 text-xs text-amber-600 dark:text-amber-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-amber-800 dark:hover:text-amber-300">
+                    Archive
+                  </button>
+                </form>
+              {% endif %}
+            {% endif %}
+            
+            <form method="post" action="/flag/{{ p.id }}" class="block">
+              <button type="submit" 
+                      hx-post="/flag/{{ p.id }}"
+                      hx-target="#prayer-{{ p.id }}"
+                      hx-swap="outerHTML"
+                      hx-indicator="#loading-{{ p.id }}"
+                      class="block w-full text-left px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-red-800 dark:hover:text-red-300">
+                <span class="htmx-indicator" id="loading-{{ p.id }}">🔄</span>
+                <span>Flag</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   </footer>
 </li>

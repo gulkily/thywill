@@ -224,6 +224,67 @@ function addTransitionEffects() {
 
 // Initialize transition effects
 addTransitionEffects();
+
+// Dropdown functionality
+function toggleDropdown(prayerId) {
+  const dropdown = document.getElementById(`dropdown-${prayerId}`);
+  if (!dropdown) {
+    console.error(`Dropdown not found for prayer ${prayerId}`);
+    return;
+  }
+  
+  const isHidden = dropdown.classList.contains('hidden');
+  
+  // Close all other dropdowns first
+  document.querySelectorAll('[id^="dropdown-"]').forEach(d => {
+    if (d.id !== `dropdown-${prayerId}`) {
+      d.classList.add('hidden');
+    }
+  });
+  
+  // Toggle current dropdown
+  if (isHidden) {
+    dropdown.classList.remove('hidden');
+  } else {
+    dropdown.classList.add('hidden');
+  }
+}
+
+// Initialize dropdown event listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Add event listeners to all dropdown buttons
+  document.addEventListener('click', function(e) {
+    if (e.target.matches('.dropdown-toggle') || e.target.closest('.dropdown-toggle')) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const button = e.target.matches('.dropdown-toggle') ? e.target : e.target.closest('.dropdown-toggle');
+      const prayerId = button.getAttribute('data-prayer-id');
+      
+      if (prayerId) {
+        toggleDropdown(prayerId);
+      }
+    }
+  });
+});
+
+function hideDropdown(prayerId) {
+  const dropdown = document.getElementById(`dropdown-${prayerId}`);
+  dropdown.classList.add('hidden');
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+  // Don't close if clicking on the dropdown button or dropdown content
+  if (e.target.closest('[id^="dropdown-button-"]') || e.target.closest('[id^="dropdown-"]')) {
+    return;
+  }
+  
+  // Close all dropdowns when clicking outside
+  document.querySelectorAll('[id^="dropdown-"]').forEach(dropdown => {
+    dropdown.classList.add('hidden');
+  });
+});
 </script>
 
 {% include "components/feed_scripts.html" %}
