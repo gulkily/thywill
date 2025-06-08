@@ -116,55 +116,19 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
         ).first()
         
         if existing_user:
-            # Username exists - check if multi-device auth is enabled and required
-            if not MULTI_DEVICE_AUTH_ENABLED or not REQUIRE_APPROVAL_FOR_EXISTING_USERS:
-                # Check if invite login verification is required
-                if REQUIRE_INVITE_LOGIN_VERIFICATION:
-                    # Force verification even for direct logins via invite
-                    device_info = request.headers.get("User-Agent", "Unknown") if request else "Unknown"
-                    ip_address = request.client.host if request else "Unknown"
-                    
-                    request_id = create_auth_request(existing_user.id, device_info, ip_address)
-                    
-                    # Create half-authenticated session
-                    sid = create_session(
-                        user_id=existing_user.id,
-                        auth_request_id=request_id,
-                        device_info=device_info,
-                        ip_address=ip_address,
-                        is_fully_authenticated=False
-                    )
-                    
-                    # Don't mark invite as used for existing users
-                    resp = RedirectResponse("/auth/status", 303)
-                    resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
-                    return resp
-                else:
-                    # Allow direct login without approval (original behavior)
-                    sid = create_session(existing_user.id)
-                    resp = RedirectResponse("/", 303)
-                    resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
-                    return resp
+            # SPECIAL CASE: Existing user with valid invite should login immediately
+            # This is the key change - invite possession grants immediate access for existing users
+            # while preserving verification requirement for users without invites
             
-            # Multi-device auth required - create authentication request
-            device_info = request.headers.get("User-Agent", "Unknown") if request else "Unknown"
-            ip_address = request.client.host if request else "Unknown"
+            # Allow immediate login for existing users with valid invites
+            # Mark invite as used and create full session
+            inv.used = True
+            inv.used_by_user_id = existing_user.id
+            s.add(inv)
+            s.commit()
             
-            # Always create a fresh auth request for invite claims
-            # (Each invite link represents a distinct login attempt)
-            request_id = create_auth_request(existing_user.id, device_info, ip_address)
-            
-            # Create half-authenticated session
-            sid = create_session(
-                user_id=existing_user.id,
-                auth_request_id=request_id,
-                device_info=device_info,
-                ip_address=ip_address,
-                is_fully_authenticated=False
-            )
-            
-            # Don't mark invite as used for existing users
-            resp = RedirectResponse("/auth/status", 303)
+            sid = create_session(existing_user.id)
+            resp = RedirectResponse("/", 303)
             resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
             return resp
         
