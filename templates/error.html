@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}{{ error_code }} - {{ error_title }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-gold-50">
+    <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+        <div class="mb-6">
+            <h1 class="text-6xl font-bold text-purple-600 mb-2">{{ error_code }}</h1>
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">{{ error_title }}</h2>
+            <p class="text-gray-600">{{ error_message }}</p>
+        </div>
+        
+        <div class="space-y-3">
+            <a href="/" class="block w-full bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors">
+                Go Home
+            </a>
+            
+            {% if error_code == 404 %}
+                <button onclick="history.back()" class="block w-full bg-gray-200 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors">
+                    Go Back
+                </button>
+            {% endif %}
+            
+            {% if error_code == 401 %}
+                <a href="/login" class="block w-full bg-gold-500 text-white py-3 px-6 rounded-lg hover:bg-gold-600 transition-colors">
+                    Login
+                </a>
+            {% endif %}
+        </div>
+        
+        {% if error_code == 500 %}
+        <div class="mt-6 text-sm text-gray-500">
+            <p>If this problem persists, please contact support.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
