@@ -139,6 +139,13 @@ server {
     listen 80;
     server_name thywill.live www.thywill.live;
 
+    # Custom error pages for better user experience during restarts
+    error_page 502 503 504 /static/502.html;
+    location = /static/502.html {
+        root /home/thywill/thywill;
+        internal;
+    }
+
     location / {
         proxy_pass http://127.0.0.1:8000;
         proxy_http_version 1.1;
@@ -149,6 +156,11 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
+        
+        # Improve handling during service restarts
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 10s;
+        proxy_read_timeout 10s;
     }
 
     # Serve static files directly
@@ -166,6 +178,13 @@ server {
     listen 80 default_server;
     server_name _;  # Catches any server name/IP
 
+    # Custom error pages for better user experience during restarts
+    error_page 502 503 504 /static/502.html;
+    location = /static/502.html {
+        root /home/thywill/thywill;
+        internal;
+    }
+
     location / {
         proxy_pass http://127.0.0.1:8000;
         proxy_http_version 1.1;
@@ -176,6 +195,11 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
+        
+        # Improve handling during service restarts
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 10s;
+        proxy_read_timeout 10s;
     }
 
     # Serve static files directly
@@ -193,6 +217,13 @@ server {
     listen 80;
     server_name 192.168.1.100;  # Replace with your actual server IP
 
+    # Custom error pages for better user experience during restarts
+    error_page 502 503 504 /static/502.html;
+    location = /static/502.html {
+        root /home/thywill/thywill;
+        internal;
+    }
+
     location / {
         proxy_pass http://127.0.0.1:8000;
         proxy_http_version 1.1;
@@ -203,6 +234,11 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
+        
+        # Improve handling during service restarts
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 10s;
+        proxy_read_timeout 10s;
     }
 
     # Serve static files directly
@@ -302,6 +338,55 @@ systemctl restart thywill
 
 # Check system status
 systemctl status thywill nginx
+```
+
+## Improved Error Handling During Restarts
+
+The nginx configurations above include several improvements to handle service restarts gracefully:
+
+### Custom 502 Error Page
+- **Location**: `/home/thywill/thywill/static/502.html`
+- **Features**: 
+  - Auto-refreshes every 5 seconds during maintenance
+  - Branded design matching your application
+  - Clear messaging about temporary unavailability
+  - "Try Again" button for manual refresh
+
+### Nginx Configuration Benefits
+- **Faster timeouts**: Reduced proxy timeouts prevent long waits
+- **Error page coverage**: Handles 502, 503, and 504 errors
+- **Static file serving**: Error page served directly by nginx (no backend required)
+
+### Graceful Restart Procedure
+For smoother restarts with minimal downtime:
+
+```bash
+# 1. Update your application code
+su - thywill
+cd thywill
+git pull
+source venv/bin/activate
+pip install -r requirements.txt
+exit
+
+# 2. Restart service (users will see the custom error page briefly)
+systemctl restart thywill
+
+# 3. Verify the service is running
+systemctl status thywill
+curl -f http://localhost:8000/ || echo "Service not ready yet"
+```
+
+### Testing the Error Page
+To test the error page without affecting users:
+
+```bash
+# Temporarily stop the service
+systemctl stop thywill
+
+# Visit your site - you should see the custom 502 page
+# Start the service back up
+systemctl start thywill
 ```
 
 ## Troubleshooting

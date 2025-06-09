@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>502 - Service Temporarily Unavailable</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {}
+            }
+        }
+    </script>
+    <script>
+        // Auto-refresh every 5 seconds during maintenance
+        setTimeout(function() {
+            window.location.reload();
+        }, 5000);
+    </script>
+</head>
+<body class="min-h-full bg-gray-100 text-gray-900 flex flex-col">
+    <!-- Header -->
+    <header class="bg-purple-600 text-white">
+        <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="/" class="font-bold tracking-wide text-lg flex items-center gap-2">
+                <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" class="w-8 h-8">
+                    <defs>
+                        <linearGradient id="goldPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#EACD5E"/>
+                            <stop offset="100%" stop-color="#815FA9"/>
+                        </linearGradient>
+                        <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#ffffff"/>
+                            <stop offset="60%" stop-color="#F8EFBF"/>
+                            <stop offset="100%" stop-color="#EACD5E"/>
+                        </radialGradient>
+                    </defs>
+                    <line x1="60" y1="60" x2="60" y2="18" stroke="url(#goldPurple)" stroke-width="3.4" stroke-linecap="round"/>
+                    <line x1="60" y1="60" x2="102" y2="60" stroke="url(#goldPurple)" stroke-width="3.4" stroke-linecap="round"/>
+                    <line x1="60" y1="60" x2="60" y2="98" stroke="url(#goldPurple)" stroke-width="3.4" stroke-linecap="round"/>
+                    <line x1="60" y1="60" x2="18" y2="60" stroke="url(#goldPurple)" stroke-width="3.4" stroke-linecap="round"/>
+                    <line x1="60" y1="60" x2="90" y2="30" stroke="url(#goldPurple)" stroke-width="2.4" stroke-linecap="round"/>
+                    <line x1="60" y1="60" x2="86" y2="90" stroke="url(#goldPurple)" stroke-width="2.4" stroke-linecap="round"/>
+                    <line x1="60" y1="60" x2="34" y2="92" stroke="url(#goldPurple)" stroke-width="2.4" stroke-linecap="round"/>
+                    <line x1="60" y1="60" x2="28" y2="28" stroke="url(#goldPurple)" stroke-width="2.4" stroke-linecap="round"/>
+                    <circle cx="60" cy="18" r="5.3" fill="url(#goldPurple)"/>
+                    <circle cx="102" cy="60" r="4.8" fill="url(#goldPurple)"/>
+                    <circle cx="60" cy="98" r="5" fill="url(#goldPurple)"/>
+                    <circle cx="18" cy="60" r="5" fill="url(#goldPurple)"/>
+                    <circle cx="90" cy="30" r="3.8" fill="url(#goldPurple)"/>
+                    <circle cx="86" cy="90" r="4.2" fill="url(#goldPurple)"/>
+                    <circle cx="34" cy="92" r="3.6" fill="url(#goldPurple)"/>
+                    <circle cx="28" cy="28" r="4" fill="url(#goldPurple)"/>
+                    <circle cx="60" cy="60" r="18" fill="none" stroke="url(#goldPurple)" stroke-width="2.5"/>
+                    <circle cx="60" cy="60" r="10" fill="none" stroke="url(#goldPurple)" stroke-width="1.5" opacity=".8"/>
+                    <circle cx="60" cy="60" r="7" fill="url(#coreGlow)"/>
+                    <circle cx="60" cy="60" r="3" fill="#ffffff"/>
+                </svg>
+                Thy&nbsp;Will
+            </a>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="flex-grow flex items-center justify-center">
+        <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center mx-4">
+            <div class="mb-6">
+                <h1 class="text-6xl font-bold text-purple-600 mb-2">502</h1>
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Service Temporarily Unavailable</h2>
+                <p class="text-gray-600 mb-4">The service is being updated and will be back shortly.</p>
+                <div class="flex items-center justify-center mb-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                    <span class="ml-2 text-sm text-gray-500">Refreshing automatically...</span>
+                </div>
+            </div>
+            
+            <div class="space-y-3">
+                <button onclick="window.location.reload()" class="block w-full bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors">
+                    Try Again
+                </button>
+                <a href="/" class="block w-full bg-gray-200 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors">
+                    Go Home
+                </a>
+            </div>
+            
+            <div class="mt-6 text-sm text-gray-500">
+                <p>This page will automatically refresh every 5 seconds.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center text-xs text-gray-500 pb-6">
+        "Unless the Lord builds the house…" <em>Psalm 127:1</em>
+    </footer>
+</body>
+</html>
