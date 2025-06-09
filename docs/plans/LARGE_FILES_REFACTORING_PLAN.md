@@ -100,124 +100,106 @@ from .auth.multi_device_routes import *
 # All existing imports to auth_routes continue to work unchanged
 ```
 
-### Stage 2: CSS Architecture Refactoring - Additive Approach
+## Stage 2 Implementation Priorities
 
-**Priority**: High - Improves frontend maintainability
+### Immediate Priority: Route Modules (>400 lines)
 
-**Approach**: Create new modular CSS files while keeping existing stylesheets intact and functional.
-
-**Step 1: Create Parallel CSS Structure**
+**1. auth_routes.py (902 lines) → 4 modules**
 ```
-static/css/
-├── main.css            # KEEP INTACT - existing main stylesheet
-├── combined.css        # KEEP INTACT - existing combined stylesheet  
-├── components.css      # KEEP INTACT - existing components
-├── base.css           # KEEP INTACT - existing base styles
-├── variables.css      # KEEP INTACT - existing variables
-└── modules/           # NEW - optional modular CSS
-    ├── auth-forms.css      # Extract auth-related styles (optional)
-    ├── prayer-cards.css    # Extract prayer card styles (optional)
-    ├── navigation.css      # Extract nav styles (optional)
-    └── admin-panels.css    # Extract admin styles (optional)
+app_helpers/routes/auth/
+├── login_routes.py          # Login/logout (~200 lines)
+├── registration_routes.py   # User registration (~200 lines)  
+├── verification_routes.py   # Email/token verification (~250 lines)
+└── multi_device_routes.py   # Multi-device auth (~250 lines)
 ```
 
-**Step 2: Gradual CSS Adoption**
-- Templates can optionally include new modular CSS files
-- Existing CSS imports continue to work unchanged
-- New features can use modular CSS, existing features unchanged
-- Remove duplicates only after confirming new modules work
-
-**Benefits**:
-- **No Visual Regressions**: Existing styles continue to work
-- **Optional Adoption**: Templates can gradually adopt new CSS structure
-- **Easy Testing**: Can A/B test old vs new CSS on specific pages
-
-### Stage 3: Test Suite Refactoring - Copy & Validate Pattern
-
-**Priority**: Medium - Improves test maintainability  
-
-**Approach**: Create new organized test structure alongside existing tests, validate equivalence, then optionally migrate.
-
-**Step 1: Create Parallel Test Structure**
+**2. prayer_routes.py (808 lines) → 4 modules**
 ```
-tests/
-├── unit/              # KEEP INTACT - existing test files
-│   ├── test_prayer_management.py     # Keep existing
-│   ├── test_advanced_features.py     # Keep existing  
-│   ├── test_multi_device_auth.py     # Keep existing
-│   └── test_edge_cases.py            # Keep existing
-└── organized/         # NEW - optional organized structure
-    ├── auth/
-    │   ├── test_auth_core.py         # Copy relevant tests from existing files
-    │   └── test_multi_device.py     # Copy relevant tests from existing files
-    ├── prayers/
-    │   ├── test_prayer_crud.py       # Copy relevant tests from existing files
-    │   └── test_prayer_lifecycle.py  # Copy relevant tests from existing files
-    └── features/
-        ├── test_invite_tree.py       # Copy relevant tests from existing files
-        └── test_preferences.py       # Copy relevant tests from existing files
+app_helpers/routes/prayer/
+├── crud_routes.py           # Create/read/update/delete (~200 lines)
+├── status_routes.py         # Status updates/transitions (~200 lines)
+├── filtering_routes.py      # Search/filter endpoints (~200 lines)
+└── archive_routes.py        # Archive/answered prayers (~200 lines)
 ```
 
-**Step 2: Validation & Migration**
-- Run both old and new test suites to ensure equivalent coverage
-- Compare test results to validate no tests were missed
-- Optionally migrate CI/CD to use organized structure once validated
+### Secondary Priority: Service Modules (200-400 lines)
 
-## Implementation Timeline - Resilient Approach
+**3. auth_helpers.py (537 lines) → 3 modules**
+```
+app_helpers/services/auth/
+├── token_helpers.py         # Token generation/validation (~180 lines)
+├── session_helpers.py       # Session management (~180 lines)
+└── validation_helpers.py    # Auth validation logic (~180 lines)
+```
 
-### Phase 1 (Week 1): App.py Function Extraction
-- [ ] Create app/services/ and app/utils/ helper modules
-- [ ] Extract 20-30 functions from app.py to helper modules
-- [ ] Import all extracted functions back into app.py namespace
+**4. Other services modules** (275-256 lines each)
+- Break into 2-3 focused sub-modules each
+- Follow same pattern: main module becomes import aggregator
+
+## Implementation Timeline - Stage 2
+
+### Phase 1: Critical Route Refactoring (auth_routes.py)
+- [ ] Analyze auth_routes.py function groups and dependencies
+- [ ] Create app_helpers/routes/auth/ directory structure
+- [ ] Extract login/logout functions to login_routes.py (~50-80 lines)
+- [ ] Extract registration functions to registration_routes.py (~50-80 lines)
+- [ ] Extract verification functions to verification_routes.py (~50-80 lines)
+- [ ] Extract multi-device functions to multi_device_routes.py (~50-80 lines)
+- [ ] Update auth_routes.py to import all sub-modules
 - [ ] Run full test suite to ensure zero breaking changes
-- [ ] Verify all existing imports and function calls still work
 
-### Phase 2 (Week 2): CSS Modularization (Optional)
-- [ ] Create static/css/modules/ directory with extracted styles  
-- [ ] Keep all existing CSS files intact and unchanged
-- [ ] Test new modular CSS on 1-2 pages to validate approach
-- [ ] Document optional CSS adoption strategy
+### Phase 2: Critical Route Refactoring (prayer_routes.py)
+- [ ] Analyze prayer_routes.py function groups and dependencies
+- [ ] Create app_helpers/routes/prayer/ directory structure
+- [ ] Extract CRUD functions to crud_routes.py (~50-80 lines)
+- [ ] Extract status functions to status_routes.py (~50-80 lines)
+- [ ] Extract filtering functions to filtering_routes.py (~50-80 lines)
+- [ ] Extract archive functions to archive_routes.py (~50-80 lines)
+- [ ] Update prayer_routes.py to import all sub-modules
+- [ ] Run full test suite to ensure zero breaking changes
 
-### Phase 3 (Week 3): Test Organization (Optional)
-- [ ] Create tests/organized/ structure with copied test functions
-- [ ] Run both old and new test suites to validate equivalence  
-- [ ] Document organized test structure for future use
-- [ ] Keep existing test files as primary test suite
+### Phase 3: Service Module Refactoring
+- [ ] Apply same pattern to auth_helpers.py (537 lines → 3 modules)
+- [ ] Apply same pattern to remaining 200+ line service modules
+- [ ] Verify all modules are under 100 lines
+- [ ] Run full test suite and performance validation
 
-## Success Metrics - Resilient Approach
+## Success Metrics - 100-Line Target
 
+- **100-Line Compliance**: All modules should be under 100 lines (target: 50-80 lines each)
 - **Zero Breaking Changes**: All existing functionality continues to work unchanged
-- **Test Compatibility**: 100% test pass rate maintained throughout refactoring
+- **Test Compatibility**: 100% test pass rate maintained throughout refactoring  
 - **Import Compatibility**: All existing imports continue to work without modification
+- **Logical Cohesion**: Each sub-module has a single, clear responsibility
 - **Performance Stability**: No performance regressions in any refactored areas
-- **Rollback Capability**: Ability to quickly revert any changes without data loss
 
-## Risk Mitigation - Enhanced
+## Universal Refactoring Checklist
 
-1. **Zero Breaking Changes**: Every change maintains existing entry points and interfaces
-2. **Parallel Development**: New structure developed alongside existing, not replacing
-3. **Incremental Validation**: Each extracted module tested independently before integration
-4. **Immediate Rollback**: Any extracted module can be removed without affecting functionality
-5. **Test-First Validation**: Test suite must pass 100% before and after every change
-6. **Import Auditing**: Verify all external imports to app.py continue to work
+**Before extracting any module:**
+- [ ] Identify logical function groups (aim for 2-4 groups per large module)
+- [ ] Map all internal dependencies between functions
+- [ ] Document all external imports and function signatures
+- [ ] Plan sub-module structure (50-80 lines each)
 
-## Implementation Safety Checklist
+**During extraction:**
+- [ ] Create sub-directory for related modules
+- [ ] Extract one logical group at a time to focused sub-module
+- [ ] Maintain all function signatures and dependencies
+- [ ] Update main module to import all sub-modules with `from .subdir.module import *`
 
-Before each change:
-- [ ] Identify all external files that import from the target file
-- [ ] Document all function signatures and return types being moved
-- [ ] Create comprehensive test coverage for functions being extracted
-- [ ] Plan exact import statements to maintain compatibility
-
-After each change:
+**After extraction:**
+- [ ] Verify main module is now under 20 lines (imports only)
 - [ ] Run complete test suite (unit, integration, functional)
 - [ ] Verify all external imports still resolve correctly
+- [ ] Check that all sub-modules are under 100 lines
 - [ ] Test application startup and basic functionality
-- [ ] Validate no new lint or type check errors introduced
 
-## Notes - Updated
+## Reusable Pattern for Any Large Module
 
-- **Preserve ALL existing entry points**: Never break existing import paths
-- **Extract, don't restructure**: Move code to new locations but keep it accessible from old locations
-- **Optional adoption**: New structure supplements existing, doesn't replace it
-- **Incremental benefit**: Each extraction provides immediate organizational benefit without risk
+1. **Analyze** - Group related functions logically (auth, CRUD, validation, etc.)
+2. **Structure** - Create sub-directory with 2-4 focused modules  
+3. **Extract** - Move function groups to sub-modules (50-80 lines each)
+4. **Aggregate** - Update main module to import all sub-modules
+5. **Validate** - Ensure zero breaking changes and 100-line compliance
+
+This pattern can be applied to any module exceeding 100 lines, whether routes, services, utilities, or tests.
