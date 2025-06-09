@@ -256,7 +256,7 @@ class TestAuthRequestHelpers:
         # Create multiple recent auth requests (exceeding limit)
         recent_time = datetime.utcnow() - timedelta(minutes=30)
         auth_requests = []
-        for i in range(4):  # Exceeds MAX_AUTH_REQUESTS_PER_HOUR (3)
+        for i in range(11):  # Exceeds MAX_AUTH_REQUESTS_PER_HOUR (10)
             req = AuthenticationRequestFactory.create(
                 user_id=user.id,
                 created_at=recent_time + timedelta(minutes=i),
