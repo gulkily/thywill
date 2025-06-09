@@ -39,6 +39,16 @@
     .htmx-request.htmx-indicator {
       display: inline;
     }
+    
+    /* Smooth page transitions - prevent layout shift during navigation */
+    body {
+      transition: opacity 0.1s ease-in-out;
+    }
+    
+    /* Ensure header maintains its space during transitions */
+    header {
+      min-height: 60px; /* Approximate header height */
+    }
   </style>
   <script>
     // Theme management

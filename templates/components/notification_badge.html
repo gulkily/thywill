@@ -57,10 +57,12 @@ document.addEventListener('htmx:afterRequest', function(evt) {
 // Cleanup HTMX timers when page changes to prevent duplicate polling
 document.addEventListener('DOMContentLoaded', function() {
     // Cancel any existing notification polling when navigating away
+    // Use a more gentle cleanup that doesn't cause visual disruption
     window.addEventListener('beforeunload', function() {
         const notificationEl = document.querySelector('[hx-get="/auth/notifications"]');
-        if (notificationEl) {
-            htmx.remove(notificationEl);
+        if (notificationEl && htmx) {
+            // Stop polling but don't remove the element to avoid visual flash
+            htmx.trigger(notificationEl, 'htmx:abort');
         }
     });
 });
