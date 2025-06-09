@@ -60,13 +60,59 @@
       
       <div class="flex gap-2">
         <button type="submit" id="submit-btn" class="bg-purple-600 hover:bg-purple-700 dark:bg-purple-800 dark:hover:bg-purple-900 text-white font-semibold px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 disabled:opacity-50 disabled:cursor-not-allowed">
-          Submit Prayer Request
+          Preview Prayer
         </button>
         <button type="button" onclick="toggleAddPrayer()" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-4 py-2 rounded">
           Cancel
         </button>
       </div>
     </form>
+  </div>
+</section>
+
+<!-- Prayer Preview Section (initially hidden) -->
+<section id="prayer-preview" class="mb-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden" style="display: none;">
+  <div class="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+    <h2 class="font-semibold text-lg dark:text-gray-100">Prayer Preview</h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400">Review how your request will appear to the community</p>
+  </div>
+  <div class="p-4 space-y-4">
+    <!-- Generated Prayer Display -->
+    <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4">
+      <h3 class="font-semibold text-purple-800 dark:text-purple-200 mb-2">Generated Prayer</h3>
+      <div id="preview-prayer-text" class="text-gray-800 dark:text-gray-200 leading-relaxed"></div>
+    </div>
+    
+    <!-- Original Request (Collapsible) -->
+    <div class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
+      <button type="button" id="toggle-original" class="w-full p-3 text-left font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none">
+        <span class="flex items-center justify-between">
+          Your Original Request
+          <svg id="original-chevron" class="w-5 h-5 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+          </svg>
+        </span>
+      </button>
+      <div id="original-request-content" class="hidden p-3 pt-0 text-gray-600 dark:text-gray-400 border-t border-gray-200 dark:border-gray-600">
+        <div id="preview-original-text"></div>
+      </div>
+    </div>
+    
+    <!-- Preview Actions -->
+    <div class="flex flex-wrap gap-2 pt-2">
+      <button type="button" id="submit-final" class="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white font-semibold px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400">
+        Submit Prayer
+      </button>
+      <button type="button" id="regenerate" class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-semibold px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+        Generate Different Prayer
+      </button>
+      <button type="button" id="edit-request" class="bg-gray-600 hover:bg-gray-700 dark:bg-gray-600 dark:hover:bg-gray-700 text-white font-semibold px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400">
+        Edit Request
+      </button>
+      <button type="button" id="cancel-preview" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-4 py-2 rounded">
+        Cancel
+      </button>
+    </div>
   </div>
 </section>
 

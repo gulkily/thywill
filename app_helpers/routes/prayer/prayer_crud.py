@@ -28,6 +28,48 @@ templates = Jinja2Templates(directory="templates")
 router = APIRouter()
 
 
+@router.post("/prayers/preview")
+def preview_prayer(text: str = Form(...),
+                   tag: Optional[str] = Form(None),
+                   target_audience: str = Form("all"),
+                   user_session: tuple = Depends(current_user)):
+    """
+    Generate prayer preview without saving to database.
+    
+    Args:
+        text: The prayer request text (max 500 chars)
+        tag: Optional project tag for categorization
+        target_audience: Target audience ("all" or "christians_only")
+        user_session: Current authenticated user session
+    
+    Returns:
+        JSON response with preview data
+    """
+    user, session = user_session
+    if not session.is_fully_authenticated:
+        raise HTTPException(403, "Full authentication required to preview prayers")
+    
+    # Validate target audience
+    valid_audiences = ["all", "christians_only"]
+    if target_audience not in valid_audiences:
+        target_audience = "all"
+    
+    # Generate a proper prayer from the user's prompt
+    generated_prayer = generate_prayer(text)
+    
+    # Generate preview token for security
+    import secrets
+    preview_token = secrets.token_urlsafe(32)
+    
+    return {
+        "original_text": text,
+        "generated_prayer": generated_prayer,
+        "tag": tag,
+        "target_audience": target_audience,
+        "preview_token": preview_token
+    }
+
+
 @router.post("/prayers")
 def submit_prayer(text: str = Form(...),
                   tag: Optional[str] = Form(None),
