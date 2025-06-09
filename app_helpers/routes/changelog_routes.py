@@ -1,11 +1,15 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+import subprocess
+import os
 from app_helpers.services.changelog_helpers import (
     refresh_changelog_if_needed, 
     get_changelog_entries, 
     group_entries_by_date,
-    get_change_type_icon
+    get_change_type_icon,
+    get_git_head_commit,
+    get_last_cached_commit
 )
 
 router = APIRouter()
@@ -14,11 +18,35 @@ templates = Jinja2Templates(directory="templates")
 @router.get("/changelog", response_class=HTMLResponse)
 async def changelog(request: Request):
     """Display the user-friendly changelog page"""
+    # Check if debug mode is enabled
+    debug_mode = os.getenv('CHANGELOG_DEBUG', 'false').lower() == 'true'
+    debug_info = None
+    
+    if debug_mode:
+        # Debug info for troubleshooting
+        debug_info = {
+            "git_head": get_git_head_commit(),
+            "last_cached": get_last_cached_commit(),
+            "anthropic_key_exists": bool(os.getenv('ANTHROPIC_API_KEY')),
+            "git_available": True,
+            "entry_count": 0
+        }
+        
+        try:
+            # Test git availability
+            subprocess.run(['git', '--version'], capture_output=True, check=True)
+        except:
+            debug_info["git_available"] = False
+    
     # Refresh changelog if there are new commits
-    refresh_changelog_if_needed()
+    refresh_result = refresh_changelog_if_needed()
+    if debug_info:
+        debug_info["refresh_attempted"] = refresh_result
     
     # Get recent changelog entries
     entries = get_changelog_entries(limit=20)
+    if debug_info:
+        debug_info["entry_count"] = len(entries)
     
     # Group by date for better display
     grouped_entries = group_entries_by_date(entries)
@@ -26,7 +54,8 @@ async def changelog(request: Request):
     return templates.TemplateResponse("changelog.html", {
         "request": request,
         "grouped_entries": grouped_entries,
-        "get_change_type_icon": get_change_type_icon
+        "get_change_type_icon": get_change_type_icon,
+        "debug_info": debug_info
     })
 
 @router.get("/api/changelog")
