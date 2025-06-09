@@ -211,6 +211,14 @@ class InviteToken(SQLModel, table=True):
     expires_at: datetime
     used_by_user_id: str | None = Field(default=None)     # ID of user who claimed this invite
 
+class ChangelogEntry(SQLModel, table=True):
+    commit_id: str = Field(primary_key=True, max_length=40)
+    original_message: str
+    friendly_description: str | None = None
+    change_type: str | None = Field(default=None, max_length=20)  # 'new', 'enhanced', 'fixed'
+    commit_date: datetime
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 # Performance optimization: Enable WAL mode for better concurrency
 engine = create_engine(
     "sqlite:///thywill.db", 
