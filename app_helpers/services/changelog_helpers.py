@@ -12,9 +12,18 @@ from typing import List, Dict, Any
 def get_git_head_commit() -> str:
     """Get the current HEAD commit hash"""
     try:
-        result = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True, check=True)
-        return result.stdout.strip()
-    except subprocess.CalledProcessError:
+        # Try common git paths for production environments
+        git_paths = ['/usr/bin/git', '/usr/local/bin/git', 'git']
+        
+        for git_path in git_paths:
+            try:
+                result = subprocess.run([git_path, 'rev-parse', 'HEAD'], capture_output=True, text=True, check=True)
+                return result.stdout.strip()
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                continue
+        
+        return ""
+    except Exception:
         return ""
 
 def get_last_cached_commit() -> str:
@@ -26,63 +35,71 @@ def get_last_cached_commit() -> str:
 
 def parse_git_commits(since_commit: str = None, limit: int = 20) -> List[Dict[str, Any]]:
     """Parse git commits and return structured data"""
-    cmd = ['git', 'log', '--pretty=format:%H|%ad|%s', '--date=iso']
+    # Try common git paths for production environments
+    git_paths = ['/usr/bin/git', '/usr/local/bin/git', 'git']
     
-    if since_commit:
-        cmd.append(f'{since_commit}..HEAD')
-    else:
-        cmd.extend(['-n', str(limit)])
-    
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        commits = []
-        
-        for line in result.stdout.strip().split('\n'):
-            if not line:
-                continue
+    for git_path in git_paths:
+        try:
+            cmd = [git_path, 'log', '--pretty=format:%H|%ad|%s', '--date=iso']
             
-            # Clean up any extra characters that might appear
-            line = line.strip()
-            if '< /dev/null |' in line:
-                line = line.replace('< /dev/null | ', '')
+            if since_commit:
+                cmd.append(f'{since_commit}..HEAD')
+            else:
+                cmd.extend(['-n', str(limit)])
             
-            parts = line.split('|', 2)
-            if len(parts) == 3:
-                commit_hash, date_str, message = parts
-                # Parse ISO date format (e.g., "2025-06-09 01:06:17 -0400")
-                try:
-                    # Clean the date string and split on space
-                    date_clean = date_str.strip()
-                    
-                    # Handle format: "2025-06-09 01:06:17 -0400"
-                    if ' ' in date_clean:
-                        # Split into parts: date, time, timezone
-                        date_parts = date_clean.split(' ')
-                        if len(date_parts) >= 2:
-                            date_part = date_parts[0]  # YYYY-MM-DD
-                            time_part = date_parts[1]  # HH:MM:SS
-                            # Parse without timezone
-                            commit_date = datetime.strptime(f"{date_part} {time_part}", '%Y-%m-%d %H:%M:%S')
-                        else:
-                            commit_date = datetime.strptime(date_parts[0], '%Y-%m-%d')
-                    else:
-                        # Just date
-                        commit_date = datetime.strptime(date_clean, '%Y-%m-%d')
-                        
-                except (ValueError, IndexError) as e:
-                    print(f"Date parsing error for '{date_str}': {e}")
-                    # If date parsing fails, use current time
-                    commit_date = datetime.now()
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            commits = []
+            
+            for line in result.stdout.strip().split('\n'):
+                if not line:
+                    continue
                 
-                commits.append({
-                    'id': commit_hash,
-                    'date': commit_date,
-                    'message': message.strip()
-                })
-        
-        return commits
-    except subprocess.CalledProcessError:
-        return []
+                # Clean up any extra characters that might appear
+                line = line.strip()
+                if '< /dev/null |' in line:
+                    line = line.replace('< /dev/null | ', '')
+                
+                parts = line.split('|', 2)
+                if len(parts) == 3:
+                    commit_hash, date_str, message = parts
+                    # Parse ISO date format (e.g., "2025-06-09 01:06:17 -0400")
+                    try:
+                        # Clean the date string and split on space
+                        date_clean = date_str.strip()
+                        
+                        # Handle format: "2025-06-09 01:06:17 -0400"
+                        if ' ' in date_clean:
+                            # Split into parts: date, time, timezone
+                            date_parts = date_clean.split(' ')
+                            if len(date_parts) >= 2:
+                                date_part = date_parts[0]  # YYYY-MM-DD
+                                time_part = date_parts[1]  # HH:MM:SS
+                                # Parse without timezone
+                                commit_date = datetime.strptime(f"{date_part} {time_part}", '%Y-%m-%d %H:%M:%S')
+                            else:
+                                commit_date = datetime.strptime(date_parts[0], '%Y-%m-%d')
+                        else:
+                            # Just date
+                            commit_date = datetime.strptime(date_clean, '%Y-%m-%d')
+                            
+                    except (ValueError, IndexError) as e:
+                        print(f"Date parsing error for '{date_str}': {e}")
+                        # If date parsing fails, use current time
+                        commit_date = datetime.now()
+                    
+                    commits.append({
+                        'id': commit_hash,
+                        'date': commit_date,
+                        'message': message.strip()
+                    })
+            
+            return commits
+            
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            continue
+    
+    # If no git path works, return empty list
+    return []
 
 def categorize_commit(message: str) -> str:
     """Categorize commit based on message content"""
