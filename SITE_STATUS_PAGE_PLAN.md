@@ -54,41 +54,41 @@ This plan outlines the implementation of a development activity page for ThyWill
 
 ### 2.3 Frontend Templates
 
-#### Public Status Page (`templates/status.html`)
-- Clean, public-facing status display
-- Current system status (operational/degraded/down)
-- Recent deployment information
-- Basic performance metrics
-- Subscribe to status updates option
+#### Public Development Page (`templates/development.html`)
+- Clean, user-friendly feature timeline
+- Recent feature releases and improvements
+- Development highlights and new capabilities
+- What's coming next section
+- Subscribe to development updates option
 
-#### Admin Status Dashboard (`templates/admin_status.html`)
-- Comprehensive system diagnostics
-- Detailed git history with commit analysis
-- Performance graphs and trends
-- Database query performance
-- Error logs and debugging information
+#### Admin Development Dashboard (`templates/admin_development.html`)
+- Comprehensive development analytics
+- Detailed commit history with feature categorization
+- Development velocity metrics
+- Feature impact analysis
+- Roadmap planning tools
 
 ### 2.4 Git Integration Features
 
-#### Deployment Tracking
+#### Feature Development Tracking
 ```python
-def get_deployment_history():
-    """Get recent commits with deployment metadata"""
-    # Parse git log with custom format
-    # Include: hash, timestamp, message, author
-    # Add deployment status from logs
+def get_feature_timeline():
+    """Get recent commits categorized by feature type"""
+    # Parse git log for feature-related commits
+    # Include: feature type, impact, user-facing changes
+    # Categorize: new features, enhancements, fixes, UI improvements
     
-def get_current_version():
-    """Get current git commit and branch info"""
+def get_recent_capabilities():
+    """Extract new capabilities from recent commits"""
     
-def analyze_commit_health():
-    """Analyze commits for deployment success patterns"""
+def analyze_development_velocity():
+    """Track feature development patterns and frequency"""
 ```
 
-#### Automated Status Updates
-- Git hooks to update deployment status
-- Automatic health checks after deployments
-- Performance regression detection
+#### Feature Categorization
+- Automatic categorization of commits by type
+- Extraction of user-facing changes
+- Generation of release notes from commits
 
 ## 3. Status Indicators
 
