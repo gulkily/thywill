@@ -58,6 +58,23 @@
       </div>
       <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No changes yet</h3>
       <p class="text-gray-600 dark:text-gray-300">Check back later for updates and new features!</p>
+      
+      {% if debug_info %}
+      <details class="mt-6 text-left max-w-md mx-auto">
+        <summary class="text-sm text-gray-500 cursor-pointer">🔍 Debug Info (CHANGELOG_DEBUG=true)</summary>
+        <div class="mt-2 p-3 bg-gray-100 dark:bg-gray-800 rounded text-xs">
+          <p><strong>Git HEAD:</strong> {{ debug_info.git_head[:8] if debug_info.git_head else 'None' }}</p>
+          <p><strong>Last Cached:</strong> {{ debug_info.last_cached[:8] if debug_info.last_cached else 'None' }}</p>
+          <p><strong>Git Available:</strong> {{ debug_info.git_available }}</p>
+          <p><strong>Anthropic Key:</strong> {{ debug_info.anthropic_key_exists }}</p>
+          <p><strong>Entry Count:</strong> {{ debug_info.entry_count }}</p>
+          <p><strong>Refresh Attempted:</strong> {{ debug_info.refresh_attempted }}</p>
+          <div class="mt-2 text-xs text-gray-600 dark:text-gray-400">
+            Set <code>CHANGELOG_DEBUG=false</code> to hide this debug info.
+          </div>
+        </div>
+      </details>
+      {% endif %}
     </div>
   {% endif %}
 
