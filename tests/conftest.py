@@ -60,6 +60,10 @@ def client(test_session):
          patch('app_helpers.services.prayer_helpers.Session', mock_session), \
          patch('app_helpers.services.invite_helpers.Session', mock_session), \
          patch('app_helpers.routes.prayer_routes.Session', mock_session), \
+         patch('app_helpers.routes.prayer.feed_operations.Session', mock_session), \
+         patch('app_helpers.routes.prayer.prayer_crud.Session', mock_session), \
+         patch('app_helpers.routes.prayer.prayer_status.Session', mock_session), \
+         patch('app_helpers.routes.prayer.prayer_moderation.Session', mock_session), \
          patch('app_helpers.routes.auth_routes.Session', mock_session), \
          patch('app_helpers.routes.admin_routes.Session', mock_session), \
          patch('app_helpers.routes.user_routes.Session', mock_session), \
