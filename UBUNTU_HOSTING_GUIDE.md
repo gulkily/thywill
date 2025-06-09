@@ -67,18 +67,24 @@ Exit back to root user and create the service file:
 ```bash
 exit  # Back to root
 
+# Check for existing thywill service first
+systemctl status thywill
+systemctl list-units --type=service | grep -i thywill
+
 # Create systemd service file
 nano /etc/systemd/system/thywill.service
 ```
 
-Add this content:
+**Important:** Choose the correct host binding based on your setup:
+
+### Option A: With Nginx Reverse Proxy (Recommended)
 ```ini
 [Unit]
 Description=ThyWill FastAPI Application
 After=network.target
 
 [Service]
-Type=simple
+Type=exec
 User=thywill
 Group=thywill
 WorkingDirectory=/home/thywill/thywill
@@ -91,6 +97,30 @@ RestartSec=3
 WantedBy=multi-user.target
 ```
 
+### Option B: Direct Access (No Nginx)
+```ini
+[Unit]
+Description=ThyWill FastAPI Application
+After=network.target
+
+[Service]
+Type=exec
+User=thywill
+Group=thywill
+WorkingDirectory=/home/thywill/thywill
+Environment=PATH=/home/thywill/thywill/venv/bin
+ExecStart=/home/thywill/thywill/venv/bin/uvicorn app:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**Key Differences:**
+- `--host 127.0.0.1`: Only accessible through localhost (requires nginx proxy)
+- `--host 0.0.0.0`: Accessible from external IPs (direct access via IP:8000)
+
 ## Step 5: Configure Nginx
 
 ```bash
@@ -101,11 +131,67 @@ rm /etc/nginx/sites-enabled/default
 nano /etc/nginx/sites-available/thywill
 ```
 
-Add this content (replace `your-domain.com` with your actual domain):
+**Choose one of these configurations:**
+
+### Option A: With Domain Name
 ```nginx
 server {
     listen 80;
     server_name your-domain.com www.your-domain.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Serve static files directly
+    location /static/ {
+        alias /home/thywill/thywill/static/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+```
+
+### Option B: IP Address Only (No Domain)
+```nginx
+server {
+    listen 80 default_server;
+    server_name _;  # Catches any server name/IP
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Serve static files directly
+    location /static/ {
+        alias /home/thywill/thywill/static/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+```
+
+### Option C: Specific IP Address
+```nginx
+server {
+    listen 80;
+    server_name 192.168.1.100;  # Replace with your actual server IP
 
     location / {
         proxy_pass http://127.0.0.1:8000;
@@ -136,12 +222,23 @@ nginx -t  # Test configuration
 
 ## Step 6: Configure Firewall
 
+### Option A: With Nginx (Recommended)
 ```bash
 # Allow SSH, HTTP, and HTTPS
 ufw allow ssh
 ufw allow 'Nginx Full'
 ufw --force enable
 ```
+
+### Option B: Direct Access (No Nginx)
+```bash
+# Allow SSH and application port
+ufw allow ssh
+ufw allow 8000
+ufw --force enable
+```
+
+**Note:** If using direct access, you'll access the site at `http://your-server-ip:8000`
 
 ## Step 7: Start Services
 
@@ -160,7 +257,9 @@ systemctl status thywill
 systemctl status nginx
 ```
 
-## Step 8: Set Up SSL Certificate (Recommended)
+## Step 8: Set Up SSL Certificate (Optional - Domain Required)
+
+**Only if you have a domain name and used Option A in nginx config:**
 
 ```bash
 # Get SSL certificate from Let's Encrypt
@@ -169,6 +268,8 @@ certbot --nginx -d your-domain.com -d www.your-domain.com
 # Test auto-renewal
 certbot renew --dry-run
 ```
+
+**Note:** SSL certificates require a domain name. If using IP-only access (Options B or C), skip this step.
 
 ## Step 9: Initial Setup
 
@@ -205,16 +306,51 @@ systemctl status thywill nginx
 
 ## Troubleshooting
 
+**Port already in use:**
+```bash
+# Check what's using port 8000
+sudo lsof -i :8000
+
+# Kill existing uvicorn processes
+sudo fuser -k 8000/tcp
+
+# Or kill specific process ID
+sudo kill -9 <process_id>
+```
+
 **Application won't start:**
 ```bash
 # Check logs
 journalctl -u thywill -n 50
 
-# Test manually
+# Check if service exists and is running
+systemctl status thywill
+
+# Test manually (choose correct host based on your setup)
 su - thywill
 cd thywill
 source venv/bin/activate
+
+# For nginx setup:
 uvicorn app:app --host 127.0.0.1 --port 8000
+
+# For direct access:
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
+
+**Systemd service conflicts:**
+```bash
+# Stop existing service
+sudo systemctl stop thywill
+
+# Disable auto-start
+sudo systemctl disable thywill
+
+# Check for multiple service files
+ls /etc/systemd/system/thywill*
+
+# Reload systemd after changes
+sudo systemctl daemon-reload
 ```
 
 **Nginx errors:**

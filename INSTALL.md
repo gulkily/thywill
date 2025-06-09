@@ -98,8 +98,82 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 
 ### Production Deployment
 
-For production, consider:
-- Using a production WSGI server like Gunicorn
-- Setting up proper environment variables
-- Using a more robust database (PostgreSQL, MySQL)
-- Setting up proper logging and monitoring
+#### Option 1: Manual Process (Development/Testing)
+```bash
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
+```
+
+#### Option 2: Systemd Service (Recommended for Production)
+
+1. **Check for existing service:**
+```bash
+sudo systemctl status thywill
+sudo systemctl list-units --type=service | grep -i thywill
+```
+
+2. **Create systemd service file:**
+```bash
+sudo nano /etc/systemd/system/thywill.service
+```
+
+3. **Service file content:**
+```ini
+[Unit]
+Description=ThyWill Prayer Platform
+After=network.target
+
+[Service]
+Type=exec
+User=thywill
+Group=thywill
+WorkingDirectory=/home/thywill/thywill
+Environment=PATH=/home/thywill/thywill/venv/bin
+ExecStart=/home/thywill/thywill/venv/bin/uvicorn app:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+4. **Enable and start the service:**
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable thywill
+sudo systemctl start thywill
+```
+
+5. **Check service status:**
+```bash
+sudo systemctl status thywill
+```
+
+6. **Service management commands:**
+```bash
+# Start the service
+sudo systemctl start thywill
+
+# Stop the service
+sudo systemctl stop thywill
+
+# Restart the service
+sudo systemctl restart thywill
+
+# View logs
+sudo journalctl -u thywill -f
+```
+
+#### Important Notes for Production:
+- **Host Binding**: Always use `--host 0.0.0.0` for external access, not `127.0.0.1`
+- **Port Conflicts**: If port 8000 is in use, check for existing services with `sudo lsof -i :8000`
+- **Firewall**: Ensure port 8000 is open: `sudo ufw allow 8000`
+- **SSL/Domain**: For domains, set up reverse proxy (nginx) and SSL certificates
+- **Database**: Consider PostgreSQL or MySQL for production
+- **Monitoring**: Set up proper logging and monitoring
+- **Environment**: Ensure `.env` file has production-appropriate settings
+
+#### Troubleshooting Common Issues:
+- **Port already in use**: Kill existing processes with `sudo fuser -k 8000/tcp`
+- **Permission denied**: Check user permissions and file ownership
+- **Service won't start**: Check logs with `sudo journalctl -u thywill`
+- **External access blocked**: Verify firewall and cloud provider security groups
