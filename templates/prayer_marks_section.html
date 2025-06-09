@@ -5,9 +5,9 @@
             hx-target="#prayer-marks-{{ prayer_id }}"
             hx-swap="innerHTML"
             type="submit" 
-            class="bg-purple-100 dark:bg-purple-900 hover:bg-purple-200 dark:hover:bg-purple-800 text-purple-700 dark:text-purple-200 text-xs px-2 py-1 rounded border border-purple-300 dark:border-purple-700 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:focus:ring-purple-400">
-      I Prayed This
+            class="{% if user_mark_count > 0 %}bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 border-green-300 dark:border-green-600{% else %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 border-purple-300 dark:border-purple-700{% endif %} hover:opacity-80 text-xs px-2 py-1 rounded border focus:outline-none focus:ring-1 focus:ring-purple-500 dark:focus:ring-purple-400 flex items-center gap-1">
+      <span>{% if user_mark_count > 0 %}✓{% else %}🙏{% endif %} I Prayed This</span>
+      <span class="bg-white dark:bg-gray-800 px-1 rounded text-xs font-medium">{{ user_mark_count|default(0) }}</span>
     </button>
   </form>
-  {% if user_mark_text %}{{ user_mark_text | safe }}{% endif %}
 </div>
