@@ -6,7 +6,7 @@ from sqlmodel import Session, select, func
 
 from models import User, AuthenticationRequest, AuthApproval, AuthAuditLog, Session as SessionModel
 from tests.factories import UserFactory, AuthenticationRequestFactory, AuthApprovalFactory, SessionFactory
-from app import (
+from app_helpers.services.auth_helpers import (
     approve_auth_request, get_pending_requests_for_approval, 
     cleanup_expired_requests, log_auth_action
 )
@@ -93,8 +93,8 @@ class TestMultiDeviceAuthWorkflows:
         test_session.commit()
         
         # Run cleanup
-        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class, \
-             patch('app_helpers.services.auth_helpers.log_auth_action') as mock_log:
+        with patch('app_helpers.services.auth.token_helpers.Session') as mock_session_class, \
+             patch('app_helpers.services.auth.validation_helpers.log_auth_action') as mock_log:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             cleanup_expired_requests()
@@ -128,8 +128,8 @@ class TestAuthApprovalProcesses:
         test_session.commit()
         
         # Admin approves request
-        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class, \
-             patch('app_helpers.services.auth_helpers.log_auth_action') as mock_log:
+        with patch('app_helpers.services.auth.token_helpers.Session') as mock_session_class, \
+             patch('app_helpers.services.auth.validation_helpers.log_auth_action') as mock_log:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             result = approve_auth_request(auth_req.id, admin.id)
@@ -168,8 +168,8 @@ class TestAuthApprovalProcesses:
         test_session.commit()
         
         # User approves their own request
-        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class, \
-             patch('app_helpers.services.auth_helpers.log_auth_action') as mock_log:
+        with patch('app_helpers.services.auth.token_helpers.Session') as mock_session_class, \
+             patch('app_helpers.services.auth.validation_helpers.log_auth_action') as mock_log:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             result = approve_auth_request(auth_req.id, user.id)
@@ -207,8 +207,8 @@ class TestAuthApprovalProcesses:
         test_session.commit()
         
         # User tries to approve their own request
-        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class, \
-             patch('app_helpers.services.auth_helpers.log_auth_action') as mock_log:
+        with patch('app_helpers.services.auth.token_helpers.Session') as mock_session_class, \
+             patch('app_helpers.services.auth.validation_helpers.log_auth_action') as mock_log:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             result = approve_auth_request(auth_req.id, user.id)
@@ -241,9 +241,9 @@ class TestAuthApprovalProcesses:
         test_session.commit()
         
         # First peer approval (should not approve yet)
-        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class, \
-             patch('app_helpers.services.auth_helpers.log_auth_action') as mock_log, \
-             patch('app_helpers.services.auth_helpers.PEER_APPROVAL_COUNT', 2):  # Require 2 peer approvals
+        with patch('app_helpers.services.auth.token_helpers.Session') as mock_session_class, \
+             patch('app_helpers.services.auth.validation_helpers.log_auth_action') as mock_log, \
+             patch('app_helpers.services.auth.token_helpers.PEER_APPROVAL_COUNT', 2):  # Require 2 peer approvals
             mock_session_class.return_value.__enter__.return_value = test_session
             
             result1 = approve_auth_request(auth_req.id, peer1.id)
@@ -263,9 +263,9 @@ class TestAuthApprovalProcesses:
         assert approval1 is not None
         
         # Second peer approval (should approve now)
-        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class, \
-             patch('app_helpers.services.auth_helpers.log_auth_action') as mock_log, \
-             patch('app_helpers.services.auth_helpers.PEER_APPROVAL_COUNT', 2):
+        with patch('app_helpers.services.auth.token_helpers.Session') as mock_session_class, \
+             patch('app_helpers.services.auth.validation_helpers.log_auth_action') as mock_log, \
+             patch('app_helpers.services.auth.token_helpers.PEER_APPROVAL_COUNT', 2):
             mock_session_class.return_value.__enter__.return_value = test_session
             
             result2 = approve_auth_request(auth_req.id, peer2.id)
@@ -297,7 +297,7 @@ class TestAuthApprovalProcesses:
         test_session.commit()
         
         # Try to approve again
-        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
+        with patch('app_helpers.services.auth.token_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             result = approve_auth_request(auth_req.id, approver.id)
@@ -349,7 +349,7 @@ class TestAuthApprovalProcesses:
         test_session.commit()
         
         # Get requests approver can approve
-        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
+        with patch('app_helpers.services.auth.token_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             pending_requests = get_pending_requests_for_approval(approver.id)
@@ -406,10 +406,8 @@ class TestAuditLogging:
     
     def test_log_auth_action_without_session(self, test_session):
         """Test logging auth action without existing session"""
-        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
+        with patch('app_helpers.services.auth.validation_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
-            
-            from app import log_auth_action
             
             log_auth_action(
                 auth_request_id="test_req_2",
@@ -491,9 +489,9 @@ class TestAuditLogging:
     
     def test_security_event_logging(self, test_session):
         """Test security event logging functionality"""
-        from app import log_security_event
+        from app_helpers.services.auth_helpers import log_security_event
         
-        with patch('app_helpers.services.auth_helpers.Session') as mock_session_class:
+        with patch('app_helpers.services.auth.validation_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             log_security_event(

@@ -57,6 +57,9 @@ def client(test_session):
     # Patch Session creation throughout the app and helper modules
     with patch('app.Session', mock_session), \
          patch('app_helpers.services.auth_helpers.Session', mock_session), \
+         patch('app_helpers.services.auth.session_helpers.Session', mock_session), \
+         patch('app_helpers.services.auth.token_helpers.Session', mock_session), \
+         patch('app_helpers.services.auth.validation_helpers.Session', mock_session), \
          patch('app_helpers.services.prayer_helpers.Session', mock_session), \
          patch('app_helpers.services.invite_helpers.Session', mock_session), \
          patch('app_helpers.routes.prayer_routes.Session', mock_session), \
