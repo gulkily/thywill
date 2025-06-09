@@ -185,6 +185,22 @@
   
   <!-- Notification verification JavaScript -->
   <script src="/static/js/notification-verification.js"></script>
+  
+  <!-- Prayer card Original Request toggle -->
+  <script>
+    function toggleOriginalRequest(prayerId) {
+      const content = document.getElementById('original-request-' + prayerId);
+      const chevron = document.getElementById('chevron-' + prayerId);
+      
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        chevron.textContent = '▼';
+      } else {
+        content.classList.add('hidden');
+        chevron.textContent = '▶';
+      }
+    }
+  </script>
  </body>
 </html>
 
