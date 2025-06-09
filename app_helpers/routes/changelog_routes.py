@@ -33,8 +33,17 @@ async def changelog(request: Request):
         }
         
         try:
-            # Test git availability
-            subprocess.run(['git', '--version'], capture_output=True, check=True)
+            # Test git availability with common paths
+            git_paths = ['/usr/bin/git', '/usr/local/bin/git', 'git']
+            git_found = False
+            for git_path in git_paths:
+                try:
+                    subprocess.run([git_path, '--version'], capture_output=True, check=True)
+                    git_found = True
+                    break
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    continue
+            debug_info["git_available"] = git_found
         except:
             debug_info["git_available"] = False
     
