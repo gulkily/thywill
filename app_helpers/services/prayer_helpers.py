@@ -237,7 +237,9 @@ Create prayers that are:
 - Easy for a community to pray together
 - Agreeable to people of various faith backgrounds
 
-IMPORTANT: Do NOT use first person ("me", "my", "I"). Instead, write the prayer so that community members can pray it FOR the person who made the request. Use third person references like "them", "they", "this person", or terms like "our friend" or "our brother/sister"."""
+IMPORTANT: Do NOT use first person ("me", "my", "I"). Instead, write the prayer so that community members can pray it FOR the person who made the request. Use third person references like "them", "they", "this person", or terms like "our friend" or "our brother/sister".
+
+CRITICAL: Return ONLY the prayer text itself. Do NOT include any introductory phrases, explanations, or preambles like "Here's a prayer..." or "Here's a transformed...". Start directly with the prayer."""
 
         response = anthropic_client.messages.create(
             model="claude-3-5-sonnet-20241022",
@@ -245,7 +247,7 @@ IMPORTANT: Do NOT use first person ("me", "my", "I"). Instead, write the prayer 
             temperature=0.7,
             system=system_prompt,
             messages=[
-                {"role": "user", "content": f"Please transform this prayer request into a community prayer that others can pray for the person: {prompt}"}
+                {"role": "user", "content": prompt}
             ]
         )
         
