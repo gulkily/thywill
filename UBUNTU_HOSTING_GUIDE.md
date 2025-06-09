@@ -137,7 +137,7 @@ nano /etc/nginx/sites-available/thywill
 ```nginx
 server {
     listen 80;
-    server_name your-domain.com www.your-domain.com;
+    server_name thywill.live www.thywill.live;
 
     location / {
         proxy_pass http://127.0.0.1:8000;
@@ -263,7 +263,7 @@ systemctl status nginx
 
 ```bash
 # Get SSL certificate from Let's Encrypt
-certbot --nginx -d your-domain.com -d www.your-domain.com
+certbot --nginx -d thywill.live -d www.thywill.live
 
 # Test auto-renewal
 certbot renew --dry-run
@@ -279,7 +279,7 @@ certbot renew --dry-run
    journalctl -u thywill -f
    ```
 3. Find the line: `==== First-run invite token (admin): <token> ====`
-4. Visit `https://your-domain.com/claim/<token>` to create admin account
+4. Visit `https://thywill.live/claim/<token>` to create admin account
 5. Use admin panel to generate invite links for other users
 
 ## Management Commands
