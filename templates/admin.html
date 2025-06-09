@@ -130,17 +130,31 @@
           <span class="text-xs text-gray-500 dark:text-gray-400">
             by {{ p.author_name }} · {{ p.created_at.strftime('%Y-%m-%d %H:%M') }}
           </span>
-          <form method="post" action="/flag/{{ p.id }}" class="inline">
-            <button type="submit" 
-                    hx-post="/flag/{{ p.id }}"
-                    hx-target="#flagged-prayer-{{ p.id }}"
-                    hx-swap="outerHTML"
-                    hx-indicator="#unflag-loading-{{ p.id }}"
-                    class="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-1 rounded transition-colors duration-200">
-              <span class="htmx-indicator" id="unflag-loading-{{ p.id }}">🔄</span>
-              <span>Unflag</span>
-            </button>
-          </form>
+          <div class="flex space-x-2">
+            <form method="post" action="/prayer/{{ p.id }}/archive" class="inline">
+              <button type="submit" 
+                      hx-post="/prayer/{{ p.id }}/archive"
+                      hx-target="#flagged-prayer-{{ p.id }}"
+                      hx-swap="outerHTML"
+                      hx-indicator="#archive-loading-{{ p.id }}"
+                      onclick="return confirm('Archive this flagged prayer? It will be hidden from public feeds but remain accessible to the author.')"
+                      class="bg-amber-600 hover:bg-amber-700 text-white text-sm px-3 py-1 rounded transition-colors duration-200">
+                <span class="htmx-indicator" id="archive-loading-{{ p.id }}">🔄</span>
+                <span>📁 Archive</span>
+              </button>
+            </form>
+            <form method="post" action="/flag/{{ p.id }}" class="inline">
+              <button type="submit" 
+                      hx-post="/flag/{{ p.id }}"
+                      hx-target="#flagged-prayer-{{ p.id }}"
+                      hx-swap="outerHTML"
+                      hx-indicator="#unflag-loading-{{ p.id }}"
+                      class="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-1 rounded transition-colors duration-200">
+                <span class="htmx-indicator" id="unflag-loading-{{ p.id }}">🔄</span>
+                <span>Unflag</span>
+              </button>
+            </form>
+          </div>
         </footer>
       </li>
       {% endfor %}

@@ -14,63 +14,209 @@ function toggleAddPrayer() {
     }
 }
 
-// Handle prayer form submission with AJAX
+// Global variable to store current preview data
+let currentPreviewData = null;
+
+// Handle prayer form submission with preview flow
 document.addEventListener('DOMContentLoaded', function() {
     const prayerForm = document.getElementById('prayer-form');
     if (prayerForm) {
         prayerForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            await handlePrayerPreview();
+        });
+    }
+    
+    // Setup preview action handlers
+    setupPreviewActions();
+    
+    // Setup collapsible original request in preview
+    const toggleOriginal = document.getElementById('toggle-original');
+    if (toggleOriginal) {
+        toggleOriginal.addEventListener('click', function() {
+            const content = document.getElementById('original-request-content');
+            const chevron = document.getElementById('original-chevron');
             
-            const submitBtn = document.getElementById('submit-btn');
-            const statusDiv = document.getElementById('prayer-status');
-            const loadingDiv = document.getElementById('prayer-loading');
-            const successDiv = document.getElementById('prayer-success');
-            const errorDiv = document.getElementById('prayer-error');
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        });
+    }
+});
+
+async function handlePrayerPreview() {
+    const prayerForm = document.getElementById('prayer-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const statusDiv = document.getElementById('prayer-status');
+    const loadingDiv = document.getElementById('prayer-loading');
+    const errorDiv = document.getElementById('prayer-error');
+    
+    // Show loading state
+    submitBtn.disabled = true;
+    statusDiv.classList.remove('hidden');
+    loadingDiv.classList.remove('hidden');
+    errorDiv.classList.add('hidden');
+    
+    try {
+        const formData = new FormData(prayerForm);
+        const response = await fetch('/prayers/preview', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const previewData = await response.json();
+            currentPreviewData = previewData;
+            showPreviewSection(previewData);
+        } else {
+            throw new Error('Preview generation failed');
+        }
+    } catch (error) {
+        // Show error message
+        loadingDiv.classList.add('hidden');
+        errorDiv.classList.remove('hidden');
+        
+        // Re-enable submit button after error
+        setTimeout(() => {
+            submitBtn.disabled = false;
+            statusDiv.classList.add('hidden');
+        }, 3000);
+    }
+}
+
+function showPreviewSection(previewData) {
+    // Hide form section
+    document.getElementById('add-prayer-form').style.display = 'none';
+    
+    // Populate preview content
+    document.getElementById('preview-prayer-text').textContent = previewData.generated_prayer;
+    document.getElementById('preview-original-text').textContent = previewData.original_text;
+    
+    // Show preview section
+    document.getElementById('prayer-preview').style.display = 'block';
+    
+    // Reset form loading states
+    const submitBtn = document.getElementById('submit-btn');
+    const statusDiv = document.getElementById('prayer-status');
+    submitBtn.disabled = false;
+    statusDiv.classList.add('hidden');
+    
+    // Scroll to preview section
+    document.getElementById('prayer-preview').scrollIntoView({ behavior: 'smooth' });
+}
+
+function setupPreviewActions() {
+    // Submit final prayer
+    const submitFinal = document.getElementById('submit-final');
+    if (submitFinal) {
+        submitFinal.addEventListener('click', async function() {
+            if (!currentPreviewData) return;
             
-            // Show loading state
-            submitBtn.disabled = true;
-            statusDiv.classList.remove('hidden');
-            loadingDiv.classList.remove('hidden');
-            successDiv.classList.add('hidden');
-            errorDiv.classList.add('hidden');
+            this.disabled = true;
+            this.textContent = 'Submitting...';
             
             try {
-                const formData = new FormData(prayerForm);
+                const formData = new FormData();
+                formData.append('text', currentPreviewData.original_text);
+                formData.append('tag', currentPreviewData.tag || '');
+                formData.append('target_audience', currentPreviewData.target_audience);
+                
                 const response = await fetch('/prayers', {
                     method: 'POST',
                     body: formData
                 });
                 
                 if (response.ok) {
-                    // Show success message
-                    loadingDiv.classList.add('hidden');
-                    successDiv.classList.remove('hidden');
-                    
-                    // Reset form
-                    prayerForm.reset();
-                    
-                    // Close form after 2 seconds and reload page to show new prayer
-                    setTimeout(() => {
-                        toggleAddPrayer();
-                        window.location.reload();
-                    }, 2000);
+                    // Success - reload page to show new prayer
+                    window.location.reload();
                 } else {
                     throw new Error('Submission failed');
                 }
             } catch (error) {
-                // Show error message
-                loadingDiv.classList.add('hidden');
-                errorDiv.classList.remove('hidden');
-                
-                // Re-enable submit button after error
-                setTimeout(() => {
-                    submitBtn.disabled = false;
-                    statusDiv.classList.add('hidden');
-                }, 3000);
+                this.disabled = false;
+                this.textContent = 'Submit Prayer';
+                alert('Failed to submit prayer. Please try again.');
             }
         });
     }
-});
+    
+    // Regenerate prayer
+    const regenerate = document.getElementById('regenerate');
+    if (regenerate) {
+        regenerate.addEventListener('click', async function() {
+            if (!currentPreviewData) return;
+            
+            this.disabled = true;
+            this.textContent = 'Generating...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('text', currentPreviewData.original_text);
+                formData.append('tag', currentPreviewData.tag || '');
+                formData.append('target_audience', currentPreviewData.target_audience);
+                
+                const response = await fetch('/prayers/preview', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const newPreviewData = await response.json();
+                    currentPreviewData = newPreviewData;
+                    document.getElementById('preview-prayer-text').textContent = newPreviewData.generated_prayer;
+                } else {
+                    throw new Error('Regeneration failed');
+                }
+            } catch (error) {
+                alert('Failed to regenerate prayer. Please try again.');
+            } finally {
+                this.disabled = false;
+                this.textContent = 'Generate Different Prayer';
+            }
+        });
+    }
+    
+    // Edit request - return to form
+    const editRequest = document.getElementById('edit-request');
+    if (editRequest) {
+        editRequest.addEventListener('click', function() {
+            hidePreviewSection();
+            
+            // Restore form with previous values
+            if (currentPreviewData) {
+                document.getElementById('text').value = currentPreviewData.original_text;
+                document.getElementById('tag').value = currentPreviewData.tag || '';
+                document.getElementById('target_audience').value = currentPreviewData.target_audience;
+            }
+        });
+    }
+    
+    // Cancel preview
+    const cancelPreview = document.getElementById('cancel-preview');
+    if (cancelPreview) {
+        cancelPreview.addEventListener('click', function() {
+            hidePreviewSection();
+            // Reset form
+            document.getElementById('prayer-form').reset();
+            currentPreviewData = null;
+        });
+    }
+}
+
+function hidePreviewSection() {
+    document.getElementById('prayer-preview').style.display = 'none';
+    document.getElementById('add-prayer-form').style.display = 'block';
+    
+    // Reset original request collapsible state
+    const content = document.getElementById('original-request-content');
+    const chevron = document.getElementById('original-chevron');
+    content.classList.add('hidden');
+    chevron.style.transform = 'rotate(0deg)';
+}
 
 // Invite modal functions
 function closeInviteModal() {
