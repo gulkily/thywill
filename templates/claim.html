@@ -1,193 +1,204 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="max-w-4xl mx-auto mt-10 space-y-8">
+<div class="max-w-md mx-auto mt-8 space-y-6">
   
-  <!-- Welcome Header -->
+  <!-- Welcome Header - Simplified -->
   <div class="text-center">
-    <div class="mx-auto h-16 w-16 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mb-6">
-      <svg class="h-8 w-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="mx-auto h-12 w-12 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mb-4">
+      <svg class="h-6 w-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
       </svg>
     </div>
-    <h1 class="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-      Welcome to <span class="text-purple-600 dark:text-purple-400">Thy Will</span>
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+      Complete Your Invitation
     </h1>
-    <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-      You've been invited to join our Christian prayer community
+    <p class="text-gray-600 dark:text-gray-400 mb-6">
+      Join Thy Will's prayer community in 30 seconds
     </p>
   </div>
 
-  <!-- Community Introduction -->
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 text-center">
-      About Our Community
-    </h2>
-    
-    <div class="grid md:grid-cols-2 gap-8">
-      <div class="space-y-6">
-        <div>
-          <div class="flex items-center mb-3">
-            <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-3">
-              <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-              </svg>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Christian Community</h3>
+  <!-- Immediate Join Form -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+    {% if error %}
+    <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-700 rounded-lg">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800 dark:text-red-200">
+            Unable to process invite
+          </h3>
+          <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+            <p>{{ error }}</p>
           </div>
-          <p class="text-gray-600 dark:text-gray-400">
-            Thy Will is an invite-only Christian prayer community built on biblical principles of love, fellowship, and mutual support. All who seek sincere spiritual community are welcome.
-          </p>
-        </div>
-
-        <div>
-          <div class="flex items-center mb-3">
-            <div class="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-3">
-              <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-              </svg>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Safe & Confidential</h3>
-          </div>
-          <p class="text-gray-600 dark:text-gray-400">
-            Your prayer requests and interactions remain private within our trusted community. We maintain strict confidentiality.
-          </p>
-        </div>
-
-        <div>
-          <div class="flex items-center mb-3">
-            <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mr-3">
-              <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path>
-              </svg>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Supportive Fellowship</h3>
-          </div>
-          <p class="text-gray-600 dark:text-gray-400">
-            Connect with fellow believers and seekers who will pray for you, encourage you, and walk alongside you in faith.
-          </p>
-        </div>
-      </div>
-
-      <div class="space-y-6">
-        <div class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-6">
-          <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-3">Community Guidelines</h4>
-          <ul class="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-            <li class="flex items-start">
-              <span class="text-blue-600 dark:text-blue-400 mr-2">•</span>
-              Share prayer requests and needs openly and honestly
-            </li>
-            <li class="flex items-start">
-              <span class="text-blue-600 dark:text-blue-400 mr-2">•</span>
-              Respond with compassion and Christ-like encouragement
-            </li>
-            <li class="flex items-start">
-              <span class="text-blue-600 dark:text-blue-400 mr-2">•</span>
-              Maintain confidentiality of all shared requests
-            </li>
-            <li class="flex items-start">
-              <span class="text-blue-600 dark:text-blue-400 mr-2">•</span>
-              Practice respectful, grace-filled communication
-            </li>
-            <li class="flex items-start">
-              <span class="text-blue-600 dark:text-blue-400 mr-2">•</span>
-              Offer prayers in a spirit of love and faith
-            </li>
-          </ul>
-        </div>
-
-        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6">
-          <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-3">What to Expect</h4>
-          <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-2">
-            <li class="flex items-start">
-              <span class="text-purple-600 dark:text-purple-400 mr-2">✓</span>
-              Submit prayer requests for any life situation
-            </li>
-            <li class="flex items-start">
-              <span class="text-purple-600 dark:text-purple-400 mr-2">✓</span>
-              Pray for and encourage other community members
-            </li>
-            <li class="flex items-start">
-              <span class="text-purple-600 dark:text-purple-400 mr-2">✓</span>
-              Celebrate answered prayers and God's faithfulness together
-            </li>
-            <li class="flex items-start">
-              <span class="text-purple-600 dark:text-purple-400 mr-2">✓</span>
-              Build meaningful spiritual friendships in a welcoming environment
-            </li>
-          </ul>
         </div>
       </div>
     </div>
-  </div>
+    {% endif %}
 
-  <!-- Join Form -->
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-    <div class="max-w-md mx-auto">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 text-center">
-        Join Our Community
-      </h2>
-      
-      <div class="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-        <p class="text-sm text-yellow-800 dark:text-yellow-200">
-          <strong>Privacy First:</strong> No email required. Your invite link is valid for 12 hours. 
-          Choose a display name that feels comfortable to you.
+    <form method="post" action="/claim/{{ token }}" class="space-y-4" aria-label="Complete invitation">
+      <div>
+        <label for="display_name" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+          Choose Your Display Name
+        </label>
+        <input id="display_name" name="display_name" maxlength="40" required
+               placeholder="e.g., Sarah, John M., PrayerWarrior"
+               class="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          No email required • Visible to community members
         </p>
       </div>
 
-      <form method="post" action="/claim/{{ token }}" class="space-y-6" aria-label="Claim invite form">
-        {% if error %}
-        <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-700 rounded-lg">
-          <div class="flex">
-            <div class="flex-shrink-0">
-              <svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+      <button type="submit"
+              class="w-full bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white font-semibold py-4 text-lg rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+        Join Thy Will Community
+      </button>
+    </form>
+
+    <div class="mt-4 text-center">
+      <p class="text-xs text-gray-500 dark:text-gray-400">
+        By joining, you agree to participate respectfully and maintain confidentiality
+      </p>
+    </div>
+  </div>
+
+  <!-- Trust Indicators -->
+  <div class="text-center space-y-2">
+    <div class="flex justify-center items-center space-x-6 text-xs text-gray-500 dark:text-gray-400">
+      <div class="flex items-center">
+        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 0 00-8 0v4h8z"></path>
+        </svg>
+        Private & Secure
+      </div>
+      <div class="flex items-center">
+        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+        </svg>
+        Christian Community
+      </div>
+    </div>
+    <p class="text-xs text-gray-400">Invite expires in 12 hours</p>
+  </div>
+
+  <!-- What Happens Next -->
+  <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+    <h3 class="font-semibold text-blue-900 dark:text-blue-100 mb-2 text-sm">What happens next?</h3>
+    <div class="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+      <p>✓ Immediately access the prayer community</p>
+      <p>✓ Share prayer requests and support others</p>
+      <p>✓ Connect with fellow believers in faith</p>
+    </div>
+  </div>
+
+  <!-- Learn More Toggle -->
+  <div class="text-center">
+    <button onclick="toggleCommunityInfo()" class="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 underline focus:outline-none">
+      Learn more about our community ↓
+    </button>
+  </div>
+
+  <!-- Community Information (Initially Hidden) -->
+  <div id="community-info" class="hidden space-y-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 text-center">
+        About Our Community
+      </h2>
+      
+      <div class="space-y-4 text-sm">
+        <div>
+          <div class="flex items-center mb-2">
+            <div class="w-6 h-6 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-2">
+              <svg class="w-3 h-3 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
               </svg>
             </div>
-            <div class="ml-3">
-              <h3 class="text-sm font-medium text-red-800 dark:text-red-200">
-                Unable to process invite
-              </h3>
-              <div class="mt-2 text-sm text-red-700 dark:text-red-300">
-                <p>{{ error }}</p>
-              </div>
-            </div>
+            <h3 class="font-semibold text-gray-900 dark:text-gray-100">Christian Community</h3>
           </div>
-        </div>
-        {% endif %}
-        
-        <div>
-          <label for="display_name" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-            Choose Your Display Name
-          </label>
-          <input id="display_name" name="display_name" maxlength="40" required
-                 placeholder="e.g., Sarah, John M., PrayerWarrior"
-                 class="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
-          <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            This name will be visible to other community members
+          <p class="text-gray-600 dark:text-gray-400 ml-8">
+            Invite-only prayer community built on biblical principles of love, fellowship, and mutual support.
           </p>
         </div>
 
-        <button type="submit"
-                class="w-full bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white font-semibold py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-          Join Thy Will Community
-        </button>
-      </form>
+        <div>
+          <div class="flex items-center mb-2">
+            <div class="w-6 h-6 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-2">
+              <svg class="w-3 h-3 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 dark:text-gray-100">Safe & Confidential</h3>
+          </div>
+          <p class="text-gray-600 dark:text-gray-400 ml-8">
+            All prayer requests and interactions remain private within our trusted community.
+          </p>
+        </div>
 
-      <div class="mt-6 text-center">
-        <p class="text-xs text-gray-500 dark:text-gray-400">
-          By joining, you agree to participate respectfully and maintain confidentiality
-        </p>
+        <div>
+          <div class="flex items-center mb-2">
+            <div class="w-6 h-6 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mr-2">
+              <svg class="w-3 h-3 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path>
+              </svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 dark:text-gray-100">Supportive Fellowship</h3>
+          </div>
+          <p class="text-gray-600 dark:text-gray-400 ml-8">
+            Connect with fellow believers who will pray for you and walk alongside you in faith.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4 mt-6">
+        <div class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
+          <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-2 text-sm">Community Guidelines</h4>
+          <ul class="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+            <li>• Share prayer requests openly and honestly</li>
+            <li>• Respond with compassion and Christ-like encouragement</li>
+            <li>• Maintain confidentiality of all shared requests</li>
+            <li>• Practice respectful, grace-filled communication</li>
+          </ul>
+        </div>
+
+        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+          <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-2 text-sm">What to Expect</h4>
+          <ul class="text-xs text-gray-700 dark:text-gray-300 space-y-1">
+            <li>✓ Submit prayer requests for any life situation</li>
+            <li>✓ Pray for and encourage other members</li>
+            <li>✓ Celebrate answered prayers together</li>
+            <li>✓ Build meaningful spiritual friendships</li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Scripture Footer -->
-  <div class="text-center py-8">
-    <blockquote class="text-lg italic text-gray-600 dark:text-gray-400 mb-2">
+  <div class="text-center py-6">
+    <blockquote class="text-sm italic text-gray-500 dark:text-gray-400 mb-1">
       "Bear one another's burdens, and so fulfill the law of Christ."
     </blockquote>
-    <cite class="text-sm text-gray-500 dark:text-gray-500">Galatians 6:2</cite>
+    <cite class="text-xs text-gray-400 dark:text-gray-500">Galatians 6:2</cite>
   </div>
 </div>
+
+<script>
+  function toggleCommunityInfo() {
+    const info = document.getElementById('community-info');
+    const button = event.target;
+    
+    if (info.classList.contains('hidden')) {
+      info.classList.remove('hidden');
+      button.textContent = 'Show less ↑';
+    } else {
+      info.classList.add('hidden');
+      button.textContent = 'Learn more about our community ↓';
+    }
+  }
+</script>
+
 {% endblock %}
 
