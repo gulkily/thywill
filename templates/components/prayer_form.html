@@ -6,7 +6,7 @@
     <p class="text-sm text-gray-600 dark:text-gray-400">Tell us what's on your heart, and we'll craft a beautiful prayer for the community.</p>
   </div>
   <div class="p-4">
-    <form method="post" action="/prayers" class="space-y-4">
+    <form id="prayer-form" method="post" action="/prayers" class="space-y-4">
       <div>
         <label for="text" class="sr-only">Prayer request</label>
         <textarea id="text" name="text" rows="8" maxlength="2000" required
@@ -40,8 +40,26 @@
         </div>
         
       </div>
+      
+      <!-- Loading and success states -->
+      <div id="prayer-status" class="hidden">
+        <div id="prayer-loading" class="flex items-center text-purple-600 dark:text-purple-400">
+          <svg class="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Creating your prayer...</span>
+        </div>
+        <div id="prayer-success" class="hidden text-green-600 dark:text-green-400">
+          ✓ Prayer submitted successfully!
+        </div>
+        <div id="prayer-error" class="hidden text-red-600 dark:text-red-400">
+          Something went wrong. Please try again.
+        </div>
+      </div>
+      
       <div class="flex gap-2">
-        <button type="submit" class="bg-purple-600 hover:bg-purple-700 dark:bg-purple-800 dark:hover:bg-purple-900 text-white font-semibold px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400">
+        <button type="submit" id="submit-btn" class="bg-purple-600 hover:bg-purple-700 dark:bg-purple-800 dark:hover:bg-purple-900 text-white font-semibold px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 disabled:opacity-50 disabled:cursor-not-allowed">
           Submit Prayer Request
         </button>
         <button type="button" onclick="toggleAddPrayer()" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-4 py-2 rounded">
