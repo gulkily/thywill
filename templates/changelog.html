@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Changelog{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+  <div class="text-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">What's New</h1>
+    <p class="text-gray-600 dark:text-gray-300">Recent improvements and features we've added to ThyWill</p>
+  </div>
+
+  {% if grouped_entries %}
+    {% for date_group, entries in grouped_entries.items() %}
+      <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+          {{ date_group }}
+        </h2>
+        
+        <div class="space-y-4">
+          {% for entry in entries %}
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow">
+              <div class="flex items-start space-x-3">
+                <span class="text-2xl flex-shrink-0 mt-1">{{ get_change_type_icon(entry.change_type) }}</span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-gray-900 dark:text-white leading-relaxed">
+                    {{ entry.friendly_description or entry.original_message }}
+                  </p>
+                  <div class="flex items-center mt-2 space-x-4">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                      {% if entry.change_type == 'new' %}bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100
+                      {% elif entry.change_type == 'enhanced' %}bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100
+                      {% elif entry.change_type == 'fixed' %}bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100
+                      {% elif entry.change_type == 'meta' %}bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100
+                      {% else %}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100{% endif %}">
+                      {% if entry.change_type == 'new' %}New Feature
+                      {% elif entry.change_type == 'enhanced' %}Enhancement
+                      {% elif entry.change_type == 'fixed' %}Bug Fix
+                      {% elif entry.change_type == 'meta' %}Development
+                      {% else %}Update{% endif %}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                      {{ entry.commit_date.strftime('%I:%M %p') }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="text-center py-12">
+      <div class="text-gray-400 dark:text-gray-500 mb-4">
+        <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No changes yet</h3>
+      <p class="text-gray-600 dark:text-gray-300">Check back later for updates and new features!</p>
+    </div>
+  {% endif %}
+
+  <div class="mt-12 text-center">
+    <p class="text-sm text-gray-500 dark:text-gray-400">
+      Changes are automatically detected from our development activity.
+      <br>
+      Have a suggestion? We'd love to hear from you!
+    </p>
+  </div>
+</div>
+
+<script>
+// Optional: Auto-refresh every 5 minutes if page is visible
+let refreshInterval;
+
+function startAutoRefresh() {
+  refreshInterval = setInterval(() => {
+    if (!document.hidden) {
+      // Use HTMX to refresh just the changelog content
+      htmx.ajax('GET', '/changelog', {target: 'body', swap: 'outerHTML'});
+    }
+  }, 5 * 60 * 1000); // 5 minutes
+}
+
+function stopAutoRefresh() {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
+}
+
+// Start auto-refresh when page loads
+document.addEventListener('DOMContentLoaded', startAutoRefresh);
+
+// Stop auto-refresh when page is unloaded
+window.addEventListener('beforeunload', stopAutoRefresh);
+
+// Pause auto-refresh when page is hidden
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    stopAutoRefresh();
+  } else {
+    startAutoRefresh();
+  }
+});
+</script>
+{% endblock %}
