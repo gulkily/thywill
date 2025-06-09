@@ -1,56 +1,56 @@
-# Site Status Page Implementation Plan
+# Development Activity Page Implementation Plan
 
 ## Overview
-This plan outlines the implementation of a comprehensive site status page for ThyWill that leverages git history to provide real-time insights into application health, deployment status, and system reliability.
+This plan outlines the implementation of a development activity page for ThyWill that showcases recent feature development, new capabilities, and ongoing improvements using git history to provide transparency about platform evolution.
 
 ## 1. Core Features
 
-### 1.1 Git History Integration
-- **Recent Deployments**: Display last 10-20 commits with timestamps and descriptions
-- **Deployment Timeline**: Visual timeline showing deployment frequency and timing
-- **Rollback Information**: Show current deployed version and ability to identify previous stable versions
-- **Commit Health**: Color-coded commits based on deployment success/failure status
+### 1.1 Feature Development Timeline
+- **Recent Features**: Display last 15-20 commits highlighting new features and improvements
+- **Development Activity**: Visual timeline showing feature release frequency and development velocity
+- **Feature Categories**: Group commits by type (new features, enhancements, bug fixes, UI improvements)
+- **Release Notes**: Auto-generated summaries of new capabilities from commit messages
 
-### 1.2 System Health Monitoring
-- **Database Connectivity**: Check SQLite database connection and response time
-- **API Health**: Monitor Anthropic API connectivity and response times
-- **Authentication System**: Verify multi-device auth system functionality
-- **Prayer System**: Test prayer submission and retrieval functionality
+### 1.2 Development Highlights
+- **New Capabilities**: Showcase recently added features like donation support, performance optimizations, dark mode
+- **User Experience Improvements**: Highlight UI/UX enhancements and user-facing improvements
+- **Platform Enhancements**: Display backend improvements that benefit user experience
+- **Community Features**: Show developments in prayer platform, authentication, and social features
 
-### 1.3 Real-time Metrics
-- **Active Users**: Current session count
-- **Prayer Activity**: Recent prayer submissions and interactions
-- **Authentication Requests**: Pending and recent auth approvals
-- **System Performance**: Response times for key endpoints
+### 1.3 Development Insights
+- **Feature Velocity**: Track how frequently new features are being released
+- **Development Focus**: Categorize recent work to show current development priorities
+- **Platform Evolution**: Show progression of capabilities over time
+- **User-Facing Updates**: Highlight changes that directly impact user experience
 
 ## 2. Technical Implementation
 
 ### 2.1 New Route Structure
 ```
-/status                    # Public status page
-/admin/status             # Detailed admin status with sensitive info
-/api/status               # JSON API for external monitoring
-/api/health               # Simple health check endpoint
+/development              # Public development activity page
+/admin/development       # Detailed development insights for admins
+/api/development         # JSON API for development timeline
+/api/features            # Feature changelog endpoint
 ```
 
 ### 2.2 Backend Components
 
-#### Status Service (`app_helpers/services/status_helpers.py`)
-- Git integration functions
-- Health check utilities
-- Metrics collection
-- Performance monitoring
+#### Development Service (`app_helpers/services/development_helpers.py`)
+- Git commit parsing and categorization
+- Feature extraction from commit messages
+- Development timeline generation
+- Release notes compilation
 
-#### Status Routes (`app_helpers/routes/status_routes.py`)
-- Public status page route
-- Admin status dashboard
-- API endpoints for monitoring
-- Health check endpoint
+#### Development Routes (`app_helpers/routes/development_routes.py`)
+- Public development activity page
+- Admin development dashboard
+- API endpoints for development data
+- Feature changelog endpoint
 
 #### Models Extension (`models.py`)
-- `SystemHealth` model for storing health check results
-- `DeploymentLog` model for tracking deployment events
-- `PerformanceMetric` model for response time tracking
+- `FeatureRelease` model for tracking major features
+- `DevelopmentMilestone` model for significant updates
+- `UserFacingChange` model for changelog entries
 
 ### 2.3 Frontend Templates
 
