@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import anthropic
 
 from fastapi import FastAPI, Request, Form, Depends, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select, func
@@ -91,7 +91,7 @@ async def unauthorized_exception_handler(request: Request, exc: HTTPException):
         "MULTI_DEVICE_AUTH_ENABLED": MULTI_DEVICE_AUTH_ENABLED
     }, status_code=401)
 
-# Custom exception handler for 404 not found errors (especially auth-related)
+# Custom exception handler for 404 not found errors
 @app.exception_handler(404)
 async def not_found_exception_handler(request: Request, exc: HTTPException):
     """Custom handler for 404 not found errors to show user-friendly page"""
@@ -102,11 +102,35 @@ async def not_found_exception_handler(request: Request, exc: HTTPException):
             "MULTI_DEVICE_AUTH_ENABLED": MULTI_DEVICE_AUTH_ENABLED
         }, status_code=404)
     
-    # For other 404s, return default behavior
-    return JSONResponse(
-        status_code=404,
-        content={"detail": str(exc.detail)}
-    )
+    # For other 404s, show generic error page
+    return templates.TemplateResponse("error.html", {
+        "request": request,
+        "error_code": 404,
+        "error_title": "Page Not Found",
+        "error_message": "The page you're looking for doesn't exist or has been moved."
+    }, status_code=404)
+
+# Custom exception handler for 500 internal server errors
+@app.exception_handler(500)
+async def internal_error_exception_handler(request: Request, exc: Exception):
+    """Custom handler for 500 internal server errors"""
+    return templates.TemplateResponse("error.html", {
+        "request": request,
+        "error_code": 500,
+        "error_title": "Internal Server Error",
+        "error_message": "Something went wrong on our end. Please try again later."
+    }, status_code=500)
+
+# Custom exception handler for 403 forbidden errors
+@app.exception_handler(403)
+async def forbidden_exception_handler(request: Request, exc: HTTPException):
+    """Custom handler for 403 forbidden errors"""
+    return templates.TemplateResponse("error.html", {
+        "request": request,
+        "error_code": 403,
+        "error_title": "Access Forbidden",
+        "error_message": "You don't have permission to access this resource."
+    }, status_code=403)
 
 # ───────── Extracted functions now imported from helper modules ─────────
 # Auth functions: create_session, current_user, require_full_auth, is_admin, etc.
