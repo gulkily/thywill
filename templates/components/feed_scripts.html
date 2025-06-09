@@ -14,12 +14,61 @@ function toggleAddPrayer() {
     }
 }
 
-// Close form after successful submission
+// Handle prayer form submission with AJAX
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if there's a success message (you could add this logic)
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('submitted') === 'true') {
-        document.getElementById('add-prayer-form').style.display = 'none';
+    const prayerForm = document.getElementById('prayer-form');
+    if (prayerForm) {
+        prayerForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const statusDiv = document.getElementById('prayer-status');
+            const loadingDiv = document.getElementById('prayer-loading');
+            const successDiv = document.getElementById('prayer-success');
+            const errorDiv = document.getElementById('prayer-error');
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            statusDiv.classList.remove('hidden');
+            loadingDiv.classList.remove('hidden');
+            successDiv.classList.add('hidden');
+            errorDiv.classList.add('hidden');
+            
+            try {
+                const formData = new FormData(prayerForm);
+                const response = await fetch('/prayers', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    // Show success message
+                    loadingDiv.classList.add('hidden');
+                    successDiv.classList.remove('hidden');
+                    
+                    // Reset form
+                    prayerForm.reset();
+                    
+                    // Close form after 2 seconds and reload page to show new prayer
+                    setTimeout(() => {
+                        toggleAddPrayer();
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    throw new Error('Submission failed');
+                }
+            } catch (error) {
+                // Show error message
+                loadingDiv.classList.add('hidden');
+                errorDiv.classList.remove('hidden');
+                
+                // Re-enable submit button after error
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    statusDiv.classList.add('hidden');
+                }, 3000);
+            }
+        });
     }
 });
 

@@ -257,7 +257,7 @@ def submit_prayer(text: str = Form(...),
     with Session(engine) as s:
         prayer = Prayer(
             author_id=user.id, 
-            text=text[:500], 
+            text=text, 
             generated_prayer=generated_prayer,
             project_tag=tag,
             target_audience=target_audience,
