@@ -6,6 +6,7 @@ pyyaml
 httpx   # optional stub for future AI
 anthropic
 python-dotenv
+PyJWT
 
 # Testing dependencies
 pytest
