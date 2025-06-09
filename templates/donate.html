@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Support ThyWill{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+        Support ThyWill
+      </h1>
+      <p class="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-4">
+        Donations help cover server costs for ThyWill and keep our prayer community running smoothly.
+      </p>
+      <p class="text-sm text-gray-500 dark:text-gray-400 max-w-xl mx-auto">
+        <em>Donations are personal gifts to support platform operations. Monthly updates on donations and expenses will be shared with the community.</em>
+      </p>
+    </div>
+
+    <!-- Mission Impact -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Our Mission</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="text-center">
+          <div class="text-3xl text-blue-600 dark:text-blue-400 mb-2">🙏</div>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Prayer Community</h3>
+          <p class="text-gray-600 dark:text-gray-300 text-sm">Connecting believers worldwide in prayer and faith</p>
+        </div>
+        <div class="text-center">
+          <div class="text-3xl text-green-600 dark:text-green-400 mb-2">💝</div>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Safe Space</h3>
+          <p class="text-gray-600 dark:text-gray-300 text-sm">Maintaining a secure, invite-only community</p>
+        </div>
+        <div class="text-center">
+          <div class="text-3xl text-purple-600 dark:text-purple-400 mb-2">✨</div>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-2">AI-Enhanced</h3>
+          <p class="text-gray-600 dark:text-gray-300 text-sm">Using technology to deepen spiritual connections</p>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Donation Options -->
+    <div class="grid md:grid-cols-2 gap-8">
+      <!-- PayPal -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+        <div class="text-center mb-6">
+          <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">PayPal</h3>
+          <p class="text-gray-600 dark:text-gray-300">Quick and secure donations</p>
+        </div>
+        
+        <div class="space-y-4">
+          <!-- Simple PayPal Instructions -->
+          <div class="text-center">
+            <div class="bg-gray-100 dark:bg-gray-700 p-6 rounded-lg">
+              <p class="text-xs text-gray-500 dark:text-gray-500 mb-4">
+                Please include "ThyWill Support" in the message
+              </p>
+              <a href="https://paypal.me/{{ paypal_username }}" 
+                 target="_blank"
+                 class="inline-block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg">
+                Send via PayPal
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Venmo -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+        <div class="text-center mb-6">
+          <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Venmo</h3>
+          <p class="text-gray-600 dark:text-gray-300">Quick mobile donations</p>
+        </div>
+        
+        <div class="space-y-4">
+          <!-- Simple Venmo Instructions -->
+          <div class="text-center">
+            <div class="bg-gray-100 dark:bg-gray-700 p-6 rounded-lg">
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Send via Venmo to: <br>
+                <span class="font-bold text-lg">@{{ venmo_handle }}</span>
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-500 mb-4">
+                Please include "ThyWill Support" in the message
+              </p>
+              <a href="https://venmo.com/u/{{ venmo_handle }}" 
+                 target="_blank"
+                 class="inline-block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg">
+                Open Venmo App
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Thank You Message -->
+    <div class="text-center mt-12 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+      <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Thank You & Transparency</h3>
+      <p class="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-4">
+        Every contribution helps keep ThyWill running and growing. Your donations are personal gifts that directly cover our operational costs.
+      </p>
+      <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg mb-4 max-w-xl mx-auto">
+        <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">Our Commitment to You:</h4>
+        <ul class="text-sm text-blue-700 dark:text-blue-300 text-left space-y-1">
+          <li>• Monthly financial updates shared with the community</li>
+          <li>• All platform expenses tracked and reported</li>
+          <li>• Donations used solely for ThyWill operations</li>
+          <li>• Complete transparency in how funds are used</li>
+        </ul>
+      </div>
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        "Give, and it will be given to you. A good measure, pressed down, shaken together and running over, will be poured into your lap." - Luke 6:38
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
