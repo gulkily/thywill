@@ -48,6 +48,10 @@ A community-driven prayer platform that creates a safe, faith-based environment 
    ```env
    ANTHROPIC_API_KEY=your_anthropic_api_key_here
    
+   # Payment configuration for donations
+   PAYPAL_USERNAME=your_paypal_username
+   VENMO_HANDLE=your_venmo_handle
+   
    # Optional configuration
    MULTI_DEVICE_AUTH_ENABLED=true
    REQUIRE_APPROVAL_FOR_EXISTING_USERS=true

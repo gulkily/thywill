@@ -33,6 +33,26 @@ async def logged_out_page(request: Request):
         "MULTI_DEVICE_AUTH_ENABLED": MULTI_DEVICE_AUTH_ENABLED
     })
 
+@router.get("/donate", response_class=HTMLResponse)
+def donate(request: Request, user_session: tuple = Depends(current_user)):
+    """Donation page with PayPal and Venmo options"""
+    user, session = user_session
+    
+    # Get payment configuration from environment
+    paypal_username = os.getenv("PAYPAL_USERNAME", "YourPayPalUsername")
+    venmo_handle = os.getenv("VENMO_HANDLE", "YourVenmoHandle")
+    
+    return templates.TemplateResponse(
+        "donate.html",
+        {
+            "request": request, 
+            "me": user, 
+            "session": session,
+            "paypal_username": paypal_username,
+            "venmo_handle": venmo_handle
+        }
+    )
+
 @router.post("/dismiss-welcome")
 async def dismiss_welcome(user_session: tuple = Depends(current_user)):
     """Dismiss the welcome message for the current user"""
