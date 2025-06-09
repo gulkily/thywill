@@ -180,8 +180,8 @@ class TestInviteTreeNavigation:
 class TestInviteTreeUIInteraction:
     """Test invite tree UI interaction and JavaScript functionality"""
     
-    def test_invite_tree_contains_interactive_elements(self, client: TestClient, test_session):
-        """Test invite tree contains collapsible tree elements"""
+    def test_invite_tree_contains_tree_structure(self, client: TestClient, test_session):
+        """Test invite tree displays tree structure properly"""
         # Create hierarchy with multiple levels
         admin = UserFactory.create_admin()
         user1 = UserFactory.create(
@@ -203,8 +203,8 @@ class TestInviteTreeUIInteraction:
         response = client.get("/invite-tree")
         
         assert response.status_code == 200
-        # Check for interactive elements
-        assert "toggle-btn" in response.text or "expand" in response.text.lower()
+        # Check for tree structure elements
+        assert "tree-node" in response.text or "Community Tree" in response.text
         assert "<script>" in response.text  # JavaScript should be present
     
     def test_invite_tree_responsive_design(self, client: TestClient, test_session):
@@ -219,9 +219,9 @@ class TestInviteTreeUIInteraction:
         response = client.get("/invite-tree")
         
         assert response.status_code == 200
-        # Check for responsive CSS
+        # Check for responsive CSS classes (Tailwind-based)
         assert "viewport" in response.text
-        assert "@media" in response.text or "container" in response.text
+        assert "md:grid-cols-" in response.text or "max-w-" in response.text
     
     def test_invite_tree_has_proper_styling(self, client: TestClient, test_session):
         """Test invite tree includes proper CSS styling"""

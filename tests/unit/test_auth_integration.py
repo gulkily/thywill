@@ -210,7 +210,7 @@ class TestRateLimitingWorkflow:
         # Step 2: Create multiple recent requests (exceed limit)
         recent_time = datetime.utcnow() - timedelta(minutes=30)
         auth_requests = []
-        for i in range(4):  # Exceeds MAX_AUTH_REQUESTS_PER_HOUR (3)
+        for i in range(10):  # Reaches MAX_AUTH_REQUESTS_PER_HOUR (10)
             req = AuthenticationRequestFactory.create(
                 user_id=user.id,
                 created_at=recent_time + timedelta(minutes=i*5),
