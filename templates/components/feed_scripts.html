@@ -124,6 +124,7 @@ function setupPreviewActions() {
                 formData.append('text', currentPreviewData.original_text);
                 formData.append('tag', currentPreviewData.tag || '');
                 formData.append('target_audience', currentPreviewData.target_audience);
+                formData.append('generated_prayer', currentPreviewData.generated_prayer);
                 
                 const response = await fetch('/prayers', {
                     method: 'POST',

@@ -74,6 +74,7 @@ def preview_prayer(text: str = Form(...),
 def submit_prayer(text: str = Form(...),
                   tag: Optional[str] = Form(None),
                   target_audience: str = Form("all"),
+                  generated_prayer: Optional[str] = Form(None),
                   user_session: tuple = Depends(current_user)):
     """
     Submit a new prayer request.
@@ -82,6 +83,7 @@ def submit_prayer(text: str = Form(...),
         text: The prayer request text (max 500 chars)
         tag: Optional project tag for categorization
         target_audience: Target audience ("all" or "christians_only")
+        generated_prayer: Pre-generated prayer from preview (optional)
         user_session: Current authenticated user session
     
     Returns:
@@ -96,14 +98,17 @@ def submit_prayer(text: str = Form(...),
     if target_audience not in valid_audiences:
         target_audience = "all"
     
-    # Generate a proper prayer from the user's prompt
-    generated_prayer = generate_prayer(text)
+    # Use pre-generated prayer if provided, otherwise generate new one
+    if generated_prayer:
+        final_prayer = generated_prayer
+    else:
+        final_prayer = generate_prayer(text)
     
     with Session(engine) as s:
         prayer = Prayer(
             author_id=user.id, 
             text=text, 
-            generated_prayer=generated_prayer,
+            generated_prayer=final_prayer,
             project_tag=tag,
             target_audience=target_audience,
         )
