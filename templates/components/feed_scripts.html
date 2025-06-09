@@ -6,6 +6,10 @@ function toggleAddPrayer() {
     if (isVisible) {
         form.style.display = 'none';
     } else {
+        // Reset form when opening to ensure clean state
+        document.getElementById('prayer-form').reset();
+        currentPreviewData = null;
+        
         form.style.display = 'block';
         // Focus on the textarea when opening
         setTimeout(() => {
