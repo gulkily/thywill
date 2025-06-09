@@ -25,9 +25,9 @@ def create_admin_token(hours=12):
         with Session(engine) as session:
             invite_token = InviteToken(
                 token=token,
-                created_by_user_id=None,  # System generated
+                created_by_user="system",  # System generated
                 expires_at=expires_at,
-                claimed=False,
+                used=False,
                 is_admin=True
             )
             session.add(invite_token)
