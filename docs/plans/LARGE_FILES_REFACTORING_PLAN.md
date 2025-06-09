@@ -17,42 +17,67 @@ This approach consistently applies:
 - **Backward Compatibility**: Maintain all existing API surfaces
 - **Functional Cohesion**: Group related functions together logically
 
+## Completed Refactoring (✅ DONE)
+
+### ✅ **`app_helpers/routes/auth_routes.py`** - 902 → 39 lines
+   - Authentication routes and endpoints
+   - **Completed**: Login, logout, registration, verification, multi-device auth
+   - **Result**: 4 sub-modules + import aggregator
+
+### ✅ **`app_helpers/routes/prayer_routes.py`** - 808 → 38 lines
+   - Prayer management routes and endpoints  
+   - **Completed**: CRUD operations, filtering, status updates, archiving
+   - **Result**: 4 sub-modules + import aggregator
+
+### ✅ **`app_helpers/services/auth_helpers.py`** - 469 → 47 lines
+   - Authentication business logic and utilities
+   - **Completed**: Token management, session handling, validation
+   - **Result**: 3 sub-modules + import aggregator
+
 ## Current Files Exceeding 100-Line Target
 
-### Stage 2 Priority (>400 lines)
-1. **`app_helpers/routes/auth_routes.py`** - 902 lines
-   - Authentication routes and endpoints
-   - **Breakdown needed**: Login, logout, registration, verification, multi-device auth
-
-2. **`app_helpers/routes/prayer_routes.py`** - 808 lines  
-   - Prayer management routes and endpoints
-   - **Breakdown needed**: CRUD operations, filtering, status updates, archiving
-
-3. **`app_helpers/services/auth_helpers.py`** - 537 lines
-   - Authentication business logic and utilities
-   - **Breakdown needed**: Token management, session handling, validation
-
 ### Stage 2 Priority (200-400 lines)
-4. **`app_helpers/services/invite_helpers.py`** - 275 lines
+1. **`app_helpers/services/invite_helpers.py`** - 275 lines
    - Invite system business logic
    - **Breakdown needed**: Invite creation, tree management, notifications
 
-5. **`app_helpers/services/prayer_helpers.py`** - 256 lines
+2. **`app_helpers/services/prayer_helpers.py`** - 256 lines
    - Prayer business logic and utilities  
    - **Breakdown needed**: Prayer lifecycle, status management, filtering
 
-6. **`app_helpers/routes/admin_routes.py`** - 254 lines
+3. **`app_helpers/routes/admin_routes.py`** - 254 lines
    - Administrative routes and endpoints
    - **Breakdown needed**: User management, system admin, moderation
 
-7. **`app_helpers/routes/user_routes.py`** - 252 lines
+4. **`app_helpers/routes/user_routes.py`** - 252 lines
    - User profile and preference routes
    - **Breakdown needed**: Profile management, preferences, settings
 
 ### Stage 3 Priority (100-200 lines)
-8. **`app_helpers/services/changelog_helpers.py`** - 180 lines
+5. **`app_helpers/services/changelog_helpers.py`** - 180 lines
    - Changelog and activity tracking
    - **Minor breakdown needed**: Activity logging, changelog generation
+
+### Sub-modules that exceed 100 lines (need further breakdown)
+6. **`app_helpers/routes/prayer/prayer_crud.py`** - 294 lines
+   - Prayer CRUD operations extracted from prayer_routes.py
+   - **Breakdown needed**: Create, read, update, delete operations
+
+7. **`app_helpers/routes/prayer/prayer_status.py`** - 244 lines  
+   - Prayer status management extracted from prayer_routes.py
+   - **Breakdown needed**: Status updates, transitions, archiving
+
+8. **`app_helpers/routes/prayer/feed_operations.py`** - 211 lines
+   - Feed operations extracted from prayer_routes.py
+   - **Breakdown needed**: Feed filtering, pagination, display logic
+
+9. **`app_helpers/services/auth/token_helpers.py`** - 334 lines
+   - Token management extracted from auth_helpers.py
+   - **Breakdown needed**: Token generation, notifications, approvals
+
+10. **`app_helpers/routes/prayer/prayer_moderation.py`** - 117 lines
+    - Prayer moderation extracted from prayer_routes.py
+    - **Minor breakdown needed**: Flagging, admin actions
 
 ## Stage 2: Sub-Module Refactoring (100-Line Target)
 
@@ -138,29 +163,46 @@ app_helpers/services/auth/
 
 ## Implementation Timeline - Stage 2
 
-### Phase 1: Critical Route Refactoring (auth_routes.py)
-- [ ] Analyze auth_routes.py function groups and dependencies
-- [ ] Create app_helpers/routes/auth/ directory structure
-- [ ] Extract login/logout functions to login_routes.py (~50-80 lines)
-- [ ] Extract registration functions to registration_routes.py (~50-80 lines)
-- [ ] Extract verification functions to verification_routes.py (~50-80 lines)
-- [ ] Extract multi-device functions to multi_device_routes.py (~50-80 lines)
-- [ ] Update auth_routes.py to import all sub-modules
-- [ ] Run full test suite to ensure zero breaking changes
+### Phase 1: Critical Route Refactoring (auth_routes.py) ✅ COMPLETED
+- [x] Analyze auth_routes.py function groups and dependencies
+- [x] Create app_helpers/routes/auth/ directory structure  
+- [x] Extract login/logout functions to login_routes.py
+- [x] Extract registration functions to registration_routes.py
+- [x] Extract verification functions to verification_routes.py
+- [x] Extract multi-device functions to multi_device_routes.py
+- [x] Update auth_routes.py to import all sub-modules (reduced to 39 lines)
+- [x] Run full test suite to ensure zero breaking changes
 
-### Phase 2: Critical Route Refactoring (prayer_routes.py)
-- [ ] Analyze prayer_routes.py function groups and dependencies
-- [ ] Create app_helpers/routes/prayer/ directory structure
-- [ ] Extract CRUD functions to crud_routes.py (~50-80 lines)
-- [ ] Extract status functions to status_routes.py (~50-80 lines)
-- [ ] Extract filtering functions to filtering_routes.py (~50-80 lines)
-- [ ] Extract archive functions to archive_routes.py (~50-80 lines)
-- [ ] Update prayer_routes.py to import all sub-modules
-- [ ] Run full test suite to ensure zero breaking changes
+### Phase 2: Critical Route Refactoring (prayer_routes.py) ✅ COMPLETED
+- [x] Analyze prayer_routes.py function groups and dependencies
+- [x] Create app_helpers/routes/prayer/ directory structure
+- [x] Extract feed operations to feed_operations.py (211 lines)
+- [x] Extract CRUD functions to prayer_crud.py (294 lines)
+- [x] Extract status functions to prayer_status.py (244 lines)
+- [x] Extract moderation functions to prayer_moderation.py (117 lines)
+- [x] Update prayer_routes.py to import all sub-modules (reduced to 38 lines)
+- [x] Update test configuration to patch new sub-module Sessions
+- [x] Run full test suite to ensure zero breaking changes (265/265 tests pass)
 
-### Phase 3: Service Module Refactoring
-- [ ] Apply same pattern to auth_helpers.py (537 lines → 3 modules)
+### Phase 3: Service Module Refactoring ✅ COMPLETED (auth_helpers.py)
+- [x] Apply same pattern to auth_helpers.py (469 lines → 3 modules + aggregator)
+  - [x] Extract session management to session_helpers.py (83 lines)
+  - [x] Extract token/notification management to token_helpers.py (334 lines)
+  - [x] Extract validation/security to validation_helpers.py (91 lines)
+  - [x] Update auth_helpers.py to import all sub-modules (reduced to 47 lines)
+  - [x] Core functionality maintained (265/265 tests passing, 100% test success rate)
+
+### Phase 4: Next Priority Files (pending)
 - [ ] Apply same pattern to remaining 200+ line service modules
+  - [ ] invite_helpers.py (275 lines → 2-3 modules + aggregator)
+  - [ ] prayer_helpers.py (256 lines → 2-3 modules + aggregator)
+  - [ ] admin_routes.py (254 lines → 2-3 modules + aggregator)
+  - [ ] user_routes.py (252 lines → 2-3 modules + aggregator)
+- [ ] Break down large sub-modules that exceed 100 lines
+  - [ ] auth/token_helpers.py (334 lines → 3-4 modules + aggregator)
+  - [ ] prayer/prayer_crud.py (294 lines → 3 modules + aggregator)
+  - [ ] prayer/prayer_status.py (244 lines → 2-3 modules + aggregator)
+  - [ ] prayer/feed_operations.py (211 lines → 2 modules + aggregator)
 - [ ] Verify all modules are under 100 lines
 - [ ] Run full test suite and performance validation
 
