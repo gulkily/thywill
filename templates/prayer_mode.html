@@ -205,8 +205,8 @@
       let currentPrayerId, feedType, mode, currentPosition, prayerQueue;
       
       try {
-        // Initialize variables with template data
-        currentPrayerId = {{ prayer.id if prayer else 'null' }};
+        // Initialize variables with template data (properly quoted)
+        currentPrayerId = "{{ prayer.id if prayer else '' }}";
         feedType = "{{ feed_type if feed_type else 'new_unprayed' }}";
         mode = "{{ mode if mode else 'standard' }}";
         currentPosition = {{ position if position is not none else 0 }};
@@ -216,7 +216,7 @@
       } catch (e) {
         console.error('Error initializing prayer mode variables:', e);
         // Set fallback values
-        currentPrayerId = null;
+        currentPrayerId = '';
         feedType = 'new_unprayed';
         mode = 'standard';
         currentPosition = 0;
