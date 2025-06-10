@@ -125,7 +125,7 @@
             {% if prayer_session.is_fully_authenticated and p.author_id == me.id %}
               {% if not p.is_answered %}
                 <button onclick="showAnsweredModal('{{ p.id }}'); hideDropdown('{{ p.id }}')"
-                        class="block w-full text-left px-4 py-3 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-800 dark:hover:text-green-300 transition-colors duration-150 font-medium">
+                        class="block w-full text-left px-4 py-3 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-800 dark:hover:text-green-300 transition-colors duration-150 font-medium whitespace-nowrap">
                   ✓ Mark as Answered
                 </button>
               {% endif %}
@@ -136,7 +136,7 @@
                           hx-post="/prayer/{{ p.id }}/restore"
                           hx-target="#prayer-{{ p.id }}"
                           hx-swap="outerHTML"
-                          class="block w-full text-left px-4 py-3 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-800 dark:hover:text-amber-300 transition-colors duration-150 font-medium">
+                          class="block w-full text-left px-4 py-3 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-800 dark:hover:text-amber-300 transition-colors duration-150 font-medium whitespace-nowrap">
                     📤 Restore
                   </button>
                 </form>
@@ -146,7 +146,7 @@
                           hx-post="/prayer/{{ p.id }}/archive"
                           hx-target="#prayer-{{ p.id }}"
                           hx-swap="outerHTML"
-                          class="block w-full text-left px-4 py-3 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-800 dark:hover:text-amber-300 transition-colors duration-150 font-medium">
+                          class="block w-full text-left px-4 py-3 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-800 dark:hover:text-amber-300 transition-colors duration-150 font-medium whitespace-nowrap">
                     📁 Archive
                   </button>
                 </form>
@@ -159,7 +159,7 @@
                       hx-target="#prayer-{{ p.id }}"
                       hx-swap="outerHTML"
                       hx-indicator="#loading-{{ p.id }}"
-                      class="block w-full text-left px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-800 dark:hover:text-red-300 transition-colors duration-150 font-medium">
+                      class="block w-full text-left px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-800 dark:hover:text-red-300 transition-colors duration-150 font-medium whitespace-nowrap">
                 <span class="htmx-indicator" id="loading-{{ p.id }}">🔄</span>
                 <span>🚩 Flag</span>
               </button>
