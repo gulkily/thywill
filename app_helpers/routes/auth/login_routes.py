@@ -39,15 +39,42 @@ MULTI_DEVICE_AUTH_ENABLED = os.getenv("MULTI_DEVICE_AUTH_ENABLED", "True").lower
 @router.get("/claim/{token}", response_class=HTMLResponse)
 def claim_get(token: str, request: Request):
     """
-    Display the claim form for an invite token.
+    Display the claim form for an invite token, with immediate validation.
     
     Args:
         token: The invite token to claim
         request: FastAPI request object
         
     Returns:
-        HTMLResponse: The claim.html template with token context
+        HTMLResponse: The claim.html template with token context, or error if invalid
     """
+    # Validate token immediately on GET request
+    with Session(engine) as s:
+        inv = s.get(InviteToken, token)
+        
+        # Check if token exists, is not used, and hasn't expired
+        if not inv:
+            return templates.TemplateResponse("claim.html", {
+                "request": request, 
+                "token": token,
+                "error": "This invite link is not valid. Please check the link or request a new invite."
+            })
+        
+        if inv.used:
+            return templates.TemplateResponse("claim.html", {
+                "request": request, 
+                "token": token,
+                "error": "This invite link has already been used. Each invite link can only be used once."
+            })
+        
+        if inv.expires_at < datetime.utcnow():
+            return templates.TemplateResponse("claim.html", {
+                "request": request, 
+                "token": token,
+                "error": "This invite link has expired. Invite links are valid for 12 hours. Please request a new invite link."
+            })
+    
+    # Token is valid, show the normal claim form
     return templates.TemplateResponse("claim.html", {"request": request, "token": token})
 
 

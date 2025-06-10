@@ -1,6 +1,10 @@
 # invite_routes.py - Invite system routes
 import uuid
+import secrets
+import base64
+import io
 from datetime import datetime, timedelta
+import qrcode
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -17,12 +21,50 @@ templates = Jinja2Templates(directory="templates")
 
 router = APIRouter()
 
+def generate_short_token() -> str:
+    """Generate a shorter hex token with 16 characters (64 bits of entropy).
+    
+    Uses 8 random bytes converted to hexadecimal, resulting in a 16-character
+    token using only 0-9a-f characters. This provides good security while
+    being significantly shorter than UUIDs.
+    """
+    return secrets.token_hex(8)
+
+def generate_qr_code_data_url(text: str) -> str:
+    """Generate a QR code as a base64-encoded data URL.
+    
+    Args:
+        text: The text to encode in the QR code
+        
+    Returns:
+        str: A data URL containing the QR code as a PNG image
+    """
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=4,
+        border=2,
+    )
+    qr.add_data(text)
+    qr.make(fit=True)
+    
+    # Create image
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Convert to base64 data URL
+    buffer = io.BytesIO()
+    img.save(buffer, format='PNG')
+    buffer.seek(0)
+    img_base64 = base64.b64encode(buffer.getvalue()).decode()
+    
+    return f"data:image/png;base64,{img_base64}"
+
 @router.post("/invites", response_class=HTMLResponse)
 def new_invite(request: Request, user_session: tuple = Depends(current_user)):
     user, session = user_session
     if not session.is_fully_authenticated:
         raise HTTPException(403, "Full authentication required to create invites")
-    token = uuid.uuid4().hex
+    token = generate_short_token()
     with Session(engine) as db:
         db.add(InviteToken(
             token=token,
@@ -32,8 +74,12 @@ def new_invite(request: Request, user_session: tuple = Depends(current_user)):
         db.commit()
 
     url = request.url_for("claim_get", token=token)  # absolute link
+    qr_code_data_url = generate_qr_code_data_url(str(url))
     # Return a modal-style overlay that doesn't shift layout
-    return HTMLResponse(templates.get_template("invite_modal.html").render(url=url))
+    return HTMLResponse(templates.get_template("invite_modal.html").render(
+        url=url, 
+        qr_code_data_url=qr_code_data_url
+    ))
 
 @router.get("/invite-tree", response_class=HTMLResponse)
 def invite_tree(request: Request, user_session: tuple = Depends(current_user)):
