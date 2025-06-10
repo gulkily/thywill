@@ -343,7 +343,7 @@ class TestPrayerModeIntegration:
         assert isinstance(new_queue, list)
         assert all(isinstance(pid, str) for pid in new_queue)
     
-    def test_prayer_mode_respects_religious_preferences(self, test_session):
+    def test_prayer_mode_respects_religious_preferences(self, test_session, clean_db):
         """Test that prayer mode respects religious preferences"""
         # Create users with different preferences
         christian_user = UserFactory.create(religious_preference="christian")
