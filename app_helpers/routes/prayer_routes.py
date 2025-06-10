@@ -31,9 +31,11 @@ from .prayer.feed_operations import router as feed_router
 from .prayer.prayer_crud import router as crud_router  
 from .prayer.prayer_status import router as status_router
 from .prayer.prayer_moderation import router as moderation_router
+from .prayer.prayer_mode import router as prayer_mode_router
 
 # Include all sub-routers to maintain all existing routes
 router.include_router(feed_router)
 router.include_router(crud_router)
 router.include_router(status_router)
 router.include_router(moderation_router)
+router.include_router(prayer_mode_router)

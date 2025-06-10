@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prayer Mode – Thy Will</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  
+  <!-- Dark mode setup -->
+  <script>
+    const getInitialTheme = () => {
+      const saved = localStorage.getItem('theme');
+      if (saved) return saved;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    };
+    
+    const theme = getInitialTheme();
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  </script>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {}
+      }
+    }
+  </script>
+  
+  <!-- HTMX for navigation -->
+  <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
+  
+  <style>
+    .htmx-indicator {
+      display: none;
+    }
+    .htmx-request .htmx-indicator {
+      display: inline;
+    }
+    .htmx-request.htmx-indicator {
+      display: inline;
+    }
+    
+    /* Prevent text selection for UI elements */
+    .prayer-controls {
+      user-select: none;
+    }
+    
+    /* Smooth transitions */
+    .prayer-content {
+      transition: opacity 0.3s ease-in-out;
+    }
+  </style>
+</head>
+
+<body class="h-full bg-black overflow-hidden">
+  <!-- Full-screen prayer mode overlay -->
+  <div class="fixed inset-0 bg-gradient-to-b from-purple-900 via-purple-800 to-black z-50 flex flex-col">
+    
+    <!-- Header with progress and exit -->
+    <div class="flex items-center justify-between p-4 text-white">
+      <!-- Progress indicator -->
+      <div class="flex items-center gap-3">
+        <div class="text-sm font-medium">
+          Prayer <span id="current-position">{{ current_position }}</span> of <span id="total-prayers">{{ total_prayers }}</span>
+        </div>
+        {% if mode == "quick" %}
+        <span class="text-xs bg-purple-600 px-2 py-1 rounded-full">Quick Prayer</span>
+        {% endif %}
+      </div>
+      
+      <!-- Exit button -->
+      <button 
+        onclick="exitPrayerMode()" 
+        class="text-white hover:text-purple-200 transition-colors duration-200"
+        title="Exit Prayer Mode (ESC)"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    
+    <!-- Main prayer content area -->
+    <div class="flex-1 flex items-center justify-center p-6">
+      <div id="prayer-content" class="prayer-content max-w-2xl w-full">
+        
+        <!-- Prayer card -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 border-l-4 border-purple-400 dark:border-purple-500">
+          
+          <!-- Prayer age and author -->
+          <div class="flex items-center justify-between mb-6 text-sm text-gray-500 dark:text-gray-400">
+            <span id="prayer-age">{{ prayer_age }}</span>
+            {% if prayer.author %}
+            <span>by {{ prayer.author.first_name }}</span>
+            {% endif %}
+          </div>
+          
+          <!-- Generated Prayer (main content) -->
+          {% if prayer.generated_prayer %}
+          <div class="mb-6">
+            <h3 class="text-sm font-medium text-purple-600 dark:text-purple-300 mb-3 flex items-center gap-2">
+              🙏 Prayer
+            </h3>
+            <p id="generated-prayer" class="text-xl leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap italic font-light">
+              {{ prayer.generated_prayer }}
+            </p>
+          </div>
+          {% endif %}
+          
+          <!-- Original Request (collapsible) -->
+          <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border-l-2 border-gray-300 dark:border-gray-600">
+            <h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 cursor-pointer flex items-center gap-2" onclick="toggleOriginalRequest()">
+              <span id="chevron" class="transition-transform">▶</span>
+              Original Request
+            </h4>
+            <div id="original-request" class="hidden">
+              <p id="original-text" class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                {{ prayer.text }}
+              </p>
+              
+              <!-- Prayer targeting indicators -->
+              {% if prayer.target_audience != "all" or prayer.project_tag %}
+              <div class="flex flex-wrap gap-2 mt-3">
+                {% if prayer.target_audience == "christians_only" %}
+                  <span class="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full border border-blue-200 dark:border-blue-700">
+                    ✝️ Christians
+                  </span>
+                {% endif %}
+                
+                {% if prayer.project_tag %}
+                  <span class="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full border border-purple-200 dark:border-purple-700">
+                    {{ prayer.project_tag }}
+                  </span>
+                {% endif %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          
+          <!-- Prayer stats -->
+          <div class="mt-4 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+            <span id="prayer-stats">
+              <span id="prayer-count">{{ prayer_count }}</span> prayers by 
+              <span id="distinct-users">{{ distinct_users }}</span> people
+            </span>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+    
+    <!-- Bottom action bar -->
+    <div class="prayer-controls p-6 flex items-center justify-center gap-4">
+      
+      <!-- Skip button -->
+      <button 
+        id="skip-btn"
+        onclick="skipPrayer()" 
+        class="bg-gray-600 hover:bg-gray-700 text-white px-8 py-4 rounded-xl font-medium transition-colors duration-200 flex items-center gap-2"
+        title="Skip (→ or S)"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+        </svg>
+        Skip
+      </button>
+      
+      <!-- I Prayed This button -->
+      <button 
+        id="prayed-btn"
+        onclick="markAsPrayed()" 
+        class="{% if user_has_prayed %}bg-purple-500{% else %}bg-purple-600 hover:bg-purple-700{% endif %} text-white px-12 py-4 rounded-xl font-medium transition-colors duration-200 text-lg flex items-center gap-2"
+        title="I Prayed This (SPACE)"
+        {% if user_has_prayed %}disabled{% endif %}
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+        </svg>
+        {% if user_has_prayed %}Already Prayed{% else %}I Prayed This{% endif %}
+      </button>
+      
+    </div>
+    
+    <!-- Loading indicator -->
+    <div id="loading-indicator" class="htmx-indicator fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 flex items-center gap-3">
+        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+        <span class="text-gray-800 dark:text-gray-200">Loading next prayer...</span>
+      </div>
+    </div>
+    
+  </div>
+
+  <script>
+    let currentPrayerId = {{ prayer.id }};
+    const feedType = "{{ feed_type }}";
+    const mode = "{{ mode }}";
+    let currentPosition = {{ position }};
+    const prayerQueue = {{ prayer_queue | tojson }};
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+      switch(e.code) {
+        case 'Space':
+          e.preventDefault();
+          markAsPrayed();
+          break;
+        case 'ArrowRight':
+        case 'KeyS':
+          e.preventDefault();
+          skipPrayer();
+          break;
+        case 'Escape':
+          e.preventDefault();
+          exitPrayerMode();
+          break;
+      }
+    });
+    
+    // Toggle original request visibility
+    function toggleOriginalRequest() {
+      const content = document.getElementById('original-request');
+      const chevron = document.getElementById('chevron');
+      
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        chevron.style.transform = 'rotate(90deg)';
+      } else {
+        content.classList.add('hidden');
+        chevron.style.transform = 'rotate(0deg)';
+      }
+    }
+    
+    // Mark prayer as prayed
+    function markAsPrayed() {
+      const btn = document.getElementById('prayed-btn');
+      if (btn.disabled) return;
+      
+      // Mark prayer via HTMX
+      htmx.ajax('POST', `/mark/${currentPrayerId}`, {
+        swap: 'none',
+        target: document.body
+      }).then(() => {
+        // Update button state
+        btn.disabled = true;
+        btn.innerHTML = `
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          Prayed!
+        `;
+        btn.className = 'bg-green-600 text-white px-12 py-4 rounded-xl font-medium text-lg flex items-center gap-2';
+        
+        // Store progress in localStorage for resume functionality
+        storeProgress();
+        
+        // Auto-advance after 1.5 seconds
+        setTimeout(() => {
+          skipPrayer();
+        }, 1500);
+      });
+    }
+    
+    // Skip to next prayer
+    function skipPrayer() {
+      const nextPosition = currentPosition + 1;
+      
+      if (nextPosition >= prayerQueue.length) {
+        showCompletionMessage({
+          prayers_completed: prayerQueue.length
+        });
+        return;
+      }
+      
+      // Navigate to next prayer
+      const nextUrl = `/prayer-mode/${feedType}?mode=${mode}&position=${nextPosition}`;
+      window.location.href = nextUrl;
+    }
+    
+    // Show completion message
+    function showCompletionMessage(data) {
+      const content = document.getElementById('prayer-content');
+      content.innerHTML = `
+        <div class="text-center text-white">
+          <div class="text-6xl mb-4">🎉</div>
+          <h2 class="text-3xl font-bold mb-4">Prayer Session Complete!</h2>
+          <p class="text-xl mb-6">You completed ${data.prayers_completed} prayers</p>
+          <button 
+            onclick="exitPrayerMode()" 
+            class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-xl font-medium transition-colors duration-200"
+          >
+            Return to Feed
+          </button>
+        </div>
+      `;
+      
+      // Hide action bar
+      document.querySelector('.prayer-controls').style.display = 'none';
+      
+      // Clear stored progress
+      clearProgress();
+    }
+    
+    // Exit prayer mode
+    function exitPrayerMode() {
+      clearProgress();
+      window.location.href = '/';
+    }
+    
+    // Store progress in localStorage for resume functionality
+    function storeProgress() {
+      const progressData = {
+        feed_type: feedType,
+        mode: mode,
+        position: currentPosition,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('prayer_mode_progress', JSON.stringify(progressData));
+    }
+    
+    // Clear stored progress
+    function clearProgress() {
+      localStorage.removeItem('prayer_mode_progress');
+    }
+    
+    // Check for resumable session on load
+    window.addEventListener('load', function() {
+      const stored = localStorage.getItem('prayer_mode_progress');
+      if (stored && currentPosition === 0) {
+        try {
+          const progressData = JSON.parse(stored);
+          const ageHours = (Date.now() - progressData.timestamp) / (1000 * 60 * 60);
+          
+          // Only show resume if less than 24 hours old and position > 0
+          if (ageHours < 24 && progressData.position > 0 && 
+              progressData.feed_type === feedType && progressData.mode === mode) {
+            
+            // Show resume notification with option
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-purple-600 text-white px-6 py-3 rounded-lg shadow-lg z-60 flex items-center gap-3';
+            notification.innerHTML = `
+              <span>Resume from prayer ${progressData.position + 1}?</span>
+              <button onclick="resumeSession(${progressData.position})" class="bg-white text-purple-600 px-3 py-1 rounded text-sm font-medium">Resume</button>
+              <button onclick="clearProgress(); this.parentElement.remove()" class="text-purple-200 hover:text-white">✕</button>
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 10 seconds
+            setTimeout(() => {
+              if (notification.parentElement) {
+                notification.remove();
+              }
+            }, 10000);
+          }
+        } catch (e) {
+          // Invalid stored data, clear it
+          clearProgress();
+        }
+      }
+    });
+    
+    // Resume session from stored position
+    function resumeSession(position) {
+      const resumeUrl = `/prayer-mode/${feedType}?mode=${mode}&position=${position}`;
+      window.location.href = resumeUrl;
+    }
+  </script>
+</body>
+</html>
