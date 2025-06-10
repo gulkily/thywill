@@ -51,6 +51,26 @@
     .prayer-content {
       transition: opacity 0.3s ease-in-out;
     }
+    
+    /* Ensure buttons are clickable */
+    button {
+      pointer-events: auto !important;
+      cursor: pointer !important;
+    }
+    
+    /* Debug: highlight clickable areas */
+    button:hover {
+      outline: 2px solid red !important;
+    }
+    
+    /* Force visibility and interaction for all buttons */
+    .prayer-controls button,
+    button[onclick] {
+      pointer-events: auto !important;
+      cursor: pointer !important;
+      position: relative !important;
+      z-index: 9999 !important;
+    }
   </style>
 </head>
 
@@ -184,7 +204,7 @@
     </div>
     
     <!-- Loading indicator -->
-    <div id="loading-indicator" class="htmx-indicator fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
+    <div id="loading-indicator" class="htmx-indicator fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60" style="display: none;">
       <div class="bg-white dark:bg-gray-800 rounded-lg p-6 flex items-center gap-3">
         <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
         <span class="text-gray-800 dark:text-gray-200">Loading next prayer...</span>
