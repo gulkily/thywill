@@ -54,22 +54,8 @@
     
     /* Ensure buttons are clickable */
     button {
-      pointer-events: auto !important;
-      cursor: pointer !important;
-    }
-    
-    /* Debug: highlight clickable areas */
-    button:hover {
-      outline: 2px solid red !important;
-    }
-    
-    /* Force visibility and interaction for all buttons */
-    .prayer-controls button,
-    button[onclick] {
-      pointer-events: auto !important;
-      cursor: pointer !important;
-      position: relative !important;
-      z-index: 9999 !important;
+      pointer-events: auto;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -214,39 +200,30 @@
   </div>
 
   <script>
-    // Debug: Log to console to check if script is running
-    console.log('Prayer mode script loading...');
-    
     // Wait for DOM to be ready
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('DOM loaded, initializing prayer mode...');
       
-      // Prayer mode variables - declare first for debugging
+      // Prayer mode variables
       let currentPrayerId, feedType, mode, currentPosition, prayerQueue;
       
       try {
-        // Initialize variables with template data (properly quoted)
+        // Initialize variables with template data
         currentPrayerId = "{{ prayer.id if prayer else '' }}";
         feedType = "{{ feed_type if feed_type else 'new_unprayed' }}";
         mode = "{{ mode if mode else 'standard' }}";
         currentPosition = {{ position if position is not none else 0 }};
         prayerQueue = {{ prayer_queue | tojson if prayer_queue else '[]' }};
-        
-        console.log('Prayer mode initialized:', { currentPrayerId, feedType, mode, currentPosition, queueLength: prayerQueue.length });
       } catch (e) {
-        console.error('Error initializing prayer mode variables:', e);
-        // Set fallback values
+        // Set fallback values if template rendering fails
         currentPrayerId = '';
         feedType = 'new_unprayed';
         mode = 'standard';
         currentPosition = 0;
         prayerQueue = [];
-        console.log('Using fallback values');
       }
       
       // Make functions global so they can be called from onclick handlers
       window.toggleOriginalRequest = function() {
-        console.log('Toggle original request clicked');
         const content = document.getElementById('original-request');
         const chevron = document.getElementById('chevron');
         
@@ -258,20 +235,16 @@
             content.classList.add('hidden');
             chevron.style.transform = 'rotate(0deg)';
           }
-        } else {
-          console.error('Original request elements not found');
         }
       };
       
       window.markAsPrayed = function() {
-        console.log('Mark as prayed clicked');
         const btn = document.getElementById('prayed-btn');
         if (!btn || btn.disabled) {
-          console.log('Button disabled or not found');
           return;
         }
         
-        // Simple fetch request instead of HTMX
+        // Mark prayer as prayed
         fetch(`/mark/${currentPrayerId}`, {
           method: 'POST',
           headers: {
@@ -280,7 +253,6 @@
         })
         .then(response => {
           if (response.ok) {
-            console.log('Prayer marked successfully');
             // Update button state
             btn.disabled = true;
             btn.innerHTML = `
@@ -298,17 +270,14 @@
             setTimeout(() => {
               window.skipPrayer();
             }, 1500);
-          } else {
-            console.error('Failed to mark prayer');
           }
         })
         .catch(error => {
-          console.error('Error marking prayer:', error);
+          // Silently handle errors
         });
       };
       
       window.skipPrayer = function() {
-        console.log('Skip prayer clicked');
         const nextPosition = currentPosition + 1;
         
         if (nextPosition >= prayerQueue.length) {
@@ -320,12 +289,10 @@
         
         // Navigate to next prayer
         const nextUrl = `/prayer-mode/${feedType}?mode=${mode}&position=${nextPosition}`;
-        console.log('Navigating to:', nextUrl);
         window.location.href = nextUrl;
       };
       
       window.showCompletionMessage = function(data) {
-        console.log('Showing completion message');
         const content = document.getElementById('prayer-content');
         if (content) {
           content.innerHTML = `
@@ -354,7 +321,6 @@
       };
       
       window.exitPrayerMode = function() {
-        console.log('Exit prayer mode clicked');
         clearProgress();
         window.location.href = '/';
       };
@@ -369,9 +335,8 @@
             timestamp: Date.now()
           };
           localStorage.setItem('prayer_mode_progress', JSON.stringify(progressData));
-          console.log('Progress stored:', progressData);
         } catch (e) {
-          console.error('Failed to store progress:', e);
+          // Silently handle storage errors
         }
       }
       
@@ -379,15 +344,13 @@
       function clearProgress() {
         try {
           localStorage.removeItem('prayer_mode_progress');
-          console.log('Progress cleared');
         } catch (e) {
-          console.error('Failed to clear progress:', e);
+          // Silently handle storage errors
         }
       }
       
       // Keyboard navigation
       document.addEventListener('keydown', function(e) {
-        console.log('Key pressed:', e.code);
         switch(e.code) {
           case 'Space':
             e.preventDefault();
@@ -415,7 +378,6 @@
           if (ageHours < 24 && progressData.position > 0 && 
               progressData.feed_type === feedType && progressData.mode === mode) {
             
-            console.log('Showing resume notification');
             const notification = document.createElement('div');
             notification.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-purple-600 text-white px-6 py-3 rounded-lg shadow-lg z-60 flex items-center gap-3';
             notification.innerHTML = `
@@ -433,7 +395,6 @@
           }
         }
       } catch (e) {
-        console.error('Error checking resume session:', e);
         clearProgress();
       }
       
@@ -442,16 +403,6 @@
         const resumeUrl = `/prayer-mode/${feedType}?mode=${mode}&position=${position}`;
         window.location.href = resumeUrl;
       };
-      
-      console.log('Prayer mode script fully loaded');
-      
-      // Test that functions are accessible
-      console.log('Functions available:', {
-        toggleOriginalRequest: typeof window.toggleOriginalRequest,
-        markAsPrayed: typeof window.markAsPrayed,
-        skipPrayer: typeof window.skipPrayer,
-        exitPrayerMode: typeof window.exitPrayerMode
-      });
     });
   </script>
 </body>
