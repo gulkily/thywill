@@ -1,6 +1,29 @@
 # ThyWill Deployment Files
 
-This directory contains all the configuration files needed for deploying ThyWill on Ubuntu.
+This directory contains all the deployment, backup, and management tools for ThyWill.
+
+## ThyWill CLI - Git-Style Command Tool
+
+**Main CLI**: `../thywill` - Complete command-line utility for all operations
+
+### Quick Start
+```bash
+# Make executable
+chmod +x ../thywill
+
+# Initialize environment
+../thywill init
+
+# View all commands
+../thywill help
+
+# Daily operations
+../thywill health
+../thywill backup daily
+../thywill deploy
+```
+
+## Deployment & Backup Scripts
 
 ## Files Included
 
