@@ -138,6 +138,10 @@ def pending_requests(request: Request, user_session: tuple = Depends(current_use
     user, session = user_session
     cleanup_expired_requests()
     
+    # Check if user exists
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    
     # Only fully authenticated users can approve
     if not session.is_fully_authenticated:
         raise HTTPException(403, "Full authentication required")

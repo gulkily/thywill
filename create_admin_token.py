@@ -27,8 +27,7 @@ def create_admin_token(hours=12):
                 token=token,
                 created_by_user="system",  # System generated
                 expires_at=expires_at,
-                used=False,
-                is_admin=True
+                used=False
             )
             session.add(invite_token)
             session.commit()
