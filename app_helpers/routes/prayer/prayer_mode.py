@@ -72,19 +72,64 @@ def get_prayer_age_text(prayer_created_at: datetime) -> str:
 
 def initialize_prayer_queue(session: Session, user: User, feed_type: str, mode: str = "standard") -> List[int]:
     """Initialize prayer queue based on feed type and mode."""
-    # Get filtered prayers based on feed type
-    prayers = get_filtered_prayers_for_user(session, user, feed_type)
+    
+    # Base filter to exclude archived prayers for public feeds
+    def exclude_archived():
+        return ~Prayer.id.in_(
+            select(PrayerAttribute.prayer_id)
+            .where(PrayerAttribute.attribute_name == 'archived')
+        )
+    
+    # Religious preference filtering
+    def apply_religious_filter():
+        if user.religious_preference == "christian":
+            return Prayer.target_audience.in_(["all", "christians_only"])
+        else:
+            return Prayer.target_audience == "all"
+    
+    # Build query based on feed type
+    if feed_type == "new_unprayed":
+        stmt = (
+            select(Prayer)
+            .outerjoin(PrayerMark, Prayer.id == PrayerMark.prayer_id)
+            .where(Prayer.flagged == False)
+            .where(exclude_archived())
+            .where(apply_religious_filter())
+            .group_by(Prayer.id)
+            .having(func.count(PrayerMark.id) == 0)
+            .order_by(Prayer.created_at.desc())
+        )
+    elif feed_type == "most_prayed":
+        stmt = (
+            select(Prayer)
+            .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
+            .where(Prayer.flagged == False)
+            .where(exclude_archived())
+            .where(apply_religious_filter())
+            .group_by(Prayer.id)
+            .order_by(func.count(PrayerMark.id).desc())
+        )
+    else:
+        # Default to new_unprayed
+        stmt = (
+            select(Prayer)
+            .outerjoin(PrayerMark, Prayer.id == PrayerMark.prayer_id)
+            .where(Prayer.flagged == False)
+            .where(exclude_archived())
+            .where(apply_religious_filter())
+            .group_by(Prayer.id)
+            .having(func.count(PrayerMark.id) == 0)
+            .order_by(Prayer.created_at.desc())
+        )
     
     # Apply mode-specific limits
     if mode == "quick":
-        # Quick mode: 5-10 prayers, prioritize unprayed
-        prayers = prayers.limit(10)
-    elif mode == "standard":
-        # Standard mode: up to 25 prayers
-        prayers = prayers.limit(25)
+        stmt = stmt.limit(10)
+    else:
+        stmt = stmt.limit(25)
     
     # Execute query and extract prayer IDs
-    prayer_results = session.exec(prayers).all()
+    prayer_results = session.exec(stmt).all()
     return [prayer.id for prayer in prayer_results]
 
 
