@@ -2,7 +2,6 @@ fastapi
 uvicorn[standard]
 sqlmodel
 jinja2
-pyyaml
 httpx   # optional stub for future AI
 anthropic
 python-dotenv

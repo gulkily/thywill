@@ -1,5 +1,5 @@
 # app.py ─ complete micro-MVP
-import os, uuid, yaml
+import os, uuid
 from datetime import datetime, timedelta, date
 from typing import Optional
 from dotenv import load_dotenv
@@ -13,6 +13,7 @@ from sqlmodel import Session, select, func
 
 from models import engine, User, Prayer, InviteToken, Session as SessionModel, PrayerMark, PrayerSkip, AuthenticationRequest, AuthApproval, AuthAuditLog, SecurityLog, PrayerAttribute, PrayerActivityLog
 from sqlmodel import text
+import sqlite3
 
 # Load environment variables
 load_dotenv()
@@ -63,6 +64,46 @@ from app_helpers.routes.general_routes import router as general_router
 from app_helpers.routes.changelog_routes import router as changelog_router
 
 app = FastAPI()
+
+# Health check endpoint for deployment monitoring
+@app.get("/health")
+async def health_check():
+    """Health check endpoint that verifies database connectivity"""
+    try:
+        # Check database connectivity
+        db_path = "thywill.db"
+        if not os.path.exists(db_path):
+            return JSONResponse(
+                content={
+                    "status": "unhealthy",
+                    "error": "Database file not found"
+                },
+                status_code=500
+            )
+        
+        # Try to connect and run a simple query
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        conn.close()
+        
+        return JSONResponse(
+            content={
+                "status": "healthy",
+                "database": "connected",
+                "timestamp": datetime.now().isoformat()
+            },
+            status_code=200
+        )
+        
+    except Exception as e:
+        return JSONResponse(
+            content={
+                "status": "unhealthy",
+                "error": str(e)
+            },
+            status_code=500
+        )
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
