@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 
-from models import User, Prayer, Session as SessionModel, InviteToken, PrayerMark, AuthenticationRequest, AuthApproval, PrayerAttribute, PrayerActivityLog
+from models import User, Prayer, Session as SessionModel, InviteToken, PrayerMark, AuthenticationRequest, AuthApproval, PrayerAttribute, PrayerActivityLog, ChangelogEntry
 
 
 class UserFactory:
@@ -268,4 +268,41 @@ class PrayerActivityLogFactory:
             old_value=old_value,
             new_value=new_value,
             created_at=created_at or datetime.utcnow()
+        )
+
+
+class ChangelogEntryFactory:
+    """Factory for creating test changelog entries"""
+    
+    @staticmethod
+    def create(
+        commit_id: Optional[str] = None,
+        original_message: str = "Test commit message",
+        friendly_description: str = "Test friendly description",
+        change_type: str = "enhanced",
+        commit_date: Optional[datetime] = None
+    ) -> ChangelogEntry:
+        return ChangelogEntry(
+            commit_id=commit_id or uuid.uuid4().hex[:8],
+            original_message=original_message,
+            friendly_description=friendly_description,
+            change_type=change_type,
+            commit_date=commit_date or datetime.utcnow()
+        )
+    
+    @staticmethod
+    def build(
+        commit_id: Optional[str] = None,
+        original_message: str = "Test commit message",
+        friendly_description: str = "Test friendly description", 
+        change_type: str = "enhanced",
+        commit_date: Optional[datetime] = None
+    ) -> ChangelogEntry:
+        """Build without persisting to database"""
+        return ChangelogEntry(
+            commit_id=commit_id or uuid.uuid4().hex[:8],
+            original_message=original_message,
+            friendly_description=friendly_description,
+            change_type=change_type,
+            commit_date=commit_date or datetime.utcnow()
         )
