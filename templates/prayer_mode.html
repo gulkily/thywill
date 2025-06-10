@@ -194,150 +194,194 @@
   </div>
 
   <script>
-    let currentPrayerId = {{ prayer.id }};
-    const feedType = "{{ feed_type }}";
-    const mode = "{{ mode }}";
-    let currentPosition = {{ position }};
-    const prayerQueue = {{ prayer_queue | tojson }};
+    // Debug: Log to console to check if script is running
+    console.log('Prayer mode script loading...');
     
-    // Keyboard navigation
-    document.addEventListener('keydown', function(e) {
-      switch(e.code) {
-        case 'Space':
-          e.preventDefault();
-          markAsPrayed();
-          break;
-        case 'ArrowRight':
-        case 'KeyS':
-          e.preventDefault();
-          skipPrayer();
-          break;
-        case 'Escape':
-          e.preventDefault();
-          exitPrayerMode();
-          break;
-      }
-    });
-    
-    // Toggle original request visibility
-    function toggleOriginalRequest() {
-      const content = document.getElementById('original-request');
-      const chevron = document.getElementById('chevron');
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM loaded, initializing prayer mode...');
       
-      if (content.classList.contains('hidden')) {
-        content.classList.remove('hidden');
-        chevron.style.transform = 'rotate(90deg)';
-      } else {
-        content.classList.add('hidden');
-        chevron.style.transform = 'rotate(0deg)';
-      }
-    }
-    
-    // Mark prayer as prayed
-    function markAsPrayed() {
-      const btn = document.getElementById('prayed-btn');
-      if (btn.disabled) return;
+      // Prayer mode variables
+      let currentPrayerId = {{ prayer.id }};
+      const feedType = "{{ feed_type }}";
+      const mode = "{{ mode }}";
+      let currentPosition = {{ position }};
+      const prayerQueue = {{ prayer_queue | tojson }};
       
-      // Mark prayer via HTMX
-      htmx.ajax('POST', `/mark/${currentPrayerId}`, {
-        swap: 'none',
-        target: document.body
-      }).then(() => {
-        // Update button state
-        btn.disabled = true;
-        btn.innerHTML = `
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-          </svg>
-          Prayed!
-        `;
-        btn.className = 'bg-green-600 text-white px-12 py-4 rounded-xl font-medium text-lg flex items-center gap-2';
+      console.log('Prayer mode initialized:', { currentPrayerId, feedType, mode, currentPosition, queueLength: prayerQueue.length });
+      
+      // Make functions global so they can be called from onclick handlers
+      window.toggleOriginalRequest = function() {
+        console.log('Toggle original request clicked');
+        const content = document.getElementById('original-request');
+        const chevron = document.getElementById('chevron');
         
-        // Store progress in localStorage for resume functionality
-        storeProgress();
-        
-        // Auto-advance after 1.5 seconds
-        setTimeout(() => {
-          skipPrayer();
-        }, 1500);
-      });
-    }
-    
-    // Skip to next prayer
-    function skipPrayer() {
-      const nextPosition = currentPosition + 1;
+        if (content && chevron) {
+          if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            chevron.style.transform = 'rotate(90deg)';
+          } else {
+            content.classList.add('hidden');
+            chevron.style.transform = 'rotate(0deg)';
+          }
+        } else {
+          console.error('Original request elements not found');
+        }
+      };
       
-      if (nextPosition >= prayerQueue.length) {
-        showCompletionMessage({
-          prayers_completed: prayerQueue.length
+      window.markAsPrayed = function() {
+        console.log('Mark as prayed clicked');
+        const btn = document.getElementById('prayed-btn');
+        if (!btn || btn.disabled) {
+          console.log('Button disabled or not found');
+          return;
+        }
+        
+        // Simple fetch request instead of HTMX
+        fetch(`/mark/${currentPrayerId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        .then(response => {
+          if (response.ok) {
+            console.log('Prayer marked successfully');
+            // Update button state
+            btn.disabled = true;
+            btn.innerHTML = `
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              Prayed!
+            `;
+            btn.className = 'bg-green-600 text-white px-12 py-4 rounded-xl font-medium text-lg flex items-center gap-2';
+            
+            // Store progress
+            storeProgress();
+            
+            // Auto-advance after 1.5 seconds
+            setTimeout(() => {
+              window.skipPrayer();
+            }, 1500);
+          } else {
+            console.error('Failed to mark prayer');
+          }
+        })
+        .catch(error => {
+          console.error('Error marking prayer:', error);
         });
-        return;
+      };
+      
+      window.skipPrayer = function() {
+        console.log('Skip prayer clicked');
+        const nextPosition = currentPosition + 1;
+        
+        if (nextPosition >= prayerQueue.length) {
+          window.showCompletionMessage({
+            prayers_completed: prayerQueue.length
+          });
+          return;
+        }
+        
+        // Navigate to next prayer
+        const nextUrl = `/prayer-mode/${feedType}?mode=${mode}&position=${nextPosition}`;
+        console.log('Navigating to:', nextUrl);
+        window.location.href = nextUrl;
+      };
+      
+      window.showCompletionMessage = function(data) {
+        console.log('Showing completion message');
+        const content = document.getElementById('prayer-content');
+        if (content) {
+          content.innerHTML = `
+            <div class="text-center text-white">
+              <div class="text-6xl mb-4">🎉</div>
+              <h2 class="text-3xl font-bold mb-4">Prayer Session Complete!</h2>
+              <p class="text-xl mb-6">You completed ${data.prayers_completed} prayers</p>
+              <button 
+                onclick="window.exitPrayerMode()" 
+                class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-xl font-medium transition-colors duration-200"
+              >
+                Return to Feed
+              </button>
+            </div>
+          `;
+          
+          // Hide action bar
+          const controls = document.querySelector('.prayer-controls');
+          if (controls) {
+            controls.style.display = 'none';
+          }
+          
+          // Clear stored progress
+          clearProgress();
+        }
+      };
+      
+      window.exitPrayerMode = function() {
+        console.log('Exit prayer mode clicked');
+        clearProgress();
+        window.location.href = '/';
+      };
+      
+      // Store progress in localStorage for resume functionality
+      function storeProgress() {
+        try {
+          const progressData = {
+            feed_type: feedType,
+            mode: mode,
+            position: currentPosition,
+            timestamp: Date.now()
+          };
+          localStorage.setItem('prayer_mode_progress', JSON.stringify(progressData));
+          console.log('Progress stored:', progressData);
+        } catch (e) {
+          console.error('Failed to store progress:', e);
+        }
       }
-      
-      // Navigate to next prayer
-      const nextUrl = `/prayer-mode/${feedType}?mode=${mode}&position=${nextPosition}`;
-      window.location.href = nextUrl;
-    }
-    
-    // Show completion message
-    function showCompletionMessage(data) {
-      const content = document.getElementById('prayer-content');
-      content.innerHTML = `
-        <div class="text-center text-white">
-          <div class="text-6xl mb-4">🎉</div>
-          <h2 class="text-3xl font-bold mb-4">Prayer Session Complete!</h2>
-          <p class="text-xl mb-6">You completed ${data.prayers_completed} prayers</p>
-          <button 
-            onclick="exitPrayerMode()" 
-            class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-xl font-medium transition-colors duration-200"
-          >
-            Return to Feed
-          </button>
-        </div>
-      `;
-      
-      // Hide action bar
-      document.querySelector('.prayer-controls').style.display = 'none';
       
       // Clear stored progress
-      clearProgress();
-    }
-    
-    // Exit prayer mode
-    function exitPrayerMode() {
-      clearProgress();
-      window.location.href = '/';
-    }
-    
-    // Store progress in localStorage for resume functionality
-    function storeProgress() {
-      const progressData = {
-        feed_type: feedType,
-        mode: mode,
-        position: currentPosition,
-        timestamp: Date.now()
-      };
-      localStorage.setItem('prayer_mode_progress', JSON.stringify(progressData));
-    }
-    
-    // Clear stored progress
-    function clearProgress() {
-      localStorage.removeItem('prayer_mode_progress');
-    }
-    
-    // Check for resumable session on load
-    window.addEventListener('load', function() {
-      const stored = localStorage.getItem('prayer_mode_progress');
-      if (stored && currentPosition === 0) {
+      function clearProgress() {
         try {
+          localStorage.removeItem('prayer_mode_progress');
+          console.log('Progress cleared');
+        } catch (e) {
+          console.error('Failed to clear progress:', e);
+        }
+      }
+      
+      // Keyboard navigation
+      document.addEventListener('keydown', function(e) {
+        console.log('Key pressed:', e.code);
+        switch(e.code) {
+          case 'Space':
+            e.preventDefault();
+            window.markAsPrayed();
+            break;
+          case 'ArrowRight':
+          case 'KeyS':
+            e.preventDefault();
+            window.skipPrayer();
+            break;
+          case 'Escape':
+            e.preventDefault();
+            window.exitPrayerMode();
+            break;
+        }
+      });
+      
+      // Check for resumable session
+      try {
+        const stored = localStorage.getItem('prayer_mode_progress');
+        if (stored && currentPosition === 0) {
           const progressData = JSON.parse(stored);
           const ageHours = (Date.now() - progressData.timestamp) / (1000 * 60 * 60);
           
-          // Only show resume if less than 24 hours old and position > 0
           if (ageHours < 24 && progressData.position > 0 && 
               progressData.feed_type === feedType && progressData.mode === mode) {
             
-            // Show resume notification with option
+            console.log('Showing resume notification');
             const notification = document.createElement('div');
             notification.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-purple-600 text-white px-6 py-3 rounded-lg shadow-lg z-60 flex items-center gap-3';
             notification.innerHTML = `
@@ -347,25 +391,26 @@
             `;
             document.body.appendChild(notification);
             
-            // Auto-remove after 10 seconds
             setTimeout(() => {
               if (notification.parentElement) {
                 notification.remove();
               }
             }, 10000);
           }
-        } catch (e) {
-          // Invalid stored data, clear it
-          clearProgress();
         }
+      } catch (e) {
+        console.error('Error checking resume session:', e);
+        clearProgress();
       }
+      
+      // Resume session function
+      window.resumeSession = function(position) {
+        const resumeUrl = `/prayer-mode/${feedType}?mode=${mode}&position=${position}`;
+        window.location.href = resumeUrl;
+      };
+      
+      console.log('Prayer mode script fully loaded');
     });
-    
-    // Resume session from stored position
-    function resumeSession(position) {
-      const resumeUrl = `/prayer-mode/${feedType}?mode=${mode}&position=${position}`;
-      window.location.href = resumeUrl;
-    }
   </script>
 </body>
 </html>
