@@ -3,7 +3,6 @@ Prayer-related helper functions extracted from app.py
 This module contains prayer management, filtering, and generation functions.
 """
 
-import yaml
 import anthropic
 import os
 from datetime import datetime, timedelta, date
@@ -215,12 +214,8 @@ def get_religious_preference_stats(db: Session) -> dict:
 
 
 def todays_prompt() -> str:
-    """Get today's prayer prompt from YAML file"""
-    try:
-        data = yaml.safe_load(open("prompts.yaml"))
-        return data.get(str(date.today()), "Let us pray 🙏")
-    except FileNotFoundError:
-        return "Let us pray 🙏"
+    """Get today's prayer prompt"""
+    return "Let us pray 🙏"
 
 
 def generate_prayer(prompt: str) -> str:
