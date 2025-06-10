@@ -201,14 +201,28 @@
     document.addEventListener('DOMContentLoaded', function() {
       console.log('DOM loaded, initializing prayer mode...');
       
-      // Prayer mode variables
-      let currentPrayerId = {{ prayer.id }};
-      const feedType = "{{ feed_type }}";
-      const mode = "{{ mode }}";
-      let currentPosition = {{ position }};
-      const prayerQueue = {{ prayer_queue | tojson }};
+      // Prayer mode variables - declare first for debugging
+      let currentPrayerId, feedType, mode, currentPosition, prayerQueue;
       
-      console.log('Prayer mode initialized:', { currentPrayerId, feedType, mode, currentPosition, queueLength: prayerQueue.length });
+      try {
+        // Initialize variables with template data
+        currentPrayerId = {{ prayer.id if prayer else 'null' }};
+        feedType = "{{ feed_type if feed_type else 'new_unprayed' }}";
+        mode = "{{ mode if mode else 'standard' }}";
+        currentPosition = {{ position if position is not none else 0 }};
+        prayerQueue = {{ prayer_queue | tojson if prayer_queue else '[]' }};
+        
+        console.log('Prayer mode initialized:', { currentPrayerId, feedType, mode, currentPosition, queueLength: prayerQueue.length });
+      } catch (e) {
+        console.error('Error initializing prayer mode variables:', e);
+        // Set fallback values
+        currentPrayerId = null;
+        feedType = 'new_unprayed';
+        mode = 'standard';
+        currentPosition = 0;
+        prayerQueue = [];
+        console.log('Using fallback values');
+      }
       
       // Make functions global so they can be called from onclick handlers
       window.toggleOriginalRequest = function() {
@@ -410,6 +424,14 @@
       };
       
       console.log('Prayer mode script fully loaded');
+      
+      // Test that functions are accessible
+      console.log('Functions available:', {
+        toggleOriginalRequest: typeof window.toggleOriginalRequest,
+        markAsPrayed: typeof window.markAsPrayed,
+        skipPrayer: typeof window.skipPrayer,
+        exitPrayerMode: typeof window.exitPrayerMode
+      });
     });
   </script>
 </body>
