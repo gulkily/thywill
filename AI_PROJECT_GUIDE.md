@@ -1,5 +1,11 @@
 # ThyWill - AI Assistant Project Guide
 
+## Environment Context
+- Claude Code runs in the development environment only
+- Never attempt to diagnose or fix production server issues directly
+- For production issues, provide diagnostic commands for the user to run on their production server
+- Do not use sudo commands or system service commands in the development environment
+
 ## Project Overview
 **ThyWill** is a community prayer platform built with FastAPI and SQLModel. It allows users to submit prayer requests, generate proper prayers using AI (Anthropic's Claude), track community prayer activity, and moderate content through community-driven flagging.
 
