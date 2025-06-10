@@ -61,6 +61,9 @@
     /* Dynamic text sizing for prayer content */
     .prayer-text {
       transition: font-size 0.2s ease;
+      text-indent: 0 !important; /* Remove any first-line indentation */
+      margin-left: 0 !important; /* Remove any left margin */
+      padding-left: 0 !important; /* Remove any left padding */
     }
     
     .prayer-text.size-large {
@@ -254,7 +257,10 @@
         const prayerText = document.getElementById('generated-prayer');
         if (!prayerText) return;
         
-        const text = prayerText.textContent;
+        // Clean up any leading/trailing whitespace that might cause indentation
+        const text = prayerText.textContent.trim();
+        prayerText.textContent = text;
+        
         const charCount = text.length;
         
         // Remove existing size classes
