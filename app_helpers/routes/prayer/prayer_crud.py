@@ -114,15 +114,6 @@ def submit_prayer(text: str = Form(...),
         )
         s.add(prayer)
         s.commit()
-        
-        # Try to find a compatible prayer partner immediately
-        compatible_user = find_compatible_prayer_partner(prayer, s)
-        if compatible_user:
-            # Assign prayer to compatible user
-            mark = PrayerMark(user_id=compatible_user.id, prayer_id=prayer.id)
-            s.add(mark)
-            s.commit()
-            print(f"Prayer {prayer.id} assigned to compatible user {compatible_user.id}")
     
     return RedirectResponse("/", 303)
 
