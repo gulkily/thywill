@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 
-from models import User, Prayer, Session as SessionModel, InviteToken, PrayerMark, AuthenticationRequest, AuthApproval, PrayerAttribute, PrayerActivityLog, ChangelogEntry
+from models import User, Prayer, Session as SessionModel, InviteToken, PrayerMark, PrayerSkip, AuthenticationRequest, AuthApproval, PrayerAttribute, PrayerActivityLog, ChangelogEntry
 
 
 class UserFactory:
@@ -133,6 +133,24 @@ class PrayerMarkFactory:
         created_at: Optional[datetime] = None
     ) -> PrayerMark:
         return PrayerMark(
+            id=id or uuid.uuid4().hex,
+            user_id=user_id,
+            prayer_id=prayer_id,
+            created_at=created_at or datetime.utcnow()
+        )
+
+
+class PrayerSkipFactory:
+    """Factory for creating test prayer skips"""
+    
+    @staticmethod
+    def create(
+        id: Optional[str] = None,
+        user_id: str = "test_user_id",
+        prayer_id: str = "test_prayer_id",
+        created_at: Optional[datetime] = None
+    ) -> PrayerSkip:
+        return PrayerSkip(
             id=id or uuid.uuid4().hex,
             user_id=user_id,
             prayer_id=prayer_id,
