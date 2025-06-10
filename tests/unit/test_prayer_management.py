@@ -136,6 +136,41 @@ class TestPrayerSubmission:
         after_creation = datetime.utcnow()
         
         assert before_creation <= prayer.created_at <= after_creation
+    
+    def test_prayer_submission_does_not_auto_create_prayer_marks(self, test_session):
+        """Test that submitting a prayer does NOT automatically create PrayerMark records"""
+        # Create two users - one will submit prayer, other could be potential prayer partner
+        user1 = UserFactory.create()
+        user2 = UserFactory.create() 
+        test_session.add_all([user1, user2])
+        test_session.commit()
+        
+        # Count initial prayer marks (should be 0)
+        initial_marks_count = test_session.query(func.count(PrayerMark.id)).scalar()
+        assert initial_marks_count == 0
+        
+        # Create a new prayer (simulating prayer submission)
+        prayer = PrayerFactory.create(
+            author_id=user1.id,
+            text="Please pray for my family",
+            target_audience="christian"
+        )
+        test_session.add(prayer)
+        test_session.commit()
+        
+        # Verify no PrayerMark records were automatically created
+        final_marks_count = test_session.query(func.count(PrayerMark.id)).scalar()
+        assert final_marks_count == 0
+        
+        # Verify prayer was created correctly
+        assert prayer.author_id == user1.id
+        assert prayer.text == "Please pray for my family"
+        
+        # Verify no marks exist for this prayer
+        marks_for_prayer = test_session.query(PrayerMark).filter(
+            PrayerMark.prayer_id == prayer.id
+        ).all()
+        assert len(marks_for_prayer) == 0
 
 
 @pytest.mark.unit 
