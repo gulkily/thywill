@@ -87,8 +87,9 @@ def initialize_prayer_queue(session: Session, user: User, feed_type: str, mode: 
         else:
             return Prayer.target_audience == "all"
     
-    # Build query based on feed type
+    # Build query based on feed type - but include all prayers regardless of user's prayer history
     if feed_type == "new_unprayed":
+        # In prayer mode, show all prayers but prioritize truly unprayed ones first
         stmt = (
             select(Prayer)
             .outerjoin(PrayerMark, Prayer.id == PrayerMark.prayer_id)
@@ -96,21 +97,10 @@ def initialize_prayer_queue(session: Session, user: User, feed_type: str, mode: 
             .where(exclude_archived())
             .where(apply_religious_filter())
             .group_by(Prayer.id)
-            .having(func.count(PrayerMark.id) == 0)
-            .order_by(Prayer.created_at.desc())
+            .order_by(func.count(PrayerMark.id).asc(), Prayer.created_at.desc())
         )
     elif feed_type == "most_prayed":
-        stmt = (
-            select(Prayer)
-            .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
-            .where(Prayer.flagged == False)
-            .where(exclude_archived())
-            .where(apply_religious_filter())
-            .group_by(Prayer.id)
-            .order_by(func.count(PrayerMark.id).desc())
-        )
-    else:
-        # Default to new_unprayed
+        # Show all prayers ordered by prayer count (most prayed first)
         stmt = (
             select(Prayer)
             .outerjoin(PrayerMark, Prayer.id == PrayerMark.prayer_id)
@@ -118,8 +108,18 @@ def initialize_prayer_queue(session: Session, user: User, feed_type: str, mode: 
             .where(exclude_archived())
             .where(apply_religious_filter())
             .group_by(Prayer.id)
-            .having(func.count(PrayerMark.id) == 0)
-            .order_by(Prayer.created_at.desc())
+            .order_by(func.count(PrayerMark.id).desc(), Prayer.created_at.desc())
+        )
+    else:
+        # Default to new_unprayed approach
+        stmt = (
+            select(Prayer)
+            .outerjoin(PrayerMark, Prayer.id == PrayerMark.prayer_id)
+            .where(Prayer.flagged == False)
+            .where(exclude_archived())
+            .where(apply_religious_filter())
+            .group_by(Prayer.id)
+            .order_by(func.count(PrayerMark.id).asc(), Prayer.created_at.desc())
         )
     
     # Apply mode-specific limits
