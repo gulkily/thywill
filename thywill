@@ -1,0 +1,713 @@
+#!/bin/bash
+
+# ThyWill CLI - Git-style command-line utility for deployment and backup operations
+# Usage: ./thywill <command> [options]
+
+set -euo pipefail
+
+# Configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEPLOYMENT_DIR="$SCRIPT_DIR/deployment"
+APP_DIR="/home/thywill/thywill"
+BACKUP_DIR="/home/thywill/backups"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
+
+# Logging functions
+log() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+header() {
+    echo -e "${BOLD}${CYAN}$1${NC}"
+}
+
+# Help functions
+show_help() {
+    header "ThyWill CLI - Deployment and Backup Management"
+    echo ""
+    echo "USAGE:"
+    echo "    thywill <command> [options]"
+    echo ""
+    echo "COMMANDS:"
+    echo ""
+    header "  Development Commands:"
+    echo "    start [port]        Start local development server (default: 8000)"
+    echo ""
+    header "  Deployment Commands:"
+    echo "    deploy              Deploy application with automatic rollback"
+    echo "    rollback [backup]   Rollback to previous version or specific backup"
+    echo "    health              Check application health status"
+    echo "    status              Show deployment and service status"
+    echo "    logs [lines]        Show application logs (default: 50 lines)"
+    echo ""
+    header "  Backup Commands:"
+    echo "    backup <type>       Create backup (hourly|daily|weekly)"
+    echo "    list                List all available backups"
+    echo "    restore <file>      Restore from specific backup file"
+    echo "    cleanup             Clean up old backups"
+    echo "    verify <file>       Verify backup integrity"
+    echo ""
+    header "  Utility Commands:"
+    echo "    setup               Complete development environment setup"
+    echo "    init                Initialize deployment environment"
+    echo "    install             Install thywill globally (no more ./)"
+    echo "    uninstall           Remove global installation"
+    echo "    config              Show current configuration"
+    echo "    help                Show this help message"
+    echo "    version             Show version information"
+    echo ""
+    echo "EXAMPLES:"
+    echo "    thywill setup                                     # Complete Ubuntu setup"
+    echo "    thywill start                                     # Start dev server on port 8000"
+    echo "    thywill start 3000                                # Start dev server on port 3000"
+    echo "    thywill deploy                                    # Safe deployment"
+    echo "    thywill backup daily                              # Create daily backup"
+    echo "    thywill list                                      # List all backups"
+    echo "    thywill restore /home/thywill/backups/daily/...   # Restore specific backup"
+    echo "    thywill rollback                                  # Rollback to previous"
+    echo "    thywill health                                    # Check app health"
+    echo "    thywill logs 100                                  # Show last 100 log lines"
+    echo ""
+    echo "For more information, see: deployment/DEPLOYMENT_GUIDE.md"
+}
+
+show_version() {
+    echo "ThyWill CLI v1.0.0"
+    echo "Deployment and Backup Management Utility"
+    echo "Built for ThyWill Prayer Application"
+}
+
+# Development commands
+cmd_start() {
+    local port="${1:-8000}"
+    local host="${2:-127.0.0.1}"
+    
+    header "Starting Development Server"
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    # Check if virtual environment exists
+    if [ ! -d "venv" ]; then
+        warning "Virtual environment not found. Creating one..."
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt
+    else
+        log "Activating virtual environment..."
+        source venv/bin/activate
+    fi
+    
+    # Check if uvicorn is installed
+    if ! python -c "import uvicorn" 2>/dev/null; then
+        log "Installing uvicorn..."
+        pip install uvicorn
+    fi
+    
+    log "Starting development server on http://$host:$port"
+    log "Press Ctrl+C to stop the server"
+    echo ""
+    
+    # Start the development server
+    exec uvicorn app:app --host "$host" --port "$port" --reload
+}
+
+# Deployment commands
+cmd_deploy() {
+    header "Starting Safe Deployment"
+    
+    if [ ! -f "$DEPLOYMENT_DIR/deploy.sh" ]; then
+        error "Deployment script not found at $DEPLOYMENT_DIR/deploy.sh"
+        exit 1
+    fi
+    
+    log "Running deployment with automatic rollback..."
+    cd "$SCRIPT_DIR"
+    exec "$DEPLOYMENT_DIR/deploy.sh"
+}
+
+cmd_rollback() {
+    local backup_file="${1:-}"
+    
+    header "Rolling Back Deployment"
+    
+    if [ -n "$backup_file" ]; then
+        log "Rolling back to specific backup: $backup_file"
+        "$DEPLOYMENT_DIR/backup_management.sh" restore "$backup_file"
+    else
+        log "Rolling back to most recent backup..."
+        
+        # Find most recent backup
+        local latest_backup
+        latest_backup=$(find "$BACKUP_DIR" -name "thywill_*.db" -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+        
+        if [ -z "$latest_backup" ]; then
+            error "No backups found for rollback"
+            exit 1
+        fi
+        
+        log "Found latest backup: $latest_backup"
+        "$DEPLOYMENT_DIR/backup_management.sh" restore "$latest_backup"
+    fi
+}
+
+cmd_health() {
+    header "Application Health Check"
+    
+    log "Checking service status..."
+    if systemctl is-active --quiet thywill; then
+        success "ThyWill service is running"
+    else
+        error "ThyWill service is not running"
+        echo "Run: sudo systemctl start thywill"
+        exit 1
+    fi
+    
+    log "Checking health endpoint..."
+    if curl -f -s http://127.0.0.1:8000/health > /dev/null 2>&1; then
+        success "Health endpoint responding"
+        echo ""
+        echo "Health Details:"
+        curl -s http://127.0.0.1:8000/health | python3 -m json.tool 2>/dev/null || curl -s http://127.0.0.1:8000/health
+    else
+        error "Health endpoint not responding"
+        warning "Application may be starting up or experiencing issues"
+        cmd_logs 20
+        exit 1
+    fi
+}
+
+cmd_status() {
+    header "System Status"
+    
+    echo ""
+    log "Service Status:"
+    systemctl status thywill --no-pager -l || true
+    
+    echo ""
+    log "Recent Deployments:"
+    if [ -d "/home/thywill/deploy_logs" ]; then
+        ls -la /home/thywill/deploy_logs/ | tail -5 || echo "No deployment logs found"
+    else
+        echo "No deployment logs directory found"
+    fi
+    
+    echo ""
+    log "Backup Status:"
+    if [ -d "$BACKUP_DIR" ]; then
+        echo "Daily backups: $(find $BACKUP_DIR/daily -name "*.db" 2>/dev/null | wc -l) files"
+        echo "Weekly backups: $(find $BACKUP_DIR/weekly -name "*.db" 2>/dev/null | wc -l) files"
+        echo "Latest backup: $(find $BACKUP_DIR -name "thywill_*.db" -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2- | xargs basename 2>/dev/null || echo 'None found')"
+    else
+        warning "Backup directory not found"
+    fi
+    
+    echo ""
+    log "Disk Usage:"
+    df -h "$BACKUP_DIR" 2>/dev/null || df -h /home/thywill/ 2>/dev/null || df -h /home/
+}
+
+cmd_logs() {
+    local lines="${1:-50}"
+    
+    header "Application Logs (last $lines lines)"
+    
+    if command -v journalctl >/dev/null 2>&1; then
+        journalctl -u thywill -n "$lines" --no-pager
+    else
+        error "journalctl not available. Check system logs manually."
+        exit 1
+    fi
+}
+
+# Backup commands
+cmd_backup() {
+    local backup_type="${1:-}"
+    
+    if [ -z "$backup_type" ]; then
+        error "Backup type required. Use: hourly, daily, or weekly"
+        echo "Usage: thywill backup <type>"
+        exit 1
+    fi
+    
+    case "$backup_type" in
+        hourly|daily|weekly)
+            header "Creating $backup_type Backup"
+            "$DEPLOYMENT_DIR/backup_management.sh" "$backup_type"
+            ;;
+        *)
+            error "Invalid backup type: $backup_type"
+            echo "Valid types: hourly, daily, weekly"
+            exit 1
+            ;;
+    esac
+}
+
+cmd_list() {
+    header "Available Backups"
+    "$DEPLOYMENT_DIR/backup_management.sh" list
+}
+
+cmd_restore() {
+    local backup_file="${1:-}"
+    
+    if [ -z "$backup_file" ]; then
+        error "Backup file path required"
+        echo "Usage: thywill restore <backup_file>"
+        echo "Use 'thywill list' to see available backups"
+        exit 1
+    fi
+    
+    header "Restoring from Backup"
+    "$DEPLOYMENT_DIR/backup_management.sh" restore "$backup_file"
+}
+
+cmd_cleanup() {
+    header "Cleaning Up Old Backups"
+    "$DEPLOYMENT_DIR/backup_management.sh" cleanup
+}
+
+cmd_verify() {
+    local backup_file="${1:-}"
+    
+    if [ -z "$backup_file" ]; then
+        error "Backup file path required"
+        echo "Usage: thywill verify <backup_file>"
+        exit 1
+    fi
+    
+    header "Verifying Backup Integrity"
+    
+    if [ ! -f "$backup_file" ]; then
+        error "Backup file not found: $backup_file"
+        exit 1
+    fi
+    
+    log "Checking file integrity..."
+    if [ -f "${backup_file}.sha256" ]; then
+        if sha256sum -c "${backup_file}.sha256" > /dev/null 2>&1; then
+            success "Checksum verification passed"
+        else
+            error "Checksum verification failed"
+            exit 1
+        fi
+    else
+        warning "No checksum file found, skipping checksum verification"
+    fi
+    
+    log "Checking database integrity..."
+    if sqlite3 "$backup_file" "PRAGMA integrity_check;" | grep -q "ok"; then
+        success "Database integrity check passed"
+    else
+        error "Database integrity check failed"
+        exit 1
+    fi
+    
+    success "Backup verification completed successfully"
+}
+
+# Utility commands
+cmd_setup() {
+    header "ThyWill Complete Ubuntu Setup"
+    
+    log "This will install all required packages and set up the development environment"
+    echo ""
+    warning "This command will:"
+    echo "  1. Update apt packages"
+    echo "  2. Install Python 3, pip, venv, nginx, sqlite3"
+    echo "  3. Create virtual environment"
+    echo "  4. Install Python dependencies"
+    echo "  5. Set up database"
+    echo "  6. Configure systemd service"
+    echo "  7. Set up nginx (optional)"
+    echo "  8. Initialize backup system"
+    echo ""
+    
+    read -p "Continue with setup? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        warning "Setup cancelled"
+        exit 0
+    fi
+    
+    # Step 1: Update system packages
+    header "Step 1: Updating system packages"
+    sudo apt update
+    
+    # Step 2: Install system dependencies
+    header "Step 2: Installing system dependencies"
+    sudo apt install -y python3 python3-pip python3-venv python3-dev \
+                        sqlite3 nginx curl git build-essential \
+                        software-properties-common
+    
+    # Step 3: Create Python virtual environment
+    header "Step 3: Setting up Python virtual environment"
+    if [ ! -d "venv" ]; then
+        log "Creating virtual environment..."
+        python3 -m venv venv
+    else
+        log "Virtual environment already exists"
+    fi
+    
+    # Step 4: Install Python dependencies
+    header "Step 4: Installing Python dependencies"
+    source venv/bin/activate
+    pip install --upgrade pip
+    pip install -r requirements.txt
+    
+    # Step 5: Initialize database
+    header "Step 5: Setting up database"
+    if [ ! -f "thywill.db" ]; then
+        log "Creating database..."
+        python -c "
+from models import create_db_and_tables
+create_db_and_tables()
+print('Database created successfully')
+"
+    else
+        log "Database already exists"
+    fi
+    
+    # Step 6: Set up production user (if we're setting up for production)
+    if [ "$USER" != "thywill" ] && [ "$PWD" != "/home/thywill/thywill" ]; then
+        header "Step 6: Development setup complete!"
+        success "Development environment ready!"
+        echo ""
+        echo "Next steps:"
+        echo "  thywill start          # Start development server"
+        echo "  thywill install        # Install CLI globally"
+        echo ""
+        echo "For production setup on this server:"
+        echo "  sudo adduser thywill"
+        echo "  sudo cp -r . /home/thywill/thywill"
+        echo "  sudo chown -R thywill:thywill /home/thywill/thywill"
+        echo "  thywill setup-production"
+    else
+        header "Step 6: Setting up production environment"
+        cmd_setup_production
+    fi
+}
+
+cmd_setup_production() {
+    header "Production Environment Setup"
+    
+    # Create required directories
+    log "Creating directories..."
+    sudo mkdir -p /home/thywill/backups/{hourly,daily,weekly}
+    sudo mkdir -p /home/thywill/deploy_logs
+    sudo mkdir -p /home/thywill/logs
+    sudo chown -R thywill:thywill /home/thywill/
+    
+    # Set up systemd service
+    log "Setting up systemd service..."
+    sudo cp deployment/thywill.service /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable thywill
+    
+    # Prompt for nginx setup
+    echo ""
+    log "Nginx configuration options:"
+    echo "1) Domain-based (recommended for production)"
+    echo "2) IP-only access"
+    echo "3) Skip nginx setup"
+    read -p "Choose option (1-3): " nginx_choice
+    
+    case $nginx_choice in
+        1)
+            read -p "Enter your domain name: " domain_name
+            if [ -n "$domain_name" ]; then
+                sed "s/your-domain.com/$domain_name/g" deployment/nginx-domain.conf > /tmp/thywill-nginx.conf
+                sudo cp /tmp/thywill-nginx.conf /etc/nginx/sites-available/thywill
+                sudo ln -sf /etc/nginx/sites-available/thywill /etc/nginx/sites-enabled/
+                sudo nginx -t && sudo systemctl reload nginx
+                success "Nginx configured for domain: $domain_name"
+            fi
+            ;;
+        2)
+            sudo cp deployment/nginx-ip-only.conf /etc/nginx/sites-available/thywill
+            sudo ln -sf /etc/nginx/sites-available/thywill /etc/nginx/sites-enabled/
+            sudo nginx -t && sudo systemctl reload nginx
+            success "Nginx configured for IP access"
+            ;;
+        3)
+            log "Skipping nginx setup"
+            ;;
+    esac
+    
+    # Set up environment file
+    if [ ! -f ".env" ]; then
+        log "Creating environment file..."
+        cp deployment/sample.env .env
+        warning "Please edit .env file with your actual values"
+    fi
+    
+    # Set up automated backups
+    log "Setting up automated backups..."
+    if ! crontab -l 2>/dev/null | grep -q "thywill"; then
+        log "Adding crontab entries..."
+        (crontab -l 2>/dev/null; cat deployment/crontab_backups.txt) | crontab -
+        success "Automated backups configured"
+    else
+        log "Backup crontab already configured"
+    fi
+    
+    # Start service
+    log "Starting ThyWill service..."
+    sudo systemctl start thywill
+    
+    # Final verification
+    sleep 3
+    if systemctl is-active --quiet thywill; then
+        success "ThyWill service is running!"
+        if curl -s http://127.0.0.1:8000/health > /dev/null 2>&1; then
+            success "Health check passed!"
+        else
+            warning "Service running but health check failed - check logs"
+        fi
+    else
+        error "Service failed to start - check logs"
+        echo "Run: journalctl -u thywill -n 20"
+    fi
+    
+    echo ""
+    success "Production setup complete!"
+    echo ""
+    echo "Service status: $(systemctl is-active thywill)"
+    echo "View logs: thywill logs"
+    echo "Check health: thywill health"
+    echo "Create backup: thywill backup daily"
+}
+
+cmd_init() {
+    header "Initializing ThyWill Deployment Environment"
+    
+    log "Creating required directories..."
+    sudo mkdir -p /home/thywill/backups/{hourly,daily,weekly}
+    sudo mkdir -p /home/thywill/deploy_logs
+    sudo mkdir -p /home/thywill/logs
+    
+    if id "thywill" &>/dev/null; then
+        sudo chown -R thywill:thywill /home/thywill/backups
+        sudo chown -R thywill:thywill /home/thywill/deploy_logs
+        sudo chown -R thywill:thywill /home/thywill/logs
+        success "Directory ownership set to thywill user"
+    else
+        warning "User 'thywill' not found. Please set proper ownership manually."
+    fi
+    
+    log "Making scripts executable..."
+    chmod +x "$DEPLOYMENT_DIR"/*.sh
+    chmod +x "$DEPLOYMENT_DIR"/*.py
+    
+    log "Setting up automated backups..."
+    if [ -f "$DEPLOYMENT_DIR/crontab_backups.txt" ]; then
+        echo ""
+        warning "To complete setup, add these crontab entries:"
+        echo "Run: crontab -e"
+        echo "Then add the following lines:"
+        echo ""
+        cat "$DEPLOYMENT_DIR/crontab_backups.txt"
+        echo ""
+    fi
+    
+    success "ThyWill deployment environment initialized!"
+    echo ""
+    echo "Next steps:"
+    echo "1. Set up crontab entries for automated backups"
+    echo "2. Test deployment: thywill deploy"
+    echo "3. Test backup: thywill backup daily"
+}
+
+cmd_config() {
+    header "Current Configuration"
+    
+    echo ""
+    echo "Paths:"
+    echo "  Application Directory: $APP_DIR"
+    echo "  Backup Directory: $BACKUP_DIR"
+    echo "  Deployment Scripts: $DEPLOYMENT_DIR"
+    echo ""
+    
+    echo "Service Status:"
+    if systemctl is-active --quiet thywill; then
+        echo "  ThyWill Service: RUNNING"
+    else
+        echo "  ThyWill Service: STOPPED"
+    fi
+    
+    echo ""
+    echo "Available Scripts:"
+    ls -la "$DEPLOYMENT_DIR"/*.sh "$DEPLOYMENT_DIR"/*.py 2>/dev/null | while read -r line; do
+        echo "  $line"
+    done
+    
+    echo ""
+    echo "Backup Statistics:"
+    if [ -d "$BACKUP_DIR" ]; then
+        echo "  Hourly backups: $(find $BACKUP_DIR/hourly -name "*.db" 2>/dev/null | wc -l)"
+        echo "  Daily backups: $(find $BACKUP_DIR/daily -name "*.db" 2>/dev/null | wc -l)"
+        echo "  Weekly backups: $(find $BACKUP_DIR/weekly -name "*.db" 2>/dev/null | wc -l)"
+        
+        local total_size
+        total_size=$(du -sh "$BACKUP_DIR" 2>/dev/null | cut -f1 || echo "Unknown")
+        echo "  Total backup size: $total_size"
+    else
+        echo "  Backup directory not found"
+    fi
+}
+
+cmd_install() {
+    header "Installing ThyWill CLI Globally"
+    
+    local script_path="$SCRIPT_DIR/thywill"
+    local install_path="/usr/local/bin/thywill"
+    
+    if [ ! -f "$script_path" ]; then
+        error "ThyWill CLI script not found at: $script_path"
+        exit 1
+    fi
+    
+    log "Installing thywill to $install_path..."
+    
+    # Create the symlink
+    if sudo ln -sf "$script_path" "$install_path"; then
+        success "ThyWill CLI installed successfully!"
+        echo ""
+        echo "You can now use 'thywill' from anywhere (no more ./)"
+        echo ""
+        echo "Try it out:"
+        echo "  thywill help"
+        echo "  thywill status"
+        echo "  thywill config"
+    else
+        error "Failed to install ThyWill CLI"
+        exit 1
+    fi
+}
+
+cmd_uninstall() {
+    header "Uninstalling ThyWill CLI"
+    
+    local install_path="/usr/local/bin/thywill"
+    
+    if [ ! -L "$install_path" ] && [ ! -f "$install_path" ]; then
+        warning "ThyWill CLI is not installed globally"
+        echo "Use ./thywill to run from current directory"
+        return 0
+    fi
+    
+    log "Removing $install_path..."
+    
+    if sudo rm -f "$install_path"; then
+        success "ThyWill CLI uninstalled successfully!"
+        echo ""
+        echo "You'll need to use './thywill' to run from the project directory"
+    else
+        error "Failed to uninstall ThyWill CLI"
+        exit 1
+    fi
+}
+
+# Main command dispatcher
+main() {
+    local command="${1:-help}"
+    shift || true
+    
+    case "$command" in
+        # Development commands
+        start)
+            cmd_start "$@"
+            ;;
+        
+        # Deployment commands
+        deploy)
+            cmd_deploy "$@"
+            ;;
+        rollback)
+            cmd_rollback "$@"
+            ;;
+        health)
+            cmd_health "$@"
+            ;;
+        status)
+            cmd_status "$@"
+            ;;
+        logs)
+            cmd_logs "$@"
+            ;;
+        
+        # Backup commands
+        backup)
+            cmd_backup "$@"
+            ;;
+        list)
+            cmd_list "$@"
+            ;;
+        restore)
+            cmd_restore "$@"
+            ;;
+        cleanup)
+            cmd_cleanup "$@"
+            ;;
+        verify)
+            cmd_verify "$@"
+            ;;
+        
+        # Utility commands
+        setup)
+            cmd_setup "$@"
+            ;;
+        init)
+            cmd_init "$@"
+            ;;
+        install)
+            cmd_install "$@"
+            ;;
+        uninstall)
+            cmd_uninstall "$@"
+            ;;
+        config)
+            cmd_config "$@"
+            ;;
+        help|--help|-h)
+            show_help
+            ;;
+        version|--version|-v)
+            show_version
+            ;;
+        
+        *)
+            error "Unknown command: $command"
+            echo ""
+            echo "Use 'thywill help' to see available commands"
+            exit 1
+            ;;
+    esac
+}
+
+# Execute main function with all arguments
+main "$@"
