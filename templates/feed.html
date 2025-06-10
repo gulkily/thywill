@@ -37,18 +37,26 @@
     
     <!-- Quick Actions (only for fully authenticated users) -->
     {% if session.is_fully_authenticated %}
-    <div class="flex flex-col sm:flex-row gap-2">
-      <!-- Prayer Mode buttons -->
-      <div class="flex gap-2">
-        <a href="/prayer-mode" 
-           class="text-sm bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 transition-colors duration-200">
+    <div class="flex flex-wrap items-center gap-2">
+      <!-- Prayer Mode dropdown -->
+      <div class="relative" id="prayer-mode-dropdown">
+        <button onclick="togglePrayerModeDropdown()" 
+                class="text-sm bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 transition-colors duration-200 flex items-center gap-1">
           🧘 Prayer Mode
-        </a>
-        <a href="/prayer-mode?mode=quick" 
-           class="text-sm bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 transition-colors duration-200"
-           title="Quick Prayer mode (5-10 prayers)">
-          ⚡ Quick
-        </a>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="prayer-mode-menu" class="hidden absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 z-10 min-w-48">
+          <a href="/prayer-mode" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+            🧘 Standard Mode
+            <span class="block text-xs text-gray-500 dark:text-gray-400">Up to 25 prayers</span>
+          </a>
+          <a href="/prayer-mode?mode=quick" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+            ⚡ Quick Mode
+            <span class="block text-xs text-gray-500 dark:text-gray-400">5-10 prayers</span>
+          </a>
+        </div>
       </div>
       
       <!-- Compact invite button -->
