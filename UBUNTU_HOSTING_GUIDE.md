@@ -47,11 +47,12 @@ source venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Create environment file
-nano .env
+# Create environment file from template
+cp deployment/sample.env .env
+nano .env  # Edit with your actual values
 ```
 
-Add to `.env` file:
+Edit `.env` file with your actual values:
 ```env
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 MULTI_DEVICE_AUTH_ENABLED=true
@@ -71,7 +72,10 @@ exit  # Back to root
 systemctl status thywill
 systemctl list-units --type=service | grep -i thywill
 
-# Create systemd service file
+# Copy the pre-made service file (recommended)
+cp /home/thywill/thywill/deployment/thywill.service /etc/systemd/system/
+
+# OR create manually with nano if you prefer
 nano /etc/systemd/system/thywill.service
 ```
 
@@ -127,11 +131,23 @@ WantedBy=multi-user.target
 # Remove default nginx config
 rm /etc/nginx/sites-enabled/default
 
-# Create new config for ThyWill
+# Copy the appropriate pre-made config file (recommended)
+# Choose ONE of these based on your setup:
+
+# For domain-based setup:
+cp /home/thywill/thywill/deployment/nginx-domain.conf /etc/nginx/sites-available/thywill
+
+# For IP-only setup:
+cp /home/thywill/thywill/deployment/nginx-ip-only.conf /etc/nginx/sites-available/thywill
+
+# For specific IP setup (edit the IP first):
+cp /home/thywill/thywill/deployment/nginx-specific-ip.conf /etc/nginx/sites-available/thywill
+
+# OR create manually with nano if you prefer
 nano /etc/nginx/sites-available/thywill
 ```
 
-**Choose one of these configurations:**
+**Pre-made configuration files are available in `/home/thywill/thywill/deployment/` or you can create manually:**
 
 ### Option A: With Domain Name
 ```nginx
@@ -168,6 +184,14 @@ server {
         alias /home/thywill/thywill/static/;
         expires 1y;
         add_header Cache-Control "public, immutable";
+    }
+
+    # Serve favicon directly to prevent 404s
+    location = /favicon.ico {
+        alias /home/thywill/thywill/static/favicon.ico;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
     }
 }
 ```
@@ -208,6 +232,14 @@ server {
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
+
+    # Serve favicon directly to prevent 404s
+    location = /favicon.ico {
+        alias /home/thywill/thywill/static/favicon.ico;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
 }
 ```
 
@@ -246,6 +278,14 @@ server {
         alias /home/thywill/thywill/static/;
         expires 1y;
         add_header Cache-Control "public, immutable";
+    }
+
+    # Serve favicon directly to prevent 404s
+    location = /favicon.ico {
+        alias /home/thywill/thywill/static/favicon.ico;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
     }
 }
 ```
@@ -339,6 +379,17 @@ systemctl restart thywill
 # Check system status
 systemctl status thywill nginx
 ```
+
+## Deployment Files
+
+All configuration files are pre-made and available in the `/home/thywill/thywill/deployment/` directory:
+
+- `thywill.service` - Systemd service configuration
+- `nginx-domain.conf` - Nginx config for domain-based setup
+- `nginx-ip-only.conf` - Nginx config for IP-only access
+- `nginx-specific-ip.conf` - Nginx config for specific IP
+- `sample.env` - Environment variables template
+- `README.md` - Quick reference for using these files
 
 ## Improved Error Handling During Restarts
 
