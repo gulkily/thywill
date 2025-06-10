@@ -18,26 +18,6 @@ function toggleAddPrayer() {
     }
 }
 
-function togglePrayerModeDropdown() {
-    const menu = document.getElementById('prayer-mode-menu');
-    const isVisible = !menu.classList.contains('hidden');
-    
-    if (isVisible) {
-        menu.classList.add('hidden');
-    } else {
-        menu.classList.remove('hidden');
-    }
-}
-
-// Close dropdown when clicking outside
-document.addEventListener('click', function(e) {
-    const dropdown = document.getElementById('prayer-mode-dropdown');
-    const menu = document.getElementById('prayer-mode-menu');
-    
-    if (dropdown && menu && !dropdown.contains(e.target)) {
-        menu.classList.add('hidden');
-    }
-});
 
 // Global variable to store current preview data
 let currentPreviewData = null;

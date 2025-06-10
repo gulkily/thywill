@@ -133,6 +133,12 @@ class PrayerMark(SQLModel, table=True):
     prayer_id: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+class PrayerSkip(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
+    user_id: str
+    prayer_id: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 class AuthenticationRequest(SQLModel, table=True):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
     user_id: str  # User requesting authentication

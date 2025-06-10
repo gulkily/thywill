@@ -71,9 +71,6 @@
         <div class="text-sm font-medium">
           Prayer <span id="current-position">{{ current_position }}</span> of <span id="total-prayers">{{ total_prayers }}</span>
         </div>
-        {% if mode == "quick" %}
-        <span class="text-xs bg-purple-600 px-2 py-1 rounded-full">Quick Prayer</span>
-        {% endif %}
       </div>
       
       <!-- Exit button -->
@@ -204,20 +201,16 @@
     document.addEventListener('DOMContentLoaded', function() {
       
       // Prayer mode variables
-      let currentPrayerId, feedType, mode, currentPosition, prayerQueue;
+      let currentPrayerId, currentPosition, prayerQueue;
       
       try {
         // Initialize variables with template data
         currentPrayerId = "{{ prayer.id if prayer else '' }}";
-        feedType = "{{ feed_type if feed_type else 'new_unprayed' }}";
-        mode = "{{ mode if mode else 'standard' }}";
         currentPosition = {{ position if position is not none else 0 }};
         prayerQueue = {{ prayer_queue | tojson if prayer_queue else '[]' }};
       } catch (e) {
         // Set fallback values if template rendering fails
         currentPrayerId = '';
-        feedType = 'new_unprayed';
-        mode = 'standard';
         currentPosition = 0;
         prayerQueue = [];
       }
@@ -278,18 +271,40 @@
       };
       
       window.skipPrayer = function() {
-        const nextPosition = currentPosition + 1;
-        
-        if (nextPosition >= prayerQueue.length) {
-          window.showCompletionMessage({
-            prayers_completed: prayerQueue.length
-          });
-          return;
-        }
-        
-        // Navigate to next prayer
-        const nextUrl = `/prayer-mode/${feedType}?mode=${mode}&position=${nextPosition}`;
-        window.location.href = nextUrl;
+        // Record the skip action
+        fetch(`/api/prayer-mode/skip/${currentPrayerId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }).then(() => {
+          // Continue to next prayer regardless of skip recording success
+          const nextPosition = currentPosition + 1;
+          
+          if (nextPosition >= prayerQueue.length) {
+            window.showCompletionMessage({
+              prayers_completed: prayerQueue.length
+            });
+            return;
+          }
+          
+          // Navigate to next prayer
+          const nextUrl = `/prayer-mode?position=${nextPosition}`;
+          window.location.href = nextUrl;
+        }).catch(() => {
+          // Even if skip recording fails, still navigate
+          const nextPosition = currentPosition + 1;
+          
+          if (nextPosition >= prayerQueue.length) {
+            window.showCompletionMessage({
+              prayers_completed: prayerQueue.length
+            });
+            return;
+          }
+          
+          const nextUrl = `/prayer-mode?position=${nextPosition}`;
+          window.location.href = nextUrl;
+        });
       };
       
       window.showCompletionMessage = function(data) {
@@ -329,8 +344,6 @@
       function storeProgress() {
         try {
           const progressData = {
-            feed_type: feedType,
-            mode: mode,
             position: currentPosition,
             timestamp: Date.now()
           };
@@ -375,9 +388,7 @@
           const progressData = JSON.parse(stored);
           const ageHours = (Date.now() - progressData.timestamp) / (1000 * 60 * 60);
           
-          if (ageHours < 24 && progressData.position > 0 && 
-              progressData.feed_type === feedType && progressData.mode === mode) {
-            
+          if (ageHours < 24 && progressData.position > 0) {
             const notification = document.createElement('div');
             notification.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-purple-600 text-white px-6 py-3 rounded-lg shadow-lg z-60 flex items-center gap-3';
             notification.innerHTML = `
@@ -400,7 +411,7 @@
       
       // Resume session function
       window.resumeSession = function(position) {
-        const resumeUrl = `/prayer-mode/${feedType}?mode=${mode}&position=${position}`;
+        const resumeUrl = `/prayer-mode?position=${position}`;
         window.location.href = resumeUrl;
       };
     });
