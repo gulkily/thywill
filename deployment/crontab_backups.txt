@@ -1,0 +1,17 @@
+# ThyWill Automated Backup Crontab Configuration
+# Add these lines to your crontab using: crontab -e
+
+# Hourly backups (every hour during business hours)
+0 9-17 * * 1-5 /home/thywill/thywill/deployment/backup_management.sh hourly >> /home/thywill/logs/backup.log 2>&1
+
+# Daily backups (every day at 2 AM)
+0 2 * * * /home/thywill/thywill/deployment/backup_management.sh daily >> /home/thywill/logs/backup.log 2>&1
+
+# Weekly backups (every Sunday at 3 AM)
+0 3 * * 0 /home/thywill/thywill/deployment/backup_management.sh weekly >> /home/thywill/logs/backup.log 2>&1
+
+# Monthly cleanup (first day of month at 4 AM)
+0 4 1 * * /home/thywill/thywill/deployment/backup_management.sh cleanup >> /home/thywill/logs/backup.log 2>&1
+
+# Database integrity check (every day at 1 AM)
+0 1 * * * sqlite3 /home/thywill/thywill/thywill.db "PRAGMA integrity_check;" | grep -v "ok" >> /home/thywill/logs/integrity.log 2>&1
