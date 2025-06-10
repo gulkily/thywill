@@ -70,7 +70,7 @@ def get_prayer_age_text(prayer_created_at: datetime) -> str:
             return f"{years} years ago"
 
 
-def initialize_prayer_queue(session: Session, user: User, feed_type: str = "new_unprayed") -> List[int]:
+def initialize_prayer_queue(session: Session, user: User, feed_type: str = "new_unprayed") -> List[str]:
     """Initialize prayer queue with smart sorting based on user's prayer and skip history."""
     
     # Base filter to exclude archived prayers for public feeds
