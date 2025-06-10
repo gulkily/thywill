@@ -17,3 +17,10 @@ Option to keep the original request private (or not save it)
 ** How to achieve impact with little behavioral change? **
 
 
+After /auth/status succeeds, it should not stay at that URL, but change to whatever page
+
+Where did ilyag admin on localhost disappear to?
+
+Invite tree is empty? All users should appear on invite tree somehow
+
+

@@ -39,6 +39,7 @@
     </div>
     {% endif %}
 
+    {% if not error %}
     <form method="post" action="/claim/{{ token }}" class="space-y-4" aria-label="Complete invitation">
       <div>
         <label for="display_name" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
@@ -57,14 +58,30 @@
         Join Thy Will Community
       </button>
     </form>
+    {% else %}
+    <div class="text-center py-6">
+      <p class="text-gray-600 dark:text-gray-400 mb-4">
+        Need a new invite link? Contact the person who originally invited you.
+      </p>
+      <a href="/" class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        Return to Home
+      </a>
+    </div>
+    {% endif %}
 
+    {% if not error %}
     <div class="mt-4 text-center">
       <p class="text-xs text-gray-500 dark:text-gray-400">
         By joining, you agree to participate respectfully and maintain confidentiality
       </p>
     </div>
+    {% endif %}
   </div>
 
+  {% if not error %}
   <!-- Trust Indicators -->
   <div class="text-center space-y-2">
     <div class="flex justify-center items-center space-x-6 text-xs text-gray-500 dark:text-gray-400">
@@ -183,6 +200,7 @@
     </blockquote>
     <cite class="text-xs text-gray-400 dark:text-gray-500">Galatians 6:2</cite>
   </div>
+  {% endif %}
 </div>
 
 <script>
