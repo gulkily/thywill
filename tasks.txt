@@ -23,4 +23,7 @@ Where did ilyag admin on localhost disappear to?
 
 Invite tree is empty? All users should appear on invite tree somehow
 
+Deployment / rollback process
+Run tests on prod
 
+Test for prayed_for being added automatically (shouldn't happen)
