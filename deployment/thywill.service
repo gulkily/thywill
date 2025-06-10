@@ -1,0 +1,16 @@
+[Unit]
+Description=ThyWill FastAPI Application
+After=network.target
+
+[Service]
+Type=exec
+User=thywill
+Group=thywill
+WorkingDirectory=/home/thywill/thywill
+Environment=PATH=/home/thywill/thywill/venv/bin
+ExecStart=/home/thywill/thywill/venv/bin/uvicorn app:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
