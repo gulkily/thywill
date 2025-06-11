@@ -52,6 +52,14 @@ def current_user(req: Request) -> tuple[User, SessionModel]:
         validate_session_security(sess, req)
         
         user = db.get(User, sess.user_id)
+        
+        # Check if user is deactivated - block access if so
+        if user and user.has_role("deactivated", db):
+            # Invalidate session for deactivated users
+            db.delete(sess)
+            db.commit()
+            raise HTTPException(401, detail="account_deactivated")
+        
         return user, sess
 
 
