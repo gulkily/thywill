@@ -20,6 +20,10 @@ def get_feed_counts(user_id: str) -> dict:
     with Session(engine) as s:
         counts = {}
         
+        # Get user's religious preference for filtering
+        user = s.exec(select(User).where(User.id == user_id)).first()
+        user_religious_preference = user.religious_preference if user else None
+        
         # Helper to exclude archived and flagged prayers
         def active_prayer_filter():
             return (
@@ -31,7 +35,16 @@ def get_feed_counts(user_id: str) -> dict:
                 )
             )
         
-        # All prayers (active only)
+        # Religious preference filtering (matches feed_operations.py logic)
+        def apply_religious_filter():
+            if user_religious_preference == "christian":
+                # Christians see: all prayers + christian-only prayers
+                return Prayer.target_audience.in_(["all", "christians_only"])
+            else:
+                # All faiths (unspecified) users see only "all" prayers
+                return Prayer.target_audience == "all"
+        
+        # All prayers (active only, with religious filtering)
         counts['all'] = s.exec(
             select(func.count(Prayer.id))
             .where(Prayer.flagged == False)
@@ -41,9 +54,10 @@ def get_feed_counts(user_id: str) -> dict:
                     .where(PrayerAttribute.attribute_name == 'archived')
                 )
             )
+            .where(apply_religious_filter())
         ).first()
         
-        # New & unprayed
+        # New & unprayed (with religious filtering to match display logic)
         stmt = (
             select(func.count(Prayer.id))
             .select_from(Prayer)
@@ -55,13 +69,14 @@ def get_feed_counts(user_id: str) -> dict:
                     .where(PrayerAttribute.attribute_name == 'archived')
                 )
             )
+            .where(apply_religious_filter())
             .group_by(Prayer.id)
             .having(func.count(PrayerMark.id) == 0)
         )
         unprayed_prayers = s.exec(stmt).all()
         counts['new_unprayed'] = len(unprayed_prayers)
         
-        # Most prayed (prayers with at least 1 mark)
+        # Most prayed (prayers with at least 1 mark, with religious filtering)
         counts['most_prayed'] = s.exec(
             select(func.count(func.distinct(Prayer.id)))
             .select_from(Prayer)
@@ -73,6 +88,7 @@ def get_feed_counts(user_id: str) -> dict:
                     .where(PrayerAttribute.attribute_name == 'archived')
                 )
             )
+            .where(apply_religious_filter())
         ).first()
         
         # My prayers (prayers user has marked) - include all statuses
@@ -91,7 +107,7 @@ def get_feed_counts(user_id: str) -> dict:
             .where(Prayer.author_id == user_id)
         ).first()
         
-        # Recent activity (prayers with marks in last 7 days) - active only
+        # Recent activity (prayers with marks in last 7 days, with religious filtering)
         week_ago = datetime.utcnow() - timedelta(days=7)
         counts['recent_activity'] = s.exec(
             select(func.count(func.distinct(Prayer.id)))
@@ -104,16 +120,18 @@ def get_feed_counts(user_id: str) -> dict:
                     .where(PrayerAttribute.attribute_name == 'archived')
                 )
             )
+            .where(apply_religious_filter())
             .where(PrayerMark.created_at >= week_ago)
         ).first()
         
-        # Answered prayers count
+        # Answered prayers count (with religious filtering)
         counts['answered'] = s.exec(
             select(func.count(func.distinct(Prayer.id)))
             .select_from(Prayer)
             .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
             .where(Prayer.flagged == False)
             .where(PrayerAttribute.attribute_name == 'answered')
+            .where(apply_religious_filter())
         ).first()
         
         # Archived prayers count (user's own only)
