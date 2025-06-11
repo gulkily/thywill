@@ -7,6 +7,7 @@ Usage: python create_admin_token.py [--hours HOURS]
 """
 
 import argparse
+import os
 import uuid
 import sys
 from datetime import datetime, timedelta
@@ -39,7 +40,8 @@ def create_admin_token(hours=12):
         print(f"Valid for: {hours} hours")
         print()
         print("🔗 Claim URL:")
-        print(f"   http://your-server-ip/claim/{token}")
+        base_url = os.getenv("BASE_URL", "http://127.0.0.1:8000")
+        print(f"   {base_url}/claim/{token}")
         print()
         print("💡 Next steps:")
         print("   1. Visit the claim URL above")
