@@ -89,6 +89,18 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
                 'last_marked': last_marked
             })
         
+        # Get user roles for profile display
+        try:
+            user_roles = profile_user.get_roles(s)
+            role_names = [role.name for role in user_roles]
+        except Exception:
+            # Fallback for users without role system or if tables don't exist
+            user_roles = []
+            role_names = []
+            # Check old admin system for backward compatibility
+            if profile_user.id == 'admin':
+                role_names = ['admin (legacy)']
+        
         return templates.TemplateResponse(
             "profile.html",
             {
@@ -100,7 +112,9 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
                 "stats": stats,
                 "recent_requests": recent_requests,
                 "recent_marked_prayers": recent_marked_prayers,
-                "inviter": inviter
+                "inviter": inviter,
+                "user_roles": user_roles,
+                "role_names": role_names
             }
         )
 
