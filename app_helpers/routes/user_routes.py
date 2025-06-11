@@ -8,7 +8,8 @@ from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select, func
 
 from models import engine, User, Prayer, PrayerMark, Session as SessionModel
-from app_helpers.services.auth_helpers import current_user, log_security_event
+from app_helpers.services.auth_helpers import current_user
+from app_helpers.utils.user_management import is_user_deactivated
 
 templates = Jinja2Templates(directory="templates")
 
@@ -169,13 +170,22 @@ def users_list(request: Request, user_session: tuple = Depends(current_user)):
             elif last_prayer_request:
                 last_activity = last_prayer_request
             
+            # Check if user is deactivated
+            is_deactivated = is_user_deactivated(profile_user.id, s)
+            
+            # For regular users, filter out deactivated users (except themselves)
+            if is_deactivated and profile_user.id != user.id:
+                continue
+            
             users_with_stats.append({
                 'user': profile_user,
                 'prayers_authored': prayers_authored,
                 'prayers_marked': prayers_marked,
                 'distinct_prayers_marked': distinct_prayers_marked,
                 'last_activity': last_activity,
-                'is_me': profile_user.id == user.id
+                'is_me': profile_user.id == user.id,
+                'is_deactivated': is_deactivated,
+                'is_admin': profile_user.has_role("admin", s)
             })
         
         return templates.TemplateResponse(
