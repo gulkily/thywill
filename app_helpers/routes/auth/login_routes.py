@@ -18,7 +18,7 @@ from sqlmodel import Session, select
 
 from models import (
     engine, User, InviteToken, Session as SessionModel,
-    AuthenticationRequest
+    AuthenticationRequest, Role, UserRole
 )
 
 # Import helper functions
@@ -40,6 +40,48 @@ router = APIRouter()
 # Configuration
 SESSION_DAYS = int(os.getenv("SESSION_DAYS", 90))
 MULTI_DEVICE_AUTH_ENABLED = os.getenv("MULTI_DEVICE_AUTH_ENABLED", "True").lower() == "true"
+
+
+def grant_admin_role_for_system_token(user_id: str, token: str, session: Session) -> None:
+    """
+    Grant admin role to user if they claimed a system-generated admin token.
+    
+    Args:
+        user_id: ID of the user to potentially grant admin role to
+        token: The invite token that was claimed
+        session: Database session
+    """
+    # Get the invite token details
+    inv = session.get(InviteToken, token)
+    if not inv or inv.created_by_user != "system":
+        return  # Not a system-generated token
+    
+    # Check if user already has admin role
+    admin_role_stmt = select(Role).where(Role.name == "admin")
+    admin_role = session.exec(admin_role_stmt).first()
+    
+    if not admin_role:
+        # Admin role doesn't exist, skip
+        return
+    
+    # Check if user already has admin role
+    existing_role_stmt = select(UserRole).where(
+        UserRole.user_id == user_id,
+        UserRole.role_id == admin_role.id
+    )
+    existing_role = session.exec(existing_role_stmt).first()
+    
+    if existing_role:
+        return  # User already has admin role
+    
+    # Grant admin role
+    user_role = UserRole(
+        user_id=user_id,
+        role_id=admin_role.id,
+        granted_by=None,  # System granted
+        granted_at=datetime.utcnow()
+    )
+    session.add(user_role)
 
 
 @router.get("/claim/{token}", response_class=HTMLResponse)
@@ -145,6 +187,9 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
                 existing_user.invite_token_used = token
                 s.add(existing_user)
             
+            # Grant admin role if this is a system-generated token
+            grant_admin_role_for_system_token(existing_user.id, token, s)
+            
             s.add(inv)
             s.commit()
             
@@ -167,7 +212,12 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             user = User(**user_data)
             inv.used = True
             inv.used_by_user_id = uid
-            s.add_all([user, inv]); s.commit()
+            s.add_all([user, inv])
+            
+            # Grant admin role if this is a system-generated token
+            grant_admin_role_for_system_token(uid, token, s)
+            
+            s.commit()
 
             sid = create_session(uid)
             resp = RedirectResponse("/", 303)
