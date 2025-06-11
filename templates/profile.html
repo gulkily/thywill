@@ -15,8 +15,12 @@
       <!-- Profile Info -->
       <div class="flex-1">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ profile_user.display_name }}</h1>
-        {% if profile_user.id == 'admin' %}
-          <span class="inline-block bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs px-2 py-1 rounded-full mt-1">Admin</span>
+        {% if role_names %}
+          {% for role_name in role_names %}
+            {% if role_name|lower != 'user' %}
+              <span class="inline-block bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs px-2 py-1 rounded-full mt-1 mr-1">{{ role_name|title }}</span>
+            {% endif %}
+          {% endfor %}
         {% endif %}
         <p class="text-gray-600 dark:text-gray-300 text-sm mt-1">
           Member since {{ profile_user.created_at.strftime('%B %d, %Y') }}
@@ -72,10 +76,11 @@
               </span>
             </div>
             {% endif %}
-            {% if profile_user.id == 'admin' %}
+            {% set non_user_roles = role_names|reject('equalto', 'user')|list %}
+            {% if non_user_roles %}
             <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-300">Role:</span>
-              <span class="text-purple-600 dark:text-purple-400 font-medium">Administrator</span>
+              <span class="text-gray-600 dark:text-gray-300">{% if non_user_roles|length > 1 %}Roles:{% else %}Role:{% endif %}</span>
+              <span class="text-purple-600 dark:text-purple-400 font-medium">{{ non_user_roles|join(', ')|title }}</span>
             </div>
             {% endif %}
             {% if is_own_profile %}
