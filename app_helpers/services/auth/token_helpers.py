@@ -269,13 +269,22 @@ def get_unread_auth_notifications(user_id: str) -> list:
         notifications = []
         
         for notification, auth_req, requester_name in results:
-            notifications.append({
-                'id': notification.id,
-                'created_at': notification.created_at,
-                'auth_request': auth_req,
-                'requester_name': requester_name,
-                'notification_type': notification.notification_type
-            })
+            # Check if current user has already approved this request
+            # If they have, don't include it in notifications (matches pending page logic)
+            existing_approval = db.exec(
+                select(AuthApproval)
+                .where(AuthApproval.auth_request_id == auth_req.id)
+                .where(AuthApproval.approver_user_id == user_id)
+            ).first()
+            
+            if not existing_approval:
+                notifications.append({
+                    'id': notification.id,
+                    'created_at': notification.created_at,
+                    'auth_request': auth_req,
+                    'requester_name': requester_name,
+                    'notification_type': notification.notification_type
+                })
         
         return notifications
 
@@ -294,16 +303,32 @@ def mark_notification_read(notification_id: str, user_id: str) -> bool:
 
 
 def get_notification_count(user_id: str) -> int:
-    """Get count of unread notifications for user"""
+    """Get count of unread notifications for user (excluding already approved requests)"""
     with Session(engine) as db:
-        count = db.exec(
-            select(func.count(NotificationState.id))
+        # Get all unread notifications for pending requests
+        stmt = (
+            select(NotificationState.id, AuthenticationRequest.id.label('auth_req_id'))
+            .join(AuthenticationRequest, NotificationState.auth_request_id == AuthenticationRequest.id)
             .where(NotificationState.user_id == user_id)
             .where(NotificationState.is_read == False)
-            .join(AuthenticationRequest, NotificationState.auth_request_id == AuthenticationRequest.id)
             .where(AuthenticationRequest.status == "pending")
             .where(AuthenticationRequest.expires_at > datetime.utcnow())
-        ).first() or 0
+        )
+        
+        results = db.exec(stmt).all()
+        count = 0
+        
+        for notification_id, auth_req_id in results:
+            # Check if current user has already approved this request
+            existing_approval = db.exec(
+                select(AuthApproval)
+                .where(AuthApproval.auth_request_id == auth_req_id)
+                .where(AuthApproval.approver_user_id == user_id)
+            ).first()
+            
+            if not existing_approval:
+                count += 1
+        
         return count
 
 
