@@ -26,6 +26,6 @@ Invite tree is empty? All users should appear on invite tree somehow
 Deployment / rollback process
 Run tests on prod
 
-Test for prayed_for being added automatically (shouldn't happen)
-
 Link in invite dialog should not be clickable, should auto-select on click for copy (and copy automatically?)
+
+Maintain a text-based dump/backup of data that can be imported back at any time
