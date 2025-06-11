@@ -289,11 +289,13 @@ def login_post(username: str = Form(...), request: Request = None):
                 }
             )
         
-        # Check for existing pending request from same IP/device in last hour
+        # Check for existing pending request from same IP/device combination in last hour
+        # Modified to allow separate requests per device by checking both IP and device_info
         recent_request = db.exec(
             select(AuthenticationRequest)
             .where(AuthenticationRequest.user_id == existing_user.id)
             .where(AuthenticationRequest.ip_address == ip_address)
+            .where(AuthenticationRequest.device_info == device_info)
             .where(AuthenticationRequest.status == "pending")
             .where(AuthenticationRequest.created_at > datetime.utcnow() - timedelta(hours=1))
         ).first()
