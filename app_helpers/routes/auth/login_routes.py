@@ -31,6 +31,7 @@ from app_helpers.utils.invite_tree_validation import (
     validate_existing_user_invite_update,
     validate_user_operation
 )
+from app_helpers.utils.user_management import is_user_deactivated
 
 # Template and config setup
 templates = Jinja2Templates(directory="templates")
@@ -126,6 +127,16 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             # Mark invite as used and create full session
             inv.used = True
             inv.used_by_user_id = existing_user.id
+            
+            # Check if user is deactivated before allowing login
+            if is_user_deactivated(existing_user.id, s):
+                return templates.TemplateResponse("error.html", {
+                    "request": request,
+                    "error_title": "Account Deactivated",
+                    "error_message": "This account has been deactivated and cannot be accessed. Please contact an administrator if you believe this is an error.",
+                    "show_back_button": True,
+                    "back_url": "/login"
+                })
             
             # CRITICAL FIX: Update existing user's invite relationship if not already set
             # This ensures existing users get properly connected to the invite tree
@@ -252,6 +263,17 @@ def login_post(username: str = Form(...), request: Request = None):
                 {
                     "request": request, 
                     "error": "Username not found. Please check your username or request an invite link to create a new account.",
+                    "username": username.strip()
+                }
+            )
+        
+        # Check if user is deactivated
+        if is_user_deactivated(existing_user.id, db):
+            return templates.TemplateResponse(
+                "login.html", 
+                {
+                    "request": request, 
+                    "error": "This account has been deactivated and cannot be accessed. Please contact an administrator if you believe this is an error.",
                     "username": username.strip()
                 }
             )
