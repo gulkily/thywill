@@ -9,6 +9,7 @@ from sqlmodel import Session, select, func
 
 from models import engine, User, Prayer, PrayerMark, Session as SessionModel
 from app_helpers.services.auth_helpers import current_user
+from app_helpers.services.auth.validation_helpers import log_security_event
 from app_helpers.utils.user_management import is_user_deactivated
 
 templates = Jinja2Templates(directory="templates")
