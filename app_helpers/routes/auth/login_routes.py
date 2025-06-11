@@ -26,6 +26,11 @@ from app_helpers.services.auth_helpers import (
     create_session, check_rate_limit, cleanup_expired_requests,
     create_auth_request
 )
+from app_helpers.utils.invite_tree_validation import (
+    validate_new_user_invite_relationship, 
+    validate_existing_user_invite_update,
+    validate_user_operation
+)
 
 # Template and config setup
 templates = Jinja2Templates(directory="templates")
@@ -121,6 +126,14 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             # Mark invite as used and create full session
             inv.used = True
             inv.used_by_user_id = existing_user.id
+            
+            # CRITICAL FIX: Update existing user's invite relationship if not already set
+            # This ensures existing users get properly connected to the invite tree
+            if validate_existing_user_invite_update(existing_user, token, s):
+                existing_user.invited_by_user_id = inv.created_by_user if inv.created_by_user != "system" else None
+                existing_user.invite_token_used = token
+                s.add(existing_user)
+            
             s.add(inv)
             s.commit()
             
@@ -132,12 +145,15 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
         else:
             # New user - create account normally
             uid = "admin" if s.exec(select(User)).first() is None else uuid.uuid4().hex
-            user = User(
-                id=uid, 
-                display_name=display_name[:40],
-                invited_by_user_id=inv.created_by_user if inv.created_by_user != "system" else None,
-                invite_token_used=token
-            )
+            
+            # Validate and ensure proper invite relationship
+            user_data = {
+                'id': uid,
+                'display_name': display_name[:40]
+            }
+            user_data = validate_new_user_invite_relationship(user_data, token, s)
+            
+            user = User(**user_data)
             inv.used = True
             inv.used_by_user_id = uid
             s.add_all([user, inv]); s.commit()
