@@ -67,6 +67,16 @@ show_help() {
     echo "    cleanup             Clean up old backups"
     echo "    verify <file>       Verify backup integrity"
     echo ""
+    header "  Admin Commands:"
+    echo "    admin grant <name>      Grant admin role to user (by display name or ID)"
+    echo "    admin revoke <name>     Revoke admin role from user"
+    echo "    admin list              List all admin users"
+    echo "    admin token [hours]     Create admin invite token"
+    echo "    role list               List all available roles"
+    echo "    role grant <user> <role> Grant specific role to user"
+    echo "    role revoke <user> <role> Revoke specific role from user"
+    echo "    import prayers <file>   Import prayers from JSON file"
+    echo ""
     header "  Utility Commands:"
     echo "    setup               Complete development environment setup"
     echo "    init                Initialize deployment environment"
@@ -79,14 +89,14 @@ show_help() {
     echo "EXAMPLES:"
     echo "    thywill setup                                     # Complete Ubuntu setup"
     echo "    thywill start                                     # Start dev server on port 8000"
-    echo "    thywill start 3000                                # Start dev server on port 3000"
+    echo "    thywill admin grant \"John Smith\"                # Grant admin role"
+    echo "    thywill role grant \"Jane Doe\" moderator         # Grant moderator role"
+    echo "    thywill admin token 24                            # Create 24-hour admin token"
+    echo "    thywill import prayers backup.json               # Import prayer data"
     echo "    thywill deploy                                    # Safe deployment"
     echo "    thywill backup daily                              # Create daily backup"
-    echo "    thywill list                                      # List all backups"
-    echo "    thywill restore /home/thywill/backups/daily/...   # Restore specific backup"
     echo "    thywill rollback                                  # Rollback to previous"
     echo "    thywill health                                    # Check app health"
-    echo "    thywill logs 100                                  # Show last 100 log lines"
     echo ""
     echo "For more information, see: deployment/DEPLOYMENT_GUIDE.md"
 }
@@ -328,6 +338,929 @@ cmd_verify() {
     fi
     
     success "Backup verification completed successfully"
+}
+
+# Admin commands
+cmd_admin() {
+    local subcommand="${1:-}"
+    shift || true
+    
+    case "$subcommand" in
+        grant)
+            cmd_admin_grant "$@"
+            ;;
+        revoke)
+            cmd_admin_revoke "$@"
+            ;;
+        list)
+            cmd_admin_list "$@"
+            ;;
+        token)
+            cmd_admin_token "$@"
+            ;;
+        *)
+            error "Unknown admin subcommand: $subcommand"
+            echo "Available subcommands: grant, revoke, list, token"
+            echo "Usage: thywill admin <subcommand> [args]"
+            exit 1
+            ;;
+    esac
+}
+
+cmd_admin_grant() {
+    local user_identifier="${1:-}"
+    
+    if [ -z "$user_identifier" ]; then
+        error "User identifier required"
+        echo "Usage: thywill admin grant <display_name_or_user_id>"
+        echo "Examples:"
+        echo "  thywill admin grant \"John Smith\""
+        echo "  thywill admin grant abc123def456"
+        exit 1
+    fi
+    
+    header "Granting Admin Rights"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
+        error "Must run from ThyWill project directory"
+        echo "Database or models.py not found"
+        exit 1
+    fi
+    
+    log "Looking up user: $user_identifier"
+    
+    # Run Python script to grant admin role
+    python3 -c "
+import sys
+sys.path.append('.')
+from sqlmodel import Session, select
+from models import engine, User, Role, UserRole
+from datetime import datetime
+
+user_identifier = '$user_identifier'
+
+def find_user(session, identifier):
+    # First try exact ID match
+    stmt = select(User).where(User.id == identifier)
+    user = session.exec(stmt).first()
+    
+    if not user:
+        # Try exact display_name match
+        stmt = select(User).where(User.display_name == identifier)
+        user = session.exec(stmt).first()
+    
+    if not user:
+        # Try partial display_name match
+        stmt = select(User).where(User.display_name.contains(identifier))
+        users = list(session.exec(stmt))
+        
+        if not users:
+            print(f'❌ No user found matching: {identifier}')
+            print('   Available users:')
+            # Show first 10 users as examples
+            all_users = list(session.exec(select(User).limit(10)))
+            for u in all_users:
+                print(f'   - \"{u.display_name}\" (ID: {u.id[:8]}...)')
+            if len(all_users) == 10:
+                print('   ... (showing first 10 users)')
+            return None
+        elif len(users) > 1:
+            print(f'❌ Multiple users found matching: {identifier}')
+            print('   Be more specific. Found:')
+            for u in users:
+                print(f'   - \"{u.display_name}\" (ID: {u.id[:8]}...)')
+            return None
+        else:
+            return users[0]
+    
+    return user
+
+try:
+    with Session(engine) as session:
+        user = find_user(session, user_identifier)
+        if not user:
+            sys.exit(1)
+        
+        # Get admin role
+        stmt = select(Role).where(Role.name == 'admin')
+        admin_role = session.exec(stmt).first()
+        
+        if not admin_role:
+            print('❌ Admin role not found. Run migration first: python migrate_to_roles.py')
+            sys.exit(1)
+        
+        # Check if user already has admin role
+        if user.has_role('admin', session):
+            print(f'ℹ️  User \"{user.display_name}\" already has admin role')
+            sys.exit(0)
+        
+        # Check for backward compatibility (old system)
+        if user.id == 'admin':
+            print(f'ℹ️  User \"{user.display_name}\" already has admin rights (old system)')
+            print('   Run migration to convert to role-based system: python migrate_to_roles.py')
+            sys.exit(0)
+        
+        # Grant admin role
+        user_role = UserRole(
+            user_id=user.id,
+            role_id=admin_role.id,
+            granted_by=None,  # CLI granted
+            granted_at=datetime.utcnow()
+        )
+        session.add(user_role)
+        session.commit()
+        
+        print(f'✅ Admin role granted to: \"{user.display_name}\"')
+        print(f'   User ID: {user.id[:8]}...')
+        print('   ✨ Using new role-based permission system')
+
+except Exception as e:
+    print(f'❌ Error granting admin role: {e}')
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+"
+}
+
+cmd_admin_revoke() {
+    local user_identifier="${1:-}"
+    
+    if [ -z "$user_identifier" ]; then
+        error "User identifier required"
+        echo "Usage: thywill admin revoke <display_name_or_user_id>"
+        echo "Examples:"
+        echo "  thywill admin revoke \"John Smith\""
+        echo "  thywill admin revoke abc123def456"
+        exit 1
+    fi
+    
+    header "Revoking Admin Role"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
+        error "Must run from ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Looking up user: $user_identifier"
+    
+    python3 -c "
+import sys
+sys.path.append('.')
+from sqlmodel import Session, select
+from models import engine, User, Role, UserRole
+
+user_identifier = '$user_identifier'
+
+def find_user(session, identifier):
+    # First try exact ID match
+    stmt = select(User).where(User.id == identifier)
+    user = session.exec(stmt).first()
+    
+    if not user:
+        # Try exact display_name match
+        stmt = select(User).where(User.display_name == identifier)
+        user = session.exec(stmt).first()
+    
+    if not user:
+        # Try partial display_name match
+        stmt = select(User).where(User.display_name.contains(identifier))
+        users = list(session.exec(stmt))
+        
+        if not users:
+            print(f'❌ No user found matching: {identifier}')
+            return None
+        elif len(users) > 1:
+            print(f'❌ Multiple users found matching: {identifier}')
+            print('   Be more specific. Found:')
+            for u in users:
+                print(f'   - \"{u.display_name}\" (ID: {u.id[:8]}...)')
+            return None
+        else:
+            return users[0]
+    
+    return user
+
+try:
+    with Session(engine) as session:
+        user = find_user(session, user_identifier)
+        if not user:
+            sys.exit(1)
+        
+        # Get admin role
+        stmt = select(Role).where(Role.name == 'admin')
+        admin_role = session.exec(stmt).first()
+        
+        if not admin_role:
+            print('❌ Admin role not found. Run migration first: python migrate_to_roles.py')
+            sys.exit(1)
+        
+        # Check if user has admin role
+        if not user.has_role('admin', session):
+            print(f'ℹ️  User \"{user.display_name}\" does not have admin role')
+            sys.exit(0)
+        
+        # Remove admin role
+        stmt = select(UserRole).where(
+            UserRole.user_id == user.id,
+            UserRole.role_id == admin_role.id
+        )
+        user_roles = session.exec(stmt).all()
+        
+        for user_role in user_roles:
+            session.delete(user_role)
+        
+        session.commit()
+        
+        print(f'✅ Admin role revoked from: \"{user.display_name}\"')
+        print(f'   User ID: {user.id[:8]}...')
+        print('   ✨ Using new role-based permission system')
+
+except Exception as e:
+    print(f'❌ Error revoking admin role: {e}')
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+"
+}
+
+cmd_admin_list() {
+    header "Admin Users"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
+        error "Must run from ThyWill project directory"
+        exit 1
+    fi
+    
+    python3 -c "
+import sys
+sys.path.append('.')
+from sqlmodel import Session, select, func
+from models import engine, User, Role, UserRole
+
+try:
+    with Session(engine) as session:
+        # Try role-based system first
+        try:
+            stmt = select(User).join(UserRole, User.id == UserRole.user_id).join(Role, UserRole.role_id == Role.id).where(
+                Role.name == 'admin',
+                (UserRole.expires_at.is_(None)) | (UserRole.expires_at > func.datetime('now'))
+            )
+            admin_users = session.exec(stmt).all()
+            
+            if admin_users:
+                print('👑 Admin Users (Role-based system):')
+                for user in admin_users:
+                    roles = user.get_roles(session)
+                    role_names = [r.name for r in roles]
+                    print(f'   • {user.display_name}')
+                    print(f'     ID: {user.id[:8]}...')
+                    print(f'     Roles: {\", \".join(role_names)}')
+                    print(f'     Created: {user.created_at}')
+                    print()
+            else:
+                print('ℹ️  No admin users found in role-based system')
+        except Exception as role_error:
+            print('⚠️  Role-based system not available (tables not created yet)')
+            
+        # Check old system for backward compatibility
+        stmt = select(User).where(User.id == 'admin')
+        old_admin = session.exec(stmt).first()
+        
+        if old_admin:
+            print('👑 Admin User (Old system - needs migration):')
+            print(f'   • {old_admin.display_name}')
+            print(f'     ID: admin (legacy)')
+            print(f'     Created: {old_admin.created_at}')
+            print()
+            print('💡 Run \"python migrate_to_roles.py\" to upgrade to role-based system')
+        
+        if not admin_users and not old_admin:
+            print('ℹ️  No admin users found')
+            print('   Use \"thywill admin token\" to create an admin invite')
+
+except Exception as e:
+    print(f'❌ Error listing admins: {e}')
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+"
+}
+
+cmd_admin_token() {
+    local hours="${1:-12}"
+    
+    header "Creating Admin Invite Token"
+    
+    # Validate hours
+    if ! [[ "$hours" =~ ^[0-9]+$ ]] || [ "$hours" -le 0 ]; then
+        error "Hours must be a positive number"
+        echo "Usage: thywill admin token [hours]"
+        exit 1
+    fi
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
+        error "Must run from ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Creating admin invite token (expires in $hours hours)..."
+    
+    python3 -c "
+import sys
+sys.path.append('.')
+import uuid
+import socket
+import subprocess
+import os
+from datetime import datetime, timedelta
+from sqlmodel import Session
+from models import engine, InviteToken
+
+hours = int('$hours')
+
+def detect_environment_and_url():
+    '''Automatically detect if running in development or production and return appropriate URL'''
+    
+    # Check if running in development (uvicorn process)
+    try:
+        # Check for uvicorn process
+        result = subprocess.run(['pgrep', '-f', 'uvicorn.*app:app'], capture_output=True, text=True)
+        if result.returncode == 0:
+            # Development mode detected
+            return 'http://127.0.0.1:8000', 'development'
+    except:
+        pass
+    
+    # Check if nginx is configured for this domain
+    nginx_configs = [
+        '/etc/nginx/sites-enabled/thywill',
+        '/etc/nginx/sites-available/thywill'
+    ]
+    
+    domain = None
+    for config_path in nginx_configs:
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, 'r') as f:
+                    content = f.read()
+                    # Look for server_name directive
+                    for line in content.split('\n'):
+                        line = line.strip()
+                        if line.startswith('server_name') and not 'your-domain.com' in line:
+                            # Extract domain name
+                            parts = line.split()
+                            if len(parts) >= 2:
+                                domain = parts[1].rstrip(';')
+                                if domain != '_':  # Not default server
+                                    return f'https://{domain}', 'production (domain)'
+            except:
+                pass
+    
+    # Check if nginx is running (IP-only setup)
+    try:
+        result = subprocess.run(['systemctl', 'is-active', 'nginx'], capture_output=True, text=True)
+        if result.returncode == 0 and result.stdout.strip() == 'active':
+            # Get external IP
+            try:
+                # Try to get external IP
+                external_ip = subprocess.run(['curl', '-s', '--max-time', '3', 'ifconfig.me'], 
+                                           capture_output=True, text=True).stdout.strip()
+                if external_ip and external_ip.replace('.', '').isdigit():
+                    return f'http://{external_ip}', 'production (IP)'
+            except:
+                pass
+            
+            # Fallback to local IP
+            try:
+                hostname = socket.gethostname()
+                local_ip = socket.gethostbyname(hostname)
+                return f'http://{local_ip}', 'production (local IP)'
+            except:
+                pass
+    except:
+        pass
+    
+    # Default fallback
+    return 'http://your-server-ip', 'unknown'
+
+try:
+    # Generate token
+    token = str(uuid.uuid4())
+    expires_at = datetime.utcnow() + timedelta(hours=hours)
+    
+    # Save to database
+    with Session(engine) as session:
+        invite_token = InviteToken(
+            token=token,
+            created_by_user='system',  # System generated
+            expires_at=expires_at,
+            used=False
+        )
+        session.add(invite_token)
+        session.commit()
+    
+    # Detect environment and build URL
+    base_url, env_type = detect_environment_and_url()
+    claim_url = f'{base_url}/claim/{token}'
+    
+    # Success output
+    print('✅ Admin invite token created successfully!')
+    print(f'Token: {token}')
+    print(f'Expires: {expires_at.strftime(\"%Y-%m-%d %H:%M:%S\")} UTC')
+    print(f'Valid for: {hours} hours')
+    print(f'Environment: {env_type}')
+    print()
+    print('🔗 Claim URL:')
+    print(f'   {claim_url}')
+    print()
+    
+    # Environment-specific instructions
+    if 'development' in env_type:
+        print('💡 Development mode detected:')
+        print('   1. Make sure your dev server is running: thywill start')
+        print('   2. Visit the claim URL above')
+        print('   3. Create your admin account')
+    elif 'production' in env_type:
+        print('💡 Production mode detected:')
+        print('   1. Share this URL with the new admin')
+        print('   2. They can create their admin account')
+        print('   3. Token will expire automatically')
+        if 'IP' in env_type:
+            print('   ⚠️  Using IP address - consider setting up a domain')
+    else:
+        print('💡 Manual setup required:')
+        print('   1. Replace \"your-server-ip\" with your actual server address')
+        print('   2. Visit the claim URL')
+        print('   3. Create your admin account')
+        
+except Exception as e:
+    print(f'❌ Error creating admin token: {e}')
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+"
+}
+
+cmd_role() {
+    local subcommand="${1:-}"
+    shift || true
+    
+    case "$subcommand" in
+        list)
+            cmd_role_list "$@"
+            ;;
+        grant)
+            cmd_role_grant "$@"
+            ;;
+        revoke)
+            cmd_role_revoke "$@"
+            ;;
+        *)
+            error "Unknown role subcommand: $subcommand"
+            echo "Available subcommands: list, grant, revoke"
+            echo "Usage: thywill role <subcommand> [args]"
+            echo ""
+            echo "Examples:"
+            echo "  thywill role list"
+            echo "  thywill role grant \"John Smith\" moderator"
+            echo "  thywill role revoke \"John Smith\" moderator"
+            exit 1
+            ;;
+    esac
+}
+
+cmd_role_list() {
+    header "Available Roles"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
+        error "Must run from ThyWill project directory"
+        exit 1
+    fi
+    
+    python3 -c "
+import sys
+sys.path.append('.')
+from sqlmodel import Session, select
+from models import engine, Role, UserRole, User
+import json
+
+try:
+    with Session(engine) as session:
+        # Get all roles
+        stmt = select(Role)
+        roles = session.exec(stmt).all()
+        
+        if not roles:
+            print('ℹ️  No roles found. Run migration first: python migrate_to_roles.py')
+            sys.exit(0)
+        
+        for role in roles:
+            try:
+                permissions = json.loads(role.permissions)
+            except:
+                permissions = []
+            
+            # Count users with this role
+            stmt = select(UserRole).where(UserRole.role_id == role.id)
+            user_count = len(list(session.exec(stmt)))
+            
+            system_marker = ' 🔒' if role.is_system_role else ''
+            
+            print(f'📋 {role.name}{system_marker}')
+            print(f'   Description: {role.description or \"No description\"}')
+            print(f'   Users: {user_count}')
+            print(f'   Permissions: {len(permissions)}')
+            if permissions:
+                perm_preview = ', '.join(permissions[:3])
+                if len(permissions) > 3:
+                    perm_preview += f' ... (+{len(permissions)-3} more)'
+                print(f'              {perm_preview}')
+            print()
+
+except Exception as e:
+    print(f'❌ Error listing roles: {e}')
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+"
+}
+
+cmd_role_grant() {
+    local user_identifier="${1:-}"
+    local role_name="${2:-}"
+    
+    if [ -z "$user_identifier" ] || [ -z "$role_name" ]; then
+        error "User and role required"
+        echo "Usage: thywill role grant <user> <role>"
+        echo "Examples:"
+        echo "  thywill role grant \"John Smith\" moderator"
+        echo "  thywill role grant abc123def456 user"
+        exit 1
+    fi
+    
+    header "Granting Role: $role_name"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
+        error "Must run from ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Looking up user: $user_identifier"
+    log "Role to grant: $role_name"
+    
+    python3 -c "
+import sys
+sys.path.append('.')
+from sqlmodel import Session, select
+from models import engine, User, Role, UserRole
+from datetime import datetime
+
+user_identifier = '$user_identifier'
+role_name = '$role_name'
+
+def find_user(session, identifier):
+    # User lookup logic (same as admin commands)
+    stmt = select(User).where(User.id == identifier)
+    user = session.exec(stmt).first()
+    
+    if not user:
+        stmt = select(User).where(User.display_name == identifier)
+        user = session.exec(stmt).first()
+    
+    if not user:
+        stmt = select(User).where(User.display_name.contains(identifier))
+        users = list(session.exec(stmt))
+        
+        if not users:
+            print(f'❌ No user found matching: {identifier}')
+            return None
+        elif len(users) > 1:
+            print(f'❌ Multiple users found matching: {identifier}')
+            for u in users:
+                print(f'   - \"{u.display_name}\" (ID: {u.id[:8]}...)')
+            return None
+        else:
+            return users[0]
+    
+    return user
+
+try:
+    with Session(engine) as session:
+        user = find_user(session, user_identifier)
+        if not user:
+            sys.exit(1)
+        
+        # Get role
+        stmt = select(Role).where(Role.name == role_name)
+        role = session.exec(stmt).first()
+        
+        if not role:
+            print(f'❌ Role \"{role_name}\" not found')
+            print('   Available roles:')
+            stmt = select(Role)
+            all_roles = session.exec(stmt).all()
+            for r in all_roles:
+                print(f'   - {r.name}')
+            sys.exit(1)
+        
+        # Check if user already has this role
+        if user.has_role(role_name, session):
+            print(f'ℹ️  User \"{user.display_name}\" already has role \"{role_name}\"')
+            sys.exit(0)
+        
+        # Grant role
+        user_role = UserRole(
+            user_id=user.id,
+            role_id=role.id,
+            granted_by=None,  # CLI granted
+            granted_at=datetime.utcnow()
+        )
+        session.add(user_role)
+        session.commit()
+        
+        print(f'✅ Role \"{role_name}\" granted to: \"{user.display_name}\"')
+        print(f'   User ID: {user.id[:8]}...')
+
+except Exception as e:
+    print(f'❌ Error granting role: {e}')
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+"
+}
+
+cmd_role_revoke() {
+    local user_identifier="${1:-}"
+    local role_name="${2:-}"
+    
+    if [ -z "$user_identifier" ] || [ -z "$role_name" ]; then
+        error "User and role required"
+        echo "Usage: thywill role revoke <user> <role>"
+        echo "Examples:"
+        echo "  thywill role revoke \"John Smith\" moderator"
+        echo "  thywill role revoke abc123def456 user"
+        exit 1
+    fi
+    
+    header "Revoking Role: $role_name"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
+        error "Must run from ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Looking up user: $user_identifier"
+    log "Role to revoke: $role_name"
+    
+    python3 -c "
+import sys
+sys.path.append('.')
+from sqlmodel import Session, select
+from models import engine, User, Role, UserRole
+
+user_identifier = '$user_identifier'
+role_name = '$role_name'
+
+def find_user(session, identifier):
+    # User lookup logic (same as admin commands)
+    stmt = select(User).where(User.id == identifier)
+    user = session.exec(stmt).first()
+    
+    if not user:
+        stmt = select(User).where(User.display_name == identifier)
+        user = session.exec(stmt).first()
+    
+    if not user:
+        stmt = select(User).where(User.display_name.contains(identifier))
+        users = list(session.exec(stmt))
+        
+        if not users:
+            print(f'❌ No user found matching: {identifier}')
+            return None
+        elif len(users) > 1:
+            print(f'❌ Multiple users found matching: {identifier}')
+            for u in users:
+                print(f'   - \"{u.display_name}\" (ID: {u.id[:8]}...)')
+            return None
+        else:
+            return users[0]
+    
+    return user
+
+try:
+    with Session(engine) as session:
+        user = find_user(session, user_identifier)
+        if not user:
+            sys.exit(1)
+        
+        # Get role
+        stmt = select(Role).where(Role.name == role_name)
+        role = session.exec(stmt).first()
+        
+        if not role:
+            print(f'❌ Role \"{role_name}\" not found')
+            sys.exit(1)
+        
+        # Check if user has this role
+        if not user.has_role(role_name, session):
+            print(f'ℹ️  User \"{user.display_name}\" does not have role \"{role_name}\"')
+            sys.exit(0)
+        
+        # Revoke role
+        stmt = select(UserRole).where(
+            UserRole.user_id == user.id,
+            UserRole.role_id == role.id
+        )
+        user_roles = session.exec(stmt).all()
+        
+        for user_role in user_roles:
+            session.delete(user_role)
+        
+        session.commit()
+        
+        print(f'✅ Role \"{role_name}\" revoked from: \"{user.display_name}\"')
+        print(f'   User ID: {user.id[:8]}...')
+
+except Exception as e:
+    print(f'❌ Error revoking role: {e}')
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+"
+}
+
+cmd_import() {
+    local import_type="${1:-}"
+    local file_path="${2:-}"
+    
+    case "$import_type" in
+        prayers)
+            cmd_import_prayers "$file_path"
+            ;;
+        *)
+            error "Unknown import type: $import_type"
+            echo "Available import types: prayers"
+            echo "Usage: thywill import <type> <file>"
+            exit 1
+            ;;
+    esac
+}
+
+cmd_import_prayers() {
+    local file_path="${1:-}"
+    
+    if [ -z "$file_path" ]; then
+        error "File path required"
+        echo "Usage: thywill import prayers <json_file>"
+        echo ""
+        echo "Expected JSON format:"
+        echo '['
+        echo '  {'
+        echo '    "text": "Prayer request text",'
+        echo '    "generated_prayer": "Generated prayer response",'
+        echo '    "author_name": "User Display Name",'
+        echo '    "author_id": "existing_user_id (optional)",'
+        echo '    "project_tag": "optional tag",'
+        echo '    "target_audience": "all",'
+        echo '    "created_at": "2023-12-01T10:00:00"'
+        echo '  }'
+        echo ']'
+        exit 1
+    fi
+    
+    if [ ! -f "$file_path" ]; then
+        error "File not found: $file_path"
+        exit 1
+    fi
+    
+    header "Importing Prayers from $file_path"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
+        error "Must run from ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Validating JSON file..."
+    
+    # Validate JSON first
+    if ! python3 -c "import json; json.load(open('$file_path'))" 2>/dev/null; then
+        error "Invalid JSON file"
+        exit 1
+    fi
+    
+    log "Importing prayers..."
+    
+    python3 -c "
+import sys
+sys.path.append('.')
+import json
+import uuid
+from datetime import datetime
+from sqlmodel import Session, select
+from models import engine, User, Prayer
+
+file_path = '$file_path'
+
+try:
+    with open(file_path, 'r') as f:
+        prayers_data = json.load(f)
+    
+    if not isinstance(prayers_data, list):
+        print('❌ JSON file must contain an array of prayer objects')
+        sys.exit(1)
+    
+    imported_count = 0
+    skipped_count = 0
+    error_count = 0
+    
+    with Session(engine) as session:
+        for i, prayer_data in enumerate(prayers_data):
+            try:
+                # Validate required fields
+                if 'text' not in prayer_data:
+                    print(f'⚠️  Skipping prayer {i+1}: missing \"text\" field')
+                    skipped_count += 1
+                    continue
+                
+                # Find or create user by ID or display name
+                author_id = prayer_data.get('author_id')
+                author_name = prayer_data.get('author_name', 'Imported User')
+                
+                author = None
+                
+                # First try to find by existing ID
+                if author_id:
+                    stmt = select(User).where(User.id == author_id)
+                    author = session.exec(stmt).first()
+                
+                # Then try to find by display name
+                if not author:
+                    stmt = select(User).where(User.display_name == author_name)
+                    author = session.exec(stmt).first()
+                
+                # Create new user if not found
+                if not author:
+                    author = User(
+                        id=uuid.uuid4().hex,
+                        display_name=author_name,
+                        religious_preference=prayer_data.get('religious_preference', 'unspecified')
+                    )
+                    session.add(author)
+                    session.flush()  # Get the ID
+                
+                # Parse created_at if provided
+                created_at = datetime.utcnow()
+                if 'created_at' in prayer_data:
+                    try:
+                        created_at = datetime.fromisoformat(prayer_data['created_at'].replace('Z', '+00:00'))
+                    except:
+                        pass  # Use current time if parsing fails
+                
+                # Create prayer
+                prayer = Prayer(
+                    id=uuid.uuid4().hex,
+                    author_id=author.id,
+                    text=prayer_data['text'],
+                    generated_prayer=prayer_data.get('generated_prayer'),
+                    project_tag=prayer_data.get('project_tag'),
+                    target_audience=prayer_data.get('target_audience', 'all'),
+                    created_at=created_at
+                )
+                
+                session.add(prayer)
+                imported_count += 1
+                
+                if imported_count % 100 == 0:
+                    print(f'   Imported {imported_count} prayers...')
+                
+            except Exception as e:
+                print(f'❌ Error importing prayer {i+1}: {e}')
+                error_count += 1
+                continue
+        
+        # Commit all changes
+        session.commit()
+    
+    print()
+    print('✅ Prayer import completed!')
+    print(f'   Imported: {imported_count} prayers')
+    if skipped_count > 0:
+        print(f'   Skipped: {skipped_count} prayers (missing data)')
+    if error_count > 0:
+        print(f'   Errors: {error_count} prayers (failed to import)')
+
+except Exception as e:
+    print(f'❌ Error importing prayers: {e}')
+    sys.exit(1)
+"
 }
 
 # Utility commands
@@ -675,6 +1608,17 @@ main() {
             ;;
         verify)
             cmd_verify "$@"
+            ;;
+        
+        # Admin commands
+        admin)
+            cmd_admin "$@"
+            ;;
+        role)
+            cmd_role "$@"
+            ;;
+        import)
+            cmd_import "$@"
             ;;
         
         # Utility commands
