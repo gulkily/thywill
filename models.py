@@ -15,6 +15,65 @@ class User(SQLModel, table=True):
     invite_token_used: str | None = Field(default=None)   # Token that was used to create this account
     # Welcome message tracking
     welcome_message_dismissed: bool = Field(default=False)  # Whether user has dismissed the welcome message
+    
+    def has_role(self, role_name: str, session: Session) -> bool:
+        """Check if user has a specific role"""
+        from sqlmodel import select
+        stmt = select(UserRole).join(Role, UserRole.role_id == Role.id).where(
+            UserRole.user_id == self.id,
+            Role.name == role_name,
+            (UserRole.expires_at.is_(None)) | (UserRole.expires_at > datetime.utcnow())
+        )
+        return session.exec(stmt).first() is not None
+    
+    def has_permission(self, permission: str, session: Session) -> bool:
+        """Check if user has a specific permission"""
+        import json
+        from sqlmodel import select
+        stmt = select(Role).join(UserRole, Role.id == UserRole.role_id).where(
+            UserRole.user_id == self.id,
+            (UserRole.expires_at.is_(None)) | (UserRole.expires_at > datetime.utcnow())
+        )
+        roles = session.exec(stmt).all()
+        
+        for role in roles:
+            try:
+                permissions = json.loads(role.permissions)
+                if permission in permissions or "*" in permissions:
+                    return True
+            except json.JSONDecodeError:
+                continue
+        return False
+    
+    def get_roles(self, session: Session) -> list:
+        """Get all active roles for this user"""
+        from sqlmodel import select
+        stmt = select(Role).join(UserRole, Role.id == UserRole.role_id).where(
+            UserRole.user_id == self.id,
+            (UserRole.expires_at.is_(None)) | (UserRole.expires_at > datetime.utcnow())
+        )
+        return list(session.exec(stmt).all())
+
+class Role(SQLModel, table=True):
+    """Roles define different permission levels in the system"""
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
+    name: str = Field(unique=True, max_length=50)  # "admin", "moderator", "user"
+    description: str | None = Field(default=None, max_length=255)
+    permissions: str = Field(default="[]")  # JSON string of permissions list
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: str | None = Field(default=None, foreign_key="user.id")
+    is_system_role: bool = Field(default=False)  # System roles cannot be deleted
+
+class UserRole(SQLModel, table=True):
+    """Many-to-many relationship between users and roles"""
+    __tablename__ = "user_roles"
+    
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
+    user_id: str = Field(foreign_key="user.id")
+    role_id: str = Field(foreign_key="role.id")
+    granted_by: str | None = Field(default=None, foreign_key="user.id")  # Who granted this role
+    granted_at: datetime = Field(default_factory=datetime.utcnow)
+    expires_at: datetime | None = Field(default=None)  # Optional expiration
 
 class Prayer(SQLModel, table=True):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
