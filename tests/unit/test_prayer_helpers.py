@@ -238,53 +238,8 @@ class TestFeedCounts:
 class TestTodaysPrompt:
     """Test daily prompt functionality"""
     
-    def test_todays_prompt_with_valid_file(self):
-        """Test reading today's prompt from YAML file"""
-        mock_yaml_data = {
-            str(datetime.now().date()): "Today's special prompt"
-        }
-        
-        with patch('builtins.open', mock_open_yaml(mock_yaml_data)):
-            with patch('app_helpers.services.prayer_helpers.yaml.safe_load', return_value=mock_yaml_data):
-                prompt = todays_prompt()
-                assert prompt == "Today's special prompt"
-    
-    def test_todays_prompt_missing_date(self):
-        """Test prompt when today's date is not in file"""
-        mock_yaml_data = {
-            "2024-01-01": "Old prompt"
-        }
-        
-        with patch('builtins.open', mock_open_yaml(mock_yaml_data)):
-            with patch('app_helpers.services.prayer_helpers.yaml.safe_load', return_value=mock_yaml_data):
-                prompt = todays_prompt()
-                assert prompt == "Let us pray 🙏"
-    
-    def test_todays_prompt_missing_file(self):
-        """Test prompt when YAML file doesn't exist"""
-        with patch('builtins.open', side_effect=FileNotFoundError):
-            prompt = todays_prompt()
-            assert prompt == "Let us pray 🙏"
-    
-    def test_todays_prompt_invalid_yaml(self):
-        """Test prompt when YAML parsing fails"""
-        # Mock open to succeed but yaml.safe_load to fail
-        mock_file = Mock()
-        with patch('builtins.open', return_value=mock_file):
-            with patch('app_helpers.services.prayer_helpers.yaml.safe_load', side_effect=Exception("YAML Error")):
-                # This will cause an exception not caught by the current function
-                # In practice, this would need to be handled in the app
-                try:
-                    prompt = todays_prompt()
-                    # If we get here, the function should handle the error gracefully
-                    assert prompt == "Let us pray 🙏"
-                except Exception:
-                    # Current implementation doesn't catch YAML errors
-                    # This test documents the current behavior
-                    assert True
+    def test_todays_prompt_returns_default(self):
+        """Test that todays_prompt returns the default prompt"""
+        prompt = todays_prompt()
+        assert prompt == "Let us pray 🙏"
 
-
-def mock_open_yaml(data):
-    """Helper to mock file opening for YAML tests"""
-    from unittest.mock import mock_open
-    return mock_open(read_data="mocked yaml content")

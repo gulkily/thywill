@@ -89,6 +89,8 @@ def mock_authenticated_user(test_session):
     user.prayer_style = None
     user.invited_by_user_id = None
     user.invite_token_used = None
+    # Mock has_role method to return False (not admin)
+    user.has_role.return_value = False
     
     session = Mock()
     session.id = "test_session_id"
@@ -134,6 +136,8 @@ def mock_half_authenticated_user(test_session):
     user.prayer_style = None
     user.invited_by_user_id = None
     user.invite_token_used = None
+    # Mock has_role method to return False (not admin)
+    user.has_role.return_value = False
     
     session = Mock()
     session.id = "test_half_auth_session_id"
