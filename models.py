@@ -295,12 +295,18 @@ engine = create_engine(
 # Create all tables
 SQLModel.metadata.create_all(engine)
 
-# Enable performance optimizations
+# Enable performance optimizations and create invite tree integrity constraints
 with engine.connect() as conn:
     from sqlalchemy import text
     conn.execute(text("PRAGMA journal_mode=WAL"))
     conn.execute(text("PRAGMA synchronous=NORMAL")) 
     conn.execute(text("PRAGMA cache_size=10000"))
     conn.execute(text("PRAGMA temp_store=memory"))
+    
+    # Create indexes for invite tree integrity
+    conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_invited_by ON user(invited_by_user_id)"))
+    conn.execute(text("CREATE INDEX IF NOT EXISTS idx_invitetoken_used_by ON invitetoken(used_by_user_id)"))
+    conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_invite_token ON user(invite_token_used)"))
+    
     conn.commit()
 
