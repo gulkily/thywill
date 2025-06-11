@@ -12,20 +12,90 @@ TOKEN_EXP_H = 12  # invite links valid 12 h
 
 
 def get_invite_tree() -> dict:
-    """Build the complete invite tree starting from the root admin user"""
+    """Build the complete invite tree starting from the root user (earliest created or admin), with orphaned users attached"""
     with Session(engine) as s:
-        # Find the root admin user
+        # Look for admin user first
         admin_user = s.get(User, "admin")
-        if not admin_user:
-            return {"tree": None, "stats": {"total_users": 0, "total_invites_sent": 0, "max_depth": 0}}
         
-        # Build the tree recursively
-        tree = _build_user_tree_node(admin_user, s, depth=0)
+        if not admin_user:
+            # If no admin user, use the earliest created user as root
+            earliest_user_stmt = select(User).order_by(User.created_at.asc()).limit(1)
+            earliest_user = s.exec(earliest_user_stmt).first()
+            if not earliest_user:
+                return {"tree": None, "stats": {"total_users": 0, "total_invites_sent": 0, "max_depth": 0}}
+            admin_user = earliest_user
+        
+        # Build the tree with admin/root user, treating orphaned users as children
+        tree = _build_user_tree_node_with_orphans(admin_user, s, depth=0)
         
         # Calculate statistics
         stats = get_invite_stats()
         
         return {"tree": tree, "stats": stats}
+
+
+def _get_all_descendants(user_id: str, db: Session) -> list[User]:
+    """Get all descendants of a user (for counting purposes)"""
+    descendants = []
+    _collect_descendants(user_id, db, descendants)
+    return descendants
+
+
+def _build_user_tree_node_with_orphans(user: User, db: Session, depth: int = 0) -> dict:
+    """Build a tree node for a user, with special handling for root user to include orphaned users"""
+    # Get all users directly invited by this user
+    descendants_stmt = (
+        select(User)
+        .where(User.invited_by_user_id == user.id)
+        .order_by(User.created_at.asc())
+    )
+    direct_descendants = db.exec(descendants_stmt).all()
+    
+    # If this is the root user (depth 0), also include orphaned users (users with no invited_by_user_id except root itself)
+    if depth == 0:
+        orphaned_users_stmt = (
+            select(User)
+            .where(User.invited_by_user_id.is_(None))
+            .where(User.id != user.id)  # Don't include root user itself
+            .order_by(User.created_at.asc())
+        )
+        orphaned_users = db.exec(orphaned_users_stmt).all()
+        direct_descendants.extend(orphaned_users)
+    
+    # Count total invites sent by this user
+    invites_sent = db.exec(
+        select(func.count(InviteToken.token))
+        .where(InviteToken.created_by_user == user.id)
+    ).first() or 0
+    
+    # Count successful invites (users that were actually invited vs orphaned)
+    actual_invites = len([d for d in direct_descendants if d.invited_by_user_id == user.id])
+    
+    # Build children nodes recursively
+    children = []
+    for descendant in direct_descendants:
+        child_node = _build_user_tree_node(descendant, db, depth + 1)
+        children.append(child_node)
+    
+    # Count total descendants (recursive)
+    total_descendants = len(direct_descendants)
+    for child in children:
+        total_descendants += child.get('total_descendants', 0)
+    
+    return {
+        "user": {
+            "id": user.id,
+            "display_name": user.display_name,
+            "created_at": user.created_at.isoformat(),
+            "invited_by_user_id": user.invited_by_user_id,
+            "invite_token_used": user.invite_token_used
+        },
+        "invites_sent": invites_sent,
+        "successful_invites": actual_invites,
+        "total_descendants": total_descendants,
+        "depth": depth,
+        "children": children
+    }
 
 
 def _build_user_tree_node(user: User, db: Session, depth: int = 0) -> dict:
@@ -245,7 +315,12 @@ def get_invite_stats() -> dict:
 
 def _calculate_max_depth(db: Session) -> int:
     """Calculate the maximum depth of the invite tree"""
+    # Find the root user (admin or earliest created)
     admin_user = db.get(User, "admin")
+    if not admin_user:
+        earliest_user_stmt = select(User).order_by(User.created_at.asc()).limit(1)
+        admin_user = db.exec(earliest_user_stmt).first()
+    
     if not admin_user:
         return 0
     
@@ -273,4 +348,14 @@ def _calculate_max_depth(db: Session) -> int:
         
         return max_child_depth
     
-    return get_depth("admin")
+    # Since orphaned users are treated as depth 1 under root, the minimum depth is 1 if there are orphaned users
+    depth = get_depth(admin_user.id)
+    
+    # Check if there are orphaned users (if so, min depth is 1)
+    orphaned_count = db.exec(
+        select(func.count(User.id))
+        .where(User.invited_by_user_id.is_(None))
+        .where(User.id != admin_user.id)
+    ).first() or 0
+    
+    return max(depth, 1 if orphaned_count > 0 else 0)
