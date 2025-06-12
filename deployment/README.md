@@ -11,17 +11,24 @@ This directory contains all the deployment, backup, and management tools for Thy
 # Make executable
 chmod +x ../thywill
 
-# Initialize environment
+# Initialize database
 ../thywill init
 
 # View all commands
 ../thywill help
 
 # Daily operations
-../thywill health
-../thywill backup daily
-../thywill deploy
+../thywill backup
+../thywill start
+../thywill status
 ```
+
+### Database Safety
+⚠️ **Critical**: Always use the CLI commands to prevent accidental data loss:
+- Use `../thywill start` instead of running Python directly
+- Use `../thywill backup` before major changes  
+- Use `../thywill import` to restore from exports
+- See `../DATABASE_PROTECTION.md` for full safety guide
 
 ## Deployment & Backup Scripts
 
