@@ -101,6 +101,16 @@ function showPreviewSection(previewData) {
     document.getElementById('preview-prayer-text').textContent = previewData.generated_prayer;
     document.getElementById('preview-original-text').textContent = previewData.original_text;
     
+    // Show/hide service status notification
+    const serviceNotification = document.getElementById('service-status-notification');
+    if (serviceNotification) {
+        if (previewData.service_status === 'degraded') {
+            serviceNotification.classList.remove('hidden');
+        } else {
+            serviceNotification.classList.add('hidden');
+        }
+    }
+    
     // Show preview section
     document.getElementById('prayer-preview').style.display = 'block';
     
@@ -174,6 +184,16 @@ function setupPreviewActions() {
                     const newPreviewData = await response.json();
                     currentPreviewData = newPreviewData;
                     document.getElementById('preview-prayer-text').textContent = newPreviewData.generated_prayer;
+                    
+                    // Update service status notification
+                    const serviceNotification = document.getElementById('service-status-notification');
+                    if (serviceNotification) {
+                        if (newPreviewData.service_status === 'degraded') {
+                            serviceNotification.classList.remove('hidden');
+                        } else {
+                            serviceNotification.classList.add('hidden');
+                        }
+                    }
                 } else {
                     throw new Error('Regeneration failed');
                 }
