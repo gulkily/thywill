@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Community Export{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="text-center">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Community Export</h1>
+    <p class="text-gray-600 dark:text-gray-400 text-lg mt-2">Download a complete backup of your prayer community</p>
+  </div>
+
+  <!-- Export Information Card -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+    <div class="flex items-center mb-4">
+      <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-4">
+        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+        </svg>
+      </div>
+      <div>
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">What's Included</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Complete community data for backup or forking</p>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Included Data -->
+      <div>
+        <h3 class="font-medium text-gray-900 dark:text-gray-100 mb-3">📦 Archive Contents</h3>
+        <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+          <li class="flex items-start">
+            <span class="text-green-500 mr-2">✓</span>
+            <span><strong>Users:</strong> All community members and their profiles</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-green-500 mr-2">✓</span>
+            <span><strong>Prayers:</strong> All public prayer requests and generated prayers</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-green-500 mr-2">✓</span>
+            <span><strong>Prayer Activity:</strong> Prayer marks, skips, and status changes</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-green-500 mr-2">✓</span>
+            <span><strong>Community Structure:</strong> User roles, invite relationships</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-green-500 mr-2">✓</span>
+            <span><strong>Development History:</strong> Changelog entries and updates</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Security & Privacy -->
+      <div>
+        <h3 class="font-medium text-gray-900 dark:text-gray-100 mb-3">🔒 Privacy & Security</h3>
+        <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+          <li class="flex items-start">
+            <span class="text-red-500 mr-2">✗</span>
+            <span><strong>Flagged Content:</strong> Moderated prayers are excluded</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-red-500 mr-2">✗</span>
+            <span><strong>Authentication Data:</strong> Session tokens and passwords</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-red-500 mr-2">✗</span>
+            <span><strong>Invite Tokens:</strong> Private invitation codes</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-red-500 mr-2">✗</span>
+            <span><strong>Security Logs:</strong> Audit trails and monitoring data</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-red-500 mr-2">✗</span>
+            <span><strong>Temporary Data:</strong> Notifications and ephemeral state</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Archive Details -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">📋 Archive Details</h3>
+    
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div class="text-gray-600 dark:text-gray-400">Format</div>
+        <div class="font-medium text-gray-900 dark:text-gray-100">ZIP Archive</div>
+        <div class="text-xs text-gray-500 dark:text-gray-500">Contains JSON data file</div>
+      </div>
+      
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div class="text-gray-600 dark:text-gray-400">Estimated Size</div>
+        <div class="font-medium text-gray-900 dark:text-gray-100" id="archive-size">Calculating...</div>
+        <div class="text-xs text-gray-500 dark:text-gray-500">Compressed archive</div>
+      </div>
+      
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div class="text-gray-600 dark:text-gray-400">Cache Status</div>
+        <div class="font-medium text-gray-900 dark:text-gray-100" id="cache-status">Checking...</div>
+        <div class="text-xs text-gray-500 dark:text-gray-500" id="cache-details">Speeds up downloads</div>
+      </div>
+      
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div class="text-gray-600 dark:text-gray-400">Community Data</div>
+        <div class="font-medium text-gray-900 dark:text-gray-100" id="community-stats">Loading...</div>
+        <div class="text-xs text-gray-500 dark:text-gray-500">Users, prayers, activity</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Use Cases -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">🎯 Common Use Cases</h3>
+    
+    <div class="grid md:grid-cols-2 gap-6">
+      <div>
+        <h4 class="font-medium text-blue-600 dark:text-blue-400 mb-2">🔄 Community Backup</h4>
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          Create regular backups of your community data for disaster recovery and peace of mind. 
+          Keep your prayer history safe and accessible.
+        </p>
+      </div>
+      
+      <div>
+        <h4 class="font-medium text-green-600 dark:text-green-400 mb-2">🌱 Community Forking</h4>
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          Start a new ThyWill community with your existing prayer relationships and history. 
+          Perfect for church plants or ministry expansions.
+        </p>
+      </div>
+      
+      <div>
+        <h4 class="font-medium text-purple-600 dark:text-purple-400 mb-2">📊 Data Analysis</h4>
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          Analyze prayer patterns, community growth, and spiritual trends using the exported JSON data 
+          with your preferred analytics tools.
+        </p>
+      </div>
+      
+      <div>
+        <h4 class="font-medium text-orange-600 dark:text-orange-400 mb-2">🏗️ Development & Testing</h4>
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          Use real (but anonymized) community data for testing new features, migration planning, 
+          or setting up development environments.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Download Section -->
+  <div class="bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-800 dark:to-blue-800 rounded-lg shadow-lg p-6 text-white">
+    <div class="text-center">
+      <h3 class="text-xl font-semibold mb-2">Ready to Export?</h3>
+      <p class="text-purple-100 dark:text-purple-200 mb-6">
+        Download a complete archive of your community data. The export process may take a few moments for large communities.
+      </p>
+      
+      <div class="space-y-4">
+        <button id="export-btn" onclick="startExport()" class="inline-flex items-center px-6 py-3 bg-white text-purple-600 font-medium rounded-lg hover:bg-gray-100 transition-colors shadow-md">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+          </svg>
+          <span id="export-btn-text">Download Community Archive</span>
+        </button>
+        
+        <div id="export-progress" class="hidden">
+          <div class="bg-white bg-opacity-20 rounded-full h-2 mb-2">
+            <div class="bg-white h-2 rounded-full transition-all duration-300" style="width: 0%" id="progress-bar"></div>
+          </div>
+          <p class="text-sm text-purple-100 dark:text-purple-200" id="progress-text">Preparing export...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Technical Details -->
+  <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
+    <details class="group">
+      <summary class="cursor-pointer font-medium text-gray-900 dark:text-gray-100 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+        <span class="text-sm">🔧 Technical Details</span>
+        <span class="float-right group-open:rotate-180 transition-transform">▼</span>
+      </summary>
+      
+      <div class="mt-4 space-y-3 text-sm text-gray-600 dark:text-gray-400">
+        <div>
+          <strong>File Format:</strong> ZIP archive containing multiple JSON files organized by table/data type
+        </div>
+        <div>
+          <strong>Individual Files:</strong> Separate JSON files for each table (users.json, prayers.json, etc.) for easy analysis
+        </div>
+        <div>
+          <strong>Combined File:</strong> Complete export in single JSON file for compatibility and full restoration
+        </div>
+        <div>
+          <strong>File Naming:</strong> community_export_YYYY-MM-DD.zip (e.g., community_export_2025-06-11.zip)
+        </div>
+        <div>
+          <strong>Metadata:</strong> Separate metadata.json with export version, timestamp, and schema details
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- Back to Menu -->
+  <div class="text-center">
+    <a href="/menu" class="inline-flex items-center px-4 py-2 text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors">
+      ← Back to Menu
+    </a>
+  </div>
+</div>
+
+<script>
+// Load community statistics on page load
+document.addEventListener('DOMContentLoaded', function() {
+  loadCommunityStats();
+});
+
+function loadCommunityStats() {
+  fetch('/export/info')
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('community-stats').textContent = 
+        `${data.users} users, ${data.prayers} prayers`;
+      document.getElementById('archive-size').textContent = 
+        `~${data.estimated_size}`;
+      
+      // Update cache status
+      const cacheStatus = document.getElementById('cache-status');
+      const cacheDetails = document.getElementById('cache-details');
+      
+      // Update button text based on cache status
+      const exportBtnText = document.getElementById('export-btn-text');
+      
+      if (data.cache_available) {
+        cacheStatus.textContent = '✅ Available';
+        cacheStatus.className = 'font-medium text-green-600 dark:text-green-400';
+        if (data.cache_age_minutes === 0) {
+          cacheDetails.textContent = 'Fresh data ready';
+        } else {
+          cacheDetails.textContent = `Generated ${data.cache_age_minutes}m ago`;
+        }
+        exportBtnText.textContent = 'Download Community Archive';
+      } else {
+        cacheStatus.textContent = '🔄 Will generate';
+        cacheStatus.className = 'font-medium text-orange-600 dark:text-orange-400';
+        cacheDetails.textContent = `Cached for ${data.cache_ttl_minutes}m`;
+        exportBtnText.textContent = 'Generate & Download Archive';
+      }
+    })
+    .catch(error => {
+      console.error('Error loading stats:', error);
+      document.getElementById('community-stats').textContent = 'Stats unavailable';
+      document.getElementById('archive-size').textContent = 'Size unknown';
+      document.getElementById('cache-status').textContent = 'Unknown';
+      document.getElementById('cache-details').textContent = 'Cache info unavailable';
+    });
+}
+
+// Track whether the simulation has run
+let hasRunSimulation = false;
+
+function startExport() {
+  const btn = document.getElementById('export-btn');
+  const progress = document.getElementById('export-progress');
+  const progressBar = document.getElementById('progress-bar');
+  const progressText = document.getElementById('progress-text');
+  
+  // Start actual download immediately
+  const downloadLink = document.createElement('a');
+  downloadLink.href = '/export/database';
+  downloadLink.download = 'community_export_' + new Date().toISOString().split('T')[0] + '.zip';
+  downloadLink.style.display = 'none';
+  document.body.appendChild(downloadLink);
+  
+  if (!hasRunSimulation) {
+    // First time - show full progress simulation
+    hasRunSimulation = true;
+    
+    // Show progress UI
+    btn.style.display = 'none';
+    progress.classList.remove('hidden');
+    
+    // Simulate progress for better UX on first download
+    let currentProgress = 0;
+    const progressSteps = [
+      { percent: 20, text: 'Collecting user data...' },
+      { percent: 40, text: 'Gathering prayer requests...' },
+      { percent: 60, text: 'Processing community activity...' },
+      { percent: 80, text: 'Compressing archive...' },
+      { percent: 95, text: 'Finalizing export...' }
+    ];
+    
+    let stepIndex = 0;
+    const progressInterval = setInterval(() => {
+      if (stepIndex < progressSteps.length) {
+        const step = progressSteps[stepIndex];
+        progressBar.style.width = step.percent + '%';
+        progressText.textContent = step.text;
+        stepIndex++;
+      }
+    }, 800);
+    
+    // Trigger download after a delay to show progress
+    setTimeout(() => {
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      
+      // Complete progress
+      setTimeout(() => {
+        clearInterval(progressInterval);
+        progressBar.style.width = '100%';
+        progressText.textContent = 'Export complete!';
+        
+        // Reset UI after delay
+        setTimeout(() => {
+          btn.style.display = 'inline-flex';
+          progress.classList.add('hidden');
+          progressBar.style.width = '0%';
+        }, 2000);
+      }, 1000);
+    }, 4000);
+  } else {
+    // Subsequent downloads - just show brief feedback and download immediately
+    btn.style.display = 'none';
+    progress.classList.remove('hidden');
+    progressBar.style.width = '100%';
+    progressText.textContent = 'Starting download...';
+    
+    // Start download immediately
+    setTimeout(() => {
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      
+      // Brief completion message
+      progressText.textContent = 'Download started!';
+      
+      // Reset UI quickly
+      setTimeout(() => {
+        btn.style.display = 'inline-flex';
+        progress.classList.add('hidden');
+        progressBar.style.width = '0%';
+      }, 1000);
+    }, 100);
+  }
+}
+</script>
+{% endblock %}

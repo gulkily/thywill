@@ -1,15 +1,21 @@
 # general_routes.py - General application routes
 import os
-from fastapi import APIRouter, Request, Depends
-from fastapi.responses import HTMLResponse, JSONResponse
+from datetime import datetime, timedelta
+from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
+import io
 
 from app_helpers.services.auth_helpers import current_user
+from app_helpers.services.export_service import CommunityExportService
 from models import engine, Session as SessionModel
 from sqlmodel import Session
 
 # Configuration constants
 MULTI_DEVICE_AUTH_ENABLED = os.getenv("MULTI_DEVICE_AUTH_ENABLED", "true").lower() == "true"
+
+# Rate limiting for exports - store last export time per user
+_user_last_export = {}
 
 templates = Jinja2Templates(directory="templates")
 
@@ -65,3 +71,86 @@ async def dismiss_welcome(user_session: tuple = Depends(current_user)):
         db_session.commit()
     
     return JSONResponse({"success": True})
+
+@router.get("/export", response_class=HTMLResponse)
+def export_page(request: Request, user_session: tuple = Depends(current_user)):
+    """Community export information and download page."""
+    user, session = user_session
+    return templates.TemplateResponse(
+        "export.html",
+        {"request": request, "me": user, "session": session}
+    )
+
+@router.get("/export/info")
+async def export_info(user_session: tuple = Depends(current_user)):
+    """Get export information and statistics."""
+    user, session = user_session
+    
+    # Initialize export service
+    export_service = CommunityExportService()
+    
+    # Get export info
+    info = export_service.get_export_info()
+    
+    return JSONResponse(info)
+
+@router.get("/export/database")
+async def export_database(user_session: tuple = Depends(current_user)):
+    """
+    Export complete community database as ZIP file.
+    Available to any authenticated user for community maintenance.
+    Includes intelligent caching and rate limiting.
+    """
+    user, session = user_session
+    
+    # Rate limiting: prevent too frequent exports
+    rate_limit_minutes = int(os.getenv("EXPORT_RATE_LIMIT_MINUTES", "2"))  # Default 2 minutes
+    current_time = datetime.utcnow()
+    
+    if user.id in _user_last_export:
+        time_since_last = current_time - _user_last_export[user.id]
+        if time_since_last < timedelta(minutes=rate_limit_minutes):
+            remaining_seconds = int((timedelta(minutes=rate_limit_minutes) - time_since_last).total_seconds())
+            raise HTTPException(
+                status_code=429,
+                detail=f"Rate limit exceeded. Please wait {remaining_seconds} seconds before requesting another export."
+            )
+    
+    # Initialize export service
+    export_service = CommunityExportService()
+    
+    # Generate filename with current date
+    current_date = datetime.utcnow().strftime("%Y-%m-%d")
+    filename = f"community_export_{current_date}.zip"
+    
+    # Get export data as ZIP (with caching)
+    zip_data, from_cache = export_service.export_to_zip()
+    
+    # Update rate limiting tracker only for fresh exports
+    if not from_cache:
+        _user_last_export[user.id] = current_time
+    
+    # Create streaming response
+    def generate():
+        # Stream the ZIP data in chunks for memory efficiency
+        chunk_size = 8192
+        
+        for i in range(0, len(zip_data), chunk_size):
+            yield zip_data[i:i + chunk_size]
+    
+    # Add cache headers
+    headers = {
+        "Content-Disposition": f"attachment; filename={filename}",
+        "Content-Type": "application/zip"
+    }
+    
+    if from_cache:
+        headers["X-Cache-Status"] = "HIT"
+    else:
+        headers["X-Cache-Status"] = "MISS"
+    
+    return StreamingResponse(
+        generate(),
+        media_type="application/zip",
+        headers=headers
+    )
