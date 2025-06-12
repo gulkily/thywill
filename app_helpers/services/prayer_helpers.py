@@ -236,7 +236,7 @@ def todays_prompt() -> str:
     return "Let us pray 🙏"
 
 
-def generate_prayer(prompt: str) -> str:
+def generate_prayer(prompt: str) -> dict:
     """Generate a proper prayer from a user prompt using Anthropic API"""
     try:
         system_prompt = """You are a wise and compassionate spiritual guide. Your task is to transform user requests into beautiful, proper prayers that a COMMUNITY can pray FOR the person making the request.
@@ -264,7 +264,13 @@ CRITICAL: Return ONLY the prayer text itself. Do NOT include any introductory ph
             ]
         )
         
-        return response.content[0].text.strip()
+        return {
+            'prayer': response.content[0].text.strip(),
+            'service_status': 'normal'
+        }
     except Exception as e:
         print(f"Error generating prayer: {e}")
-        return f"Divine Creator, we lift up our friend who asks for help with: {prompt}. May your will be done in their life. Amen."
+        return {
+            'prayer': f"Divine Creator, we lift up our friend who asks for help with: {prompt}. May your will be done in their life. Amen.",
+            'service_status': 'degraded'
+        }
