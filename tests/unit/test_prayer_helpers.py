@@ -25,7 +25,8 @@ class TestPrayerGeneration:
             
             result = generate_prayer("Please pray for my healing")
             
-            assert result == "Divine Creator, we lift up our friend who seeks healing. May your peace be with them. Amen."
+            assert result['prayer'] == "Divine Creator, we lift up our friend who seeks healing. May your peace be with them. Amen."
+            assert result['service_status'] == 'normal'
             
             # Verify API was called with correct parameters
             mock_client.messages.create.assert_called_once()
@@ -44,8 +45,9 @@ class TestPrayerGeneration:
             result = generate_prayer("Please pray for my test")
             
             # Should return fallback prayer
-            assert "Divine Creator, we lift up our friend who asks for help with: Please pray for my test" in result
-            assert "Amen." in result
+            assert "Divine Creator, we lift up our friend who asks for help with: Please pray for my test" in result['prayer']
+            assert "Amen." in result['prayer']
+            assert result['service_status'] == 'degraded'
     
     def test_generate_prayer_system_prompt_content(self):
         """Test that system prompt emphasizes community prayer"""
@@ -82,15 +84,18 @@ class TestPrayerGeneration:
             # Test with long input
             long_input = "x" * 1000
             result = generate_prayer(long_input)
-            assert result == "Generated prayer"
+            assert result['prayer'] == "Generated prayer"
+            assert result['service_status'] == 'normal'
             
             # Test with empty input
             result = generate_prayer("")
-            assert result == "Generated prayer"
+            assert result['prayer'] == "Generated prayer"
+            assert result['service_status'] == 'normal'
             
             # Test with special characters
             result = generate_prayer("Prayer with <tags> & symbols!")
-            assert result == "Generated prayer"
+            assert result['prayer'] == "Generated prayer"
+            assert result['service_status'] == 'normal'
 
 
 @pytest.mark.unit
