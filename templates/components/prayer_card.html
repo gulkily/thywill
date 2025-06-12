@@ -1,4 +1,16 @@
 <li id="prayer-{{ p.id }}" class="{% if p.is_answered %}bg-green-50 dark:bg-green-900/10 border-l-4 border-green-400 dark:border-green-500{% elif p.is_archived %}bg-amber-50 dark:bg-amber-900/10 border-l-4 border-amber-400 dark:border-amber-500{% else %}bg-white dark:bg-gray-800 border-l-4 border-purple-300 dark:border-purple-500{% endif %} p-6 rounded-lg shadow dark:shadow-gray-900/20">
+  <!-- Service Status Notification -->
+  {% if service_status == 'degraded' %}
+  <div class="mb-3 bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-400 dark:border-amber-500 p-3 rounded">
+    <div class="flex items-center gap-2">
+      <span class="text-amber-500 text-sm">⚠️</span>
+      <span class="text-xs text-amber-700 dark:text-amber-300 font-medium">
+        We're experiencing temporary service issues. Using simplified prayer generation.
+      </span>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Generated Prayer (prominent) -->
   {% if p.generated_prayer %}
   <div class="mb-4">
@@ -67,7 +79,8 @@
   
   <footer class="mt-4 text-xs text-gray-500 dark:text-gray-400 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
     <span class="flex-shrink-0">by {% if p.author_id == me.id %}you{% else %}<a href="/user/{{ p.author_id }}" class="text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-200 hover:underline">{{ p.author_name }}</a>{% endif %} · {{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
-    <div class="flex items-center gap-3 flex-wrap justify-end">
+    <!-- Prayer stats and actions section -->
+    <div id="prayer-marks-{{ p.id }}" class="flex items-center gap-3 flex-wrap justify-end">
       <!-- Prayer stats section -->
       <div class="flex items-center gap-2">
         {% if p.mark_count > 0 %}
@@ -84,7 +97,7 @@
       </div>
       
       <!-- Action buttons section -->
-      <div id="prayer-marks-{{ p.id }}" class="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700">
         {% if prayer_session.is_fully_authenticated %}
         <form method="post" action="/mark/{{ p.id }}" class="inline">
           <button hx-post="/mark/{{ p.id }}" 
@@ -168,6 +181,7 @@
           </div>
         </div>
       </div>
+    </div>
     </div>
   </footer>
 </li>

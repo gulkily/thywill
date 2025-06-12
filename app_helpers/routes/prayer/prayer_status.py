@@ -85,7 +85,12 @@ def mark_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(
             
             # Return the updated prayer mark section HTML
             return HTMLResponse(templates.get_template("prayer_marks_section.html").render(
-                prayer_id=prayer_id, prayer_stats=prayer_stats, user_mark_count=user_mark_count
+                prayer_id=prayer_id, 
+                prayer_stats=prayer_stats, 
+                user_mark_count=user_mark_count,
+                prayer=prayer,
+                me=user,
+                prayer_session=session
             ))
     
     # For non-HTMX requests, redirect back to the specific prayer

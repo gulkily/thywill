@@ -1,13 +1,90 @@
+<!-- Prayer stats section -->
 <div class="flex items-center gap-2">
   {% if prayer_stats %}{{ prayer_stats | safe }}{% endif %}
+</div>
+
+<!-- Action buttons section -->
+<div class="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700">
+  {% if prayer_session.is_fully_authenticated %}
   <form method="post" action="/mark/{{ prayer_id }}" class="inline">
     <button hx-post="/mark/{{ prayer_id }}" 
             hx-target="#prayer-marks-{{ prayer_id }}"
             hx-swap="innerHTML"
             type="submit" 
-            class="{% if user_mark_count > 0 %}bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 border-green-300 dark:border-green-600{% else %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 border-purple-300 dark:border-purple-700{% endif %} hover:opacity-80 text-xs px-2 py-1 rounded border focus:outline-none focus:ring-1 focus:ring-purple-500 dark:focus:ring-purple-400 flex items-center gap-1">
-      <span>{% if user_mark_count > 0 %}✓{% else %}🙏{% endif %} I Prayed This</span>
-      <span class="bg-white dark:bg-gray-800 px-1 rounded text-xs font-medium">{{ user_mark_count|default(0) }}</span>
+            class="{% if user_mark_count > 0 %}bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 border-green-300 dark:border-green-600 hover:bg-green-200 dark:hover:bg-green-800{% else %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 border-purple-300 dark:border-purple-700 hover:bg-purple-200 dark:hover:bg-purple-800{% endif %} transition-colors duration-200 text-xs px-2 py-1.5 rounded border focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 flex items-center gap-1.5 font-medium min-h-[28px]">
+      <span class="text-sm">{% if user_mark_count > 0 %}✓{% else %}🙏{% endif %}</span>
+      <span class="hidden sm:inline">I Prayed This</span>
+      <span class="sm:hidden">Prayed</span>
+      <span class="bg-white dark:bg-gray-800 px-1.5 py-0.5 rounded text-xs font-semibold min-w-[20px] text-center">{{ user_mark_count|default(0) }}</span>
     </button>
   </form>
+  {% else %}
+  <span class="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 cursor-not-allowed flex items-center gap-1.5 font-medium min-h-[28px]" title="Full authentication required">
+    <span class="text-sm">🙏</span>
+    <span class="hidden sm:inline">I Prayed This</span>
+    <span class="sm:hidden">Prayed</span>
+    <span class="bg-white dark:bg-gray-800 px-1.5 py-0.5 rounded text-xs font-semibold min-w-[20px] text-center">{{ user_mark_count|default(0) }}</span>
+  </span>
+  {% endif %}
+  
+  <!-- More Actions Dropdown -->
+  <div class="relative flex-shrink-0">
+    <button id="dropdown-button-{{ prayer_id }}" 
+            data-prayer-id="{{ prayer_id }}"
+            type="button"
+            class="dropdown-toggle text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300 w-8 h-8 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center"
+            style="display: block !important;" title="More actions">
+      <span class="text-lg leading-none">⋯</span>
+    </button>
+  
+    <div id="dropdown-{{ prayer_id }}" 
+         class="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg z-50 hidden"
+         onclick="event.stopPropagation();">
+      <div class="py-1">
+      <!-- Prayer management buttons for prayer authors -->
+      {% if prayer_session.is_fully_authenticated and prayer.author_id == me.id %}
+        {% if not prayer.is_answered %}
+          <button onclick="showAnsweredModal('{{ prayer_id }}'); hideDropdown('{{ prayer_id }}')"
+                  class="block w-full text-left px-4 py-3 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-800 dark:hover:text-green-300 transition-colors duration-150 font-medium whitespace-nowrap">
+            ✓ Mark as Answered
+          </button>
+        {% endif %}
+        
+        {% if prayer.is_archived %}
+          <form method="post" action="/prayer/{{ prayer_id }}/restore" class="block">
+            <button type="submit" 
+                    hx-post="/prayer/{{ prayer_id }}/restore"
+                    hx-target="#prayer-{{ prayer_id }}"
+                    hx-swap="outerHTML"
+                    class="block w-full text-left px-4 py-3 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-800 dark:hover:text-amber-300 transition-colors duration-150 font-medium whitespace-nowrap">
+              📤 Restore
+            </button>
+          </form>
+        {% else %}
+          <form method="post" action="/prayer/{{ prayer_id }}/archive" class="block">
+            <button type="submit" 
+                    hx-post="/prayer/{{ prayer_id }}/archive"
+                    hx-target="#prayer-{{ prayer_id }}"
+                    hx-swap="outerHTML"
+                    class="block w-full text-left px-4 py-3 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-800 dark:hover:text-amber-300 transition-colors duration-150 font-medium whitespace-nowrap">
+              📁 Archive
+            </button>
+          </form>
+        {% endif %}
+      {% endif %}
+      
+      <form method="post" action="/flag/{{ prayer_id }}" class="block">
+        <button type="submit" 
+                hx-post="/flag/{{ prayer_id }}"
+                hx-target="#prayer-{{ prayer_id }}"
+                hx-swap="outerHTML"
+                hx-indicator="#loading-{{ prayer_id }}"
+                class="block w-full text-left px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-800 dark:hover:text-red-300 transition-colors duration-150 font-medium whitespace-nowrap">
+          <span class="htmx-indicator" id="loading-{{ prayer_id }}">🔄</span>
+          <span>🚩 Flag</span>
+        </button>
+      </form>
+      </div>
+    </div>
+  </div>
 </div>
