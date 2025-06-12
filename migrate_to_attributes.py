@@ -13,10 +13,17 @@ def migrate_flagged_prayers():
     print("Starting migration from flagged boolean to prayer attributes...")
     
     with Session(engine) as session:
-        # First, create the new table if it doesn't exist
+        # First, check if the new table exists and create only if needed
         from sqlmodel import SQLModel
-        SQLModel.metadata.create_all(engine)
-        print("✓ Prayer attributes table created/verified")
+        from sqlalchemy import inspect
+        
+        inspector = inspect(engine)
+        if 'prayerattribute' not in inspector.get_table_names():
+            # Only create the specific table we need, not all tables
+            PrayerAttribute.__table__.create(engine, checkfirst=True)
+            print("✓ Prayer attributes table created")
+        else:
+            print("✓ Prayer attributes table already exists")
         
         # Get all prayers that are currently flagged
         stmt = select(Prayer).where(Prayer.flagged == True)
