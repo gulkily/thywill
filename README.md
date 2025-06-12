@@ -59,15 +59,71 @@ A community-driven prayer platform that creates a safe, faith-based environment 
    REQUIRE_VERIFICATION_CODE=false
    ```
 
-5. **Run the application**
+5. **Initialize database**
    ```bash
+   # Make CLI executable
+   chmod +x thywill
+   
+   # Initialize database safely
+   ./thywill init
+   ```
+
+6. **Run the application**
+   ```bash
+   # Start server with protection
+   ./thywill start
+   
+   # Or manually with uvicorn (advanced)
    uvicorn app:app --reload --host 0.0.0.0 --port 8000
    ```
 
-6. **Initial setup**
+7. **Initial setup**
    - Look for the admin invite token in console output: `==== First-run invite token (admin): <token> ====`
    - Visit `http://localhost:8000/claim/<token>` to create the admin account
    - Use the admin panel to generate invite links for other users
+
+## 🛠️ ThyWill CLI
+
+The `thywill` command provides a unified interface for all database and server operations:
+
+### Database Operations
+```bash
+./thywill init                    # Initialize database tables
+./thywill backup                  # Create database backup
+./thywill restore <backup_file>   # Restore from backup
+./thywill status                  # Show database status
+```
+
+### Import/Export
+```bash
+./thywill import <export.zip>     # Import community data
+./thywill import <file> --dry-run # Preview import
+./thywill export                  # Guide for creating exports
+```
+
+### Server Management
+```bash
+./thywill start                   # Start server with protection
+./thywill test                    # Run test suite
+./thywill migrate                 # Run database migrations
+```
+
+### Examples
+```bash
+# Daily operations
+./thywill backup                              # Create backup
+./thywill start                               # Start server
+
+# Data recovery
+./thywill import community_export_2024.zip   # Restore from export
+./thywill import backup.zip --dry-run        # Preview restore
+
+# Development
+./thywill test                                # Run tests safely
+./thywill status                              # Check database health
+```
+
+⚠️ **Important**: Always use `./thywill start` instead of running Python directly to prevent accidental data loss.
 
 ## 🏗️ Project Structure
 
@@ -75,6 +131,7 @@ A community-driven prayer platform that creates a safe, faith-based environment 
 thywill/
 ├── app.py                      # Main FastAPI application
 ├── models.py                   # Database models and schema
+├── thywill                     # CLI management tool
 ├── app_helpers/               # Modular business logic
 │   ├── services/             # Core service modules
 │   │   ├── auth_helpers.py   # Authentication & security
@@ -89,6 +146,8 @@ thywill/
 ├── templates/               # Jinja2 HTML templates
 ├── tests/                  # Test suite
 ├── docs/                   # Documentation
+├── backups/                # Database backups
+├── DATABASE_PROTECTION.md # Safety documentation
 └── requirements.txt        # Python dependencies
 ```
 
@@ -106,6 +165,37 @@ thywill/
 - **AuthenticationRequest**: Multi-device login approvals
 - **AuthApproval**: Peer approval voting system
 - **SecurityLog**: Comprehensive security audit trail
+
+## 🛡️ Database Safety
+
+ThyWill includes comprehensive database protection to prevent accidental data loss:
+
+### ⚠️ Critical Safety Rules
+- **Always use `./thywill start`** instead of running Python directly
+- **Never run tests in production** without the CLI (now safe)
+- **Create backups** before major changes: `./thywill backup`
+- **Use dry-run mode** for imports: `./thywill import file.zip --dry-run`
+
+### Protection Features
+- ✅ **Automatic backups** before destructive operations
+- ✅ **Environment-based protection** prevents accidental table recreation
+- ✅ **Safe import/export** system with validation
+- ✅ **User confirmation** for dangerous operations
+- ✅ **Comprehensive error handling** with recovery suggestions
+
+### Emergency Recovery
+```bash
+# List available backups
+./thywill backup list
+
+# Restore from backup
+./thywill restore backup_filename.db
+
+# Import from community export
+./thywill import community_export.zip
+```
+
+See `DATABASE_PROTECTION.md` for complete safety documentation.
 
 ## 🔧 Configuration
 
