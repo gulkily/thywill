@@ -55,7 +55,7 @@ def preview_prayer(text: str = Form(...),
         target_audience = "all"
     
     # Generate a proper prayer from the user's prompt
-    generated_prayer = generate_prayer(text)
+    prayer_result = generate_prayer(text)
     
     # Generate preview token for security
     import secrets
@@ -63,7 +63,8 @@ def preview_prayer(text: str = Form(...),
     
     return {
         "original_text": text,
-        "generated_prayer": generated_prayer,
+        "generated_prayer": prayer_result['prayer'],
+        "service_status": prayer_result['service_status'],
         "tag": tag,
         "target_audience": target_audience,
         "preview_token": preview_token
@@ -102,7 +103,8 @@ def submit_prayer(text: str = Form(...),
     if generated_prayer:
         final_prayer = generated_prayer
     else:
-        final_prayer = generate_prayer(text)
+        prayer_result = generate_prayer(text)
+        final_prayer = prayer_result['prayer']
     
     with Session(engine) as s:
         prayer = Prayer(
