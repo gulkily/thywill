@@ -47,3 +47,6 @@ __pycache__
 
 # Temporary screenshot dir used for giving screenshots to coding model
 screenshot/
+
+# Zip files, typically site archives
+*.zip
