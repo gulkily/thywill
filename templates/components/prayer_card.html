@@ -78,7 +78,7 @@
   {% endif %}
   
   <footer class="mt-4 text-xs text-gray-500 dark:text-gray-400 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-    <span class="flex-shrink-0">by {% if p.author_id == me.id %}you{% else %}<a href="/user/{{ p.author_id }}" class="text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-200 hover:underline">{{ p.author_name }}</a>{% endif %} · {{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+    <span class="flex-shrink-0">{% if p.author_id == me.id %}by you{% elif p.author_name %}by <a href="/user/{{ p.author_id }}" class="text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-200 hover:underline">{{ p.author_name }}</a>{% endif %}{% if p.author_id == me.id or p.author_name %} · {% endif %}{{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
     <!-- Prayer stats and actions section -->
     <div id="prayer-marks-{{ p.id }}" class="flex items-center gap-3 flex-wrap justify-end">
       <!-- Prayer stats section -->
