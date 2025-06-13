@@ -62,7 +62,7 @@ def admin(request: Request, user_session: tuple = Depends(current_user)):
         # Join Prayer and User tables to get author display names for flagged prayers
         stmt = (
             select(Prayer, User.display_name)
-            .join(User, Prayer.author_id == User.id)
+            .outerjoin(User, Prayer.author_id == User.id)
             .where(Prayer.flagged == True)
         )
         results = s.exec(stmt).all()
@@ -85,7 +85,7 @@ def admin(request: Request, user_session: tuple = Depends(current_user)):
         # Get authentication requests for admin review
         auth_requests_stmt = (
             select(AuthenticationRequest, User.display_name)
-            .join(User, AuthenticationRequest.user_id == User.id)
+            .outerjoin(User, AuthenticationRequest.user_id == User.id)
             .where(AuthenticationRequest.status == "pending")
             .where(AuthenticationRequest.expires_at > datetime.utcnow())
             .order_by(AuthenticationRequest.created_at.desc())
@@ -104,7 +104,7 @@ def admin(request: Request, user_session: tuple = Depends(current_user)):
             # Get approvers
             approvers = s.exec(
                 select(AuthApproval, User.display_name)
-                .join(User, AuthApproval.approver_user_id == User.id)
+                .outerjoin(User, AuthApproval.approver_user_id == User.id)
                 .where(AuthApproval.auth_request_id == auth_req.id)
             ).all()
             
