@@ -70,7 +70,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             # New prayers and prayers that have never been prayed (exclude archived)
             stmt = (
                 select(Prayer, User.display_name)
-                .join(User, Prayer.author_id == User.id)
+                .outerjoin(User, Prayer.author_id == User.id)
                 .outerjoin(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
@@ -83,7 +83,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             # Most prayed prayers (by total prayer count, exclude archived)
             stmt = (
                 select(Prayer, User.display_name, func.count(PrayerMark.id).label('mark_count'))
-                .join(User, Prayer.author_id == User.id)
+                .outerjoin(User, Prayer.author_id == User.id)
                 .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
@@ -96,7 +96,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             # Prayers the current user has marked as prayed (include all statuses)
             stmt = (
                 select(Prayer, User.display_name)
-                .join(User, Prayer.author_id == User.id)
+                .outerjoin(User, Prayer.author_id == User.id)
                 .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(PrayerMark.user_id == user.id)
@@ -107,7 +107,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             # Prayer requests submitted by the current user (include all statuses)
             stmt = (
                 select(Prayer, User.display_name)
-                .join(User, Prayer.author_id == User.id)
+                .outerjoin(User, Prayer.author_id == User.id)
                 .where(Prayer.flagged == False)
                 .where(Prayer.author_id == user.id)
                 .order_by(Prayer.created_at.desc())
@@ -116,7 +116,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             # Prayers with recent prayer marks (most recently prayed, exclude archived)
             stmt = (
                 select(Prayer, User.display_name)
-                .join(User, Prayer.author_id == User.id)
+                .outerjoin(User, Prayer.author_id == User.id)
                 .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
@@ -129,7 +129,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             # Answered prayers (public celebration feed)
             stmt = (
                 select(Prayer, User.display_name)
-                .join(User, Prayer.author_id == User.id)
+                .outerjoin(User, Prayer.author_id == User.id)
                 .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(PrayerAttribute.attribute_name == 'answered')
@@ -140,7 +140,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             # Archived prayers (personal feed for prayer authors only)
             stmt = (
                 select(Prayer, User.display_name)
-                .join(User, Prayer.author_id == User.id)
+                .outerjoin(User, Prayer.author_id == User.id)
                 .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(Prayer.author_id == user.id)  # Only user's own prayers
@@ -151,7 +151,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             # All prayers (exclude archived)
             stmt = (
                 select(Prayer, User.display_name)
-                .join(User, Prayer.author_id == User.id)
+                .outerjoin(User, Prayer.author_id == User.id)
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
                 .where(apply_religious_filter())
