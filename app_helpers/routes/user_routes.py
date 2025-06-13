@@ -73,7 +73,7 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
         recent_marks_stmt = (
             select(Prayer, func.max(PrayerMark.created_at).label('last_marked'))
             .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
-            .join(User, Prayer.author_id == User.id)
+            .outerjoin(User, Prayer.author_id == User.id)
             .where(PrayerMark.user_id == user_id)
             .where(Prayer.flagged == False)
             .group_by(Prayer.id)
