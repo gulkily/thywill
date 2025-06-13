@@ -146,7 +146,7 @@ def prayer_marks(prayer_id: str, request: Request, user_session: tuple = Depends
         # Get all marks for this prayer with user info
         stmt = (
             select(PrayerMark, User.display_name)
-            .join(User, PrayerMark.user_id == User.id)
+            .outerjoin(User, PrayerMark.user_id == User.id)
             .where(PrayerMark.prayer_id == prayer_id)
             .order_by(PrayerMark.created_at.desc())
         )
@@ -193,7 +193,7 @@ def answered_celebration(request: Request, user_session: tuple = Depends(current
         # Get recent answered prayers (last 10)
         recent_stmt = (
             select(Prayer, User.display_name)
-            .join(User, Prayer.author_id == User.id)
+            .outerjoin(User, Prayer.author_id == User.id)
             .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
             .where(Prayer.flagged == False)
             .where(PrayerAttribute.attribute_name == 'answered')
@@ -323,8 +323,8 @@ def recent_activity(request: Request, user_session: tuple = Depends(current_user
             activity_items.append({
                 'mark': mark,
                 'prayer': prayer,
-                'marker_name': marker.display_name,
-                'author_name': author.display_name,
+                'marker_name': marker.display_name if marker else None,
+                'author_name': author.display_name if author else None,
                 'is_my_mark': mark.user_id == user.id,
                 'is_my_prayer': prayer.author_id == user.id
             })
