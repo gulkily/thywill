@@ -78,6 +78,9 @@ show_help() {
     echo "    import prayers <file>   Import prayers from JSON file"
     echo "    import community <file> Import community data from ZIP export"
     echo ""
+    header "  Database Commands:"
+    echo "    db init             Initialize database tables (first time only)"
+    echo ""
     header "  Utility Commands:"
     echo "    setup               Complete development environment setup"
     echo "    init                Initialize deployment environment"
@@ -88,6 +91,7 @@ show_help() {
     echo "    version             Show version information"
     echo ""
     echo "EXAMPLES:"
+    echo "    thywill db init                                   # Initialize database (first time)"
     echo "    thywill setup                                     # Complete Ubuntu setup"
     echo "    thywill start                                     # Start dev server on port 8000"
     echo "    thywill admin grant \"John Smith\"                # Grant admin role"
@@ -1319,6 +1323,65 @@ cmd_import_community() {
     python3 import_community_data.py "$file_path" "$@"
 }
 
+# Database commands
+cmd_db() {
+    local subcommand="${1:-}"
+    shift || true
+    
+    case "$subcommand" in
+        init)
+            cmd_db_init "$@"
+            ;;
+        *)
+            error "Unknown database subcommand: $subcommand"
+            echo "Available subcommands: init"
+            echo "Usage: thywill db <subcommand> [args]"
+            echo ""
+            echo "Examples:"
+            echo "  thywill db init        # Initialize database tables (first time only)"
+            exit 1
+            ;;
+    esac
+}
+
+cmd_db_init() {
+    header "Database Initialization"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ]; then
+        error "models.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    # Check if create_database.py exists
+    if [ ! -f "create_database.py" ]; then
+        error "create_database.py script not found"
+        echo "Please ensure the database creation script is in the project directory"
+        exit 1
+    fi
+    
+    log "Running database initialization script..."
+    echo ""
+    
+    # Execute the standalone database creation script
+    python3 create_database.py
+    
+    if [ $? -eq 0 ]; then
+        echo ""
+        success "Database initialization completed!"
+        echo ""
+        echo "Next steps:"
+        echo "  thywill start          # Start development server"
+        echo "  thywill admin token    # Create first admin account"
+    else
+        echo ""
+        error "Database initialization failed"
+        echo "Check the error messages above for details"
+        exit 1
+    fi
+}
+
 # Utility commands
 cmd_setup() {
     header "ThyWill Complete Ubuntu Setup"
@@ -1675,6 +1738,11 @@ main() {
             ;;
         import)
             cmd_import "$@"
+            ;;
+        
+        # Database commands
+        db)
+            cmd_db "$@"
             ;;
         
         # Utility commands

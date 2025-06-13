@@ -292,19 +292,8 @@ engine = create_engine(
     pool_pre_ping=True
 )
 
-# Safe database initialization
-# Tables are only created when explicitly requested via environment variable
-# This prevents accidental data loss during imports/tests
-import os
-if os.getenv('INIT_DATABASE', 'false').lower() == 'true':
-    print("Initializing database tables...")
-    try:
-        from database_protection import DatabaseProtection
-        DatabaseProtection.safe_create_tables(engine)
-    except ImportError:
-        # Fallback if protection module isn't available
-        SQLModel.metadata.create_all(engine)
-        print("Database tables created (protection module not available)")
+# Database initialization is now handled by standalone script only
+# No automatic table creation on import to prevent accidental data loss
 
 # Enable performance optimizations and create invite tree integrity constraints
 with engine.connect() as conn:
