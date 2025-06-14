@@ -1,7 +1,7 @@
-# Text File Data Archive System Implementation Plan
+# Text Archive System Implementation Plan
 
 ## Overview
-Implement a comprehensive text file data archive system for the ThyWill prayer application. Text files become the **primary data store** and source of truth, with the database serving as a fast query interface. This provides ultimate data portability, human-readable records, and complete independence from database formats.
+Implement a comprehensive text archive system for the ThyWill prayer application. Text files become the **primary data store** and source of truth, with the database serving as a fast query interface. This provides ultimate data portability, human-readable records, and complete independence from database formats.
 
 ## Current State Analysis
 - **Existing Infrastructure**: The app already has a sophisticated export/import system (`CommunityExportService` and import functionality) that handles JSON/ZIP exports
@@ -19,7 +19,7 @@ Implement a comprehensive text file data archive system for the ThyWill prayer a
 - **User Files**: `2024_06_users.txt` (monthly user registrations)
 - **Activity Files**: `activity_2024_06.txt` (monthly activity log)
 
-**Prayer Request Files** (`/text_backups/prayers/2024/06/2024_06_01_prayer_at_0655.txt`)
+**Prayer Request Files** (`/text_archives/prayers/2024/06/2024_06_01_prayer_at_0655.txt`)
 ```
 Prayer 12345 by Mary1
 Submitted June 1 2024 at 06:55
@@ -38,7 +38,7 @@ June 2 2024 at 08:00 - Mary1 marked this prayer as answered
 June 2 2024 at 08:01 - Mary1 added testimony: Mom is doing much better, thank you all!
 ```
 
-**Monthly User Registration Files** (`/text_backups/users/2024_06_users.txt`)
+**Monthly User Registration Files** (`/text_archives/users/2024_06_users.txt`)
 ```
 User Registrations for June 2024
 
@@ -48,7 +48,7 @@ June 7 2024 at 11:30 - David4 joined directly
 June 15 2024 at 16:45 - Lisa5 joined on invitation from Sarah2
 ```
 
-**Monthly Activity Log Files** (`/text_backups/activity/activity_2024_06.txt`)
+**Monthly Activity Log Files** (`/text_archives/activity/activity_2024_06.txt`)
 ```
 Activity for June 2024
 
@@ -122,13 +122,13 @@ def append_monthly_activity(action: str, user: str, prayer_id: int = None, tag: 
 def generate_prayer_filename(date: datetime, prayer_id: int) -> str:
     """Generate unique prayer filename with conflict resolution"""
     base_name = date.strftime("2024_%m_%d_prayer_at_%H%M")
-    file_path = f"/text_backups/prayers/{date.year}/{date.month:02d}/{base_name}.txt"
+    file_path = f"/text_archives/prayers/{date.year}/{date.month:02d}/{base_name}.txt"
     
     # Handle conflicts by appending number
     counter = 2
     while os.path.exists(file_path):
         conflict_name = f"{base_name}_{counter}"
-        file_path = f"/text_backups/prayers/{date.year}/{date.month:02d}/{conflict_name}.txt"
+        file_path = f"/text_archives/prayers/{date.year}/{date.month:02d}/{conflict_name}.txt"
         counter += 1
     
     return file_path
@@ -172,7 +172,7 @@ def parse_prayer_filename(filename: str) -> dict:
 #### 2.2 Modified Data Flow
 **Before (Database-First):**
 ```
-User Action → Database Write → Text Backup (optional)
+User Action → Database Write → Text Archive (optional)
 ```
 
 **After (Archive-First):**
@@ -187,7 +187,7 @@ def submit_prayer(prayer_data):
     prayer = Prayer(text=prayer_data['text'])
     db.session.add(prayer)
     db.session.commit()
-    backup_to_text(prayer)  # Optional backup
+    archive_to_text(prayer)  # Optional archive
 
 # NEW: Archive-first approach  
 def submit_prayer(prayer_data):
@@ -419,7 +419,7 @@ def upgrade_with_session_preservation():
     session_manager.backup_all_active_sessions()
     
     # Step 2: Standard database upgrade
-    backup_main_database()
+    backup_main_database()  # Traditional database backup
     run_database_migrations()
     import_from_text_archives()
     
@@ -972,12 +972,12 @@ class TestArchivePerformance:
 - Atomic file operations with temporary files
 - File locking to prevent corruption
 - Checksums or validation for critical files
-- Regular backup verification
+- Regular archive verification
 
 ### Performance Impact
 - Asynchronous text file writing
 - Batch operations for activity logs
-- Configurable backup frequency
+- Configurable archive frequency
 - Optional compression for large files
 
 ### Storage Management
@@ -989,7 +989,7 @@ class TestArchivePerformance:
 ## Benefits
 
 ### Immediate
-- **Human-readable backups**: Easy to review and understand without database tools
+- **Human-readable archives**: Easy to review and understand without database tools
 - **Data loss protection**: Independent of database format and application code
 - **Migration flexibility**: Can reconstruct database in any format
 - **Audit trail**: Clear timeline of all site activity
@@ -1010,8 +1010,8 @@ class TestArchivePerformance:
 
 ### Extensibility
 - Plugin architecture for custom export formats
-- API endpoints for third-party backup tools  
-- Webhook support for real-time backup triggers
+- API endpoints for third-party archive tools  
+- Webhook support for real-time archive triggers
 - Integration with cloud storage services
 
 This plan leverages your existing robust export/import infrastructure while adding the human-readable text format you requested. The modular approach allows for incremental implementation and testing at each phase.
