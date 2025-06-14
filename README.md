@@ -155,12 +155,13 @@ thywill/
 ├── docs/                   # Documentation
 │   ├── TEXT_ARCHIVE_DOCUMENTATION.md    # Text archive system docs
 │   ├── TEXT_ARCHIVE_IMPLEMENTATION_PLAN.md # Implementation details
-│   ├── AI_PROJECT_GUIDE.md              # Development guide
+│   ├── DATABASE_PROTECTION.md           # Safety documentation
+│   ├── UBUNTU_HOSTING_GUIDE.md           # Deployment guide
 │   ├── plans/              # Feature implementation plans
 │   └── guides/             # User and developer guides
 ├── backups/                # Database backups
 ├── text_archives/          # Human-readable data archives
-├── DATABASE_PROTECTION.md # Safety documentation
+├── AI_PROJECT_GUIDE.md     # Development documentation
 └── requirements.txt        # Python dependencies
 ```
 
@@ -315,10 +316,12 @@ For support, questions, or feature requests, please open an issue on GitHub.
 ## 🔗 Related Documentation
 
 - [Installation Guide](INSTALL.md) - Detailed setup instructions
-- [AI Project Guide](docs/AI_PROJECT_GUIDE.md) - Development documentation
+- [AI Project Guide](AI_PROJECT_GUIDE.md) - Development documentation
 - [Login Feature Specification](docs/LOGIN_FEATURE_SPECIFICATION.md) - Authentication system details
 - [Text Archive Documentation](docs/TEXT_ARCHIVE_DOCUMENTATION.md) - Archive-first data system
 - [Text Archive Implementation Plan](docs/TEXT_ARCHIVE_IMPLEMENTATION_PLAN.md) - Technical implementation details
+- [Database Protection](docs/DATABASE_PROTECTION.md) - Safety documentation
+- [Ubuntu Hosting Guide](docs/UBUNTU_HOSTING_GUIDE.md) - Deployment guide
 - [Development Plans](docs/plans/) - Feature implementation plans
 
 ---
