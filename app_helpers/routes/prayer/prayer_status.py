@@ -17,6 +17,7 @@ from models import engine, Prayer, PrayerMark
 
 # Import helper functions
 from app_helpers.services.auth_helpers import current_user, is_admin
+from app_helpers.services.archive_first_service import append_prayer_activity_with_archive
 
 # Initialize templates
 templates = Jinja2Templates(directory="templates")
@@ -50,10 +51,8 @@ def mark_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(
         if not prayer:
             raise HTTPException(404, "Prayer not found")
         
-        # Add a new prayer mark
-        mark = PrayerMark(user_id=user.id, prayer_id=prayer_id)
-        s.add(mark)
-        s.commit()
+        # Use archive-first approach: write to text archive FIRST, then database
+        append_prayer_activity_with_archive(prayer_id, "prayed", user)
         
         # If this is an HTMX request, return just the updated prayer mark section
         if request.headers.get("HX-Request"):
@@ -126,8 +125,8 @@ def archive_prayer(prayer_id: str, request: Request, user_session: tuple = Depen
         if prayer.author_id != user.id and not is_admin(user):
             raise HTTPException(403, "Only prayer author or admin can archive this prayer")
         
-        # Set archived attribute
-        prayer.set_attribute('archived', 'true', user.id, s)
+        # Use archive-first approach: write to text archive FIRST, then database
+        append_prayer_activity_with_archive(prayer_id, "archived", user)
         s.commit()
         
         if request.headers.get("HX-Request"):
@@ -172,8 +171,8 @@ def restore_prayer(prayer_id: str, request: Request, user_session: tuple = Depen
         if prayer.author_id != user.id and not is_admin(user):
             raise HTTPException(403, "Only prayer author or admin can restore this prayer")
         
-        # Remove archived attribute
-        prayer.remove_attribute('archived', s, user.id)
+        # Use archive-first approach: write to text archive FIRST, then database
+        append_prayer_activity_with_archive(prayer_id, "restored", user)
         s.commit()
         
         if request.headers.get("HX-Request"):
@@ -222,14 +221,10 @@ def mark_prayer_answered(prayer_id: str, request: Request,
         if prayer.author_id != user.id and not is_admin(user):
             raise HTTPException(403, "Only prayer author or admin can mark this prayer as answered")
         
-        # Set answered attribute with current date
-        answer_date = datetime.utcnow().isoformat()
-        prayer.set_attribute('answered', 'true', user.id, s)
-        prayer.set_attribute('answer_date', answer_date, user.id, s)
-        
-        # Add testimony if provided
-        if testimony and testimony.strip():
-            prayer.set_attribute('answer_testimony', testimony.strip(), user.id, s)
+        # Use archive-first approach: write to text archive FIRST, then database
+        # Pass testimony as extra data for the answered action
+        testimony_text = testimony.strip() if testimony and testimony.strip() else ""
+        append_prayer_activity_with_archive(prayer_id, "answered", user, testimony_text)
         
         s.commit()
         

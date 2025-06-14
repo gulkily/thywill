@@ -20,6 +20,7 @@ from models import (
 # Import helper functions
 from app_helpers.services.auth_helpers import current_user
 from app_helpers.services.prayer_helpers import generate_prayer, find_compatible_prayer_partner
+from app_helpers.services.archive_first_service import submit_prayer_archive_first
 
 # Initialize templates
 templates = Jinja2Templates(directory="templates")
@@ -106,16 +107,14 @@ def submit_prayer(text: str = Form(...),
         prayer_result = generate_prayer(text)
         final_prayer = prayer_result['prayer']
     
-    with Session(engine) as s:
-        prayer = Prayer(
-            author_id=user.id, 
-            text=text, 
-            generated_prayer=final_prayer,
-            project_tag=tag,
-            target_audience=target_audience,
-        )
-        s.add(prayer)
-        s.commit()
+    # Use archive-first approach: write text file FIRST, then database
+    prayer = submit_prayer_archive_first(
+        text=text,
+        author=user,
+        tag=tag,
+        target_audience=target_audience,
+        generated_prayer=final_prayer
+    )
     
     return RedirectResponse("/", 303)
 

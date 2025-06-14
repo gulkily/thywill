@@ -32,6 +32,7 @@ from app_helpers.utils.invite_tree_validation import (
     validate_user_operation
 )
 from app_helpers.utils.user_management import is_user_deactivated
+from app_helpers.services.archive_first_service import create_user_with_text_archive
 
 # Template and config setup
 templates = Jinja2Templates(directory="templates")
@@ -209,10 +210,29 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             }
             user_data = validate_new_user_invite_relationship(user_data, token, s)
             
-            user = User(**user_data)
+            # Get inviter's display name for archive
+            inviter_display_name = ""
+            if inv.created_by_user and inv.created_by_user != "system":
+                inviter = s.get(User, inv.created_by_user)
+                if inviter:
+                    inviter_display_name = inviter.display_name
+            
+            # Create user with archive-first approach
+            archive_user_data = {
+                'display_name': user_data['display_name'],
+                'invited_by_display_name': inviter_display_name,
+                'religious_preference': user_data.get('religious_preference', 'unspecified'),
+                'prayer_style': user_data.get('prayer_style'),
+                'invited_by_user_id': user_data.get('invited_by_user_id'),
+                'invite_token_used': user_data.get('invite_token_used', token)
+            }
+            
+            # Use archive-first approach: text archive FIRST, then database
+            user, _ = create_user_with_text_archive(archive_user_data, uid)
+            
             inv.used = True
             inv.used_by_user_id = uid
-            s.add_all([user, inv])
+            s.add(inv)
             
             # Grant admin role if this is a system-generated token
             grant_admin_role_for_system_token(uid, token, s)
