@@ -54,24 +54,30 @@ def client(test_session):
         # Return the test session instead of creating a new one
         return test_session
     
-    # Patch Session creation throughout the app and helper modules
-    with patch('app.Session', mock_session), \
-         patch('app_helpers.services.auth_helpers.Session', mock_session), \
-         patch('app_helpers.services.auth.session_helpers.Session', mock_session), \
-         patch('app_helpers.services.auth.token_helpers.Session', mock_session), \
-         patch('app_helpers.services.auth.validation_helpers.Session', mock_session), \
-         patch('app_helpers.services.prayer_helpers.Session', mock_session), \
-         patch('app_helpers.services.invite_helpers.Session', mock_session), \
-         patch('app_helpers.routes.prayer_routes.Session', mock_session), \
-         patch('app_helpers.routes.prayer.feed_operations.Session', mock_session), \
-         patch('app_helpers.routes.prayer.prayer_crud.Session', mock_session), \
-         patch('app_helpers.routes.prayer.prayer_status.Session', mock_session), \
-         patch('app_helpers.routes.prayer.prayer_moderation.Session', mock_session), \
-         patch('app_helpers.routes.auth_routes.Session', mock_session), \
-         patch('app_helpers.routes.admin_routes.Session', mock_session), \
-         patch('app_helpers.routes.user_routes.Session', mock_session), \
-         patch('app_helpers.routes.invite_routes.Session', mock_session):
-        yield TestClient(app)
+    # Disable text archives for tests to prevent file creation
+    with patch('app_helpers.services.text_archive_service.TEXT_ARCHIVE_ENABLED', False), \
+         patch('app.TEXT_ARCHIVE_ENABLED', False), \
+         patch('app_helpers.services.archive_first_service.text_archive_service.enabled', False):
+        
+        # Patch Session creation throughout the app and helper modules
+        with patch('app.Session', mock_session), \
+             patch('app_helpers.services.auth_helpers.Session', mock_session), \
+             patch('app_helpers.services.auth.session_helpers.Session', mock_session), \
+             patch('app_helpers.services.auth.token_helpers.Session', mock_session), \
+             patch('app_helpers.services.auth.validation_helpers.Session', mock_session), \
+             patch('app_helpers.services.prayer_helpers.Session', mock_session), \
+             patch('app_helpers.services.invite_helpers.Session', mock_session), \
+             patch('app_helpers.services.archive_first_service.Session', mock_session), \
+             patch('app_helpers.routes.prayer_routes.Session', mock_session), \
+             patch('app_helpers.routes.prayer.feed_operations.Session', mock_session), \
+             patch('app_helpers.routes.prayer.prayer_crud.Session', mock_session), \
+             patch('app_helpers.routes.prayer.prayer_status.Session', mock_session), \
+             patch('app_helpers.routes.prayer.prayer_moderation.Session', mock_session), \
+             patch('app_helpers.routes.auth_routes.Session', mock_session), \
+             patch('app_helpers.routes.admin_routes.Session', mock_session), \
+             patch('app_helpers.routes.user_routes.Session', mock_session), \
+             patch('app_helpers.routes.invite_routes.Session', mock_session):
+            yield TestClient(app)
 
 
 @pytest.fixture(scope="function")
