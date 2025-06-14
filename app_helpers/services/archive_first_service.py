@@ -115,16 +115,49 @@ def append_prayer_activity_with_archive(prayer_id: str, action: str, user: User,
             raise ValueError(f"Prayer {prayer_id} not found")
         
         if not prayer.text_file_path:
-            logger.warning(f"Prayer {prayer_id} has no associated text archive")
-            return
+            # Create missing archive file for legacy/test prayers
+            logger.info(f"Prayer {prayer_id} missing text archive - creating one now")
+            
+            # Get prayer author for archive
+            author = s.get(User, prayer.author_id)
+            author_name = author.display_name if author else "Unknown"
+            
+            # Create archive data from database prayer
+            archive_data = {
+                'id': prayer.id,
+                'author': author_name,
+                'text': prayer.text,
+                'generated_prayer': prayer.generated_prayer,
+                'project_tag': prayer.project_tag,
+                'target_audience': prayer.target_audience,
+                'created_at': prayer.created_at
+            }
+            
+            # Create the archive file (if text archives are enabled)
+            if text_archive_service.enabled:
+                archive_file_path = text_archive_service.create_prayer_archive(archive_data)
+                
+                # Update prayer record with archive path
+                prayer.text_file_path = archive_file_path
+                s.add(prayer)
+                s.commit()
+                
+                logger.info(f"Created archive file for prayer {prayer_id}: {archive_file_path}")
+            else:
+                # In test environment or when archives are disabled, just set a placeholder
+                prayer.text_file_path = f"disabled_archive_for_prayer_{prayer_id}"
+                s.add(prayer)
+                s.commit()
+                logger.info(f"Text archives disabled - set placeholder path for prayer {prayer_id}")
         
-        # Step 1: Write to text archive FIRST
-        text_archive_service.append_prayer_activity(
-            prayer.text_file_path, 
-            action, 
-            user.display_name, 
-            extra
-        )
+        # Step 1: Write to text archive FIRST (if enabled)
+        if text_archive_service.enabled and not prayer.text_file_path.startswith("disabled_archive_"):
+            text_archive_service.append_prayer_activity(
+                prayer.text_file_path, 
+                action, 
+                user.display_name, 
+                extra
+            )
         
         # Step 2: Create database record with same archive path
         if action == "prayed":
@@ -146,25 +179,48 @@ def append_prayer_activity_with_archive(prayer_id: str, action: str, user: User,
                 answer_date = datetime.now().isoformat()
                 prayer.set_attribute("answer_date", answer_date, user.id, s)
             
-            # Update attribute record to reference archive
+            # Set testimony if provided with answered action
             if action == "answered" and extra:
                 prayer.set_attribute("answer_testimony", extra, user.id, s)
+                
+                # Also append testimony to the prayer's text archive file
+                if text_archive_service.enabled and not prayer.text_file_path.startswith("disabled_archive_"):
+                    text_archive_service.append_prayer_activity(
+                        prayer.text_file_path,
+                        "testimony",
+                        user.display_name,
+                        extra
+                    )
+                
+                # Create separate testimony activity log
+                testimony_log = PrayerActivityLog(
+                    prayer_id=prayer_id,
+                    user_id=user.id,
+                    action="testimony",
+                    old_value=None,
+                    new_value=extra,
+                    text_file_path=prayer.text_file_path,
+                    created_at=datetime.now()
+                )
+                s.add(testimony_log)
                 
         elif action == "restored":
             # Remove archived attribute
             prayer.remove_attribute('archived', s, user.id)
         
-        # Always create activity log entry
-        activity_record = PrayerActivityLog(
-            prayer_id=prayer_id,
-            user_id=user.id,
-            action=action,
-            old_value=None,
-            new_value=extra if extra else "true",
-            text_file_path=prayer.text_file_path,  # Same archive path
-            created_at=datetime.now()
-        )
-        s.add(activity_record)
+        # Create activity log entry only for actions that don't already create logs
+        # set_attribute already creates logs, so we skip for those actions
+        if action in ["prayed"]:  # Only actions that don't use set_attribute
+            activity_record = PrayerActivityLog(
+                prayer_id=prayer_id,
+                user_id=user.id,
+                action=action,
+                old_value=None,
+                new_value=extra if extra else "true",
+                text_file_path=prayer.text_file_path,  # Same archive path
+                created_at=datetime.now()
+            )
+            s.add(activity_record)
         
         s.commit()
         
