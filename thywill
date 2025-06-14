@@ -80,6 +80,7 @@ show_help() {
     echo ""
     header "  Database Commands:"
     echo "    db init             Initialize database tables (first time only)"
+    echo "    migrate             Run database migrations"
     echo ""
     header "  Utility Commands:"
     echo "    setup               Complete development environment setup"
@@ -1327,6 +1328,35 @@ cmd_db() {
     esac
 }
 
+cmd_migrate() {
+    header "Running Database Migrations"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ]; then
+        error "models.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Running database migrations..."
+    
+    # Run the migration through Python
+    if python3 -c "
+from app_helpers.utils.database_helpers import migrate_database
+try:
+    migrate_database()
+    print('Migration completed successfully')
+except Exception as e:
+    print(f'Migration failed: {e}')
+    exit(1)
+"; then
+        success "Database migration completed successfully"
+    else
+        error "Database migration failed"
+        exit 1
+    fi
+}
+
 cmd_db_init() {
     header "Database Initialization"
     
@@ -1726,6 +1756,9 @@ main() {
         # Database commands
         db)
             cmd_db "$@"
+            ;;
+        migrate)
+            cmd_migrate "$@"
             ;;
         
         # Utility commands
