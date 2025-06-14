@@ -50,3 +50,6 @@ screenshot/
 
 # Zip files, typically site archives
 *.zip
+
+# Text archives
+text_archives/
