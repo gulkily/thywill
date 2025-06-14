@@ -31,6 +31,11 @@ REQUIRE_APPROVAL_FOR_EXISTING_USERS = os.getenv("REQUIRE_APPROVAL_FOR_EXISTING_U
 REQUIRE_INVITE_LOGIN_VERIFICATION = os.getenv("REQUIRE_INVITE_LOGIN_VERIFICATION", "false").lower() == "true"
 PEER_APPROVAL_COUNT = int(os.getenv("PEER_APPROVAL_COUNT", "2"))
 
+# Text Archive Settings
+TEXT_ARCHIVE_ENABLED = os.getenv("TEXT_ARCHIVE_ENABLED", "true").lower() == "true"
+TEXT_ARCHIVE_BASE_DIR = os.getenv("TEXT_ARCHIVE_BASE_DIR", "./text_archives")
+TEXT_ARCHIVE_COMPRESSION_AFTER_DAYS = int(os.getenv("TEXT_ARCHIVE_COMPRESSION_AFTER_DAYS", "365"))
+
 templates = Jinja2Templates(directory="templates")
 
 # Initialize Anthropic client
