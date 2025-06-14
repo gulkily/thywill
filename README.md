@@ -14,6 +14,7 @@ A community-driven prayer platform that creates a safe, faith-based environment 
 - **📋 Prayer Lifecycle**: Track answered prayers, archive requests, and celebrate testimonies
 - **🛡️ Community Moderation**: Flag inappropriate content and maintain a respectful environment
 - **🌳 Invite Tree System**: Track community growth and relationships
+- **📁 Text Archive System**: Archive-first data storage with human-readable backups
 
 ## 🚀 Quick Start
 
@@ -57,6 +58,10 @@ A community-driven prayer platform that creates a safe, faith-based environment 
    REQUIRE_APPROVAL_FOR_EXISTING_USERS=true
    PEER_APPROVAL_COUNT=2
    REQUIRE_VERIFICATION_CODE=false
+   
+   # Text Archive Settings
+   TEXT_ARCHIVE_ENABLED=true
+   TEXT_ARCHIVE_BASE_DIR=./text_archives
    ```
 
 5. **Initialize database**
@@ -136,7 +141,9 @@ thywill/
 │   ├── services/             # Core service modules
 │   │   ├── auth_helpers.py   # Authentication & security
 │   │   ├── prayer_helpers.py # Prayer management
-│   │   └── invite_helpers.py # Invite system
+│   │   ├── invite_helpers.py # Invite system
+│   │   ├── text_archive_service.py    # Text archive operations
+│   │   └── archive_first_service.py   # Archive-first workflows
 │   ├── routes/              # Route modules
 │   │   ├── auth_routes.py   # Authentication routes
 │   │   ├── prayer_routes.py # Prayer CRUD routes
@@ -147,7 +154,9 @@ thywill/
 ├── tests/                  # Test suite
 ├── docs/                   # Documentation
 ├── backups/                # Database backups
+├── text_archives/          # Human-readable data archives
 ├── DATABASE_PROTECTION.md # Safety documentation
+├── TEXT_ARCHIVE_DOCUMENTATION.md # Text archive system docs
 └── requirements.txt        # Python dependencies
 ```
 
@@ -165,6 +174,7 @@ thywill/
 - **AuthenticationRequest**: Multi-device login approvals
 - **AuthApproval**: Peer approval voting system
 - **SecurityLog**: Comprehensive security audit trail
+- **Text Archive Integration**: All models include `text_file_path` for archive linking
 
 ## 🛡️ Database Safety
 
@@ -303,6 +313,7 @@ For support, questions, or feature requests, please open an issue on GitHub.
 - [Installation Guide](INSTALL.md) - Detailed setup instructions
 - [AI Project Guide](AI_PROJECT_GUIDE.md) - Development documentation
 - [Login Feature Specification](docs/LOGIN_FEATURE_SPECIFICATION.md) - Authentication system details
+- [Text Archive Documentation](TEXT_ARCHIVE_DOCUMENTATION.md) - Archive-first data system
 - [Development Plans](docs/plans/) - Feature implementation plans
 
 ---
