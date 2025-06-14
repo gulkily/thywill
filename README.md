@@ -153,10 +153,14 @@ thywill/
 ├── templates/               # Jinja2 HTML templates
 ├── tests/                  # Test suite
 ├── docs/                   # Documentation
+│   ├── TEXT_ARCHIVE_DOCUMENTATION.md    # Text archive system docs
+│   ├── TEXT_ARCHIVE_IMPLEMENTATION_PLAN.md # Implementation details
+│   ├── AI_PROJECT_GUIDE.md              # Development guide
+│   ├── plans/              # Feature implementation plans
+│   └── guides/             # User and developer guides
 ├── backups/                # Database backups
 ├── text_archives/          # Human-readable data archives
 ├── DATABASE_PROTECTION.md # Safety documentation
-├── TEXT_ARCHIVE_DOCUMENTATION.md # Text archive system docs
 └── requirements.txt        # Python dependencies
 ```
 
@@ -311,9 +315,10 @@ For support, questions, or feature requests, please open an issue on GitHub.
 ## 🔗 Related Documentation
 
 - [Installation Guide](INSTALL.md) - Detailed setup instructions
-- [AI Project Guide](AI_PROJECT_GUIDE.md) - Development documentation
+- [AI Project Guide](docs/AI_PROJECT_GUIDE.md) - Development documentation
 - [Login Feature Specification](docs/LOGIN_FEATURE_SPECIFICATION.md) - Authentication system details
-- [Text Archive Documentation](TEXT_ARCHIVE_DOCUMENTATION.md) - Archive-first data system
+- [Text Archive Documentation](docs/TEXT_ARCHIVE_DOCUMENTATION.md) - Archive-first data system
+- [Text Archive Implementation Plan](docs/TEXT_ARCHIVE_IMPLEMENTATION_PLAN.md) - Technical implementation details
 - [Development Plans](docs/plans/) - Feature implementation plans
 
 ---
