@@ -61,7 +61,7 @@ show_help() {
     echo "    logs [lines]        Show application logs (default: 50 lines)"
     echo ""
     header "  Backup Commands:"
-    echo "    backup <type>       Create backup (hourly|daily|weekly)"
+    echo "    backup              Create database backup"
     echo "    list                List all available backups"
     echo "    restore <file>      Restore from specific backup file"
     echo "    cleanup             Clean up old backups"
@@ -100,7 +100,7 @@ show_help() {
     echo "    thywill import prayers backup.json               # Import prayer data"
     echo "    thywill import community export.zip              # Import community export"
     echo "    thywill deploy                                    # Safe deployment"
-    echo "    thywill backup daily                              # Create daily backup"
+    echo "    thywill backup                                    # Create database backup"
     echo "    thywill rollback                                  # Rollback to previous"
     echo "    thywill health                                    # Check app health"
     echo ""
@@ -262,25 +262,8 @@ cmd_logs() {
 
 # Backup commands
 cmd_backup() {
-    local backup_type="${1:-}"
-    
-    if [ -z "$backup_type" ]; then
-        error "Backup type required. Use: hourly, daily, or weekly"
-        echo "Usage: thywill backup <type>"
-        exit 1
-    fi
-    
-    case "$backup_type" in
-        hourly|daily|weekly)
-            header "Creating $backup_type Backup"
-            "$DEPLOYMENT_DIR/backup_management.sh" "$backup_type"
-            ;;
-        *)
-            error "Invalid backup type: $backup_type"
-            echo "Valid types: hourly, daily, weekly"
-            exit 1
-            ;;
-    esac
+    header "Creating Database Backup"
+    "$DEPLOYMENT_DIR/backup_management.sh" daily
 }
 
 cmd_list() {
@@ -1551,7 +1534,7 @@ cmd_setup_production() {
     echo "Service status: $(systemctl is-active thywill)"
     echo "View logs: thywill logs"
     echo "Check health: thywill health"
-    echo "Create backup: thywill backup daily"
+    echo "Create backup: thywill backup"
 }
 
 cmd_init() {
@@ -1591,7 +1574,7 @@ cmd_init() {
     echo "Next steps:"
     echo "1. Set up crontab entries for automated backups"
     echo "2. Test deployment: thywill deploy"
-    echo "3. Test backup: thywill backup daily"
+    echo "3. Test backup: thywill backup"
 }
 
 cmd_config() {
