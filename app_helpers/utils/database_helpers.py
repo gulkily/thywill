@@ -54,6 +54,43 @@ def migrate_database():
             cursor.execute("ALTER TABLE invitetoken ADD COLUMN used_by_user_id TEXT")
             print("✅ Added used_by_user_id column to invitetoken table")
         
+        # Add text_file_path column to user table for text archive tracking
+        if 'text_file_path' not in user_columns:
+            cursor.execute("ALTER TABLE user ADD COLUMN text_file_path TEXT")
+            print("✅ Added text_file_path column to user table")
+        
+        # Check if new Prayer columns exist for text archive tracking
+        cursor.execute("PRAGMA table_info(prayer)")
+        prayer_columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'text_file_path' not in prayer_columns:
+            cursor.execute("ALTER TABLE prayer ADD COLUMN text_file_path TEXT")
+            print("✅ Added text_file_path column to prayer table")
+        
+        # Check if new PrayerMark columns exist for text archive tracking
+        cursor.execute("PRAGMA table_info(prayermark)")
+        prayer_mark_columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'text_file_path' not in prayer_mark_columns:
+            cursor.execute("ALTER TABLE prayermark ADD COLUMN text_file_path TEXT")
+            print("✅ Added text_file_path column to prayermark table")
+        
+        # Check if new PrayerAttribute columns exist for text archive tracking
+        cursor.execute("PRAGMA table_info(prayer_attributes)")
+        prayer_attribute_columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'text_file_path' not in prayer_attribute_columns:
+            cursor.execute("ALTER TABLE prayer_attributes ADD COLUMN text_file_path TEXT")
+            print("✅ Added text_file_path column to prayer_attributes table")
+        
+        # Check if new PrayerActivityLog columns exist for text archive tracking
+        cursor.execute("PRAGMA table_info(prayer_activity_log)")
+        prayer_activity_log_columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'text_file_path' not in prayer_activity_log_columns:
+            cursor.execute("ALTER TABLE prayer_activity_log ADD COLUMN text_file_path TEXT")
+            print("✅ Added text_file_path column to prayer_activity_log table")
+        
         # Check if SecurityLog table exists
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='securitylog'")
         if not cursor.fetchone():

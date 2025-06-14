@@ -15,6 +15,8 @@ class User(SQLModel, table=True):
     invite_token_used: str | None = Field(default=None)   # Token that was used to create this account
     # Welcome message tracking
     welcome_message_dismissed: bool = Field(default=False)  # Whether user has dismissed the welcome message
+    # Text archive tracking
+    text_file_path: str | None = Field(default=None)  # Path to the text archive file containing this user's registration
     
     def has_role(self, role_name: str, session: Session) -> bool:
         """Check if user has a specific role"""
@@ -85,6 +87,8 @@ class Prayer(SQLModel, table=True):
     flagged: bool = False  # Will be deprecated after migration
     # Religious targeting fields
     target_audience: str | None = Field(default="all", max_length=50)  # "christians_only", "all"
+    # Text archive tracking
+    text_file_path: str | None = Field(default=None)  # Path to the text archive file containing this prayer
     
     def has_attribute(self, name: str, session: Session) -> bool:
         """Check if prayer has a specific attribute"""
@@ -185,12 +189,16 @@ class PrayerAttribute(SQLModel, table=True):
     attribute_value: str | None = Field(default="true", max_length=255)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     created_by: str | None = Field(default=None, foreign_key="user.id")
+    # Text archive tracking
+    text_file_path: str | None = Field(default=None)  # Path to the text archive file where this attribute change is logged
 
 class PrayerMark(SQLModel, table=True):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
     user_id: str
     prayer_id: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    # Text archive tracking
+    text_file_path: str | None = Field(default=None)  # Path to the text archive file where this prayer mark is logged
 
 class PrayerSkip(SQLModel, table=True):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
@@ -268,6 +276,8 @@ class PrayerActivityLog(SQLModel, table=True):
     old_value: str | None = Field(default=None, max_length=255)
     new_value: str | None = Field(default=None, max_length=255)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    # Text archive tracking
+    text_file_path: str | None = Field(default=None)  # Path to the text archive file where this activity is logged
 
 class InviteToken(SQLModel, table=True):
     token: str = Field(primary_key=True)
