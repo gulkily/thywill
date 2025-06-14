@@ -440,11 +440,11 @@ class TestActivityLogging:
         # Should have created multiple activity logs
         logs = test_session.exec(select(PrayerActivityLog)).all()
         
-        # Should create logs for: answered, answer_date, answer_testimony
+        # Should create logs for: answered, answer_date, answer_testimony, testimony
         assert len(logs) >= initial_count + 3
         
-        # Verify log actions
-        recent_logs = logs[-3:]
+        # Verify log actions - get all logs created by this operation
+        recent_logs = logs[initial_count:]
         actions = [log.action for log in recent_logs]
         assert 'set_answered' in actions
         assert 'set_answer_date' in actions
