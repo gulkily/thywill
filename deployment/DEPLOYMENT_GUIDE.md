@@ -70,7 +70,13 @@ cd /home/thywill/thywill
 # Pull latest changes (if using git)
 git pull origin main
 
-# Run safe deployment
+# Create backup before deployment
+./thywill backup
+
+# Run database migrations (if needed)
+./thywill migrate
+
+# Run safe deployment  
 ./deployment/deploy.sh
 ```
 
