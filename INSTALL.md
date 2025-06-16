@@ -30,18 +30,36 @@ Create a `.env` file in the project root:
 cp .env.example .env
 ```
 
-Edit the `.env` file and add your Anthropic API key:
-```
+Edit the `.env` file and add your configuration:
+```env
+# Required
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# Optional - Text Archive Settings
+TEXT_ARCHIVE_ENABLED=true
+TEXT_ARCHIVE_BASE_DIR=./text_archives
+TEXT_ARCHIVE_COMPRESSION_AFTER_DAYS=365
+
+# Optional - Other settings
+MULTI_DEVICE_AUTH_ENABLED=true
+REQUIRE_APPROVAL_FOR_EXISTING_USERS=true
+PEER_APPROVAL_COUNT=2
 ```
 
 Optional configuration variables are documented in `.env.example`.
 
 ### 5. Initialize Database
-The SQLite database will be created automatically when you first run the application.
+Initialize the database tables:
+```bash
+./thywill db init
+```
 
 ### 6. Run the Application
 ```bash
+# Recommended - uses ThyWill CLI with safety protections
+./thywill start
+
+# Alternative - direct uvicorn (development only)
 uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -57,6 +75,39 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 - **Session Duration**: Sessions last 14 days by default
 - **Invite Token Expiration**: Invite tokens expire after 12 hours
 - **Database**: Uses SQLite (`thywill.db`) by default
+- **Text Archives**: Human-readable data backups stored in `./text_archives/`
+
+## Managing the Application
+
+### CLI Commands
+```bash
+# Database operations
+./thywill backup                    # Create database backup
+./thywill migrate                   # Run database migrations
+./thywill db init                   # Initialize database (first time only)
+
+# Application management  
+./thywill start                     # Start development server
+./thywill health                    # Check application health
+./thywill logs                      # View application logs
+
+# Data management
+./thywill import prayers <file>     # Import prayer data
+./thywill import community <file>   # Import community export
+
+# Admin operations
+./thywill admin token              # Create admin invite token
+./thywill admin list               # List admin users
+```
+
+### Production Updates
+When updating production:
+```bash
+git pull
+./thywill backup                   # Create backup before changes
+./thywill migrate                  # Apply database migrations
+sudo systemctl restart thywill    # Restart service
+```
 
 ## Optional Files
 
@@ -75,6 +126,8 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 1. **Missing Anthropic API Key**: Ensure `ANTHROPIC_API_KEY` is set in your `.env` file
 2. **Port Already in Use**: Change the port number in the uvicorn command
 3. **Database Errors**: Delete `thywill.db` to reset the database (will lose all data)
+4. **Missing Text Archives**: Run `python3 heal_prayer_archives.py` to create archives for existing prayers
+5. **Migration Issues**: Use `./thywill migrate` to update database schema
 
 ### Environment Variables
 

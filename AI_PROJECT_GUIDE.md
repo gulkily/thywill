@@ -24,9 +24,14 @@
   - `auth_helpers.py` - Authentication, authorization, and security functions
   - `prayer_helpers.py` - Prayer generation, filtering, and management functions  
   - `invite_helpers.py` - Invite system and tree management functions
+  - `text_archive_service.py` - Text archive file operations and management
+  - `archive_first_service.py` - Archive-first workflow implementation
+  - `text_importer_service.py` - Import functionality for text archives
 - `app_helpers/utils/database_helpers.py` - Database migration and utility functions
-- `models.py` (120+ lines) - Database models and schema including multi-device auth
+- `models.py` (120+ lines) - Database models and schema including multi-device auth and text archive tracking
 - `templates/` - HTML templates for UI including authentication flows
+- `thywill` - CLI tool for deployment, backup, and database operations
+- `heal_prayer_archives.py` - Utility to create missing archive files for legacy prayers
 - `requirements.txt` - Python dependencies
 - `generate_token.py` - Utility for creating invite tokens
 - `docs/plans/` - Planning documents including successful refactoring strategies
@@ -121,6 +126,19 @@ The prayer system now uses a flexible attributes approach instead of simple bool
 6. **Recent Activity**: Prayers with marks in last 7 days (excludes archived)
 7. **Answered**: Public celebration feed showing all answered prayers with testimonies
 8. **Archived**: Private feed showing user's own archived prayers only
+
+### Text Archive System
+- **Archive-First Philosophy**: Text files are written FIRST, then database records created
+- **Human-Readable Archives**: All data stored in plain text files for ultimate durability
+- **Automatic Creation**: New prayers automatically get individual archive files
+- **Auto-Healing**: Legacy prayers get archives created on first interaction
+- **File Structure**: Organized by year/month with unique prayer files and monthly activity logs
+- **Database Integration**: All models include `text_file_path` linking to archive files
+- **Disaster Recovery**: Complete database can be reconstructed from text archives
+- **Archive Files**:
+  - Prayer files: `text_archives/prayers/YYYY/MM/prayer_file.txt`
+  - User registrations: `text_archives/users/YYYY_MM_users.txt`  
+  - Activity logs: `text_archives/activity/activity_YYYY_MM.txt`
 
 ## API Endpoints
 
