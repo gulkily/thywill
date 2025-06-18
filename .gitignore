@@ -43,6 +43,8 @@ Thumbs.db
 thywill.db
 thywill.db-shm
 thywill.db-wal
+*.db.backup*
+backups/
 __pycache__
 
 # Temporary screenshot dir used for giving screenshots to coding model
