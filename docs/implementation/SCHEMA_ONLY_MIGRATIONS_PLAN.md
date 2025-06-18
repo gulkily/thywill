@@ -9,6 +9,7 @@
 Transform the current deployment system from:
 - ❌ **Database Replacement**: Copy backup file over current database
 - ✅ **Schema Migrations**: Apply structural changes only, preserve all data
+- ✅ **Automatic Runtime Migrations**: Detect and apply migrations automatically when app starts
 
 ## Implementation Phases
 
@@ -34,6 +35,13 @@ Transform the current deployment system from:
 - Post-migration integrity checks
 - Automatic backup before migrations
 - Rollback on failure
+
+#### 1.4 Add Automatic Runtime Migration Detection
+- **Application startup migration check**: Detect pending migrations on app start
+- **Background migration monitoring**: Check for new migrations periodically
+- **Zero-downtime migrations**: Apply migrations without stopping the application
+- **Migration state tracking**: Persistent tracking of migration status
+- **Automatic rollback on failure**: Immediate rollback if migration fails
 
 ### Phase 2: Deployment Script Overhaul (2-3 hours)
 
@@ -100,6 +108,12 @@ class MigrationManager:
         
     def validate_migration(self, migration_id):
         """Validate migration can be applied safely"""
+        
+    def auto_migrate_on_startup(self):
+        """Automatically detect and apply pending migrations at startup"""
+        
+    def check_for_pending_migrations(self):
+        """Check if there are any pending migrations (for monitoring)"""
 ```
 
 ### Step 2: Create Migration Files Structure
@@ -135,6 +149,75 @@ def migrate_with_session_preservation():
     # 4. Clean up invalid sessions
 ```
 
+### Step 5: Integrate Automatic Migrations into Application
+
+**Application Startup Integration** (`app.py`):
+```python
+# In app.py - add to startup
+from app_helpers.utils.enhanced_migration import MigrationManager
+
+@app.on_event("startup") 
+async def startup_migrations():
+    """Run automatic migrations on application startup"""
+    migration_manager = MigrationManager()
+    
+    try:
+        pending = migration_manager.get_pending_migrations()
+        if pending:
+            print(f"🔄 Applying {len(pending)} pending migrations...")
+            migration_manager.auto_migrate_on_startup()
+            print("✅ Automatic migrations completed")
+        else:
+            print("✅ Database schema is up to date")
+    except Exception as e:
+        print(f"❌ Migration failed: {e}")
+        # Application can still start with warnings
+```
+
+**Background Migration Check** (Optional):
+```python
+# Periodic check for new migrations (useful for multi-instance deployments)
+import schedule
+import threading
+
+def check_migrations_background():
+    """Background thread to check for new migrations periodically"""
+    migration_manager = MigrationManager()
+    
+    while True:
+        try:
+            if migration_manager.check_for_pending_migrations():
+                print("⚠️  New migrations detected - restart application to apply")
+        except Exception as e:
+            print(f"Migration check error: {e}")
+        
+        time.sleep(300)  # Check every 5 minutes
+
+# Start background migration checker
+threading.Thread(target=check_migrations_background, daemon=True).start()
+```
+
+**Admin Endpoint** (For manual control):
+```python
+# Add to admin routes
+@app.get("/admin/migrations/status")
+def migration_status():
+    """Get current migration status"""
+    migration_manager = MigrationManager()
+    return {
+        "current_version": migration_manager.get_current_version(),
+        "pending_migrations": migration_manager.get_pending_migrations(),
+        "last_migration_date": migration_manager.get_last_migration_date()
+    }
+
+@app.post("/admin/migrations/apply")  
+def apply_migrations():
+    """Manually trigger migrations"""
+    migration_manager = MigrationManager()
+    result = migration_manager.auto_migrate_on_startup()
+    return {"success": True, "migrations_applied": result}
+```
+
 ## Benefits
 
 ### ✅ **User Experience**
@@ -142,6 +225,7 @@ def migrate_with_session_preservation():
 - User accounts never disappear
 - Seamless upgrade experience
 - Preserved user sessions and preferences
+- **Zero-downtime deployments**: Migrations happen automatically without service interruption
 
 ### ✅ **Data Safety**
 - Zero data loss during normal upgrades
@@ -154,6 +238,9 @@ def migrate_with_session_preservation():
 - Better upgrade reliability
 - Detailed migration logging
 - Granular rollback capabilities
+- **Automatic migration detection**: No manual intervention required
+- **Self-healing deployments**: Database automatically stays up-to-date
+- **Admin visibility**: Migration status and manual control endpoints
 
 ## Testing Strategy
 
@@ -174,6 +261,13 @@ def migrate_with_session_preservation():
 - User experience during upgrades
 - Session continuity testing
 - Data integrity validation
+
+### 4. Automatic Migration Testing
+- **Startup migration testing**: Verify migrations run correctly on app start
+- **Multiple restart scenarios**: Test repeated startups don't re-run migrations
+- **Failure recovery testing**: Ensure failed migrations don't prevent app startup
+- **Background monitoring testing**: Verify migration detection works correctly
+- **Admin endpoint testing**: Test manual migration triggers and status endpoints
 
 ## Rollout Plan
 
