@@ -17,7 +17,7 @@ def get_archive_service():
 
 @router.get("/user/{user_id}/download")
 async def download_user_archive(
-    user_id: int, 
+    user_id: str, 
     include_community: bool = True,
     current_session_user = Depends(require_full_auth)
 ):
@@ -47,7 +47,7 @@ async def download_user_archive(
 
 @router.get("/user/{user_id}/metadata")
 async def get_user_archive_metadata(
-    user_id: int,
+    user_id: str,
     current_session_user = Depends(require_full_auth)
 ):
     """Get metadata about user's available archives"""
@@ -103,7 +103,7 @@ async def download_community_archive(
 
 @router.get("/prayer/{prayer_id}/file")
 async def get_prayer_archive_file(
-    prayer_id: int,
+    prayer_id: str,
     current_session_user = Depends(require_full_auth)
 ):
     """Get direct link to prayer's text archive file"""

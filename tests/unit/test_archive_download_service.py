@@ -79,95 +79,100 @@ June 15 2024
         return ArchiveDownloadService(temp_archive_dir)
     
     @pytest.fixture
-    def test_data(self, temp_archive_dir):
+    def test_data(self, temp_archive_dir, test_session):
         """Create test data in database."""
         test_id = uuid.uuid4().hex[:8]
         user1_id = f"test_user_1_{test_id}"
         user2_id = f"test_user_2_{test_id}"
         prayer1_id = f"prayer_1_{test_id}"
         
-        with Session(engine) as session:
-            # Create test users
-            user1 = User(
-                id=user1_id,
-                display_name="TestUser",
-                created_at=datetime(2024, 6, 1, 9, 15),
-                text_file_path=str(Path(temp_archive_dir) / "users" / "2024_06_users.txt")
-            )
-            user2 = User(
-                id=user2_id,
-                display_name="AnotherUser",
-                created_at=datetime(2024, 6, 3, 14, 22),
-                text_file_path=str(Path(temp_archive_dir) / "users" / "2024_06_users.txt")
-            )
-            
-            # Create test prayer
-            prayer1 = Prayer(
-                id=prayer1_id,
-                author_id=user1_id,
-                text="Please pray for my health recovery.",
-                generated_prayer="Heavenly Father, we lift up TestUser and ask for your healing touch...",
-                project_tag="healing",
-                created_at=datetime(2024, 6, 15, 10, 30),
-                text_file_path=str(Path(temp_archive_dir) / "prayers" / "2024" / "06" / "2024_06_15_prayer_at_1030.txt")
-            )
-            
-            # Create prayer mark
-            mark1 = PrayerMark(
-                user_id=user2_id,
-                prayer_id=prayer1_id,
-                created_at=datetime(2024, 6, 15, 14, 30),
-                text_file_path=str(Path(temp_archive_dir) / "prayers" / "2024" / "06" / "2024_06_15_prayer_at_1030.txt")
-            )
-            
-            session.add_all([user1, user2, prayer1, mark1])
-            session.commit()
-            
-            yield {
-                "user1_id": user1_id,
-                "user2_id": user2_id,
-                "prayer1_id": prayer1_id,
-                "user1": user1,
-                "user2": user2,
-                "prayer1": prayer1
-            }
-            
-            # Cleanup
-            session.delete(mark1)
-            session.delete(prayer1)
-            session.delete(user2)
-            session.delete(user1)
-            session.commit()
+        session = test_session
+        # Create test users
+        user1 = User(
+            id=user1_id,
+            display_name="TestUser",
+            created_at=datetime(2024, 6, 1, 9, 15),
+            text_file_path=str(Path(temp_archive_dir) / "users" / "2024_06_users.txt")
+        )
+        user2 = User(
+            id=user2_id,
+            display_name="AnotherUser",
+            created_at=datetime(2024, 6, 3, 14, 22),
+            text_file_path=str(Path(temp_archive_dir) / "users" / "2024_06_users.txt")
+        )
+        
+        # Create test prayer
+        prayer1 = Prayer(
+            id=prayer1_id,
+            author_id=user1_id,
+            text="Please pray for my health recovery.",
+            generated_prayer="Heavenly Father, we lift up TestUser and ask for your healing touch...",
+            project_tag="healing",
+            created_at=datetime(2024, 6, 15, 10, 30),
+            text_file_path=str(Path(temp_archive_dir) / "prayers" / "2024" / "06" / "2024_06_15_prayer_at_1030.txt")
+        )
+        
+        # Create prayer mark
+        mark1 = PrayerMark(
+            user_id=user2_id,
+            prayer_id=prayer1_id,
+            created_at=datetime(2024, 6, 15, 14, 30),
+            text_file_path=str(Path(temp_archive_dir) / "prayers" / "2024" / "06" / "2024_06_15_prayer_at_1030.txt")
+        )
+        
+        session.add_all([user1, user2, prayer1, mark1])
+        session.commit()
+        
+        yield {
+            "user1_id": user1_id,
+            "user2_id": user2_id,
+            "prayer1_id": prayer1_id,
+            "user1": user1,
+            "user2": user2,
+            "prayer1": prayer1
+        }
     
-    def test_get_user_archive_metadata(self, archive_service, test_data):
+    def test_get_user_archive_metadata(self, archive_service, test_data, test_session):
         """Test getting user archive metadata."""
         user1_id = test_data["user1_id"]
         
-        metadata = archive_service.get_user_archive_metadata(user1_id)
+        # Mock the Session to use test_session
+        def mock_session_context_manager(engine_arg):
+            return test_session
         
-        # Validate metadata structure
-        assert "user" in metadata
-        assert "prayers" in metadata
-        assert "activities" in metadata
-        assert "archive_statistics" in metadata
-        
-        # Validate user info
-        user_info = metadata["user"]
-        assert user_info["id"] == user1_id
-        assert user_info["display_name"] == "TestUser"
-        assert "users/2024_06_users.txt" in user_info["text_file_path"]
-        
-        # Validate statistics
-        stats = metadata["archive_statistics"]
-        assert stats["total_prayers"] == 1
-        assert stats["total_activities"] == 0  # User1 has no prayer marks
-        assert stats["date_range"]["earliest"] is not None
-        assert stats["date_range"]["latest"] is not None
+        from unittest.mock import patch
+        with patch('app_helpers.services.archive_download_service.Session', mock_session_context_manager):
+            metadata = archive_service.get_user_archive_metadata(user1_id)
+            
+            # Validate metadata structure
+            assert "user" in metadata
+            assert "prayers" in metadata
+            assert "activities" in metadata
+            assert "archive_statistics" in metadata
+            
+            # Validate user info
+            user_info = metadata["user"]
+            assert user_info["id"] == user1_id
+            assert user_info["display_name"] == "TestUser"
+            assert "users/2024_06_users.txt" in user_info["text_file_path"]
+            
+            # Validate statistics
+            stats = metadata["archive_statistics"]
+            assert stats["total_prayers"] == 1
+            assert stats["total_activities"] == 0  # User1 has no prayer marks
+            assert stats["date_range"]["earliest"] is not None
+            assert stats["date_range"]["latest"] is not None
     
-    def test_get_user_archive_metadata_nonexistent_user(self, archive_service):
+    def test_get_user_archive_metadata_nonexistent_user(self, archive_service, test_session):
         """Test getting metadata for nonexistent user."""
-        with pytest.raises(ValueError, match="User 99999 not found"):
-            archive_service.get_user_archive_metadata(99999)
+        # Mock the Session to use test_session
+        def mock_session_context_manager(engine_arg):
+            return test_session
+        
+        from unittest.mock import patch
+        with patch('app_helpers.services.archive_download_service.Session', mock_session_context_manager):
+            with pytest.raises(ValueError, match="User 99999 not found"):
+                archive_service.get_user_archive_metadata("99999")
     
     def test_list_community_archives(self, archive_service):
         """Test listing all community archive files."""
@@ -193,62 +198,74 @@ June 15 2024
         assert len(activity_archives) >= 1
         assert "2024_06" in activity_archives[0]["period"]
     
-    def test_create_user_archive_zip_personal_only(self, archive_service, test_data, temp_archive_dir):
+    def test_create_user_archive_zip_personal_only(self, archive_service, test_data, temp_archive_dir, test_session):
         """Test creating user archive ZIP with personal data only."""
         user1_id = test_data["user1_id"]
         
-        zip_path = archive_service.create_user_archive_zip(user1_id, include_community=False)
+        # Mock the Session to use test_session
+        def mock_session_context_manager(engine_arg):
+            return test_session
         
-        # Verify ZIP file was created
-        assert os.path.exists(zip_path)
-        assert zip_path.endswith(".zip")
-        
-        # Verify ZIP contents
-        with zipfile.ZipFile(zip_path, 'r') as zf:
-            file_list = zf.namelist()
+        from unittest.mock import patch
+        with patch('app_helpers.services.archive_download_service.Session', mock_session_context_manager):
+            zip_path = archive_service.create_user_archive_zip(user1_id, include_community=False)
             
-            # Should contain personal directories
-            personal_files = [f for f in file_list if "personal/" in f]
-            prayer_files = [f for f in file_list if "prayers/" in f]
-            activity_files = [f for f in file_list if "activities/" in f]
+            # Verify ZIP file was created
+            assert os.path.exists(zip_path)
+            assert zip_path.endswith(".zip")
             
-            assert len(personal_files) >= 1
-            assert len(prayer_files) >= 1
-            assert len(activity_files) >= 1
+            # Verify ZIP contents
+            with zipfile.ZipFile(zip_path, 'r') as zf:
+                file_list = zf.namelist()
+                
+                # Should contain personal directories
+                personal_files = [f for f in file_list if "personal/" in f]
+                prayer_files = [f for f in file_list if "prayers/" in f]
+                activity_files = [f for f in file_list if "activities/" in f]
+                
+                assert len(personal_files) >= 1
+                assert len(prayer_files) >= 1
+                assert len(activity_files) >= 1
+                
+                # Should NOT contain community directories (since include_community=False)
+                community_files = [f for f in file_list if "community/" in f]
+                assert len(community_files) == 0
             
-            # Should NOT contain community directories (since include_community=False)
-            community_files = [f for f in file_list if "community/" in f]
-            assert len(community_files) == 0
-        
-        # Cleanup
-        os.unlink(zip_path)
+            # Cleanup
+            os.unlink(zip_path)
     
-    def test_create_user_archive_zip_with_community(self, archive_service, test_data, temp_archive_dir):
+    def test_create_user_archive_zip_with_community(self, archive_service, test_data, temp_archive_dir, test_session):
         """Test creating user archive ZIP with community data."""
         user1_id = test_data["user1_id"]
         
-        zip_path = archive_service.create_user_archive_zip(user1_id, include_community=True)
+        # Mock the Session to use test_session
+        def mock_session_context_manager(engine_arg):
+            return test_session
         
-        # Verify ZIP file was created
-        assert os.path.exists(zip_path)
-        
-        # Verify ZIP contents include community data
-        with zipfile.ZipFile(zip_path, 'r') as zf:
-            file_list = zf.namelist()
+        from unittest.mock import patch
+        with patch('app_helpers.services.archive_download_service.Session', mock_session_context_manager):
+            zip_path = archive_service.create_user_archive_zip(user1_id, include_community=True)
             
-            # Should contain community directories
-            community_files = [f for f in file_list if "community/" in f]
-            assert len(community_files) > 0
+            # Verify ZIP file was created
+            assert os.path.exists(zip_path)
             
-            # Should contain community activity and user files
-            community_activity = [f for f in file_list if "community/activity/" in f]
-            community_users = [f for f in file_list if "community/users/" in f]
+            # Verify ZIP contents include community data
+            with zipfile.ZipFile(zip_path, 'r') as zf:
+                file_list = zf.namelist()
+                
+                # Should contain community directories
+                community_files = [f for f in file_list if "community/" in f]
+                assert len(community_files) > 0
+                
+                # Should contain community activity and user files
+                community_activity = [f for f in file_list if "community/activity/" in f]
+                community_users = [f for f in file_list if "community/users/" in f]
+                
+                assert len(community_activity) >= 1
+                assert len(community_users) >= 1
             
-            assert len(community_activity) >= 1
-            assert len(community_users) >= 1
-        
-        # Cleanup
-        os.unlink(zip_path)
+            # Cleanup
+            os.unlink(zip_path)
     
     def test_create_full_community_zip(self, archive_service, temp_archive_dir):
         """Test creating complete community archive ZIP."""
@@ -314,13 +331,12 @@ June 15 2024
         assert "Registration" in registration_info
         assert "2024" in registration_info
     
-    def test_create_user_activity_summary(self, archive_service, test_data):
+    def test_create_user_activity_summary(self, archive_service, test_data, test_session):
         """Test creating user activity summary."""
         user = test_data["user1"]
         
         # Get prayer marks for user2 (who marked user1's prayer)
-        with Session(engine) as session:
-            user2_marks = session.query(PrayerMark).filter_by(user_id=test_data["user2_id"]).all()
+        user2_marks = test_session.query(PrayerMark).filter_by(user_id=test_data["user2_id"]).all()
         
         summary = archive_service._create_user_activity_summary(test_data["user2"], user2_marks)
         

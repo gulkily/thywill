@@ -207,23 +207,28 @@ June 17 2024
             "marks": [mark1, mark2, mark3, mark4]
         }
     
-    def test_complete_user_archive_workflow(self, integration_test_data):
+    def test_complete_user_archive_workflow(self, integration_test_data, test_session):
         """Test complete user archive creation workflow."""
         data = integration_test_data
         user1 = data["users"]["user1"]
         
-        # Test with actual service
-        service = ArchiveDownloadService(data["archive_dir"])
+        # Mock the Session to use test_session
+        def mock_session_context_manager(engine_arg):
+            return test_session
         
-        # Get metadata first
-        metadata = service.get_user_archive_metadata(user1.id)
-        
-        assert metadata["user"]["display_name"] == "IntegrationUser"
-        assert metadata["archive_statistics"]["total_prayers"] == 1  # User1 authored 1 prayer
-        assert metadata["archive_statistics"]["total_activities"] == 1  # User1 prayed for 1 prayer
-        
-        # Create personal archive
-        zip_path = service.create_user_archive_zip(user1.id, include_community=False)
+        with patch('app_helpers.services.archive_download_service.Session', mock_session_context_manager):
+            # Test with actual service
+            service = ArchiveDownloadService(data["archive_dir"])
+            
+            # Get metadata first
+            metadata = service.get_user_archive_metadata(user1.id)
+            
+            assert metadata["user"]["display_name"] == "IntegrationUser"
+            assert metadata["archive_statistics"]["total_prayers"] == 1  # User1 authored 1 prayer
+            assert metadata["archive_statistics"]["total_activities"] == 1  # User1 prayed for 1 prayer
+            
+            # Create personal archive
+            zip_path = service.create_user_archive_zip(user1.id, include_community=False)
         
         assert os.path.exists(zip_path)
         
@@ -240,8 +245,8 @@ June 17 2024
             assert len(prayer_files) >= 1
             assert len(activity_files) >= 1
             
-            # Verify prayer content
-            prayer_files_in_zip = [f for f in file_list if f.endswith("prayer_" + data["prayers"]["prayer1"].id.split("_")[1] + "_2024_06_15.txt")]
+            # Verify prayer content - look for the actual prayer file pattern
+            prayer_files_in_zip = [f for f in file_list if f.endswith("_2024_06_15.txt") and "prayers/" in f]
             assert len(prayer_files_in_zip) == 1
             
             with zf.open(prayer_files_in_zip[0]) as prayer_file:
@@ -314,7 +319,7 @@ June 17 2024
         # Cleanup
         os.unlink(zip_path)
     
-    def test_api_integration_workflow(self, integration_test_data):
+    def test_api_integration_workflow(self, integration_test_data, test_session):
         """Test complete API workflow integration."""
         data = integration_test_data
         user1 = data["users"]["user1"]
@@ -330,43 +335,60 @@ June 17 2024
         mock_session = Mock()
         mock_session.is_fully_authenticated = True
         
+        # Mock the Session to use test_session
+        def mock_session_context_manager(engine_arg):
+            return test_session
+        
         with patch('app.TEXT_ARCHIVE_BASE_DIR', data["archive_dir"]):
-            with patch('app_helpers.routes.archive_routes.require_full_auth') as mock_auth:
-                mock_auth.return_value = (mock_user, mock_session)
-                
-                # Test metadata endpoint
-                response = client.get(f"/api/archive/user/{user1.id}/metadata")
-                assert response.status_code == 200
-                
-                metadata = response.json()
-                assert metadata["user"]["display_name"] == "IntegrationUser"
-                assert metadata["archive_statistics"]["total_prayers"] == 1
-                
-                # Test community list endpoint
-                response = client.get("/api/archive/community/list")
-                assert response.status_code == 200
-                
-                archives = response.json()["archives"]
-                assert len(archives) >= 3
-                
-                # Test prayer file download
-                response = client.get(f"/api/archive/prayer/{prayer1.id}/file")
-                assert response.status_code == 200
-                assert response.headers["content-type"] == "text/plain; charset=utf-8"
-                
-                content = response.content.decode('utf-8')
-                assert "Please pray for my recovery from illness" in content
-                assert "IntegrationUser" in content
-                
-                # Test user archive download
-                response = client.get(f"/api/archive/user/{user1.id}/download")
-                assert response.status_code == 200
-                assert response.headers["content-type"] == "application/zip"
-                
-                # Test community archive download
-                response = client.get("/api/archive/community/download")
-                assert response.status_code == 200
-                assert response.headers["content-type"] == "application/zip"
+            with patch('app_helpers.services.archive_download_service.Session', mock_session_context_manager):
+                with patch('app_helpers.routes.archive_routes.Session', mock_session_context_manager):
+                    from app_helpers.routes.archive_routes import require_full_auth
+                    
+                    # Override the dependency
+                    def override_require_full_auth():
+                        return mock_user, mock_session
+                    
+                    app.dependency_overrides[require_full_auth] = override_require_full_auth
+                    
+                    try:
+                        # Test metadata endpoint
+                        response = client.get(f"/api/archive/user/{user1.id}/metadata")
+                        assert response.status_code == 200
+                        
+                        metadata = response.json()
+                        assert metadata["user"]["display_name"] == "IntegrationUser"
+                        assert metadata["archive_statistics"]["total_prayers"] == 1
+                        
+                        # Test community list endpoint
+                        response = client.get("/api/archive/community/list")
+                        assert response.status_code == 200
+                        
+                        archives = response.json()["archives"]
+                        assert len(archives) >= 3
+                        
+                        # Test prayer file download
+                        response = client.get(f"/api/archive/prayer/{prayer1.id}/file")
+                        assert response.status_code == 200
+                        assert response.headers["content-type"] == "text/plain; charset=utf-8"
+                        
+                        content = response.content.decode('utf-8')
+                        assert "Please pray for my recovery from illness" in content
+                        assert "IntegrationUser" in content
+                        
+                        # Test user archive download
+                        response = client.get(f"/api/archive/user/{user1.id}/download")
+                        assert response.status_code == 200
+                        assert response.headers["content-type"] == "application/zip"
+                        
+                        # Test community archive download
+                        response = client.get("/api/archive/community/download")
+                        assert response.status_code == 200
+                        assert response.headers["content-type"] == "application/zip"
+                    
+                    finally:
+                        # Clean up the override
+                        if require_full_auth in app.dependency_overrides:
+                            del app.dependency_overrides[require_full_auth]
     
     def test_large_archive_performance(self, integration_test_data):
         """Test performance with larger archive sets."""
@@ -445,57 +467,63 @@ June {17+i} 2024 at 15:00 - TestUser{(i+1)%3 + 1} prayed this prayer
         # Cleanup
         recent_file.unlink()
     
-    def test_archive_consistency_validation(self, integration_test_data):
+    def test_archive_consistency_validation(self, integration_test_data, test_session):
         """Test that archives maintain data consistency."""
         data = integration_test_data
-        service = ArchiveDownloadService(data["archive_dir"])
         user1 = data["users"]["user1"]
         
-        # Create user archive
-        zip_path = service.create_user_archive_zip(user1.id, include_community=True)
+        # Mock the Session to use test_session
+        def mock_session_context_manager(engine_arg):
+            return test_session
         
-        # Extract and validate contents
-        extract_dir = Path(zip_path).parent / "extracted"
-        extract_dir.mkdir(exist_ok=True)
-        
-        with zipfile.ZipFile(zip_path, 'r') as zf:
-            zf.extractall(extract_dir)
-        
-        # Verify user data consistency
-        user_archive_dir = extract_dir / f"{user1.display_name}_text_archive"
-        assert user_archive_dir.exists()
-        
-        # Check personal directory
-        personal_dir = user_archive_dir / "personal"
-        assert personal_dir.exists()
-        
-        registration_file = personal_dir / "registration.txt"
-        if registration_file.exists():
-            registration_content = registration_file.read_text()
-            assert user1.display_name in registration_content
-        
-        # Check prayers directory
-        prayers_dir = user_archive_dir / "prayers"
-        assert prayers_dir.exists()
-        
-        prayer_files = list(prayers_dir.glob("*.txt"))
-        assert len(prayer_files) >= 1
-        
-        # Verify prayer content matches database
-        prayer_content = prayer_files[0].read_text()
-        assert "Please pray for my recovery from illness" in prayer_content
-        
-        # Check activities directory
-        activities_dir = user_archive_dir / "activities"
-        assert activities_dir.exists()
-        
-        activity_file = activities_dir / "my_prayer_activities.txt"
-        assert activity_file.exists()
-        
-        activity_content = activity_file.read_text()
-        assert user1.display_name in activity_content
-        
-        # Cleanup
-        import shutil
-        shutil.rmtree(extract_dir)
-        os.unlink(zip_path)
+        with patch('app_helpers.services.archive_download_service.Session', mock_session_context_manager):
+            service = ArchiveDownloadService(data["archive_dir"])
+            
+            # Create user archive
+            zip_path = service.create_user_archive_zip(user1.id, include_community=True)
+            
+            # Extract and validate contents
+            extract_dir = Path(zip_path).parent / "extracted"
+            extract_dir.mkdir(exist_ok=True)
+            
+            with zipfile.ZipFile(zip_path, 'r') as zf:
+                zf.extractall(extract_dir)
+            
+            # Verify user data consistency
+            user_archive_dir = extract_dir / f"{user1.display_name}_text_archive"
+            assert user_archive_dir.exists()
+            
+            # Check personal directory
+            personal_dir = user_archive_dir / "personal"
+            assert personal_dir.exists()
+            
+            registration_file = personal_dir / "registration.txt"
+            if registration_file.exists():
+                registration_content = registration_file.read_text()
+                assert user1.display_name in registration_content
+            
+            # Check prayers directory
+            prayers_dir = user_archive_dir / "prayers"
+            assert prayers_dir.exists()
+            
+            prayer_files = list(prayers_dir.glob("*.txt"))
+            assert len(prayer_files) >= 1
+            
+            # Verify prayer content matches database
+            prayer_content = prayer_files[0].read_text()
+            assert "Please pray for my recovery from illness" in prayer_content
+            
+            # Check activities directory
+            activities_dir = user_archive_dir / "activities"
+            assert activities_dir.exists()
+            
+            activity_file = activities_dir / "my_prayer_activities.txt"
+            assert activity_file.exists()
+            
+            activity_content = activity_file.read_text()
+            assert user1.display_name in activity_content
+            
+            # Cleanup
+            import shutil
+            shutil.rmtree(extract_dir)
+            os.unlink(zip_path)

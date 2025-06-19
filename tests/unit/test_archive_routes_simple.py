@@ -61,73 +61,78 @@ June 15 2024 at 14:30 - AnotherUser prayed this prayer
             yield str(archive_dir)
     
     @pytest.fixture
-    def test_user_data(self, temp_archive_setup):
+    def test_user_data(self, temp_archive_setup, test_session):
         """Create test user data."""
         test_user_id = "test_user_123"
         
-        with Session(engine) as session:
-            user = User(
-                id=test_user_id,
-                display_name="TestUser",
-                created_at=datetime(2024, 6, 1, 9, 15),
-                text_file_path=str(Path(temp_archive_setup) / "users" / "2024_06_users.txt")
-            )
-            
-            prayer = Prayer(
-                id="prayer_123",
-                author_id=test_user_id,
-                text="Test prayer content",
-                generated_prayer="Test generated prayer",
-                created_at=datetime(2024, 6, 15, 10, 30),
-                text_file_path=str(Path(temp_archive_setup) / "prayers" / "2024" / "06" / "test_prayer.txt")
-            )
-            
-            session.add_all([user, prayer])
-            session.commit()
-            
-            yield {"user": user, "prayer": prayer, "archive_dir": temp_archive_setup}
-            
-            # Cleanup
-            session.delete(prayer)
-            session.delete(user)
-            session.commit()
+        user = User(
+            id=test_user_id,
+            display_name="TestUser",
+            created_at=datetime(2024, 6, 1, 9, 15),
+            text_file_path=str(Path(temp_archive_setup) / "users" / "2024_06_users.txt")
+        )
+        
+        prayer = Prayer(
+            id="prayer_123",
+            author_id=test_user_id,
+            text="Test prayer content",
+            generated_prayer="Test generated prayer",
+            created_at=datetime(2024, 6, 15, 10, 30),
+            text_file_path=str(Path(temp_archive_setup) / "prayers" / "2024" / "06" / "test_prayer.txt")
+        )
+        
+        test_session.add_all([user, prayer])
+        test_session.commit()
+        
+        yield {"user": user, "prayer": prayer, "archive_dir": temp_archive_setup}
     
-    def test_archive_service_user_metadata(self, test_user_data):
+    def test_archive_service_user_metadata(self, test_user_data, test_session):
         """Test getting user archive metadata through service."""
         data = test_user_data
-        service = ArchiveDownloadService(data["archive_dir"])
         
-        metadata = service.get_user_archive_metadata(data["user"].id)
+        # Mock the Session to use test_session
+        def mock_session_context_manager(engine_arg):
+            return test_session
         
-        assert metadata["user"]["display_name"] == "TestUser"
-        assert metadata["archive_statistics"]["total_prayers"] == 1
-        assert len(metadata["prayers"]) == 1
-        assert metadata["prayers"][0]["id"] == "prayer_123"
+        with patch('app_helpers.services.archive_download_service.Session', mock_session_context_manager):
+            service = ArchiveDownloadService(data["archive_dir"])
+            metadata = service.get_user_archive_metadata(data["user"].id)
+            
+            assert metadata["user"]["display_name"] == "TestUser"
+            assert metadata["archive_statistics"]["total_prayers"] == 1
+            assert len(metadata["prayers"]) == 1
+            assert metadata["prayers"][0]["id"] == "prayer_123"
     
-    def test_archive_service_user_zip_creation(self, test_user_data):
+    def test_archive_service_user_zip_creation(self, test_user_data, test_session):
         """Test creating user archive ZIP through service."""
         data = test_user_data
-        service = ArchiveDownloadService(data["archive_dir"])
         
-        # Test personal archive creation
-        zip_path = service.create_user_archive_zip(data["user"].id, include_community=False)
+        # Mock the Session to use test_session
+        def mock_session_context_manager(engine_arg):
+            return test_session
         
-        assert Path(zip_path).exists()
-        assert zip_path.endswith(".zip")
-        
-        # Verify ZIP contents
-        with zipfile.ZipFile(zip_path, 'r') as zf:
-            file_list = zf.namelist()
+        with patch('app_helpers.services.archive_download_service.Session', mock_session_context_manager):
+            service = ArchiveDownloadService(data["archive_dir"])
             
-            # Should contain user's data
-            personal_files = [f for f in file_list if "personal/" in f]
-            prayer_files = [f for f in file_list if "prayers/" in f]
+            # Test personal archive creation
+            zip_path = service.create_user_archive_zip(data["user"].id, include_community=False)
             
-            assert len(personal_files) >= 1
-            assert len(prayer_files) >= 1
-        
-        # Cleanup
-        Path(zip_path).unlink()
+            assert Path(zip_path).exists()
+            assert zip_path.endswith(".zip")
+            
+            # Verify ZIP contents
+            with zipfile.ZipFile(zip_path, 'r') as zf:
+                file_list = zf.namelist()
+                
+                # Should contain user's data
+                personal_files = [f for f in file_list if "personal/" in f]
+                prayer_files = [f for f in file_list if "prayers/" in f]
+                
+                assert len(personal_files) >= 1
+                assert len(prayer_files) >= 1
+            
+            # Cleanup
+            Path(zip_path).unlink()
     
     def test_archive_service_community_zip_creation(self, test_user_data):
         """Test creating community archive ZIP through service."""
@@ -191,17 +196,22 @@ June 15 2024 at 14:30 - AnotherUser prayed this prayer
         assert prayer_archives[0]["file_count"] >= 1
         assert not prayer_archives[0]["compressed"]
     
-    def test_archive_service_error_handling(self, temp_archive_setup):
+    def test_archive_service_error_handling(self, temp_archive_setup, test_session):
         """Test service error handling."""
-        service = ArchiveDownloadService(temp_archive_setup)
+        # Mock the Session to use test_session
+        def mock_session_context_manager(engine_arg):
+            return test_session
         
-        # Test nonexistent user
-        with pytest.raises(ValueError, match="User 99999 not found"):
-            service.get_user_archive_metadata(99999)
-        
-        # Test nonexistent file
-        with pytest.raises(FileNotFoundError):
-            service._read_archive_file("/nonexistent/file.txt")
+        with patch('app_helpers.services.archive_download_service.Session', mock_session_context_manager):
+            service = ArchiveDownloadService(temp_archive_setup)
+            
+            # Test nonexistent user
+            with pytest.raises(ValueError, match="User 99999 not found"):
+                service.get_user_archive_metadata("99999")
+            
+            # Test nonexistent file
+            with pytest.raises(FileNotFoundError):
+                service._read_archive_file("/nonexistent/file.txt")
     
     def test_archive_service_file_operations(self, temp_archive_setup):
         """Test archive service file operations."""
