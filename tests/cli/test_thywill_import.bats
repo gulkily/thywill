@@ -71,7 +71,7 @@ teardown() {
 }
 
 @test "thywill import community requires project directory" {
-    rm -f models.py thywill.db
+    rm -f ./models.py ./thywill.db
     run ./thywill import community sample_export.zip
     [ "$status" -eq 1 ]
     [[ "$output" == *"Must run from ThyWill project directory"* ]]
@@ -113,7 +113,7 @@ teardown() {
 }
 
 @test "thywill import prayers requires project directory" {
-    rm -f models.py thywill.db
+    rm -f ./models.py ./thywill.db
     run ./thywill import prayers sample_prayers.json
     [ "$status" -eq 1 ]
     [[ "$output" == *"Must run from ThyWill project directory"* ]]

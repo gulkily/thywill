@@ -23,8 +23,8 @@ teardown() {
 }
 
 @test "thywill admin list fails when not in project directory" {
-    # Remove models.py to simulate wrong directory
-    rm -f models.py thywill.db
+    # Remove models.py to simulate wrong directory (SAFE: only in test dir)
+    rm -f ./models.py ./thywill.db
     run ./thywill admin list
     [ "$status" -eq 1 ]
     [[ "$output" == *"Must run from ThyWill project directory"* ]]
@@ -117,7 +117,7 @@ teardown() {
 }
 
 @test "thywill admin commands require project directory" {
-    rm -f models.py thywill.db
+    rm -f ./models.py ./thywill.db
     
     run ./thywill admin grant "Test User"
     [ "$status" -eq 1 ]
