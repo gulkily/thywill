@@ -11,6 +11,12 @@ setup_test_environment() {
     # Save original directory
     export ORIG_DIR="$PWD"
     
+    # SAFETY CHECK: Ensure we don't accidentally delete main database
+    if [[ "$PWD" == *"/thywill" ]] && [[ -f "thywill.db" ]] && [[ ! "$PWD" == "/tmp/"* ]]; then
+        echo "ERROR: Test setup detected main project directory. Aborting to protect database."
+        exit 1
+    fi
+    
     # Change to test directory
     cd "$TEST_DIR"
     

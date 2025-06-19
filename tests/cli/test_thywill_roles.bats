@@ -24,7 +24,7 @@ teardown() {
 }
 
 @test "thywill role list requires project directory" {
-    rm -f models.py thywill.db
+    rm -f ./models.py ./thywill.db
     run ./thywill role list
     [ "$status" -eq 1 ]
     [[ "$output" == *"Must run from ThyWill project directory"* ]]
@@ -114,14 +114,14 @@ teardown() {
 }
 
 @test "thywill role grant requires project directory" {
-    rm -f models.py thywill.db
+    rm -f ./models.py ./thywill.db
     run ./thywill role grant "Test User" moderator
     [ "$status" -eq 1 ]
     [[ "$output" == *"Must run from ThyWill project directory"* ]]
 }
 
 @test "thywill role revoke requires project directory" {
-    rm -f models.py thywill.db
+    rm -f ./models.py ./thywill.db
     run ./thywill role revoke "Test User" moderator
     [ "$status" -eq 1 ]
     [[ "$output" == *"Must run from ThyWill project directory"* ]]
