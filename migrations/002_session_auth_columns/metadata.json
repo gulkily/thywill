@@ -1,0 +1,9 @@
+{
+    "migration_id": "002_session_auth_columns",
+    "description": "Add authentication and device tracking columns to session table",
+    "depends_on": ["001_initial_schema"],
+    "estimated_duration_seconds": 2,
+    "requires_maintenance_mode": false,
+    "data_size_threshold_mb": 10,
+    "affected_tables": ["session"]
+}

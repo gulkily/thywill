@@ -124,6 +124,83 @@ list_backups() {
     fi
 }
 
+migration_safe_restore() {
+    local backup_file="$1"
+    
+    if [ ! -f "$backup_file" ]; then
+        error "Backup file not found: $backup_file"
+        return 1
+    fi
+    
+    # Verify backup integrity before restore
+    if ! sqlite3 "$backup_file" "PRAGMA integrity_check;" | grep -q "ok"; then
+        error "Backup file is corrupted: $backup_file"
+        return 1
+    fi
+    
+    # Verify checksum if available
+    if [ -f "${backup_file}.sha256" ]; then
+        if ! sha256sum -c "${backup_file}.sha256" > /dev/null 2>&1; then
+            error "Backup checksum verification failed: $backup_file"
+            return 1
+        fi
+        info "Backup checksum verified"
+    fi
+    
+    info "Migration-safe restore preserves user data and sessions during schema changes"
+    warning "This will restore the database but may require migration adjustments"
+    read -p "Are you sure you want to restore from $backup_file? (y/N): " -n 1 -r
+    echo
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        # Create a backup of current database before restore
+        local pre_restore_backup="${BACKUP_DIR}/pre_restore_$(date +%Y%m%d_%H%M%S).db"
+        cp "$DB_PATH" "$pre_restore_backup"
+        info "Current database backed up to: $pre_restore_backup"
+        
+        # Get current migration status
+        cd /home/thywill/thywill
+        info "Checking current migration status..."
+        ./thywill migrate status > /tmp/pre_restore_migrations.log 2>&1
+        
+        # Stop service before restore
+        sudo systemctl stop thywill
+        
+        # Restore database
+        cp "$backup_file" "$DB_PATH"
+        
+        # Check if restored database needs migrations
+        info "Checking restored database migration status..."
+        ./thywill migrate status > /tmp/post_restore_migrations.log 2>&1
+        
+        # Apply any pending migrations to bring restored database up to current schema
+        info "Applying any required migrations to restored database..."
+        if ./thywill migrate new >> /tmp/restore_migrations.log 2>&1; then
+            success "Migration updates applied successfully"
+        else
+            warning "Some migrations failed - check /tmp/restore_migrations.log"
+            info "Service will attempt remaining migrations on startup"
+        fi
+        
+        # Start service
+        sudo systemctl start thywill
+        
+        success "Migration-safe restore completed from: $backup_file"
+        info "Previous database saved as: $pre_restore_backup"
+        info "Migration logs saved to: /tmp/restore_migrations.log"
+        
+        # Verify service started successfully
+        sleep 3
+        if curl -f -s http://127.0.0.1:8000/health > /dev/null 2>&1; then
+            success "Service health check passed after restore"
+        else
+            warning "Service health check failed - check application logs"
+        fi
+    else
+        info "Migration-safe restore cancelled"
+    fi
+}
+
 restore_backup() {
     local backup_file="$1"
     
@@ -197,20 +274,29 @@ case "${1:-}" in
         fi
         restore_backup "$2"
         ;;
+    "restore-safe")
+        if [ -z "${2:-}" ]; then
+            error "Please provide backup file path"
+            echo "Usage: $0 restore-safe /path/to/backup.db"
+            exit 1
+        fi
+        migration_safe_restore "$2"
+        ;;
     "cleanup")
         cleanup_backups
         ;;
     *)
         echo "ThyWill Backup Management Script"
-        echo "Usage: $0 {hourly|daily|weekly|list|restore|cleanup}"
+        echo "Usage: $0 {hourly|daily|weekly|list|restore|restore-safe|cleanup}"
         echo ""
         echo "Commands:"
-        echo "  hourly   - Create hourly backup"
-        echo "  daily    - Create daily backup"
-        echo "  weekly   - Create weekly backup"
-        echo "  list     - List all available backups"
-        echo "  restore  - Restore from backup file"
-        echo "  cleanup  - Clean up old backups"
+        echo "  hourly       - Create hourly backup"
+        echo "  daily        - Create daily backup"
+        echo "  weekly       - Create weekly backup"
+        echo "  list         - List all available backups"
+        echo "  restore      - Restore from backup file (traditional method)"
+        echo "  restore-safe - Migration-safe restore with schema updates"
+        echo "  cleanup      - Clean up old backups"
         echo ""
         echo "Examples:"
         echo "  $0 daily"

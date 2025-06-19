@@ -58,6 +58,7 @@ from app_helpers.services.invite_helpers import (
     get_invite_stats, _build_user_tree_node, _collect_descendants, _calculate_max_depth
 )
 from app_helpers.utils.database_helpers import migrate_database
+from app_helpers.utils.enhanced_migration import MigrationManager
 
 # ───────── Import extracted route modules ─────────
 from app_helpers.routes.auth_routes import router as auth_router
@@ -201,8 +202,45 @@ async def forbidden_exception_handler(request: Request, exc: HTTPException):
 # ───────── Startup: seed first invite ─────────
 @app.on_event("startup")
 def startup():
-    # Run database migration first
-    migrate_database()
+    # Run enhanced migrations first, with fallback to legacy migrations
+    try:
+        migration_manager = MigrationManager()
+        
+        # Check for migration lock from previous failed attempt
+        if migration_manager.is_migration_locked():
+            print("⚠️  Migration lock detected - checking for partial migrations...")
+            migration_manager.handle_partial_migration_recovery()
+        
+        # Resolve dependencies and check pending migrations
+        pending = migration_manager.get_pending_migrations()  # Returns in dependency order
+        if pending:
+            print(f"🔄 Applying {len(pending)} pending migrations...")
+            
+            # Check if any migration requires maintenance mode
+            for migration in pending:
+                if migration_manager.should_enable_maintenance_mode(migration):
+                    print(f"⚠️  Migration {migration['id']} requires maintenance mode - manual deployment needed")
+                    print("   Falling back to legacy migrations...")
+                    migrate_database()
+                    break
+            else:
+                # Apply migrations with locking
+                applied = migration_manager.auto_migrate_on_startup()
+                
+                # Validate final schema state
+                migration_manager.validate_schema_integrity()
+                if applied:
+                    print(f"✅ Enhanced migrations completed: {', '.join(applied)}")
+                else:
+                    print("✅ No migrations needed - database is up to date")
+        else:
+            print("✅ Database schema is up to date")
+            
+    except Exception as e:
+        print(f"❌ Enhanced migration failed: {e}")
+        print("   Falling back to legacy migrations...")
+        # Fallback to legacy migration system
+        migrate_database()
     
     # Then seed invite
     with Session(engine) as s:

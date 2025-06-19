@@ -81,10 +81,46 @@ cd "$APP_DIR"
 source venv/bin/activate
 pip install -r requirements.txt >> "$DEPLOY_LOG" 2>&1
 
-# Step 6: Run database migrations if any
-log "Step 6: Running database migrations..."
-# Add migration commands here if needed
-# python migrate.py
+# Step 6: Run enhanced database migrations
+log "Step 6: Running enhanced database migrations..."
+
+# Acquire migration lock and estimate migration time
+log "Checking pending migrations..."
+MIGRATION_OUTPUT=$(./thywill migrate status 2>&1)
+log "$MIGRATION_OUTPUT"
+
+# Check if any migrations require maintenance mode
+if echo "$MIGRATION_OUTPUT" | grep -q "Requires maintenance mode"; then
+    warning "Some migrations require maintenance mode"
+    log "Running migrations with service stopped..."
+    
+    # Run migrations while service is stopped
+    if ! ./thywill migrate new >> "$DEPLOY_LOG" 2>&1; then
+        error "Enhanced migrations failed! Attempting rollback..."
+        
+        # Try legacy migrations as fallback
+        log "Attempting legacy migration fallback..."
+        if ! ./thywill migrate legacy >> "$DEPLOY_LOG" 2>&1; then
+            error "Legacy migration fallback also failed!"
+            # The rollback process will handle database restoration
+            exit 1
+        else
+            success "Legacy migration fallback completed"
+        fi
+    else
+        success "Enhanced migrations completed successfully"
+    fi
+else
+    log "No maintenance mode required, migrations will run during startup"
+    # Migrations will be handled automatically by application startup
+    # But we can still run them here for immediate feedback
+    if ! ./thywill migrate new >> "$DEPLOY_LOG" 2>&1; then
+        warning "Enhanced migrations failed, will rely on startup migrations"
+        log "Service will attempt migrations during startup"
+    else
+        success "Enhanced migrations completed successfully"
+    fi
+fi
 
 # Step 7: Start service
 log "Step 7: Starting application service..."
@@ -112,8 +148,17 @@ if [ "$HEALTH_CHECK_PASSED" = false ]; then
     log "ROLLBACK: Stopping failed deployment..."
     sudo systemctl stop "$SERVICE_NAME"
     
-    log "ROLLBACK: Restoring database backup..."
-    cp "$BACKUP_PATH" "${APP_DIR}/thywill.db"
+    log "ROLLBACK: Attempting migration-based rollback first..."
+    cd "$APP_DIR"
+    
+    # Try migration rollback first
+    if ./thywill migrate rollback >> "$DEPLOY_LOG" 2>&1; then
+        success "ROLLBACK: Migration rollback completed"
+    else
+        warning "ROLLBACK: Migration rollback failed, using database file restore"
+        log "ROLLBACK: Restoring database backup..."
+        cp "$BACKUP_PATH" "${APP_DIR}/thywill.db"
+    fi
     
     log "ROLLBACK: Restoring code snapshot..."
     rsync -av --delete "$CODE_BACKUP_DIR/" "$APP_DIR/" >> "$DEPLOY_LOG" 2>&1

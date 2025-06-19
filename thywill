@@ -80,7 +80,10 @@ show_help() {
     echo ""
     header "  Database Commands:"
     echo "    db init             Initialize database tables (first time only)"
-    echo "    migrate             Run database migrations"
+    echo "    migrate             Run database migrations (legacy)"
+    echo "    migrate new         Run enhanced schema-only migrations"
+    echo "    migrate status      Show migration status and pending migrations"
+    echo "    migrate rollback    Rollback last migration"
     echo ""
     header "  Utility Commands:"
     echo "    setup               Complete development environment setup"
@@ -1329,7 +1332,39 @@ cmd_db() {
 }
 
 cmd_migrate() {
-    header "Running Database Migrations"
+    local subcommand="${1:-}"
+    shift || true
+    
+    case "$subcommand" in
+        ""|legacy)
+            cmd_migrate_legacy "$@"
+            ;;
+        new)
+            cmd_migrate_new "$@"
+            ;;
+        status)
+            cmd_migrate_status "$@"
+            ;;
+        rollback)
+            cmd_migrate_rollback "$@"
+            ;;
+        *)
+            error "Unknown migrate subcommand: $subcommand"
+            echo "Available subcommands: new, status, rollback, legacy"
+            echo "Usage: thywill migrate <subcommand> [args]"
+            echo ""
+            echo "Examples:"
+            echo "  thywill migrate new        # Run enhanced schema-only migrations"
+            echo "  thywill migrate status     # Show migration status"
+            echo "  thywill migrate rollback   # Rollback last migration"
+            echo "  thywill migrate            # Run legacy migrations (old system)"
+            exit 1
+            ;;
+    esac
+}
+
+cmd_migrate_legacy() {
+    header "Running Legacy Database Migrations"
     
     # Check if we're in the right directory
     if [ ! -f "models.py" ]; then
@@ -1353,6 +1388,209 @@ except Exception as e:
         success "Database migration completed successfully"
     else
         error "Database migration failed"
+        exit 1
+    fi
+}
+
+cmd_migrate_new() {
+    header "Running Enhanced Schema-Only Migrations"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ]; then
+        error "models.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Running enhanced migrations..."
+    
+    # Run the enhanced migration system
+    python3 -c "
+import sys
+sys.path.append('.')
+from app_helpers.utils.enhanced_migration import MigrationManager
+
+try:
+    manager = MigrationManager()
+    applied = manager.auto_migrate_on_startup()
+    
+    if applied:
+        print(f'✅ Successfully applied {len(applied)} migrations:')
+        for migration in applied:
+            print(f'   - {migration}')
+    else:
+        print('✅ Database is up to date - no migrations needed')
+        
+except Exception as e:
+    print(f'❌ Migration failed: {e}')
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+"
+    
+    if [ $? -eq 0 ]; then
+        success "Enhanced migrations completed successfully"
+    else
+        error "Enhanced migrations failed"
+        exit 1
+    fi
+}
+
+cmd_migrate_status() {
+    header "Migration Status"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ]; then
+        error "models.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    # Show migration status
+    python3 -c "
+import sys
+sys.path.append('.')
+from app_helpers.utils.enhanced_migration import MigrationManager
+
+try:
+    manager = MigrationManager()
+    
+    # Get current version
+    current = manager.get_current_version()
+    if current:
+        print(f'📊 Current schema version: {current}')
+    else:
+        print('📊 No migrations applied yet')
+    
+    # Get applied migrations
+    applied = manager.get_applied_migrations()
+    if applied:
+        print(f'✅ Applied migrations ({len(applied)}):')
+        for migration in applied:
+            print(f'   - {migration}')
+    else:
+        print('ℹ️  No migrations applied yet')
+    
+    print()
+    
+    # Get pending migrations
+    pending = manager.get_pending_migrations()
+    if pending:
+        print(f'⏳ Pending migrations ({len(pending)}):')
+        for migration in pending:
+            metadata = migration['metadata']
+            estimated_time = manager.estimate_migration_time(migration)
+            maintenance_mode = manager.should_enable_maintenance_mode(migration)
+            
+            print(f'   - {migration[\"id\"]}')
+            print(f'     Description: {metadata.get(\"description\", \"No description\")}')
+            print(f'     Estimated time: {estimated_time}s')
+            if maintenance_mode:
+                print(f'     ⚠️  Requires maintenance mode')
+            print()
+    else:
+        print('✅ No pending migrations - database is up to date')
+    
+    # Schema integrity check
+    print('🔍 Schema integrity check:')
+    if manager.validate_schema_integrity():
+        print('   ✅ Database integrity verified')
+    else:
+        print('   ❌ Database integrity check failed')
+        
+except Exception as e:
+    print(f'❌ Error checking migration status: {e}')
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+"
+}
+
+cmd_migrate_rollback() {
+    local migration_id="${1:-}"
+    
+    header "Rolling Back Migration"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ]; then
+        error "models.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    if [ -z "$migration_id" ]; then
+        # Show available migrations to rollback
+        warning "No migration ID specified. Finding last applied migration..."
+        
+        migration_id=$(python3 -c "
+import sys
+sys.path.append('.')
+from app_helpers.utils.enhanced_migration import MigrationManager
+
+try:
+    manager = MigrationManager()
+    current = manager.get_current_version()
+    if current:
+        print(current)
+    else:
+        print('')
+except:
+    print('')
+")
+        
+        if [ -z "$migration_id" ]; then
+            error "No migrations found to rollback"
+            echo "Use 'thywill migrate status' to see applied migrations"
+            exit 1
+        fi
+        
+        log "Found last migration: $migration_id"
+        read -p "Rollback this migration? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            warning "Rollback cancelled"
+            exit 0
+        fi
+    fi
+    
+    log "Rolling back migration: $migration_id"
+    
+    # Perform rollback
+    python3 -c "
+import sys
+sys.path.append('.')
+from app_helpers.utils.enhanced_migration import MigrationManager
+
+migration_id = '$migration_id'
+
+try:
+    manager = MigrationManager()
+    
+    if not manager.acquire_migration_lock():
+        print('❌ Could not acquire migration lock - another migration may be in progress')
+        sys.exit(1)
+    
+    try:
+        if manager.rollback_migration(migration_id):
+            print(f'✅ Successfully rolled back migration: {migration_id}')
+        else:
+            print(f'❌ Failed to rollback migration: {migration_id}')
+            sys.exit(1)
+    finally:
+        manager.release_migration_lock()
+        
+except Exception as e:
+    print(f'❌ Rollback failed: {e}')
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+"
+    
+    if [ $? -eq 0 ]; then
+        success "Migration rollback completed successfully"
+        log "Run 'thywill migrate status' to verify the rollback"
+    else
+        error "Migration rollback failed"
         exit 1
     fi
 }

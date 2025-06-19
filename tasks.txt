@@ -34,4 +34,13 @@ Generate regular invite tokens from command line
 
 All essential site activity should be written to text files
 	Includes prayers, prayed records
-	
+
+IDEAS
+
+Slider for religion / secularity
+
+Printed prayers for nice prayers that have been generated
+	Poster
+	Keychain
+	Wallet card
+	Bracelet

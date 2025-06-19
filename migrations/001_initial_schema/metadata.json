@@ -1,0 +1,14 @@
+{
+    "migration_id": "001_initial_schema",
+    "description": "Initial database schema with all existing tables",
+    "depends_on": [],
+    "estimated_duration_seconds": 10,
+    "requires_maintenance_mode": false,
+    "data_size_threshold_mb": 50,
+    "affected_tables": [
+        "user", "prayer", "prayer_attributes", "role", "user_roles", 
+        "authenticationrequest", "session", "prayer_activity_log", 
+        "prayermark", "prayerskip", "invitetoken", "securitylog", 
+        "authauditlog", "notification_state", "changelogentry", "authapproval"
+    ]
+}
