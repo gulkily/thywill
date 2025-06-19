@@ -77,6 +77,7 @@ show_help() {
     echo "    role revoke <user> <role> Revoke specific role from user"
     echo "    import prayers <file>   Import prayers from JSON file"
     echo "    import community <file> Import community data from ZIP export"
+    echo "    import text-archives    Import data from text_archives/ directory"
     echo ""
     header "  Database Commands:"
     echo "    db init             Initialize database tables (first time only)"
@@ -103,6 +104,8 @@ show_help() {
     echo "    thywill admin token 24                            # Create 24-hour admin token"
     echo "    thywill import prayers backup.json               # Import prayer data"
     echo "    thywill import community export.zip              # Import community export"
+    echo "    thywill import text-archives --dry-run           # Preview text archive import"
+    echo "    thywill import text-archives                     # Import from text_archives/"
     echo "    thywill deploy                                    # Safe deployment"
     echo "    thywill backup                                    # Create database backup"
     echo "    thywill rollback                                  # Rollback to previous"
@@ -384,7 +387,7 @@ cmd_admin_grant() {
     log "Looking up user: $user_identifier"
     
     # Run Python script to grant admin role
-    python3 -c "
+    PRODUCTION_MODE=1 python3 -c "
 import sys
 sys.path.append('.')
 from sqlmodel import Session, select
@@ -498,7 +501,7 @@ cmd_admin_revoke() {
     
     log "Looking up user: $user_identifier"
     
-    python3 -c "
+    PRODUCTION_MODE=1 python3 -c "
 import sys
 sys.path.append('.')
 from sqlmodel import Session, select
@@ -587,7 +590,7 @@ cmd_admin_list() {
         exit 1
     fi
     
-    python3 -c "
+    PRODUCTION_MODE=1 python3 -c "
 import sys
 sys.path.append('.')
 from sqlmodel import Session, select, func
@@ -662,7 +665,7 @@ cmd_admin_token() {
     
     log "Creating admin invite token (expires in $hours hours)..."
     
-    python3 -c "
+    PRODUCTION_MODE=1 python3 -c "
 import sys
 sys.path.append('.')
 import uuid
@@ -835,7 +838,7 @@ cmd_role_list() {
         exit 1
     fi
     
-    python3 -c "
+    PRODUCTION_MODE=1 python3 -c "
 import sys
 sys.path.append('.')
 from sqlmodel import Session, select
@@ -907,7 +910,7 @@ cmd_role_grant() {
     log "Looking up user: $user_identifier"
     log "Role to grant: $role_name"
     
-    python3 -c "
+    PRODUCTION_MODE=1 python3 -c "
 import sys
 sys.path.append('.')
 from sqlmodel import Session, select
@@ -1012,7 +1015,7 @@ cmd_role_revoke() {
     log "Looking up user: $user_identifier"
     log "Role to revoke: $role_name"
     
-    python3 -c "
+    PRODUCTION_MODE=1 python3 -c "
 import sys
 sys.path.append('.')
 from sqlmodel import Session, select
@@ -1100,15 +1103,20 @@ cmd_import() {
         community)
             cmd_import_community "$file_path" "${@:3}"
             ;;
+        text-archives)
+            cmd_import_text_archives "${@:2}"
+            ;;
         *)
             error "Unknown import type: $import_type"
-            echo "Available import types: prayers, community"
+            echo "Available import types: prayers, community, text-archives"
             echo "Usage: thywill import <type> <file> [options]"
             echo ""
             echo "Examples:"
             echo "  thywill import prayers backup.json"
             echo "  thywill import community export.zip"
             echo "  thywill import community export.zip --dry-run"
+            echo "  thywill import text-archives"
+            echo "  thywill import text-archives --dry-run"
             exit 1
             ;;
     esac
@@ -1159,7 +1167,7 @@ cmd_import_prayers() {
     
     log "Importing prayers..."
     
-    python3 -c "
+    PRODUCTION_MODE=1 python3 -c "
 import sys
 sys.path.append('.')
 import json
@@ -1310,6 +1318,36 @@ cmd_import_community() {
     python3 import_community_data.py "$file_path" "$@"
 }
 
+cmd_import_text_archives() {
+    header "Importing Text Archives"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
+        error "Must run from ThyWill project directory"
+        echo "Database or models.py not found"
+        exit 1
+    fi
+    
+    # Check if import script exists
+    if [ ! -f "import_text_archives.py" ]; then
+        error "Text archives import script not found: import_text_archives.py"
+        echo "Please ensure the import script is in the project directory"
+        exit 1
+    fi
+    
+    # Check if text_archives directory exists
+    if [ ! -d "text_archives" ]; then
+        error "text_archives directory not found"
+        echo "Please ensure text_archives/ directory exists in the project root"
+        exit 1
+    fi
+    
+    log "Importing data from text_archives/ directory..."
+    
+    # Execute Python import script with all arguments
+    python3 import_text_archives.py "$@"
+}
+
 # Database commands
 cmd_db() {
     local subcommand="${1:-}"
@@ -1405,7 +1443,7 @@ cmd_migrate_new() {
     log "Running enhanced migrations..."
     
     # Run the enhanced migration system
-    python3 -c "
+    PRODUCTION_MODE=1 python3 -c "
 import sys
 sys.path.append('.')
 from app_helpers.utils.enhanced_migration import MigrationManager
@@ -1447,7 +1485,7 @@ cmd_migrate_status() {
     fi
     
     # Show migration status
-    python3 -c "
+    PRODUCTION_MODE=1 python3 -c "
 import sys
 sys.path.append('.')
 from app_helpers.utils.enhanced_migration import MigrationManager
@@ -1556,7 +1594,7 @@ except:
     log "Rolling back migration: $migration_id"
     
     # Perform rollback
-    python3 -c "
+    PRODUCTION_MODE=1 python3 -c "
 import sys
 sys.path.append('.')
 from app_helpers.utils.enhanced_migration import MigrationManager
