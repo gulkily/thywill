@@ -294,29 +294,49 @@ class ChangelogEntry(SQLModel, table=True):
     commit_date: datetime
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-# Performance optimization: Enable WAL mode for better concurrency
-engine = create_engine(
-    "sqlite:///thywill.db", 
-    echo=False,
-    connect_args={"check_same_thread": False},
-    pool_pre_ping=True
-)
+# Database engine configuration - SAFE BY DEFAULT
+# SAFETY: Use in-memory database by default, require explicit PRODUCTION_MODE for file database
+import os
+
+# Check for production database file and warn if PRODUCTION_MODE not set
+if not os.environ.get('PRODUCTION_MODE') and os.path.exists('thywill.db'):
+    print("WARNING: Production database detected but PRODUCTION_MODE not set!")
+    print("Using in-memory database for safety. Set PRODUCTION_MODE=1 for production use.")
+
+if os.environ.get('PRODUCTION_MODE') == '1':
+    # Production database - requires explicit environment variable
+    print("PRODUCTION_MODE detected: Using file database")
+    engine = create_engine(
+        "sqlite:///thywill.db", 
+        echo=False,
+        connect_args={"check_same_thread": False},
+        pool_pre_ping=True
+    )
+else:
+    # Safe default: Use in-memory database (for tests and development)
+    engine = create_engine(
+        "sqlite:///:memory:",
+        echo=False,
+        connect_args={"check_same_thread": False}
+    )
 
 # Database initialization is now handled by standalone script only
 # No automatic table creation on import to prevent accidental data loss
 
 # Enable performance optimizations and create invite tree integrity constraints
-with engine.connect() as conn:
-    from sqlalchemy import text
-    conn.execute(text("PRAGMA journal_mode=WAL"))
-    conn.execute(text("PRAGMA synchronous=NORMAL")) 
-    conn.execute(text("PRAGMA cache_size=10000"))
-    conn.execute(text("PRAGMA temp_store=memory"))
-    
-    # Create indexes for invite tree integrity
-    conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_invited_by ON user(invited_by_user_id)"))
-    conn.execute(text("CREATE INDEX IF NOT EXISTS idx_invitetoken_used_by ON invitetoken(used_by_user_id)"))
-    conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_invite_token ON user(invite_token_used)"))
-    
-    conn.commit()
+# SAFETY: Only run optimizations for production database
+if os.environ.get('PRODUCTION_MODE') == '1':
+    with engine.connect() as conn:
+        from sqlalchemy import text
+        conn.execute(text("PRAGMA journal_mode=WAL"))
+        conn.execute(text("PRAGMA synchronous=NORMAL")) 
+        conn.execute(text("PRAGMA cache_size=10000"))
+        conn.execute(text("PRAGMA temp_store=memory"))
+        
+        # Create indexes for invite tree integrity
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_invited_by ON user(invited_by_user_id)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_invitetoken_used_by ON invitetoken(used_by_user_id)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_invite_token ON user(invite_token_used)"))
+        
+        conn.commit()
 
