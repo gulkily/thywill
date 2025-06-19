@@ -14,7 +14,7 @@ class ArchiveDownloadService:
     def __init__(self, archive_base_dir: str):
         self.archive_dir = Path(archive_base_dir)
         
-    def create_user_archive_zip(self, user_id: int, include_community: bool = True) -> str:
+    def create_user_archive_zip(self, user_id: str, include_community: bool = True) -> str:
         """Create ZIP file containing all user's text archives"""
         
         with Session(engine) as db:
@@ -165,7 +165,7 @@ class ArchiveDownloadService:
             
             return str(permanent_zip_path)
 
-    def get_user_archive_metadata(self, user_id: int) -> Dict:
+    def get_user_archive_metadata(self, user_id: str) -> Dict:
         """Get comprehensive metadata about user's archives"""
         
         with Session(engine) as db:

@@ -10,11 +10,7 @@ from tests.factories import UserFactory, PrayerFactory, SessionFactory
 from app_helpers.routes.prayer.prayer_mode import initialize_prayer_queue, get_prayer_age_text
 
 
-@pytest.fixture
-def test_session():
-    """Create a test database session"""
-    with Session(engine) as session:
-        yield session
+# Using test_session fixture from conftest.py
 
 
 @pytest.fixture
@@ -278,11 +274,16 @@ class TestPrayerModeRoutes:
         
         request = MockRequest()
         
+        # Mock Session to use test_session 
+        def mock_session_context_manager(engine_arg):
+            return test_session
+        
         # Call the function directly
         try:
-            response = prayer_mode(request, 0, (test_user, None))
-            # If it returns a TemplateResponse, it's working
-            assert hasattr(response, 'template')
+            with patch('app_helpers.routes.prayer.prayer_mode.Session', mock_session_context_manager):
+                response = prayer_mode(request, 0, (test_user, None))
+                # If it returns a TemplateResponse, it's working
+                assert hasattr(response, 'template')
         except Exception as e:
             # If there's an error, it should be related to template rendering, not core logic
             assert "template" in str(e).lower() or "jinja" in str(e).lower()
@@ -293,20 +294,29 @@ class TestPrayerModeRoutes:
         
         prayer = test_prayers[0]
         
+        # Extract IDs before mocking to avoid session binding issues
+        user_id = str(test_user.id)
+        prayer_id = str(prayer.id)
+        
+        # Mock Session to use test_session 
+        def mock_session_context_manager(engine_arg):
+            return test_session
+        
         # Call the function directly
-        response = skip_prayer(prayer.id, (test_user, None))
-        
-        # Should return success
-        assert hasattr(response, 'body')  # JSONResponse has body
-        
-        # Verify skip was recorded
-        skip = test_session.exec(
-            select(PrayerSkip).where(
-                PrayerSkip.user_id == test_user.id,
-                PrayerSkip.prayer_id == prayer.id
-            )
-        ).first()
-        assert skip is not None
+        with patch('app_helpers.routes.prayer.prayer_mode.Session', mock_session_context_manager):
+            response = skip_prayer(prayer_id, (test_user, None))
+            
+            # Should return success
+            assert hasattr(response, 'body')  # JSONResponse has body
+            
+            # Verify skip was recorded using string IDs
+            skip = test_session.exec(
+                select(PrayerSkip).where(
+                    PrayerSkip.user_id == user_id,
+                    PrayerSkip.prayer_id == prayer_id
+                )
+            ).first()
+            assert skip is not None
 
 
 class TestPrayerModeIntegration:

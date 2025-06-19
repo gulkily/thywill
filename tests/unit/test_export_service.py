@@ -22,12 +22,19 @@ class TestCommunityExportService:
     """Test suite for community database export functionality."""
     
     @pytest.fixture
-    def export_service(self):
-        """Create export service instance."""
-        return CommunityExportService()
+    def export_service(self, test_session):
+        """Create export service instance with mocked session."""
+        from unittest.mock import patch
+        
+        # Mock the Session to use test_session
+        def mock_session_context_manager(engine_arg):
+            return test_session
+        
+        with patch('app_helpers.services.export_service.Session', mock_session_context_manager):
+            yield CommunityExportService()
     
     @pytest.fixture
-    def sample_data(self):
+    def sample_data(self, test_session):
         """Create sample data for testing."""
         # Generate unique IDs for this test run
         test_id = uuid.uuid4().hex[:8]
@@ -40,153 +47,153 @@ class TestCommunityExportService:
         token2_name = f"test_token_2_{test_id}"
         role_name = f"test_user_role_{test_id}"
         
-        with Session(engine) as session:
-            # Create test users
-            user1 = User(
-                id=user1_id,
-                display_name="Test User 1",
-                religious_preference="christian",
-                prayer_style="in_jesus_name",
-                invited_by_user_id=None,
-                invite_token_used=token1_name
-            )
-            user2 = User(
-                id=user2_id, 
-                display_name="Test User 2",
-                religious_preference="unspecified",
-                invited_by_user_id=user1_id,
-                invite_token_used=token2_name
-            )
-            session.add(user1)
-            session.add(user2)
-            
-            # Create test prayers (both flagged and non-flagged)
-            prayer1 = Prayer(
-                id=prayer1_id,
-                author_id=user1_id,
-                text="Please pray for healing",
-                generated_prayer="Lord, we pray for healing...",
-                target_audience="all",
-                flagged=False
-            )
-            prayer2 = Prayer(
-                id=prayer2_id,
-                author_id=user2_id, 
-                text="This is a flagged prayer",
-                flagged=True
-            )
-            session.add(prayer1)
-            session.add(prayer2)
-            
-            # Create prayer attributes
-            attr1 = PrayerAttribute(
-                prayer_id=prayer1_id,
-                attribute_name="answered",
-                attribute_value="true",
-                created_by=user1_id
-            )
-            attr2 = PrayerAttribute(
-                prayer_id=prayer2_id,
-                attribute_name="flagged", 
-                attribute_value="true",
-                created_by="admin"
-            )
-            session.add(attr1)
-            session.add(attr2)
-            
-            # Create prayer marks and skips
-            mark1 = PrayerMark(
-                user_id=user1_id,
-                prayer_id=prayer1_id
-            )
-            skip1 = PrayerSkip(
-                user_id=user2_id,
-                prayer_id=prayer1_id  
-            )
-            session.add(mark1)
-            session.add(skip1)
-            
-            # Create activity logs
-            log1 = PrayerActivityLog(
-                prayer_id=prayer1_id,
-                user_id=user1_id,
-                action="set_answered",
-                old_value=None,
-                new_value="true"
-            )
-            session.add(log1)
-            
-            # Create roles and user roles
-            role1 = Role(
-                id=role1_id,
-                name=role_name,
-                description="Test user role",
-                permissions='["read", "write"]',
-                is_system_role=False
-            )
-            session.add(role1)
-            
-            user_role1 = UserRole(
-                user_id=user1_id,
-                role_id=role1_id,
-                granted_by="admin"
-            )
-            session.add(user_role1)
-            
-            # Create invite tokens
-            token1 = InviteToken(
-                token=token1_name,
-                created_by_user="admin",
-                used=True,
-                expires_at=datetime.utcnow() + timedelta(days=7), 
-                used_by_user_id=user1_id
-            )
-            session.add(token1)
-            
-            # Create changelog entries
-            changelog1 = ChangelogEntry(
-                commit_id=f"abc123_{test_id}",
-                original_message="Add export feature",
-                friendly_description="Added database export functionality",
-                change_type="new",
-                commit_date=datetime.utcnow()
-            )
-            session.add(changelog1)
-            
-            session.commit()
-            
-            yield {
-                "users": [user1, user2],
-                "prayers": [prayer1, prayer2], 
-                "attributes": [attr1, attr2],
-                "marks": [mark1],
-                "skips": [skip1],
-                "logs": [log1],
-                "roles": [role1],
-                "user_roles": [user_role1],
-                "tokens": [token1],
-                "changelog": [changelog1],
-                "prayer1_id": prayer1_id,
-                "prayer2_id": prayer2_id,
-                "user1_id": user1_id,
-                "user2_id": user2_id
-            }
-            
-            # Cleanup
-            session.delete(user1)
-            session.delete(user2)
-            session.delete(prayer1)
-            session.delete(prayer2)
-            session.delete(attr1)
-            session.delete(attr2)
-            session.delete(mark1)
-            session.delete(skip1)
-            session.delete(log1)
-            session.delete(role1)
-            session.delete(user_role1)
-            session.delete(token1)
-            session.delete(changelog1)
-            session.commit()
+        session = test_session
+        # Create test users
+        user1 = User(
+            id=user1_id,
+            display_name="Test User 1",
+            religious_preference="christian",
+            prayer_style="in_jesus_name",
+            invited_by_user_id=None,
+            invite_token_used=token1_name
+        )
+        user2 = User(
+            id=user2_id, 
+            display_name="Test User 2",
+            religious_preference="unspecified",
+            invited_by_user_id=user1_id,
+            invite_token_used=token2_name
+        )
+        session.add(user1)
+        session.add(user2)
+        
+        # Create test prayers (both flagged and non-flagged)
+        prayer1 = Prayer(
+            id=prayer1_id,
+            author_id=user1_id,
+            text="Please pray for healing",
+            generated_prayer="Lord, we pray for healing...",
+            target_audience="all",
+            flagged=False
+        )
+        prayer2 = Prayer(
+            id=prayer2_id,
+            author_id=user2_id, 
+            text="This is a flagged prayer",
+            flagged=True
+        )
+        session.add(prayer1)
+        session.add(prayer2)
+        
+        # Create prayer attributes
+        attr1 = PrayerAttribute(
+            prayer_id=prayer1_id,
+            attribute_name="answered",
+            attribute_value="true",
+            created_by=user1_id
+        )
+        attr2 = PrayerAttribute(
+            prayer_id=prayer2_id,
+            attribute_name="flagged", 
+            attribute_value="true",
+            created_by="admin"
+        )
+        session.add(attr1)
+        session.add(attr2)
+        
+        # Create prayer marks and skips
+        mark1 = PrayerMark(
+            user_id=user1_id,
+            prayer_id=prayer1_id
+        )
+        skip1 = PrayerSkip(
+            user_id=user2_id,
+            prayer_id=prayer1_id  
+        )
+        session.add(mark1)
+        session.add(skip1)
+        
+        # Create activity logs
+        log1 = PrayerActivityLog(
+            prayer_id=prayer1_id,
+            user_id=user1_id,
+            action="set_answered",
+            old_value=None,
+            new_value="true"
+        )
+        session.add(log1)
+        
+        # Create roles and user roles
+        role1 = Role(
+            id=role1_id,
+            name=role_name,
+            description="Test user role",
+            permissions='["read", "write"]',
+            is_system_role=False
+        )
+        session.add(role1)
+        
+        user_role1 = UserRole(
+            user_id=user1_id,
+            role_id=role1_id,
+            granted_by="admin"
+        )
+        session.add(user_role1)
+        
+        # Create invite tokens
+        token1 = InviteToken(
+            token=token1_name,
+            created_by_user="admin",
+            used=True,
+            expires_at=datetime.utcnow() + timedelta(days=7), 
+            used_by_user_id=user1_id
+        )
+        session.add(token1)
+        
+        # Create changelog entries
+        changelog1 = ChangelogEntry(
+            commit_id=f"abc123_{test_id}",
+            original_message="Add export feature",
+            friendly_description="Added database export functionality",
+            change_type="new",
+            commit_date=datetime.utcnow()
+        )
+        session.add(changelog1)
+        
+        session.commit()
+        
+        yield {
+            "users": [user1, user2],
+            "prayers": [prayer1, prayer2], 
+            "attributes": [attr1, attr2],
+            "marks": [mark1],
+            "skips": [skip1],
+            "logs": [log1],
+            "roles": [role1],
+            "user_roles": [user_role1],
+            "tokens": [token1],
+            "changelog": [changelog1],
+            "prayer1_id": prayer1_id,
+            "prayer2_id": prayer2_id,
+            "user1_id": user1_id,
+            "user2_id": user2_id
+        }
+        
+        # Cleanup
+        session.delete(user1)
+        session.delete(user2)
+        session.delete(prayer1)
+        session.delete(prayer2)
+        session.delete(attr1)
+        session.delete(attr2)
+        session.delete(mark1)
+        session.delete(skip1)
+        session.delete(log1)
+        session.delete(role1)
+        session.delete(user_role1)
+        session.delete(token1)
+        session.delete(changelog1)
+        session.commit()
     
     def test_export_metadata_structure(self, export_service):
         """Test that export metadata has correct structure."""
