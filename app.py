@@ -11,12 +11,15 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select, func
 
+# Load environment variables first
+load_dotenv()
+
+# Set production mode for web application
+os.environ['PRODUCTION_MODE'] = '1'
+
 from models import engine, User, Prayer, InviteToken, Session as SessionModel, PrayerMark, PrayerSkip, AuthenticationRequest, AuthApproval, AuthAuditLog, SecurityLog, PrayerAttribute, PrayerActivityLog
 from sqlmodel import text
 import sqlite3
-
-# Load environment variables
-load_dotenv()
 
 # ───────── Config ─────────
 SESSION_DAYS = 14
@@ -68,6 +71,7 @@ from app_helpers.routes.user_routes import router as user_router
 from app_helpers.routes.invite_routes import router as invite_router
 from app_helpers.routes.general_routes import router as general_router
 from app_helpers.routes.changelog_routes import router as changelog_router
+from app_helpers.routes.archive_routes import router as archive_router
 
 app = FastAPI()
 
@@ -122,6 +126,8 @@ app.include_router(prayer_router)
 app.include_router(admin_router)
 # Include user routes
 app.include_router(user_router)
+# Include archive routes
+app.include_router(archive_router)
 # Include invite routes
 app.include_router(invite_router)
 # Include general routes
