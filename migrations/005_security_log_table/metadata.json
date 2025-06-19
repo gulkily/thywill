@@ -1,0 +1,9 @@
+{
+    "migration_id": "005_security_log_table",
+    "description": "Create SecurityLog table for security event tracking",
+    "depends_on": ["001_initial_schema"],
+    "estimated_duration_seconds": 2,
+    "requires_maintenance_mode": false,
+    "data_size_threshold_mb": 5,
+    "affected_tables": ["securitylog"]
+}

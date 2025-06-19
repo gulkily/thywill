@@ -93,15 +93,16 @@ class MigrationManager:
     def __init__(self):
         self.db_path = "thywill.db"
         self.migrations_dir = "migrations/"
+        self.lock_file = "migration.lock"
         
     def get_current_version(self):
         """Get current database schema version"""
         
     def get_pending_migrations(self):
-        """Get list of unapplied migrations"""
+        """Get list of unapplied migrations in dependency order"""
         
     def apply_migration(self, migration_id):
-        """Apply a specific migration with safety checks"""
+        """Apply a specific migration with safety checks and database locking"""
         
     def rollback_migration(self, migration_id):
         """Safely rollback a migration"""
@@ -114,29 +115,92 @@ class MigrationManager:
         
     def check_for_pending_migrations(self):
         """Check if there are any pending migrations (for monitoring)"""
+        
+    def resolve_migration_dependencies(self, migrations):
+        """Sort migrations by dependency order"""
+        
+    def acquire_migration_lock(self):
+        """Acquire exclusive lock for migration operations"""
+        
+    def release_migration_lock(self):
+        """Release migration lock"""
+        
+    def validate_schema_integrity(self):
+        """Validate database schema matches expected state"""
+        
+    def handle_partial_migration_recovery(self, migration_id):
+        """Recover from partially applied migrations"""
+        
+    def estimate_migration_time(self, migration_id):
+        """Estimate time required for migration based on data size"""
+        
+    def should_enable_maintenance_mode(self, migration_id):
+        """Determine if migration requires maintenance mode"""
 ```
 
 ### Step 2: Create Migration Files Structure
 
 ```
 migrations/
-├── 001_initial_schema.sql
-├── 002_add_session_columns.sql
-├── 003_add_invite_tree.sql
-├── 004_add_text_archive_tracking.sql
+├── 001_initial_schema/
+│   ├── up.sql
+│   ├── down.sql
+│   └── metadata.json
+├── 002_add_session_columns/
+│   ├── up.sql
+│   ├── down.sql
+│   └── metadata.json
+├── 003_add_invite_tree/
+│   ├── up.sql
+│   ├── down.sql
+│   └── metadata.json
+├── 004_add_text_archive_tracking/
+│   ├── up.sql
+│   ├── down.sql
+│   └── metadata.json
 └── schema_versions.json
+```
+
+**Migration File Format:**
+```json
+// metadata.json
+{
+    "migration_id": "002_add_session_columns",
+    "description": "Add session tracking columns to users table",
+    "depends_on": ["001_initial_schema"],
+    "estimated_duration_seconds": 5,
+    "requires_maintenance_mode": false,
+    "data_size_threshold_mb": 100
+}
+```
+
+```sql
+-- up.sql
+ALTER TABLE users ADD COLUMN last_session_id TEXT;
+ALTER TABLE users ADD COLUMN session_expires_at TIMESTAMP;
+CREATE INDEX idx_users_session_expires ON users(session_expires_at);
+
+-- down.sql
+DROP INDEX IF EXISTS idx_users_session_expires;
+ALTER TABLE users DROP COLUMN session_expires_at;
+ALTER TABLE users DROP COLUMN last_session_id;
 ```
 
 ### Step 3: Update Deployment Flow
 
 **New Deployment Process:**
 1. ✅ Create pre-deployment backup (existing)
-2. ✅ Stop service (existing)
-3. 🆕 **Run schema migrations** (instead of database replacement)
-4. ✅ Install dependencies (existing)
-5. ✅ Start service (existing)
-6. ✅ Health check (existing)
-7. 🆕 **Migration rollback on failure** (instead of file rollback)
+2. 🆕 **Acquire migration lock** (prevent concurrent access)
+3. 🆕 **Estimate migration time** (determine if maintenance mode needed)
+4. 🆕 **Enable maintenance mode if required** (for long-running migrations)
+5. ✅ Stop service (existing, only if maintenance mode enabled)
+6. 🆕 **Run schema migrations with recovery handling** (instead of database replacement)
+7. 🆕 **Validate schema integrity** (ensure migrations completed correctly)
+8. ✅ Install dependencies (existing)
+9. ✅ Start service (existing)
+10. 🆕 **Release migration lock** 
+11. ✅ Health check (existing)
+12. 🆕 **Migration rollback on failure** (instead of file rollback)
 
 ### Step 4: Preserve Sessions During Migrations
 
@@ -144,9 +208,26 @@ migrations/
 def migrate_with_session_preservation():
     """Run migrations while preserving active user sessions"""
     # 1. Extract active sessions
-    # 2. Run schema migrations
-    # 3. Restore sessions if compatible
-    # 4. Clean up invalid sessions
+    # 2. Acquire database lock
+    # 3. Run schema migrations with partial recovery handling
+    # 4. Validate schema integrity post-migration
+    # 5. Restore sessions if compatible
+    # 6. Clean up invalid sessions
+    # 7. Release database lock
+
+def apply_migration_with_recovery(migration_id):
+    """Apply migration with comprehensive error handling"""
+    try:
+        # 1. Begin transaction
+        # 2. Create migration checkpoint
+        # 3. Apply migration steps incrementally
+        # 4. Validate each step
+        # 5. Commit transaction
+    except Exception:
+        # 1. Rollback to checkpoint
+        # 2. Log partial migration state
+        # 3. Mark migration as failed
+        # 4. Preserve any completed steps that are safe
 ```
 
 ### Step 5: Integrate Automatic Migrations into Application
@@ -162,16 +243,33 @@ async def startup_migrations():
     migration_manager = MigrationManager()
     
     try:
-        pending = migration_manager.get_pending_migrations()
+        # Check for migration lock from previous failed attempt
+        if migration_manager.is_migration_locked():
+            print("⚠️  Migration lock detected - checking for partial migrations...")
+            migration_manager.handle_partial_migration_recovery()
+        
+        # Resolve dependencies and check pending migrations
+        pending = migration_manager.get_pending_migrations()  # Returns in dependency order
         if pending:
             print(f"🔄 Applying {len(pending)} pending migrations...")
+            
+            # Check if any migration requires maintenance mode
+            for migration in pending:
+                if migration_manager.should_enable_maintenance_mode(migration):
+                    print(f"⚠️  Migration {migration} requires maintenance mode - manual deployment needed")
+                    return
+            
+            # Apply migrations with locking
             migration_manager.auto_migrate_on_startup()
+            
+            # Validate final schema state
+            migration_manager.validate_schema_integrity()
             print("✅ Automatic migrations completed")
         else:
             print("✅ Database schema is up to date")
     except Exception as e:
         print(f"❌ Migration failed: {e}")
-        # Application can still start with warnings
+        # Application can still start with warnings, but log the issue
 ```
 
 **Background Migration Check** (Optional):
@@ -268,6 +366,11 @@ def apply_migrations():
 - **Failure recovery testing**: Ensure failed migrations don't prevent app startup
 - **Background monitoring testing**: Verify migration detection works correctly
 - **Admin endpoint testing**: Test manual migration triggers and status endpoints
+- **Dependency resolution testing**: Verify migrations run in correct dependency order
+- **Concurrent access testing**: Test migration locks prevent database corruption
+- **Partial migration recovery testing**: Test recovery from interrupted migrations
+- **Large data migration testing**: Test performance with realistic data volumes
+- **Schema validation testing**: Verify post-migration schema integrity checks
 
 ## Rollout Plan
 
@@ -304,6 +407,22 @@ def apply_migrations():
 - **Mitigation**: Post-migration integrity checks
 - **Recovery**: Point-in-time restoration capabilities
 
+### **Risk**: Concurrent Database Access
+- **Mitigation**: Migration locking mechanism to prevent concurrent access
+- **Fallback**: Queue requests during migration, retry after completion
+
+### **Risk**: Partial Migration Completion
+- **Mitigation**: Transaction-based migrations with checkpoints
+- **Recovery**: Automatic detection and recovery of partial migrations on startup
+
+### **Risk**: Migration Dependencies
+- **Mitigation**: Dependency resolution and validation before applying migrations
+- **Recovery**: Clear error messages and dependency conflict resolution
+
+### **Risk**: Large Data Migration Performance
+- **Mitigation**: Data size estimation and automatic maintenance mode for large migrations
+- **Fallback**: Manual migration scheduling for very large datasets
+
 ## Success Metrics
 
 ### User Experience
@@ -321,13 +440,24 @@ def apply_migrations():
 - ✅ Faster upgrade deployments
 - ✅ Improved system reliability
 
+## Documentation Updates
+
+### Required Documentation Changes
+1. **Update deployment runbooks**: Replace database replacement procedures with migration workflows
+2. **Create migration authoring guide**: Document how to create new migrations with proper metadata
+3. **Update rollback procedures**: Document new migration-based rollback process
+4. **Add troubleshooting guide**: Document common migration issues and recovery procedures
+5. **Update development setup**: Include migration system in local development documentation
+
 ## Next Steps
 
 1. **Approve Plan**: Review and approve implementation approach
 2. **Create Branch**: Create feature branch for migration system
-3. **Implement Phase 1**: Enhanced migration framework
-4. **Test Thoroughly**: Comprehensive testing on staging
-5. **Deploy Gradually**: Phased rollout to production
+3. **Implement Phase 1**: Enhanced migration framework with dependency resolution
+4. **Create Initial Migrations**: Convert current schema to migration format
+5. **Test Thoroughly**: Comprehensive testing including all new safety mechanisms
+6. **Update Documentation**: Revise all deployment and development documentation
+7. **Deploy Gradually**: Phased rollout to production
 
 ---
 

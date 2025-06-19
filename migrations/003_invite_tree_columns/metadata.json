@@ -1,0 +1,9 @@
+{
+    "migration_id": "003_invite_tree_columns",
+    "description": "Add invite tree tracking columns to user and invitetoken tables",
+    "depends_on": ["001_initial_schema"],
+    "estimated_duration_seconds": 3,
+    "requires_maintenance_mode": false,
+    "data_size_threshold_mb": 20,
+    "affected_tables": ["user", "invitetoken"]
+}

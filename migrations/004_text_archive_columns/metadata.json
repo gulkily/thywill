@@ -1,0 +1,9 @@
+{
+    "migration_id": "004_text_archive_columns",
+    "description": "Add text archive tracking columns to all relevant tables",
+    "depends_on": ["001_initial_schema"],
+    "estimated_duration_seconds": 5,
+    "requires_maintenance_mode": false,
+    "data_size_threshold_mb": 50,
+    "affected_tables": ["user", "prayer", "prayermark", "prayer_attributes", "prayer_activity_log"]
+}
