@@ -15,6 +15,9 @@ from tests.factories import UserFactory, SessionFactory
 @pytest.fixture(scope="function")
 def test_engine():
     """Create a test database engine using in-memory SQLite"""
+    # Tests use in-memory database by default (safe by design)
+    # No need to set any environment variables
+    
     # Use in-memory SQLite for faster tests with threading support
     engine = create_engine(
         "sqlite:///:memory:", 
@@ -22,6 +25,7 @@ def test_engine():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool
     )
+    
     SQLModel.metadata.create_all(engine)
     return engine
 
@@ -54,30 +58,44 @@ def client(test_session):
         # Return the test session instead of creating a new one
         return test_session
     
-    # Disable text archives for tests to prevent file creation
-    with patch('app_helpers.services.text_archive_service.TEXT_ARCHIVE_ENABLED', False), \
-         patch('app.TEXT_ARCHIVE_ENABLED', False), \
-         patch('app_helpers.services.archive_first_service.text_archive_service.enabled', False):
-        
-        # Patch Session creation throughout the app and helper modules
-        with patch('app.Session', mock_session), \
-             patch('app_helpers.services.auth_helpers.Session', mock_session), \
-             patch('app_helpers.services.auth.session_helpers.Session', mock_session), \
-             patch('app_helpers.services.auth.token_helpers.Session', mock_session), \
-             patch('app_helpers.services.auth.validation_helpers.Session', mock_session), \
-             patch('app_helpers.services.prayer_helpers.Session', mock_session), \
-             patch('app_helpers.services.invite_helpers.Session', mock_session), \
-             patch('app_helpers.services.archive_first_service.Session', mock_session), \
-             patch('app_helpers.routes.prayer_routes.Session', mock_session), \
-             patch('app_helpers.routes.prayer.feed_operations.Session', mock_session), \
-             patch('app_helpers.routes.prayer.prayer_crud.Session', mock_session), \
-             patch('app_helpers.routes.prayer.prayer_status.Session', mock_session), \
-             patch('app_helpers.routes.prayer.prayer_moderation.Session', mock_session), \
-             patch('app_helpers.routes.auth_routes.Session', mock_session), \
-             patch('app_helpers.routes.admin_routes.Session', mock_session), \
-             patch('app_helpers.routes.user_routes.Session', mock_session), \
-             patch('app_helpers.routes.invite_routes.Session', mock_session):
-            yield TestClient(app)
+    # Create all patches in a single context manager
+    patches = [
+        patch('app_helpers.services.text_archive_service.TEXT_ARCHIVE_ENABLED', False),
+        patch('app.TEXT_ARCHIVE_ENABLED', False),
+        patch('app_helpers.services.archive_first_service.text_archive_service.enabled', False),
+        patch('app.Session', mock_session),
+        patch('models.engine', test_session.bind),
+        patch('app_helpers.services.text_importer_service.engine', test_session.bind),
+        patch('app_helpers.services.archive_first_service.engine', test_session.bind),
+        patch('app_helpers.services.archive_download_service.engine', test_session.bind),
+        patch('app_helpers.services.auth_helpers.Session', mock_session),
+        patch('app_helpers.services.auth.session_helpers.Session', mock_session),
+        patch('app_helpers.services.auth.token_helpers.Session', mock_session),
+        patch('app_helpers.services.auth.validation_helpers.Session', mock_session),
+        patch('app_helpers.services.prayer_helpers.Session', mock_session),
+        patch('app_helpers.services.invite_helpers.Session', mock_session),
+        patch('app_helpers.services.archive_first_service.Session', mock_session),
+        patch('app_helpers.routes.prayer_routes.Session', mock_session),
+        patch('app_helpers.routes.prayer.feed_operations.Session', mock_session),
+        patch('app_helpers.routes.prayer.prayer_crud.Session', mock_session),
+        patch('app_helpers.routes.prayer.prayer_status.Session', mock_session),
+        patch('app_helpers.routes.prayer.prayer_moderation.Session', mock_session),
+        patch('app_helpers.routes.auth_routes.Session', mock_session),
+        patch('app_helpers.routes.admin_routes.Session', mock_session),
+        patch('app_helpers.routes.user_routes.Session', mock_session),
+        patch('app_helpers.routes.invite_routes.Session', mock_session),
+    ]
+    
+    # Apply all patches
+    for p in patches:
+        p.start()
+    
+    try:
+        yield TestClient(app)
+    finally:
+        # Clean up all patches
+        for p in patches:
+            p.stop()
 
 
 @pytest.fixture(scope="function")
