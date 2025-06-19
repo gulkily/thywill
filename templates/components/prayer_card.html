@@ -166,6 +166,15 @@
               {% endif %}
             {% endif %}
             
+            <!-- Text Archive Download Link -->
+            {% if p.text_file_path %}
+              <a href="/api/archive/prayer/{{ p.id }}/file" 
+                 download="prayer_{{ p.id }}_{{ p.created_at.strftime('%Y_%m_%d') }}.txt"
+                 class="block w-full text-left px-4 py-3 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-800 dark:hover:text-blue-300 transition-colors duration-150 font-medium whitespace-nowrap">
+                📄 Download Text File
+              </a>
+            {% endif %}
+            
             <form method="post" action="/flag/{{ p.id }}" class="block">
               <button type="submit" 
                       hx-post="/flag/{{ p.id }}"
