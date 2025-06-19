@@ -44,3 +44,7 @@ Printed prayers for nice prayers that have been generated
 	Keychain
 	Wallet card
 	Bracelet
+
+wsl@Lenovo:~/thywill$ thywill list
+Available Backups
+/usr/local/bin/thywill: line 275: /usr/local/bin/deployment/backup_management.sh: No such file or directory
