@@ -200,6 +200,15 @@
   </div>
   {% endif %}
 
+  <!-- Text Archive Section -->
+  {% if is_own_profile %}
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <div id="archive-download-container">
+      <!-- Archive download component will render here -->
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Back Navigation -->
   <div class="text-center">
     <a href="/" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-900/50">
@@ -228,4 +237,12 @@ function showTab(tabName) {
   }
 }
 </script>
+
+<!-- Archive Download CSS and JavaScript -->
+<link rel="stylesheet" href="/static/css/archive.css">
+<script src="/static/js/components/ArchiveDownload.js"></script>
+
+<!-- Add current user metadata for JavaScript -->
+<meta name="current-user" content='{"id": {{ profile_user.id }}, "display_name": "{{ profile_user.display_name }}"}'>
+
 {% endblock %}
