@@ -151,6 +151,13 @@ async def unauthorized_exception_handler(request: Request, exc: HTTPException):
 @app.exception_handler(404)
 async def not_found_exception_handler(request: Request, exc: HTTPException):
     """Custom handler for 404 not found errors to show user-friendly page"""
+    # For API routes, return JSON responses
+    if request.url.path.startswith("/api/"):
+        return JSONResponse(
+            status_code=404,
+            content={"detail": str(exc.detail) if exc.detail else "Not found"}
+        )
+    
     # Check if this is an auth-related 404
     if request.url.path.startswith("/auth/") and "Authentication request not found" in str(exc.detail):
         return templates.TemplateResponse("auth_not_found.html", {
@@ -181,6 +188,13 @@ async def internal_error_exception_handler(request: Request, exc: Exception):
 @app.exception_handler(403)
 async def forbidden_exception_handler(request: Request, exc: HTTPException):
     """Custom handler for 403 forbidden errors"""
+    # For API routes, return JSON responses
+    if request.url.path.startswith("/api/"):
+        return JSONResponse(
+            status_code=403,
+            content={"detail": str(exc.detail) if exc.detail else "Forbidden"}
+        )
+    
     return templates.TemplateResponse("error.html", {
         "request": request,
         "error_code": 403,
