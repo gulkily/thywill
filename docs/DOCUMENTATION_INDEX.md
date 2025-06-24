@@ -6,13 +6,7 @@ Complete index of all documentation files in the ThyWill project.
 
 | Document | Priority | Status | Description |
 |----------|----------|---------|-------------|
-| [Schema-Only Migrations Plan](implementation/SCHEMA_ONLY_MIGRATIONS_PLAN.md) | **HIGH** | 🔄 Active | Fix user logout during upgrades |
-
-## 📁 **Implementation Plans** (`/docs/implementation/`)
-
-| Document | Status | Description |
-|----------|---------|-------------|
-| [Schema-Only Migrations Plan](implementation/SCHEMA_ONLY_MIGRATIONS_PLAN.md) | 🔄 Active | Comprehensive plan to fix logout/account issues during upgrades |
+| [Schema-Only Migrations Plan](plans/SCHEMA_ONLY_MIGRATIONS_PLAN.md) | **HIGH** | 🔄 Active | Fix user logout during upgrades |
 
 ## 🛠 **Operations Documentation** (`/docs/operations/`)
 
@@ -37,6 +31,10 @@ Complete index of all documentation files in the ThyWill project.
 | [Prayer Mode Implementation](plans/PRAYER_MODE_IMPLEMENTATION_PLAN.md) | Medium | 📋 Planned | Prayer mode feature implementation |
 | [Religious Preference Implementation](plans/RELIGIOUS_PREFERENCE_IMPLEMENTATION_PLAN.md) | Medium | 📋 Planned | Religious preference system |
 | [Foundational Prayers Implementation](plans/FOUNDATIONAL_PRAYERS_IMPLEMENTATION_PLAN.md) | Medium | 📋 Planned | Foundational prayers feature |
+| [Prayer Editing Implementation](plans/PRAYER_EDITING_IMPLEMENTATION_PLAN.md) | Medium | 📋 Planned | Prayer editing functionality |
+| [Text Archive Implementation](plans/TEXT_ARCHIVE_IMPLEMENTATION_PLAN.md) | ✅ Completed | Text archive system |
+| [Text Archive Download Implementation](plans/TEXT_ARCHIVE_DOWNLOAD_IMPLEMENTATION_PLAN.md) | ✅ Completed | Archive download functionality |
+| [Testimony Feature Implementation](plans/TESTIMONY_FEATURE_IMPLEMENTATION_PLAN.md) | Medium | 📋 Planned | Testimony sharing feature |
 
 ### **Infrastructure & Security**
 | Document | Priority | Status | Description |
@@ -88,7 +86,7 @@ Complete index of all documentation files in the ThyWill project.
 ## 🎯 **Immediate Action Items**
 
 ### **Critical (This Week)**
-1. **Implement Schema-Only Migrations** - [Plan](implementation/SCHEMA_ONLY_MIGRATIONS_PLAN.md)
+1. **Implement Schema-Only Migrations** - [Plan](plans/SCHEMA_ONLY_MIGRATIONS_PLAN.md)
    - Fix user logout issues during upgrades
    - Preserve user accounts and sessions
 
