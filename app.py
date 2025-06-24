@@ -39,6 +39,9 @@ TEXT_ARCHIVE_ENABLED = os.getenv("TEXT_ARCHIVE_ENABLED", "true").lower() == "tru
 TEXT_ARCHIVE_BASE_DIR = os.getenv("TEXT_ARCHIVE_BASE_DIR", "./text_archives")
 TEXT_ARCHIVE_COMPRESSION_AFTER_DAYS = int(os.getenv("TEXT_ARCHIVE_COMPRESSION_AFTER_DAYS", "365"))
 
+# Prayer Mode Settings
+PRAYER_MODE_ENABLED = os.getenv("PRAYER_MODE_ENABLED", "true").lower() == "true"
+
 templates = Jinja2Templates(directory="templates")
 
 # Initialize Anthropic client
