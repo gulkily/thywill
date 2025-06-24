@@ -8,7 +8,7 @@ import uuid
 from unittest.mock import patch, Mock
 from fastapi.testclient import TestClient
 
-from models import User, Prayer, Session as SessionModel, InviteToken, PrayerMark, AuthenticationRequest, AuthApproval, AuthAuditLog, SecurityLog, PrayerAttribute, PrayerActivityLog
+from models import User, Prayer, Session as SessionModel, InviteToken, PrayerMark, AuthenticationRequest, AuthApproval, AuthAuditLog, SecurityLog, PrayerAttribute, PrayerActivityLog, Role, UserRole, NotificationState, PrayerSkip, ChangelogEntry
 from tests.factories import UserFactory, SessionFactory
 
 
@@ -82,6 +82,11 @@ def client(test_session):
         patch('app_helpers.routes.prayer.prayer_moderation.Session', mock_session),
         patch('app_helpers.routes.auth_routes.Session', mock_session),
         patch('app_helpers.routes.admin_routes.Session', mock_session),
+        patch('app_helpers.routes.admin.dashboard.Session', mock_session),
+        patch('app_helpers.routes.admin.auth_management.Session', mock_session),
+        patch('app_helpers.routes.admin.analytics.Session', mock_session),
+        patch('app_helpers.routes.admin.user_management.Session', mock_session),
+        patch('app_helpers.routes.admin.moderation.Session', mock_session),
         patch('app_helpers.routes.user_routes.Session', mock_session),
         patch('app_helpers.routes.invite_routes.Session', mock_session),
     ]

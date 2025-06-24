@@ -10,7 +10,7 @@ from tests.factories import UserFactory, PrayerFactory, AuthenticationRequestFac
 class TestAdminDashboardRoutes:
     """Test admin dashboard route handlers"""
     
-    def test_admin_dashboard_access_as_admin(self, client, mock_admin_user):
+    def test_admin_dashboard_access_as_admin(self, client, mock_admin_user, test_session, clean_db):
         """Test admin dashboard access with admin user"""
         user, session = mock_admin_user
         
@@ -75,7 +75,7 @@ class TestAdminDashboardRoutes:
 class TestAdminAuthenticationRoutes:
     """Test admin authentication management routes"""
     
-    def test_auth_audit_access_as_admin(self, client, mock_admin_user):
+    def test_auth_audit_access_as_admin(self, client, mock_admin_user, test_session, clean_db):
         """Test auth audit log access with admin user"""
         user, session = mock_admin_user
         
@@ -125,7 +125,7 @@ class TestAdminAuthenticationRoutes:
         # Should redirect after successful bulk approval
         assert response.status_code in [200, 302, 303]
     
-    def test_bulk_approve_no_requests_selected(self, client, mock_admin_user):
+    def test_bulk_approve_no_requests_selected(self, client, mock_admin_user, test_session, clean_db):
         """Test bulk approval with no requests selected"""
         user, session = mock_admin_user
         
@@ -187,7 +187,7 @@ class TestAdminPrayerModerationRoutes:
         # Should redirect after unflagging
         assert response.status_code in [200, 302, 303]
     
-    def test_flag_prayer_not_found(self, client, mock_admin_user):
+    def test_flag_prayer_not_found(self, client, mock_admin_user, test_session, clean_db):
         """Test flagging non-existent prayer"""
         user, session = mock_admin_user
         
@@ -208,24 +208,32 @@ class TestAdminPrayerModerationRoutes:
 class TestAdminAPIRoutes:
     """Test admin API routes"""
     
-    def test_religious_preference_stats_api_as_admin(self, client, mock_admin_user):
+    def test_religious_preference_stats_api_as_admin(self, client, mock_admin_user, test_session, clean_db):
         """Test religious preference statistics API as admin"""
         user, session = mock_admin_user
         
-        with patch('app_helpers.routes.admin_routes.get_religious_preference_stats') as mock_stats:
+        with patch('app_helpers.routes.admin.analytics.get_religious_preference_stats') as mock_stats:
             mock_stats.return_value = {
-                "christian": 10,
-                "islamic": 5,
-                "jewish": 3,
-                "unspecified": 20
+                "user_preferences": {
+                    "christian": 10,
+                    "islamic": 5,
+                    "jewish": 3,
+                    "unspecified": 20
+                },
+                "prayer_targets": {
+                    "all": 30,
+                    "christians_only": 8
+                }
             }
             
             response = client.get("/api/religious-preference-stats")
             
             assert response.status_code == 200
             data = response.json()
-            assert "christian" in data
-            assert "islamic" in data
+            assert "user_preferences" in data
+            assert "prayer_targets" in data
+            assert "christian" in data["user_preferences"]
+            assert "islamic" in data["user_preferences"]
     
     def test_religious_preference_stats_api_access_denied(self, client, mock_authenticated_user):
         """Test religious preference stats API access denied for regular users"""
@@ -274,7 +282,7 @@ class TestAdminUtilityFunctions:
         # Regular user should not have admin privileges
         assert regular_user.id != "admin"
     
-    def test_expired_auth_request_cleanup(self, client, mock_admin_user):
+    def test_expired_auth_request_cleanup(self, client, mock_admin_user, test_session, clean_db):
         """Test cleanup of expired authentication requests"""
         user, session = mock_admin_user
         
@@ -287,7 +295,7 @@ class TestAdminUtilityFunctions:
             # Verify cleanup was called (implementation dependent)
             # This test structure can be adapted based on actual implementation
     
-    def test_auth_action_logging(self, client, mock_admin_user):
+    def test_auth_action_logging(self, client, mock_admin_user, test_session, clean_db):
         """Test authentication action logging"""
         user, session = mock_admin_user
         
@@ -303,7 +311,7 @@ class TestAdminUtilityFunctions:
 class TestAdminSecurityAndValidation:
     """Test admin security and input validation"""
     
-    def test_bulk_approve_input_validation(self, client, mock_admin_user):
+    def test_bulk_approve_input_validation(self, client, mock_admin_user, test_session, clean_db):
         """Test input validation for bulk approval"""
         user, session = mock_admin_user
         
@@ -317,7 +325,7 @@ class TestAdminSecurityAndValidation:
         # Should handle malicious input safely
         assert response.status_code in [200, 302, 400, 422]
     
-    def test_prayer_moderation_input_validation(self, client, mock_admin_user):
+    def test_prayer_moderation_input_validation(self, client, mock_admin_user, test_session, clean_db):
         """Test input validation for prayer moderation"""
         user, session = mock_admin_user
         
@@ -327,7 +335,7 @@ class TestAdminSecurityAndValidation:
         # Should handle malicious input safely
         assert response.status_code in [404, 400, 422]
     
-    def test_admin_csrf_protection(self, client, mock_admin_user):
+    def test_admin_csrf_protection(self, client, mock_admin_user, test_session, clean_db):
         """Test CSRF protection on admin forms"""
         user, session = mock_admin_user
         

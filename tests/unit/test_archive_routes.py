@@ -113,7 +113,7 @@ class TestArchiveRoutes:
     def test_download_user_archive_own_data(self, client, temp_archive_setup, auth_user):
         """Test downloading own user archive."""
         from app import app
-        from app_helpers.routes.archive_routes import require_full_auth
+        from app_helpers.services.auth_helpers import require_full_auth
         
         user_mock, session_mock = auth_user
         
@@ -147,7 +147,7 @@ class TestArchiveRoutes:
     def test_download_user_archive_access_denied(self, client, temp_archive_setup, auth_user):
         """Test downloading another user's archive (should be denied)."""
         from app import app
-        from app_helpers.routes.archive_routes import require_full_auth
+        from app_helpers.services.auth_helpers import require_full_auth
         
         user_mock, session_mock = auth_user
         other_user_id = "other_user_456"
@@ -173,7 +173,7 @@ class TestArchiveRoutes:
     def test_download_user_archive_admin_access(self, client, temp_archive_setup, admin_user):
         """Test admin can download any user's archive."""
         from app import app
-        from app_helpers.routes.archive_routes import require_full_auth
+        from app_helpers.services.auth_helpers import require_full_auth
         
         admin_mock, session_mock = admin_user
         target_user_id = "other_user_789"
@@ -205,7 +205,7 @@ class TestArchiveRoutes:
     def test_get_user_archive_metadata(self, client, temp_archive_setup, auth_user):
         """Test getting user archive metadata."""
         from app import app
-        from app_helpers.routes.archive_routes import require_full_auth
+        from app_helpers.services.auth_helpers import require_full_auth
         
         user_mock, session_mock = auth_user
         
@@ -239,7 +239,7 @@ class TestArchiveRoutes:
     def test_list_community_archives(self, client, temp_archive_setup, auth_user):
         """Test listing community archives."""
         from app import app
-        from app_helpers.routes.archive_routes import require_full_auth
+        from app_helpers.services.auth_helpers import require_full_auth
         
         user_mock, session_mock = auth_user
         
@@ -271,7 +271,7 @@ class TestArchiveRoutes:
     def test_download_community_archive(self, client, temp_archive_setup, auth_user):
         """Test downloading complete community archive."""
         from app import app
-        from app_helpers.routes.archive_routes import require_full_auth
+        from app_helpers.services.auth_helpers import require_full_auth
         
         user_mock, session_mock = auth_user
         
@@ -303,7 +303,7 @@ class TestArchiveRoutes:
     def test_get_prayer_archive_file(self, client, temp_archive_setup, auth_user, test_prayer_data, test_session):
         """Test downloading individual prayer archive file."""
         from app import app
-        from app_helpers.routes.archive_routes import require_full_auth
+        from app_helpers.services.auth_helpers import require_full_auth
         
         user_mock, session_mock = auth_user
         prayer = test_prayer_data
@@ -338,7 +338,7 @@ class TestArchiveRoutes:
     def test_get_prayer_archive_file_not_found(self, client, temp_archive_setup, auth_user, test_session):
         """Test downloading archive file for nonexistent prayer."""
         from app import app
-        from app_helpers.routes.archive_routes import require_full_auth
+        from app_helpers.services.auth_helpers import require_full_auth
         
         user_mock, session_mock = auth_user
         
@@ -349,11 +349,16 @@ class TestArchiveRoutes:
         app.dependency_overrides[require_full_auth] = override_require_full_auth
         
         # Mock Session to use test_session 
-        def mock_session_context_manager(engine_arg):
-            return test_session
+        class MockSession:
+            def __init__(self, engine_arg):
+                pass
+            def __enter__(self):
+                return test_session
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                pass
         
         try:
-            with patch('app_helpers.routes.archive_routes.Session', mock_session_context_manager):
+            with patch('app_helpers.routes.archive_routes.Session', MockSession):
                 response = client.get("/api/archive/prayer/99999/file")
                 
                 assert response.status_code == 404
@@ -381,7 +386,7 @@ class TestArchiveRoutes:
         
         # Override the dependency
         from app import app
-        from app_helpers.routes.archive_routes import require_full_auth
+        from app_helpers.services.auth_helpers import require_full_auth
         
         def override_require_full_auth():
             return user_mock, session_mock
@@ -410,7 +415,7 @@ class TestArchiveRoutes:
     def test_cleanup_old_downloads_admin_only(self, client, temp_archive_setup, admin_user):
         """Test cleanup endpoint requires admin access."""
         from app import app
-        from app_helpers.routes.archive_routes import require_full_auth
+        from app_helpers.services.auth_helpers import require_full_auth
         
         admin_mock, session_mock = admin_user
         
@@ -434,7 +439,7 @@ class TestArchiveRoutes:
     def test_cleanup_old_downloads_non_admin_denied(self, client, temp_archive_setup, auth_user):
         """Test cleanup endpoint denies non-admin access."""
         from app import app
-        from app_helpers.routes.archive_routes import require_full_auth
+        from app_helpers.services.auth_helpers import require_full_auth
         
         user_mock, session_mock = auth_user
         
@@ -459,7 +464,7 @@ class TestArchiveRoutes:
     def test_download_with_include_community_parameter(self, client, temp_archive_setup, auth_user):
         """Test download with include_community parameter."""
         from app import app
-        from app_helpers.routes.archive_routes import require_full_auth
+        from app_helpers.services.auth_helpers import require_full_auth
         
         user_mock, session_mock = auth_user
         
@@ -490,7 +495,7 @@ class TestArchiveRoutes:
     def test_api_error_handling(self, client, temp_archive_setup, auth_user):
         """Test API error handling for service failures."""
         from app import app
-        from app_helpers.routes.archive_routes import require_full_auth
+        from app_helpers.services.auth_helpers import require_full_auth
         
         user_mock, session_mock = auth_user
         
