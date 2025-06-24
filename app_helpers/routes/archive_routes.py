@@ -130,6 +130,11 @@ async def get_prayer_archive_file(
                 headers={"Content-Disposition": f"attachment; filename={filename}"}
             )
         
+    except HTTPException:
+        # Re-raise HTTPExceptions (like 404s) without modification
+        raise
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Archive file not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Archive file access failed: {str(e)}")
 
