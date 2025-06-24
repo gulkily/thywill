@@ -162,9 +162,10 @@ class TestArchiveRoutes:
             response = client.get(f"/api/archive/user/{other_user_id}/download")
             
             assert response.status_code == 403
-            # The 403 response is an HTML error page, not JSON
-            assert "403" in response.text
-            assert "Access Forbidden" in response.text
+            # The 403 response is now a JSON response for API routes
+            data = response.json()
+            assert "detail" in data
+            assert "Access denied" in data["detail"] or "Forbidden" in data["detail"]
         finally:
             # Clean up dependency override
             if require_full_auth in app.dependency_overrides:
@@ -453,9 +454,10 @@ class TestArchiveRoutes:
             response = client.delete("/api/archive/downloads/cleanup")
             
             assert response.status_code == 403
-            # The 403 response is an HTML error page, not JSON
-            assert "403" in response.text
-            assert "Access Forbidden" in response.text
+            # The 403 response is now a JSON response for API routes
+            data = response.json()
+            assert "detail" in data
+            assert "Admin access required" in data["detail"] or "Forbidden" in data["detail"]
         finally:
             # Clean up dependency override
             if require_full_auth in app.dependency_overrides:
