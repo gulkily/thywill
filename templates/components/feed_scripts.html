@@ -21,6 +21,7 @@ function toggleAddPrayer() {
 
 // Global variable to store current preview data
 let currentPreviewData = null;
+let originalGeneratedPrayer = null;
 
 // Handle prayer form submission with preview flow
 document.addEventListener('DOMContentLoaded', function() {
@@ -100,10 +101,19 @@ function showPreviewSection(previewData) {
     // Hide form section
     document.getElementById('add-prayer-form').style.display = 'none';
     
+    // Store original generated prayer for cancel functionality
+    originalGeneratedPrayer = previewData.generated_prayer;
+    
     // Populate preview content
     document.getElementById('preview-prayer-display').textContent = previewData.generated_prayer;
     document.getElementById('preview-prayer-textarea').value = previewData.generated_prayer;
     document.getElementById('preview-original-text').textContent = previewData.original_text;
+    
+    // Reset edit button text
+    const editBtn = document.getElementById('edit-prayer-btn');
+    if (editBtn) {
+        editBtn.innerHTML = '✏️ Edit Prayer';
+    }
     
     // Update character count for textarea
     updatePrayerCharCount();
@@ -190,9 +200,19 @@ function setupPreviewActions() {
                 if (response.ok) {
                     const newPreviewData = await response.json();
                     currentPreviewData = newPreviewData;
+                    
+                    // Update original prayer reference for new generation
+                    originalGeneratedPrayer = newPreviewData.generated_prayer;
+                    
                     document.getElementById('preview-prayer-display').textContent = newPreviewData.generated_prayer;
                     document.getElementById('preview-prayer-textarea').value = newPreviewData.generated_prayer;
                     updatePrayerCharCount();
+                    
+                    // Reset edit button text since this is a fresh generation
+                    const editBtn = document.getElementById('edit-prayer-btn');
+                    if (editBtn) {
+                        editBtn.innerHTML = '✏️ Edit Prayer';
+                    }
                     
                     // Update service status notification
                     const serviceNotification = document.getElementById('service-status-notification');
@@ -346,9 +366,15 @@ function setupPrayerEditing() {
     }
     
     if (textarea) {
-        textarea.addEventListener('input', updatePrayerCharCount);
+        textarea.addEventListener('input', function() {
+            updatePrayerCharCount();
+            autoSavePrayerEdit();
+        });
         
-        // Allow Ctrl+Enter to save changes
+        // Auto-save when user loses focus
+        textarea.addEventListener('blur', autoSavePrayerEdit);
+        
+        // Allow Ctrl+Enter to save changes explicitly
         textarea.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'Enter') {
                 savePrayerEdit();
@@ -402,11 +428,51 @@ function savePrayerEdit() {
     }
 }
 
+function autoSavePrayerEdit() {
+    const textarea = document.getElementById('preview-prayer-textarea');
+    const editedText = textarea.value.trim();
+    
+    // Only auto-save if there's valid content and it's different from original
+    if (editedText && editedText.length <= 2000 && currentPreviewData) {
+        // Update the preview data silently
+        currentPreviewData.generated_prayer = editedText;
+        
+        // Update display without hiding edit mode
+        document.getElementById('preview-prayer-display').textContent = editedText;
+        
+        // Update edit button text to indicate prayer was edited
+        const editBtn = document.getElementById('edit-prayer-btn');
+        if (editBtn && !editBtn.innerHTML.includes('(edited)')) {
+            editBtn.innerHTML = '✏️ Edit Prayer <span class="text-xs">(edited)</span>';
+        }
+    }
+}
+
+function getOriginalGeneratedPrayer() {
+    return originalGeneratedPrayer;
+}
+
 function cancelPrayerEdit() {
-    // Restore original text in textarea
-    if (currentPreviewData) {
-        document.getElementById('preview-prayer-textarea').value = currentPreviewData.generated_prayer;
+    // Get the original generated prayer from when preview was first loaded
+    const originalGenerated = getOriginalGeneratedPrayer();
+    
+    // Restore original text in textarea and preview data
+    if (originalGenerated) {
+        document.getElementById('preview-prayer-textarea').value = originalGenerated;
+        document.getElementById('preview-prayer-display').textContent = originalGenerated;
+        
+        // Reset preview data to original
+        if (currentPreviewData) {
+            currentPreviewData.generated_prayer = originalGenerated;
+        }
+        
         updatePrayerCharCount();
+        
+        // Reset edit button text
+        const editBtn = document.getElementById('edit-prayer-btn');
+        if (editBtn) {
+            editBtn.innerHTML = '✏️ Edit Prayer';
+        }
     }
     
     // Hide edit mode, show display mode
