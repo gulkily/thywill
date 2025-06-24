@@ -35,6 +35,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup preview action handlers
     setupPreviewActions();
     
+    // Setup prayer editing functionality
+    setupPrayerEditing();
+    
     // Setup collapsible original request in preview
     const toggleOriginal = document.getElementById('toggle-original');
     if (toggleOriginal) {
@@ -98,8 +101,12 @@ function showPreviewSection(previewData) {
     document.getElementById('add-prayer-form').style.display = 'none';
     
     // Populate preview content
-    document.getElementById('preview-prayer-text').textContent = previewData.generated_prayer;
+    document.getElementById('preview-prayer-display').textContent = previewData.generated_prayer;
+    document.getElementById('preview-prayer-textarea').value = previewData.generated_prayer;
     document.getElementById('preview-original-text').textContent = previewData.original_text;
+    
+    // Update character count for textarea
+    updatePrayerCharCount();
     
     // Show/hide service status notification
     const serviceNotification = document.getElementById('service-status-notification');
@@ -183,7 +190,9 @@ function setupPreviewActions() {
                 if (response.ok) {
                     const newPreviewData = await response.json();
                     currentPreviewData = newPreviewData;
-                    document.getElementById('preview-prayer-text').textContent = newPreviewData.generated_prayer;
+                    document.getElementById('preview-prayer-display').textContent = newPreviewData.generated_prayer;
+                    document.getElementById('preview-prayer-textarea').value = newPreviewData.generated_prayer;
+                    updatePrayerCharCount();
                     
                     // Update service status notification
                     const serviceNotification = document.getElementById('service-status-notification');
@@ -292,4 +301,117 @@ document.addEventListener('keydown', function(event) {
         closeInviteModal();
     }
 });
+
+// Prayer editing functions
+function updatePrayerCharCount() {
+    const textarea = document.getElementById('preview-prayer-textarea');
+    const counter = document.getElementById('prayer-char-count');
+    if (textarea && counter) {
+        const count = textarea.value.length;
+        counter.textContent = `${count}/2000 characters`;
+        
+        // Change color if approaching limit
+        if (count > 1800) {
+            counter.classList.add('text-red-500');
+            counter.classList.remove('text-gray-500');
+        } else {
+            counter.classList.remove('text-red-500');
+            counter.classList.add('text-gray-500');
+        }
+    }
+}
+
+function setupPrayerEditing() {
+    const editBtn = document.getElementById('edit-prayer-btn');
+    const saveBtn = document.getElementById('save-prayer-edit');
+    const cancelBtn = document.getElementById('cancel-prayer-edit');
+    const textarea = document.getElementById('preview-prayer-textarea');
+    
+    if (editBtn) {
+        editBtn.addEventListener('click', function() {
+            showPrayerEditMode();
+        });
+    }
+    
+    if (saveBtn) {
+        saveBtn.addEventListener('click', function() {
+            savePrayerEdit();
+        });
+    }
+    
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function() {
+            cancelPrayerEdit();
+        });
+    }
+    
+    if (textarea) {
+        textarea.addEventListener('input', updatePrayerCharCount);
+        
+        // Allow Ctrl+Enter to save changes
+        textarea.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                savePrayerEdit();
+            }
+        });
+    }
+}
+
+function showPrayerEditMode() {
+    document.getElementById('preview-prayer-display').style.display = 'none';
+    document.getElementById('preview-prayer-edit').style.display = 'block';
+    document.getElementById('edit-prayer-btn').style.display = 'none';
+    
+    // Focus on textarea
+    setTimeout(() => {
+        document.getElementById('preview-prayer-textarea').focus();
+    }, 100);
+}
+
+function savePrayerEdit() {
+    const textarea = document.getElementById('preview-prayer-textarea');
+    const editedText = textarea.value.trim();
+    
+    if (!editedText) {
+        alert('Prayer cannot be empty');
+        return;
+    }
+    
+    if (editedText.length > 2000) {
+        alert('Prayer is too long (maximum 2000 characters)');
+        return;
+    }
+    
+    // Update the preview data with edited prayer
+    if (currentPreviewData) {
+        currentPreviewData.generated_prayer = editedText;
+    }
+    
+    // Update display
+    document.getElementById('preview-prayer-display').textContent = editedText;
+    
+    // Hide edit mode, show display mode
+    document.getElementById('preview-prayer-edit').style.display = 'none';
+    document.getElementById('preview-prayer-display').style.display = 'block';
+    document.getElementById('edit-prayer-btn').style.display = 'inline-block';
+    
+    // Update edit button text to indicate prayer was edited
+    const editBtn = document.getElementById('edit-prayer-btn');
+    if (editBtn) {
+        editBtn.innerHTML = '✏️ Edit Prayer <span class="text-xs">(edited)</span>';
+    }
+}
+
+function cancelPrayerEdit() {
+    // Restore original text in textarea
+    if (currentPreviewData) {
+        document.getElementById('preview-prayer-textarea').value = currentPreviewData.generated_prayer;
+        updatePrayerCharCount();
+    }
+    
+    // Hide edit mode, show display mode
+    document.getElementById('preview-prayer-edit').style.display = 'none';
+    document.getElementById('preview-prayer-display').style.display = 'block';
+    document.getElementById('edit-prayer-btn').style.display = 'inline-block';
+}
 </script>
