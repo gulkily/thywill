@@ -332,7 +332,7 @@ class CompleteSystemRecovery:
                     '|' not in line):
                     continue
                 
-                parts = line.split('|')
+                parts = [p.strip() for p in line.split('|')]
                 if len(parts) >= 5:
                     try:
                         timestamp = datetime.fromisoformat(parts[0])
@@ -529,6 +529,13 @@ class CompleteSystemRecovery:
                     self.recovery_stats[key] += value
                 elif isinstance(value, list):
                     self.recovery_stats[key].extend(value)
+    
+    def _recover_authentication_requests(self, session: Session) -> Dict:
+        """Test-friendly method to recover authentication requests and return stats"""
+        auth_file = self.archive_dir / "authentication_requests.txt"
+        if auth_file.exists():
+            self._import_auth_requests(auth_file, dry_run=False)
+        return self.recovery_stats
 
 
 # Global recovery service instance
