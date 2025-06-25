@@ -161,11 +161,19 @@ class TestArchiveValidation:
         """Test validation of empty archive directory"""
         recovery = CompleteSystemRecovery(str(temp_archive_dir))
         
+        # Ensure we start with no warnings
+        assert len(recovery.recovery_stats['warnings']) == 0, f"Started with warnings: {recovery.recovery_stats['warnings']}"
+        
         # Should not raise exception for empty directory
         recovery._validate_archive_structure()
         
-        # Should log warnings for missing directories
-        assert len(recovery.recovery_stats['warnings']) > 0
+        # Should log warnings for missing directories (prayers, users, activity)
+        warnings = recovery.recovery_stats['warnings']
+        assert len(warnings) > 0, f"Expected warnings for missing directories, but got: {warnings}"
+        
+        # Should have warnings for the core required directories
+        missing_dirs = [w for w in warnings if 'Missing core directory:' in w]
+        assert len(missing_dirs) >= 3, f"Expected at least 3 missing directory warnings, got: {missing_dirs}"
     
     def test_validate_complete_archive_structure(self, sample_archive_data):
         """Test validation of complete archive structure"""
