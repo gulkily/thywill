@@ -22,6 +22,7 @@ from sqlmodel import Session, select
 import uuid
 import secrets
 
+from sqlmodel import SQLModel
 from models import (
     engine, User, Prayer, PrayerMark, PrayerAttribute, PrayerActivityLog,
     Role, UserRole, AuthenticationRequest, AuthApproval, AuthAuditLog,
@@ -38,8 +39,9 @@ class CompleteSystemRecovery:
     
     def __init__(self, archive_dir: str = None):
         self.archive_dir = Path(archive_dir) if archive_dir else Path("text_archives")
-        self.archive_service = TextArchiveService(str(self.archive_dir))
-        self.text_importer = TextImporterService(self.archive_service)
+        # Note: Don't create TextArchiveService until needed to avoid auto-creating directories
+        self._archive_service = None
+        self._text_importer = None
         
         self.recovery_stats = {
             'users_recovered': 0,
@@ -57,6 +59,20 @@ class CompleteSystemRecovery:
             'warnings': []
         }
     
+    @property
+    def archive_service(self):
+        """Lazy-load archive service to avoid auto-creating directories"""
+        if self._archive_service is None:
+            self._archive_service = TextArchiveService(str(self.archive_dir))
+        return self._archive_service
+    
+    @property
+    def text_importer(self):
+        """Lazy-load text importer to avoid auto-creating directories"""
+        if self._text_importer is None:
+            self._text_importer = TextImporterService(self.archive_service)
+        return self._text_importer
+    
     def perform_complete_recovery(self, dry_run: bool = False) -> Dict:
         """
         Perform complete database recovery from text archives
@@ -72,6 +88,10 @@ class CompleteSystemRecovery:
         try:
             # Phase 1: Validate archive directory structure
             self._validate_archive_structure()
+            
+            # Ensure database tables exist for all operations
+            if not dry_run:
+                SQLModel.metadata.create_all(engine)
             
             # Phase 2: Import core user and prayer data (existing functionality)
             logger.info("Phase 2: Importing core user and prayer data")
@@ -214,6 +234,9 @@ class CompleteSystemRecovery:
     
     def validate_recovery_integrity(self):
         """Validate the integrity of recovered data"""
+        # Ensure database tables exist before validation
+        SQLModel.metadata.create_all(engine)
+        
         with Session(engine) as session:
             # Validate user-prayer relationships
             orphaned_prayers = session.exec(
@@ -302,7 +325,11 @@ class CompleteSystemRecovery:
             lines = content.strip().split('\n')
             
             for line in lines:
-                if line.startswith('#') or not line.strip() or '|' not in line:
+                if (line.startswith('#') or 
+                    line.startswith('Format:') or 
+                    line.startswith('Authentication Requests') or
+                    not line.strip() or 
+                    '|' not in line):
                     continue
                 
                 parts = line.split('|')
@@ -316,6 +343,9 @@ class CompleteSystemRecovery:
                         details = parts[5] if len(parts) > 5 else ""
                         
                         if not dry_run:
+                            # Ensure database tables exist before insert
+                            SQLModel.metadata.create_all(engine)
+                            
                             with Session(engine) as session:
                                 # Check if auth request already exists
                                 existing = session.exec(
@@ -387,6 +417,9 @@ class CompleteSystemRecovery:
                         created_by = parts[4] if len(parts) > 4 else None
                         
                         if not dry_run:
+                            # Ensure database tables exist before insert
+                            SQLModel.metadata.create_all(engine)
+                            
                             with Session(engine) as session:
                                 existing_role = session.exec(
                                     select(Role).where(Role.name == role_name)
@@ -422,7 +455,14 @@ class CompleteSystemRecovery:
     
     def _create_default_roles(self, dry_run: bool):
         """Create default system roles if none exist"""
-        if not dry_run:
+        if dry_run:
+            # In dry run mode, still count the roles that would be created
+            self.recovery_stats['roles_recovered'] += 2
+            logger.info("Would create 2 default roles (admin, user)")
+        else:
+            # Ensure database tables exist before creation
+            SQLModel.metadata.create_all(engine)
+            
             with Session(engine) as session:
                 # Create admin role
                 admin_role = session.exec(select(Role).where(Role.name == "admin")).first()
@@ -434,6 +474,7 @@ class CompleteSystemRecovery:
                         is_system_role=True
                     )
                     session.add(admin_role)
+                    self.recovery_stats['roles_recovered'] += 1
                 
                 # Create user role
                 user_role = session.exec(select(Role).where(Role.name == "user")).first()
@@ -445,9 +486,9 @@ class CompleteSystemRecovery:
                         is_system_role=True
                     )
                     session.add(user_role)
+                    self.recovery_stats['roles_recovered'] += 1
                 
                 session.commit()
-                self.recovery_stats['roles_recovered'] += 2
     
     def _import_invite_tokens(self, file_path: Path, dry_run: bool):
         """Import active invite tokens from archive file"""
