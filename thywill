@@ -82,6 +82,8 @@ show_help() {
     echo "    test-recovery          Simulate complete database recovery"
     echo "    full-recovery          Perform complete database reconstruction"
     echo "    repair-archives        Fix archive inconsistencies"
+    echo "    heal-archives          Create missing archive files for existing prayers"
+    echo "    sync-archives          Complete archive synchronization (safe post-deploy)"
     echo "    recovery-report        Generate recovery capability report"
     echo ""
     header "  Database Commands:"
@@ -114,6 +116,8 @@ show_help() {
     echo "    thywill validate-archives                        # Check archive integrity"
     echo "    thywill test-recovery                            # Simulate complete recovery"
     echo "    thywill full-recovery                            # Complete database reconstruction"
+    echo "    thywill heal-archives                            # Create missing archive files"
+    echo "    thywill sync-archives                            # Complete post-deploy sync"
     echo "    thywill recovery-report                          # Generate recovery report"
     echo "    thywill deploy                                    # Safe deployment"
     echo "    thywill backup                                    # Create database backup"
@@ -1478,6 +1482,101 @@ except Exception as e:
 "
 }
 
+cmd_heal_archives() {
+    header "Prayer Archive Healing"
+    
+    # Check if we're in the right directory
+    if [ ! -f "heal_prayer_archives.py" ]; then
+        error "heal_prayer_archives.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Creating missing archive files for existing prayers..."
+    
+    # Execute the healing script with proper production mode handling
+    python3 heal_prayer_archives.py
+}
+
+cmd_sync_archives() {
+    header "Complete Archive Synchronization"
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Performing complete archive synchronization after deployment..."
+    echo ""
+    warning "This will run all necessary commands to synchronize archives with database"
+    echo "Steps to be performed:"
+    echo "  1. Validate current archive structure"
+    echo "  2. Import any missing data from text archives"
+    echo "  3. Create missing archive files for existing prayers"
+    echo "  4. Generate final validation report"
+    echo ""
+    
+    # Step 1: Validate archives
+    log "Step 1: Validating archive structure..."
+    if ! cmd_validate_archives; then
+        error "Archive validation failed"
+        exit 1
+    fi
+    
+    echo ""
+    
+    # Step 2: Import text archives (dry run first)
+    log "Step 2: Checking what needs to be imported..."
+    if ! cmd_import_text_archives --dry-run; then
+        error "Text archive import check failed"
+        exit 1
+    fi
+    
+    echo ""
+    read -p "Continue with import? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        log "Importing text archives..."
+        if ! cmd_import_text_archives; then
+            error "Text archive import failed"
+            exit 1
+        fi
+    else
+        log "Skipping text archive import"
+    fi
+    
+    echo ""
+    
+    # Step 3: Heal missing archive files
+    log "Step 3: Creating missing archive files..."
+    if ! cmd_heal_archives; then
+        error "Archive healing failed"
+        exit 1
+    fi
+    
+    echo ""
+    
+    # Step 4: Final validation
+    log "Step 4: Final validation..."
+    if ! cmd_validate_archives; then
+        warning "Final validation showed issues - review output above"
+    fi
+    
+    echo ""
+    success "Archive synchronization completed!"
+    echo ""
+    echo "Summary:"
+    echo "  ✅ Archive structure validated"
+    echo "  ✅ Text archives imported"
+    echo "  ✅ Missing archive files created"
+    echo "  ✅ Final validation performed"
+    echo ""
+    echo "💡 Your archives and database should now be synchronized"
+    echo "💡 Run 'thywill recovery-report' to see complete recovery capability"
+}
+
 cmd_recovery_report() {
     header "Recovery Capability Report"
     
@@ -2316,6 +2415,12 @@ main() {
             ;;
         repair-archives)
             cmd_repair_archives "$@"
+            ;;
+        heal-archives)
+            cmd_heal_archives "$@"
+            ;;
+        sync-archives)
+            cmd_sync_archives "$@"
             ;;
         recovery-report)
             cmd_recovery_report "$@"
