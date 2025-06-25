@@ -15,10 +15,14 @@ def migrate_flagged_prayers():
     with Session(engine) as session:
         # First, check if the new table exists and create only if needed
         from sqlmodel import SQLModel
-        from sqlalchemy import inspect
         
-        inspector = inspect(engine)
-        if 'prayerattribute' not in inspector.get_table_names():
+        # Check if table exists using direct SQL query
+        with engine.connect() as conn:
+            from sqlalchemy import text
+            result = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='prayerattribute'"))
+            table_exists = result.fetchone() is not None
+        
+        if not table_exists:
             # Only create the specific table we need, not all tables
             PrayerAttribute.__table__.create(engine, checkfirst=True)
             print("✓ Prayer attributes table created")

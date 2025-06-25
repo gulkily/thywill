@@ -13,7 +13,7 @@ import shutil
 import time
 from pathlib import Path
 from typing import Optional
-from sqlalchemy import inspect
+# Remove direct SQLAlchemy import
 from sqlmodel import SQLModel
 
 class DatabaseProtection:
@@ -68,10 +68,15 @@ class DatabaseProtection:
     @staticmethod
     def safe_create_table(table_class, engine):
         """Safely create a single table"""
-        inspector = inspect(engine)
         table_name = table_class.__tablename__
         
-        if table_name not in inspector.get_table_names():
+        # Check if table exists using direct SQL query
+        with engine.connect() as conn:
+            from sqlalchemy import text
+            result = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name=?"), (table_name,))
+            exists = result.fetchone() is not None
+        
+        if not exists:
             table_class.__table__.create(engine, checkfirst=True)
             print(f"✅ Created table: {table_name}")
         else:

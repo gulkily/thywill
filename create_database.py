@@ -11,7 +11,7 @@ WARNING: This will create tables but will not overwrite existing data.
 import sys
 import os
 from pathlib import Path
-from sqlalchemy import inspect
+# Remove direct SQLAlchemy import
 from sqlmodel import SQLModel
 
 def main():
@@ -43,19 +43,14 @@ def main():
         
         print("Creating database tables...")
         
-        # Check which tables already exist
-        inspector = inspect(engine)
-        existing_tables = inspector.get_table_names()
-        
-        if existing_tables:
-            print(f"Found {len(existing_tables)} existing tables: {', '.join(existing_tables)}")
-        
         # Create all tables (create_all is safe - it won't overwrite existing tables)
         SQLModel.metadata.create_all(engine)
         
-        # Verify tables were created
-        inspector = inspect(engine)
-        final_tables = inspector.get_table_names()
+        # Get table count for verification
+        with engine.connect() as conn:
+            from sqlalchemy import text
+            result = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+            final_tables = [row[0] for row in result.fetchall()]
         
         print(f"✅ Database creation complete!")
         print(f"✅ Total tables: {len(final_tables)}")
