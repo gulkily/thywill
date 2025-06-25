@@ -78,6 +78,11 @@ show_help() {
     echo "    import prayers <file>   Import prayers from JSON file"
     echo "    import community <file> Import community data from ZIP export"
     echo "    import text-archives    Import data from text_archives/ directory"
+    echo "    validate-archives       Check archive completeness and integrity"
+    echo "    test-recovery          Simulate complete database recovery"
+    echo "    full-recovery          Perform complete database reconstruction"
+    echo "    repair-archives        Fix archive inconsistencies"
+    echo "    recovery-report        Generate recovery capability report"
     echo ""
     header "  Database Commands:"
     echo "    db init             Initialize database tables (first time only)"
@@ -106,6 +111,10 @@ show_help() {
     echo "    thywill import community export.zip              # Import community export"
     echo "    thywill import text-archives --dry-run           # Preview text archive import"
     echo "    thywill import text-archives                     # Import from text_archives/"
+    echo "    thywill validate-archives                        # Check archive integrity"
+    echo "    thywill test-recovery                            # Simulate complete recovery"
+    echo "    thywill full-recovery                            # Complete database reconstruction"
+    echo "    thywill recovery-report                          # Generate recovery report"
     echo "    thywill deploy                                    # Safe deployment"
     echo "    thywill backup                                    # Create database backup"
     echo "    thywill rollback                                  # Rollback to previous"
@@ -1348,6 +1357,405 @@ cmd_import_text_archives() {
     python3 import_text_archives.py "$@"
 }
 
+# Archive validation and recovery commands
+cmd_validate_archives() {
+    header "Archive Validation"
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    if [ ! -d "text_archives" ]; then
+        warning "text_archives/ directory not found"
+        echo "Creating empty text_archives/ directory for validation..."
+        mkdir -p text_archives
+    fi
+    
+    log "Validating archive completeness and integrity..."
+    
+    # Execute Python validation script
+    python3 -c "
+import sys
+sys.path.append('.')
+from app_helpers.services.database_recovery import CompleteSystemRecovery
+
+try:
+    recovery = CompleteSystemRecovery('text_archives')
+    print('🔍 Validating archive structure...')
+    recovery._validate_archive_structure()
+    
+    print('📊 Archive Structure Report:')
+    print('=' * 50)
+    
+    # Check core directories
+    core_dirs = ['prayers', 'users', 'activity']
+    for dir_name in core_dirs:
+        path = recovery.archive_dir / dir_name
+        if path.exists():
+            file_count = len(list(path.glob('*.txt')))
+            print(f'✅ {dir_name}/: {file_count} files')
+        else:
+            print(f'❌ {dir_name}/: missing')
+    
+    # Check new directories
+    new_dirs = ['auth', 'roles', 'system']
+    for dir_name in new_dirs:
+        path = recovery.archive_dir / dir_name
+        if path.exists():
+            file_count = len(list(path.rglob('*.txt')))
+            print(f'✅ {dir_name}/: {file_count} files')
+        else:
+            print(f'⚠️  {dir_name}/: not found (will use defaults)')
+    
+    print()
+    print('📋 Validation complete!')
+    print('💡 Use \"thywill test-recovery\" to simulate recovery')
+    
+except Exception as e:
+    print(f'❌ Validation failed: {e}')
+    sys.exit(1)
+"
+}
+
+cmd_test_recovery() {
+    header "Test Recovery (Dry Run)"
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    if [ ! -d "text_archives" ]; then
+        error "text_archives/ directory not found"
+        echo "Please ensure text_archives/ directory exists in the project root"
+        exit 1
+    fi
+    
+    log "Simulating complete database recovery (dry run)..."
+    warning "This is a simulation - no actual changes will be made"
+    
+    # Execute Python recovery script in dry run mode
+    python3 -c "
+import sys
+sys.path.append('.')
+from app_helpers.services.database_recovery import CompleteSystemRecovery
+
+try:
+    recovery = CompleteSystemRecovery('text_archives')
+    result = recovery.perform_complete_recovery(dry_run=True)
+    
+    if result['success']:
+        print('🎉 Recovery simulation completed successfully!')
+        print()
+        print('📊 Recovery Statistics:')
+        print('=' * 50)
+        stats = result['stats']
+        for key, value in stats.items():
+            if isinstance(value, int) and value > 0:
+                print(f'{key.replace(\"_\", \" \").title()}: {value}')
+        
+        if stats.get('warnings'):
+            print()
+            print('⚠️  Warnings:')
+            for warning in stats['warnings']:
+                print(f'  • {warning}')
+        
+        if stats.get('errors'):
+            print()
+            print('❌ Errors:')
+            for error in stats['errors']:
+                print(f'  • {error}')
+        
+        print()
+        print('💡 Use \"thywill full-recovery\" to perform actual recovery')
+    else:
+        print(f'❌ Recovery simulation failed: {result.get(\"error\", \"Unknown error\")}')
+        sys.exit(1)
+        
+except Exception as e:
+    print(f'❌ Recovery simulation failed: {e}')
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+"
+}
+
+cmd_full_recovery() {
+    header "Complete Database Recovery"
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    if [ ! -d "text_archives" ]; then
+        error "text_archives/ directory not found"
+        echo "Please ensure text_archives/ directory exists in the project root"
+        exit 1
+    fi
+    
+    # Safety confirmation
+    echo ""
+    warning "IMPORTANT: This will completely reconstruct the database from text archives"
+    warning "Make sure you have a backup of your current database!"
+    echo ""
+    read -p "Are you sure you want to proceed? (type 'yes' to continue): " confirm
+    
+    if [ "$confirm" != "yes" ]; then
+        echo "Recovery cancelled."
+        exit 0
+    fi
+    
+    log "Performing complete database recovery from text archives..."
+    
+    # Create backup first
+    timestamp=$(date '+%Y%m%d_%H%M%S')
+    backup_name="pre_recovery_${timestamp}.db"
+    
+    if [ -f "thywill.db" ]; then
+        log "Creating backup: $backup_name"
+        cp thywill.db "$backup_name"
+        success "Backup created: $backup_name"
+    fi
+    
+    # Execute Python recovery script
+    python3 -c "
+import sys
+sys.path.append('.')
+from app_helpers.services.database_recovery import CompleteSystemRecovery
+
+try:
+    recovery = CompleteSystemRecovery('text_archives')
+    result = recovery.perform_complete_recovery(dry_run=False)
+    
+    if result['success']:
+        print('🎉 Complete database recovery finished successfully!')
+        print()
+        print('📊 Recovery Results:')
+        print('=' * 50)
+        stats = result['stats']
+        for key, value in stats.items():
+            if isinstance(value, int) and value > 0:
+                print(f'{key.replace(\"_\", \" \").title()}: {value}')
+        
+        if stats.get('warnings'):
+            print()
+            print('⚠️  Warnings:')
+            for warning in stats['warnings']:
+                print(f'  • {warning}')
+        
+        if stats.get('errors'):
+            print()
+            print('❌ Errors:')
+            for error in stats['errors']:
+                print(f'  • {error}')
+        
+        print()
+        print('✅ Database reconstruction complete!')
+        print('💡 Test your application to ensure everything is working correctly')
+    else:
+        print(f'❌ Recovery failed: {result.get(\"error\", \"Unknown error\")}')
+        print(f'💡 Your backup is available at: ${backup_name}')
+        sys.exit(1)
+        
+except Exception as e:
+    print(f'❌ Recovery failed: {e}')
+    print(f'💡 Your backup is available at: ${backup_name}')
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+"
+}
+
+cmd_repair_archives() {
+    header "Archive Repair"
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Checking and repairing archive inconsistencies..."
+    
+    # Execute Python repair script
+    python3 -c "
+import sys
+sys.path.append('.')
+from app_helpers.services.text_archive_service import TextArchiveService
+
+try:
+    archive_service = TextArchiveService('text_archives')
+    
+    print('🔧 Archive repair functionality')
+    print('⚠️  This feature is planned for future implementation')
+    print()
+    print('Current repair capabilities:')
+    print('  • Use \"thywill validate-archives\" to check integrity')
+    print('  • Use \"thywill test-recovery\" to identify issues')
+    print('  • Manual archive file repair may be needed for now')
+    
+except Exception as e:
+    print(f'❌ Repair check failed: {e}')
+    sys.exit(1)
+"
+}
+
+cmd_recovery_report() {
+    header "Recovery Capability Report"
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Generating recovery capability report..."
+    
+    # Execute Python report script
+    python3 -c "
+import sys
+from pathlib import Path
+sys.path.append('.')
+from app_helpers.services.database_recovery import CompleteSystemRecovery
+
+try:
+    recovery = CompleteSystemRecovery('text_archives')
+    archive_dir = recovery.archive_dir
+    
+    print('📊 Recovery Capability Report')
+    print('=' * 60)
+    print(f'Archive Directory: {archive_dir.absolute()}')
+    print(f'Report Generated: {__import__(\"datetime\").datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")}')
+    print()
+    
+    # Core data recovery capability
+    print('🔵 CORE DATA RECOVERY')
+    print('-' * 30)
+    
+    prayers_dir = archive_dir / 'prayers'
+    users_dir = archive_dir / 'users'
+    activity_dir = archive_dir / 'activity'
+    
+    if prayers_dir.exists():
+        prayer_files = list(prayers_dir.rglob('*.txt'))
+        print(f'✅ Prayer archives: {len(prayer_files)} files')
+    else:
+        print('❌ Prayer archives: missing')
+    
+    if users_dir.exists():
+        user_files = list(users_dir.glob('*.txt'))
+        print(f'✅ User archives: {len(user_files)} files')
+    else:
+        print('❌ User archives: missing')
+    
+    if activity_dir.exists():
+        activity_files = list(activity_dir.glob('*.txt'))
+        print(f'✅ Activity archives: {len(activity_files)} files')
+    else:
+        print('❌ Activity archives: missing')
+    
+    print()
+    
+    # Enhanced data recovery capability
+    print('🟡 ENHANCED DATA RECOVERY')
+    print('-' * 30)
+    
+    auth_dir = archive_dir / 'auth'
+    roles_dir = archive_dir / 'roles'
+    system_dir = archive_dir / 'system'
+    
+    if auth_dir.exists():
+        auth_files = list(auth_dir.rglob('*.txt'))
+        print(f'✅ Authentication archives: {len(auth_files)} files')
+    else:
+        print('⚠️  Authentication archives: missing (will use defaults)')
+    
+    if roles_dir.exists():
+        role_files = list(roles_dir.glob('*.txt'))
+        print(f'✅ Role system archives: {len(role_files)} files')
+    else:
+        print('⚠️  Role system archives: missing (will create defaults)')
+    
+    if system_dir.exists():
+        system_files = list(system_dir.glob('*.txt'))
+        print(f'✅ System state archives: {len(system_files)} files')
+    else:
+        print('⚠️  System state archives: missing (will use defaults)')
+    
+    print()
+    
+    # Enhanced prayer metadata
+    print('🟢 PRAYER METADATA RECOVERY')
+    print('-' * 30)
+    
+    if prayers_dir.exists():
+        attrs_dir = prayers_dir / 'attributes'
+        marks_dir = prayers_dir / 'marks'
+        skips_dir = prayers_dir / 'skips'
+        
+        if attrs_dir.exists():
+            attr_files = list(attrs_dir.glob('*.txt'))
+            print(f'✅ Prayer attributes: {len(attr_files)} files')
+        else:
+            print('⚠️  Prayer attributes: missing')
+        
+        if marks_dir.exists():
+            mark_files = list(marks_dir.glob('*.txt'))
+            print(f'✅ Prayer marks: {len(mark_files)} files')
+        else:
+            print('⚠️  Prayer marks: missing')
+        
+        if skips_dir.exists():
+            skip_files = list(skips_dir.glob('*.txt'))
+            print(f'✅ Prayer skips: {len(skip_files)} files')
+        else:
+            print('⚠️  Prayer skips: missing')
+    
+    print()
+    
+    # Recovery recommendations
+    print('💡 RECOVERY RECOMMENDATIONS')
+    print('-' * 30)
+    
+    has_core = prayers_dir.exists() and users_dir.exists()
+    has_enhanced = auth_dir.exists() and roles_dir.exists()
+    
+    if has_core and has_enhanced:
+        print('🎉 Complete recovery capability available!')
+        print('   All data types can be fully reconstructed.')
+        print('   Recommended: Run \"thywill test-recovery\" to validate.')
+    elif has_core:
+        print('✅ Core recovery capability available!')
+        print('   Basic prayer and user data can be reconstructed.')
+        print('   Authentication and roles will use defaults.')
+        print('   Recommended: Run \"thywill test-recovery\" to validate.')
+    else:
+        print('⚠️  Limited recovery capability.')
+        print('   Missing critical archive files.')
+        print('   Recommended: Check archive generation and run backup.')
+    
+    print()
+    print('📋 Use \"thywill test-recovery\" to simulate complete recovery')
+    print('📋 Use \"thywill validate-archives\" for detailed validation')
+    
+except Exception as e:
+    print(f'❌ Report generation failed: {e}')
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+"
+}
+
 # Database commands
 cmd_db() {
     local subcommand="${1:-}"
@@ -2027,6 +2435,21 @@ main() {
             ;;
         import)
             cmd_import "$@"
+            ;;
+        validate-archives)
+            cmd_validate_archives "$@"
+            ;;
+        test-recovery)
+            cmd_test_recovery "$@"
+            ;;
+        full-recovery)
+            cmd_full_recovery "$@"
+            ;;
+        repair-archives)
+            cmd_repair_archives "$@"
+            ;;
+        recovery-report)
+            cmd_recovery_report "$@"
             ;;
         
         # Database commands
