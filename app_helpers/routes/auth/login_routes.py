@@ -156,45 +156,13 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
                 "error": "This invite link has expired or has already been used. Please request a new invite link."
             })
 
-        # ADMIN TOKEN SPECIAL HANDLING: Always create new users for admin tokens
-        # This bypasses any potential database corruption issues
-        is_admin_token = (inv.created_by_user == "system")
+        # Check for existing users normally (both admin and regular tokens)
+        existing_user = s.exec(
+            select(User).where(User.display_name == display_name)
+        ).first()
         
-        if is_admin_token:
-            # NUCLEAR OPTION: For admin tokens, always force delete any existing user with the same name
-            # and create a completely fresh user. No corruption detection, just brute force cleanup.
-            print(f"Admin token: Force cleaning up any existing user named '{display_name}'")
-            
-            # Use raw SQL to aggressively clean up everything related to this username
-            with engine.connect() as conn:
-                from sqlalchemy import text
-                
-                # Get the user ID if it exists  
-                result = conn.execute(text("SELECT id FROM user WHERE display_name = :name"), {"name": display_name})
-                row = result.fetchone()
-                if row:
-                    user_id_to_clean = row[0]
-                    print(f"   Found existing user with ID: {user_id_to_clean}")
-                    
-                    # Clean up all related data
-                    conn.execute(text("DELETE FROM session WHERE user_id = :uid"), {"uid": user_id_to_clean})
-                    conn.execute(text("UPDATE invitetoken SET used_by_user_id = NULL WHERE used_by_user_id = :uid"), {"uid": user_id_to_clean})
-                    conn.execute(text("DELETE FROM prayermark WHERE user_id = :uid"), {"uid": user_id_to_clean})
-                    conn.execute(text("DELETE FROM prayer WHERE author_id = :uid"), {"uid": user_id_to_clean})
-                    
-                    # Force delete the user
-                    delete_result = conn.execute(text("DELETE FROM user WHERE display_name = :name"), {"name": display_name})
-                    print(f"   Deleted {delete_result.rowcount} user records")
-                    
-                conn.commit()
-            
-            print(f"Admin token: Creating fresh user '{display_name}'")
-            existing_user = None  # Force new user creation
-        else:
-            # Non-admin tokens: check for existing users normally
-            existing_user = s.exec(
-                select(User).where(User.display_name == display_name)
-            ).first()
+        # Check if this is an admin token for special role handling
+        is_admin_token = (inv.created_by_user == "system")
             
         if existing_user:
             # SPECIAL CASE: Existing user with valid invite should login immediately
