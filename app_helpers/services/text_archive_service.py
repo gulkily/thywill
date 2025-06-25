@@ -104,8 +104,8 @@ class TextArchiveService:
         logger.info(f"Created prayer archive: {file_path}")
         return file_path
     
-    def append_prayer_activity(self, file_path: str, action: str, user: str, extra: str = ""):
-        """Append activity to prayer archive file"""
+    def append_prayer_activity(self, file_path: str, action: str, user: str, extra: str = "", old_value: str = None, new_value: str = None):
+        """Append activity to prayer archive file with complete metadata"""
         if not self.enabled or not file_path:
             return
             
@@ -124,6 +124,16 @@ class TextArchiveService:
             activity_line = f"{timestamp} - {user} restored this prayer"
         elif action == "flagged":
             activity_line = f"{timestamp} - {user} flagged this prayer"
+        elif action.startswith("set_") or action.startswith("remove_"):
+            # Attribute changes with old/new values for complete audit trail
+            attribute_name = action.replace("set_", "").replace("remove_", "")
+            if action.startswith("set_"):
+                if old_value:
+                    activity_line = f"{timestamp} - {user} set {attribute_name} from '{old_value}' to '{new_value}'"
+                else:
+                    activity_line = f"{timestamp} - {user} set {attribute_name} to '{new_value}'"
+            else:  # remove_
+                activity_line = f"{timestamp} - {user} removed {attribute_name} (was '{old_value}')"
         else:
             activity_line = f"{timestamp} - {user} {action}"
             if extra:
@@ -204,6 +214,82 @@ class TextArchiveService:
         
         self._append_to_file(str(monthly_file), '\n'.join(lines_to_add))
         logger.info(f"Added monthly activity: {action} by {user}")
+        
+        return str(monthly_file)
+    
+    def append_prayer_attribute(self, prayer_id: str, attribute_name: str, attribute_value: str, user_id: str = None, created_at: datetime = None):
+        """Append prayer attribute change to monthly archive"""
+        if not self.enabled:
+            return ""
+        
+        now = created_at or datetime.now()
+        monthly_file = self.base_dir / "prayers" / "attributes" / f"{now.year}_{now.month:02d}_attributes.txt"
+        
+        # Create directory and file if needed
+        monthly_file.parent.mkdir(parents=True, exist_ok=True)
+        if not monthly_file.exists():
+            header = f"Prayer Attributes for {now.strftime('%B %Y')}\n"
+            header += "Format: timestamp|prayer_id|attribute_name|attribute_value|user_id\n\n"
+            self._write_file_atomic(str(monthly_file), header)
+        
+        # Format attribute line
+        timestamp = now.strftime("%B %d %Y at %H:%M")
+        user_part = user_id or "system"
+        
+        attribute_line = f"{timestamp}|{prayer_id}|{attribute_name}|{attribute_value}|{user_part}"
+        
+        self._append_to_file(str(monthly_file), attribute_line)
+        logger.info(f"Logged prayer attribute: {prayer_id}.{attribute_name} = {attribute_value}")
+        
+        return str(monthly_file)
+    
+    def append_prayer_mark(self, prayer_id: str, user_id: str, created_at: datetime = None):
+        """Append prayer mark to monthly archive"""
+        if not self.enabled:
+            return ""
+        
+        now = created_at or datetime.now()
+        monthly_file = self.base_dir / "prayers" / "marks" / f"{now.year}_{now.month:02d}_marks.txt"
+        
+        # Create directory and file if needed
+        monthly_file.parent.mkdir(parents=True, exist_ok=True)
+        if not monthly_file.exists():
+            header = f"Prayer Marks for {now.strftime('%B %Y')}\n"
+            header += "Format: timestamp|prayer_id|user_id\n\n"
+            self._write_file_atomic(str(monthly_file), header)
+        
+        # Format mark line
+        timestamp = now.strftime("%B %d %Y at %H:%M")
+        
+        mark_line = f"{timestamp}|{prayer_id}|{user_id}"
+        
+        self._append_to_file(str(monthly_file), mark_line)
+        logger.info(f"Logged prayer mark: prayer {prayer_id} by user {user_id}")
+        
+        return str(monthly_file)
+    
+    def append_prayer_skip(self, prayer_id: str, user_id: str, created_at: datetime = None):
+        """Append prayer skip to monthly archive"""
+        if not self.enabled:
+            return ""
+        
+        now = created_at or datetime.now()
+        monthly_file = self.base_dir / "prayers" / "skips" / f"{now.year}_{now.month:02d}_skips.txt"
+        
+        # Create directory and file if needed
+        monthly_file.parent.mkdir(parents=True, exist_ok=True)
+        if not monthly_file.exists():
+            header = f"Prayer Skips for {now.strftime('%B %Y')}\n"
+            header += "Format: timestamp|prayer_id|user_id\n\n"
+            self._write_file_atomic(str(monthly_file), header)
+        
+        # Format skip line
+        timestamp = now.strftime("%B %d %Y at %H:%M")
+        
+        skip_line = f"{timestamp}|{prayer_id}|{user_id}"
+        
+        self._append_to_file(str(monthly_file), skip_line)
+        logger.info(f"Logged prayer skip: prayer {prayer_id} by user {user_id}")
         
         return str(monthly_file)
     
