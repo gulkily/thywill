@@ -9,7 +9,7 @@ from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select, func
-from sqlalchemy.orm import aliased
+# Remove direct SQLAlchemy import - use SQLModel functionality
 
 # Import models
 from models import (
@@ -124,10 +124,7 @@ def auth_audit_log(request: Request, user_session: tuple = Depends(current_user)
         raise HTTPException(403)
     
     with Session(engine) as s:
-        # Create alias for requesting user table
-        requesting_user = aliased(User)
-        
-        # Get recent audit logs with related user information
+        # Simplified query without SQLAlchemy aliases - get audit logs and resolve users separately
         audit_query = (
             select(
                 AuthAuditLog.created_at,
@@ -135,12 +132,10 @@ def auth_audit_log(request: Request, user_session: tuple = Depends(current_user)
                 AuthAuditLog.actor_type,
                 AuthAuditLog.details,
                 User.display_name.label("actor_name"),
-                AuthenticationRequest.user_id,
-                func.coalesce(func.max(requesting_user.display_name), "Unknown").label("requesting_user_name")
+                AuthenticationRequest.user_id
             )
             .outerjoin(User, AuthAuditLog.actor_user_id == User.id)
             .outerjoin(AuthenticationRequest, AuthAuditLog.auth_request_id == AuthenticationRequest.id)
-            .outerjoin(requesting_user, AuthenticationRequest.user_id == requesting_user.id)
             .group_by(
                 AuthAuditLog.created_at,
                 AuthAuditLog.action,
@@ -156,7 +151,14 @@ def auth_audit_log(request: Request, user_session: tuple = Depends(current_user)
         audit_results = s.exec(audit_query).all()
         
         audit_events = []
-        for created_at, action, actor_type, details, actor_name, requesting_user_id, requesting_user_name in audit_results:
+        for created_at, action, actor_type, details, actor_name, requesting_user_id in audit_results:
+            # Resolve requesting user name separately
+            requesting_user_name = "Unknown"
+            if requesting_user_id:
+                requesting_user = s.get(User, requesting_user_id)
+                if requesting_user:
+                    requesting_user_name = requesting_user.display_name
+            
             audit_events.append({
                 'created_at': created_at,
                 'action': action,

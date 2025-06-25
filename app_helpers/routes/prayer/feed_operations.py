@@ -60,7 +60,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
         
         # Religious preference filtering
         def apply_religious_filter():
-            if user.religious_preference == "christian":
+            if user and user.religious_preference == "christian":
                 # Christians see: all prayers + christian-only prayers
                 return Prayer.target_audience.in_(["all", "christians_only"])
             else:
