@@ -327,16 +327,29 @@ else:
 # SAFETY: Only run optimizations for production database
 if os.environ.get('PRODUCTION_MODE') == '1':
     with engine.connect() as conn:
+        # Import text here to avoid top-level SQLAlchemy imports
         from sqlalchemy import text
         conn.execute(text("PRAGMA journal_mode=WAL"))
         conn.execute(text("PRAGMA synchronous=NORMAL")) 
         conn.execute(text("PRAGMA cache_size=10000"))
         conn.execute(text("PRAGMA temp_store=memory"))
         
-        # Create indexes for invite tree integrity
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_invited_by ON user(invited_by_user_id)"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_invitetoken_used_by ON invitetoken(used_by_user_id)"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_invite_token ON user(invite_token_used)"))
+        # Create indexes for invite tree integrity (only if tables exist)
+        try:
+            # Check if tables exist before creating indexes
+            tables_exist = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('user', 'invitetoken')")).fetchall()
+            table_names = [row[0] for row in tables_exist]
+            
+            if 'user' in table_names:
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_invited_by ON user(invited_by_user_id)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_invite_token ON user(invite_token_used)"))
+            
+            if 'invitetoken' in table_names:
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_invitetoken_used_by ON invitetoken(used_by_user_id)"))
+                
+        except Exception as e:
+            # Silently ignore index creation errors (tables may not exist yet)
+            pass
         
         conn.commit()
 
