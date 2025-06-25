@@ -8,7 +8,7 @@ Usage: python create_admin_token.py [--hours HOURS]
 
 import argparse
 import os
-import uuid
+import secrets
 import sys
 from datetime import datetime, timedelta
 from sqlmodel import Session
@@ -18,8 +18,8 @@ from models import engine, InviteToken
 def create_admin_token(hours=12):
     """Create a new admin invite token."""
     try:
-        # Generate token
-        token = str(uuid.uuid4())
+        # Generate token using same format as regular invites (16-char hex)
+        token = secrets.token_hex(8)
         expires_at = datetime.utcnow() + timedelta(hours=hours)
         
         # Save to database
