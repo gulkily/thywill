@@ -53,8 +53,14 @@ def current_user(req: Request) -> tuple[User, SessionModel]:
         
         user = db.get(User, sess.user_id)
         
+        # Handle deleted user - invalidate session
+        if not user:
+            db.delete(sess)
+            db.commit()
+            raise HTTPException(401, detail="user_deleted")
+        
         # Check if user is deactivated - block access if so
-        if user and user.has_role("deactivated", db):
+        if user.has_role("deactivated", db):
             # Invalidate session for deactivated users
             db.delete(sess)
             db.commit()
