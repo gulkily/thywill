@@ -9,11 +9,32 @@ but don't have corresponding archive files.
 import os
 import sys
 from sqlmodel import Session, select
+from sqlalchemy import inspect
 from models import engine, Prayer, User
 from app_helpers.services.text_archive_service import text_archive_service
 
+def check_database_tables():
+    """Check if required database tables exist"""
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+    
+    required_tables = ['prayer', 'user']
+    missing_tables = [table for table in required_tables if table not in tables]
+    
+    return missing_tables
+
 def heal_prayer_archives():
     """Create missing archive files for prayers without them"""
+    
+    # First check if database tables exist
+    missing_tables = check_database_tables()
+    if missing_tables:
+        print(f"❌ Missing required database tables: {', '.join(missing_tables)}")
+        print("Please initialize the database first:")
+        print("  thywill db init")
+        print("  # or")
+        print("  python3 create_database.py")
+        return False
     
     print("🔍 Scanning for prayers without archive files...")
     
@@ -86,6 +107,8 @@ def heal_prayer_archives():
             print(f"\n🎉 Successfully healed {healed_count} prayers!")
         else:
             print(f"\n✨ All prayers already have archive files!")
+        
+        return True
 
 if __name__ == "__main__":
     print("🏥 Prayer Archive Healing Script")
@@ -104,7 +127,9 @@ if __name__ == "__main__":
         sys.exit(0)
     
     try:
-        heal_prayer_archives()
+        success = heal_prayer_archives()
+        if not success:
+            sys.exit(1)
     except Exception as e:
         print(f"💥 Healing failed: {e}")
         sys.exit(1)
