@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Share Functionality Test - ThyWill</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .test-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+        .capability-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .supported { background: #10b981; color: white; }
+        .unsupported { background: #ef4444; color: white; }
+        .partial { background: #f59e0b; color: white; }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">
+                Share Functionality Test Page
+            </h1>
+            <p class="text-gray-600 dark:text-gray-300">
+                Test the invite sharing functionality across different browsers and platforms
+            </p>
+        </div>
+
+        <!-- Browser Capabilities Detection -->
+        <div class="test-section p-6 text-white mb-6">
+            <h2 class="text-xl font-semibold mb-4">🔍 Browser Capabilities</h2>
+            <div id="capabilities" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Test URL Display -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+                📋 Test URL
+            </h2>
+            <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                <code class="text-sm text-gray-800 dark:text-gray-200">{{ test_url }}</code>
+            </div>
+        </div>
+
+        <!-- Share Button Tests -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+                🚀 Share Button Tests
+            </h2>
+            
+            <!-- Primary Share Button -->
+            <div class="mb-6">
+                <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Primary Share Button (Auto-detect)
+                </h3>
+                <button onclick="shareInviteLink('{{ test_url }}', '{{ test_title }}')"
+                        id="primaryShareBtn"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <span id="primaryShareIcon">📤</span>
+                    <span id="primaryShareText">Share</span>
+                </button>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    This button adapts based on browser capabilities
+                </p>
+            </div>
+
+            <!-- Individual Method Tests -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Web Share API Test -->
+                <div class="border dark:border-gray-700 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Web Share API
+                    </h4>
+                    <button onclick="testWebShare('{{ test_url }}', '{{ test_title }}')"
+                            class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-medium">
+                        📱 Test Native Share
+                    </button>
+                    <div id="webShareResult" class="mt-2 text-sm"></div>
+                </div>
+
+                <!-- Email Share Test -->
+                <div class="border dark:border-gray-700 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Email Share
+                    </h4>
+                    <button onclick="testEmailShare('{{ test_url }}', '{{ test_title }}')"
+                            class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded font-medium">
+                        📧 Test Email
+                    </button>
+                    <div id="emailShareResult" class="mt-2 text-sm"></div>
+                </div>
+
+                <!-- SMS Share Test -->
+                <div class="border dark:border-gray-700 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        SMS Share
+                    </h4>
+                    <button onclick="testSMSShare('{{ test_url }}', '{{ test_title }}')"
+                            class="w-full bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded font-medium">
+                        💬 Test SMS
+                    </button>
+                    <div id="smsShareResult" class="mt-2 text-sm"></div>
+                </div>
+
+                <!-- Copy Link Test -->
+                <div class="border dark:border-gray-700 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Copy Link
+                    </h4>
+                    <button onclick="testCopyLink('{{ test_url }}')"
+                            class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded font-medium">
+                        📋 Test Copy
+                    </button>
+                    <div id="copyResult" class="mt-2 text-sm"></div>
+                </div>
+
+                <!-- Fallback Menu Test -->
+                <div class="border dark:border-gray-700 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Fallback Menu
+                    </h4>
+                    <button onclick="testFallbackMenu('{{ test_url }}', '{{ test_title }}')"
+                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded font-medium">
+                        📋 Show Menu
+                    </button>
+                    <div id="fallbackResult" class="mt-2 text-sm"></div>
+                </div>
+
+                <!-- Platform Detection Test -->
+                <div class="border dark:border-gray-700 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Platform Detection
+                    </h4>
+                    <button onclick="showPlatformInfo()"
+                            class="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded font-medium">
+                        🔍 Show Platform
+                    </button>
+                    <div id="platformResult" class="mt-2 text-sm"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Results Log -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+                📊 Test Results Log
+            </h2>
+            <div id="testLog" class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg min-h-[200px] max-h-[400px] overflow-y-auto">
+                <p class="text-gray-500 dark:text-gray-400 text-sm">
+                    Test results will appear here...
+                </p>
+            </div>
+            <button onclick="clearTestLog()" 
+                    class="mt-3 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm">
+                Clear Log
+            </button>
+        </div>
+
+        <!-- Back Link -->
+        <div class="text-center mt-8">
+            <a href="/" class="text-blue-600 dark:text-blue-400 hover:underline">
+                ← Back to Main App
+            </a>
+        </div>
+    </div>
+
+    <!-- Fallback Share Menu (hidden by default) -->
+    <div id="shareMenu" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 m-4 max-w-sm w-full">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                Share Options
+            </h3>
+            <div class="space-y-3">
+                <button onclick="shareMenuAction('email')" 
+                        class="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center gap-2">
+                    <span>📧</span> Email
+                </button>
+                <button onclick="shareMenuAction('sms')" 
+                        class="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center gap-2">
+                    <span>💬</span> SMS
+                </button>
+                <button onclick="shareMenuAction('copy')" 
+                        class="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center gap-2">
+                    <span>📋</span> Copy Link
+                </button>
+            </div>
+            <button onclick="closeShareMenu()" 
+                    class="mt-4 w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Global variables for current test
+        let currentTestUrl = '{{ test_url }}';
+        let currentTestTitle = '{{ test_title }}';
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            detectCapabilities();
+            customizePrimaryButton();
+            logMessage('Page loaded - ready for testing');
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        // CAPABILITY DETECTION
+        // ═══════════════════════════════════════════════════════════════
+
+        function detectCapabilities() {
+            const capabilities = getShareCapabilities();
+            const capabilitiesDiv = document.getElementById('capabilities');
+            
+            capabilitiesDiv.innerHTML = `
+                <div>
+                    <strong>Web Share API:</strong>
+                    <span class="capability-indicator ${capabilities.hasWebShare ? 'supported' : 'unsupported'}">
+                        ${capabilities.hasWebShare ? 'SUPPORTED' : 'NOT SUPPORTED'}
+                    </span>
+                </div>
+                <div>
+                    <strong>Clipboard API:</strong>
+                    <span class="capability-indicator ${capabilities.hasClipboard ? 'supported' : 'unsupported'}">
+                        ${capabilities.hasClipboard ? 'SUPPORTED' : 'NOT SUPPORTED'}
+                    </span>
+                </div>
+                <div>
+                    <strong>Platform:</strong>
+                    <span class="capability-indicator ${capabilities.isMobile ? 'supported' : 'partial'}">
+                        ${capabilities.isMobile ? 'MOBILE' : 'DESKTOP'}
+                    </span>
+                </div>
+                <div>
+                    <strong>OS:</strong>
+                    <span class="capability-indicator partial">
+                        ${capabilities.isIOS ? 'iOS' : capabilities.isAndroid ? 'ANDROID' : 'OTHER'}
+                    </span>
+                </div>
+            `;
+        }
+
+        function getShareCapabilities() {
+            return {
+                hasWebShare: !!navigator.share,
+                hasClipboard: !!navigator.clipboard,
+                isMobile: /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+                isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
+                isAndroid: /Android/.test(navigator.userAgent)
+            };
+        }
+
+        function customizePrimaryButton() {
+            const capabilities = getShareCapabilities();
+            const btn = document.getElementById('primaryShareBtn');
+            const icon = document.getElementById('primaryShareIcon');
+            const text = document.getElementById('primaryShareText');
+            
+            if (capabilities.hasWebShare) {
+                icon.textContent = '📤';
+                text.textContent = 'Share';
+                btn.title = 'Uses native share dialog';
+            } else if (capabilities.isMobile) {
+                icon.textContent = '📱';
+                text.textContent = 'Share';
+                btn.title = 'Mobile sharing options';
+            } else {
+                icon.textContent = '📧';
+                text.textContent = 'Email';
+                btn.title = 'Email sharing (desktop fallback)';
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // MAIN SHARE FUNCTIONS
+        // ═══════════════════════════════════════════════════════════════
+
+        async function shareInviteLink(url, title = "Join ThyWill Prayer Community") {
+            logMessage(`🚀 Primary share button clicked`);
+            
+            // Check if Web Share API is available
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: title,
+                        text: "You're invited to join our prayer community. Click the link to create your account.",
+                        url: url
+                    });
+                    logMessage('✅ Web Share API: Success');
+                    return true;
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        logMessage(`❌ Web Share API: Failed - ${error.message}`);
+                        return shareInviteLinkFallback(url, title);
+                    } else {
+                        logMessage('ℹ️ Web Share API: User cancelled');
+                        return true; // User cancelled, treat as success
+                    }
+                }
+            }
+            
+            // Fallback for desktop/unsupported browsers
+            return shareInviteLinkFallback(url, title);
+        }
+
+        function shareInviteLinkFallback(url, title) {
+            logMessage('🔄 Using fallback share method');
+            const capabilities = getShareCapabilities();
+            
+            if (capabilities.isMobile) {
+                // Mobile fallback - show menu
+                testFallbackMenu(url, title);
+            } else {
+                // Desktop fallback - direct email
+                openEmailShare(url, title);
+            }
+            return true;
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // INDIVIDUAL TEST FUNCTIONS
+        // ═══════════════════════════════════════════════════════════════
+
+        async function testWebShare(url, title) {
+            const resultDiv = document.getElementById('webShareResult');
+            
+            if (!navigator.share) {
+                resultDiv.innerHTML = '<span class="text-red-500">❌ Not supported</span>';
+                logMessage('❌ Web Share API: Not supported in this browser');
+                return;
+            }
+            
+            try {
+                await navigator.share({
+                    title: title,
+                    text: "Test share from ThyWill",
+                    url: url
+                });
+                resultDiv.innerHTML = '<span class="text-green-500">✅ Success</span>';
+                logMessage('✅ Web Share API: Test successful');
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    resultDiv.innerHTML = '<span class="text-yellow-500">⚠️ Cancelled</span>';
+                    logMessage('ℹ️ Web Share API: Test cancelled by user');
+                } else {
+                    resultDiv.innerHTML = '<span class="text-red-500">❌ Error</span>';
+                    logMessage(`❌ Web Share API: Test failed - ${error.message}`);
+                }
+            }
+        }
+
+        function testEmailShare(url, title) {
+            const resultDiv = document.getElementById('emailShareResult');
+            try {
+                openEmailShare(url, title);
+                resultDiv.innerHTML = '<span class="text-green-500">✅ Opened</span>';
+                logMessage('✅ Email share: Opened email client');
+            } catch (error) {
+                resultDiv.innerHTML = '<span class="text-red-500">❌ Error</span>';
+                logMessage(`❌ Email share: Failed - ${error.message}`);
+            }
+        }
+
+        function testSMSShare(url, title) {
+            const resultDiv = document.getElementById('smsShareResult');
+            try {
+                openSMSShare(url, title);
+                resultDiv.innerHTML = '<span class="text-green-500">✅ Opened</span>';
+                logMessage('✅ SMS share: Opened SMS app');
+            } catch (error) {
+                resultDiv.innerHTML = '<span class="text-red-500">❌ Error</span>';
+                logMessage(`❌ SMS share: Failed - ${error.message}`);
+            }
+        }
+
+        async function testCopyLink(url) {
+            const resultDiv = document.getElementById('copyResult');
+            try {
+                await copyToClipboard(url);
+                resultDiv.innerHTML = '<span class="text-green-500">✅ Copied</span>';
+                logMessage('✅ Copy link: Successfully copied to clipboard');
+            } catch (error) {
+                resultDiv.innerHTML = '<span class="text-red-500">❌ Error</span>';
+                logMessage(`❌ Copy link: Failed - ${error.message}`);
+            }
+        }
+
+        function testFallbackMenu(url, title) {
+            const resultDiv = document.getElementById('fallbackResult');
+            try {
+                showShareMenu(url, title);
+                resultDiv.innerHTML = '<span class="text-green-500">✅ Opened</span>';
+                logMessage('✅ Fallback menu: Opened share menu');
+            } catch (error) {
+                resultDiv.innerHTML = '<span class="text-red-500">❌ Error</span>';
+                logMessage(`❌ Fallback menu: Failed - ${error.message}`);
+            }
+        }
+
+        function showPlatformInfo() {
+            const resultDiv = document.getElementById('platformResult');
+            const capabilities = getShareCapabilities();
+            const userAgent = navigator.userAgent;
+            
+            resultDiv.innerHTML = `
+                <div class="text-xs">
+                    <div><strong>Mobile:</strong> ${capabilities.isMobile}</div>
+                    <div><strong>iOS:</strong> ${capabilities.isIOS}</div>
+                    <div><strong>Android:</strong> ${capabilities.isAndroid}</div>
+                </div>
+            `;
+            
+            logMessage(`🔍 Platform info: Mobile=${capabilities.isMobile}, iOS=${capabilities.isIOS}, Android=${capabilities.isAndroid}`);
+            logMessage(`🔍 User Agent: ${userAgent}`);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // UTILITY FUNCTIONS
+        // ═══════════════════════════════════════════════════════════════
+
+        function openEmailShare(url, title) {
+            const subject = encodeURIComponent(title);
+            const body = encodeURIComponent(`You're invited to join our prayer community!\n\n${url}\n\nClick the link above to create your account and start sharing in our faith journey together.`);
+            window.open(`mailto:?subject=${subject}&body=${body}`, '_self');
+        }
+
+        function openSMSShare(url, title) {
+            const text = encodeURIComponent(`${title}\n${url}`);
+            window.open(`sms:?body=${text}`, '_self');
+        }
+
+        async function copyToClipboard(text) {
+            if (navigator.clipboard) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // SHARE MENU FUNCTIONS
+        // ═══════════════════════════════════════════════════════════════
+
+        function showShareMenu(url, title) {
+            currentTestUrl = url;
+            currentTestTitle = title;
+            document.getElementById('shareMenu').classList.remove('hidden');
+        }
+
+        function closeShareMenu() {
+            document.getElementById('shareMenu').classList.add('hidden');
+        }
+
+        function shareMenuAction(action) {
+            logMessage(`📋 Share menu: ${action} selected`);
+            
+            switch(action) {
+                case 'email':
+                    openEmailShare(currentTestUrl, currentTestTitle);
+                    break;
+                case 'sms':
+                    openSMSShare(currentTestUrl, currentTestTitle);
+                    break;
+                case 'copy':
+                    copyToClipboard(currentTestUrl);
+                    break;
+            }
+            
+            closeShareMenu();
+        }
+
+        // Close menu on backdrop click
+        document.getElementById('shareMenu').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeShareMenu();
+            }
+        });
+
+        // Close menu on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeShareMenu();
+            }
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        // LOGGING FUNCTIONS
+        // ═══════════════════════════════════════════════════════════════
+
+        function logMessage(message) {
+            const logDiv = document.getElementById('testLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'mb-2 text-sm';
+            logEntry.innerHTML = `<span class="text-gray-500 dark:text-gray-400">[${timestamp}]</span> ${message}`;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearTestLog() {
+            const logDiv = document.getElementById('testLog');
+            logDiv.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">Test results cleared...</p>';
+        }
+    </script>
+</body>
+</html>
