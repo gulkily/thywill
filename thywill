@@ -1197,7 +1197,7 @@ cmd_import_community() {
     log "Running community data import..."
     
     # Execute Python import script with all remaining arguments
-    python3 import_community_data.py "$file_path" "$@"
+    PRODUCTION_MODE=1 python3 import_community_data.py "$file_path" "$@"
 }
 
 cmd_import_text_archives() {
@@ -1227,7 +1227,7 @@ cmd_import_text_archives() {
     log "Importing data from text_archives/ directory..."
     
     # Execute Python import script with all arguments
-    python3 import_text_archives.py "$@"
+    PRODUCTION_MODE=1 python3 import_text_archives.py "$@"
 }
 
 # Archive validation and recovery commands
@@ -1250,7 +1250,7 @@ cmd_validate_archives() {
     log "Validating archive completeness and integrity..."
     
     # Execute Python validation script
-    python3 -c "
+    PRODUCTION_MODE=1 python3 -c "
 import sys
 sys.path.append('.')
 from app_helpers.services.database_recovery import CompleteSystemRecovery
@@ -1313,7 +1313,7 @@ cmd_test_recovery() {
     warning "This is a simulation - no actual changes will be made"
     
     # Execute Python recovery script in dry run mode
-    python3 -c "
+    PRODUCTION_MODE=1 python3 -c "
 import sys
 sys.path.append('.')
 from app_helpers.services.database_recovery import CompleteSystemRecovery
@@ -1399,7 +1399,7 @@ cmd_full_recovery() {
     fi
     
     # Execute Python recovery script
-    python3 -c "
+    PRODUCTION_MODE=1 python3 -c "
 import sys
 sys.path.append('.')
 from app_helpers.services.database_recovery import CompleteSystemRecovery
@@ -1460,7 +1460,7 @@ cmd_repair_archives() {
     log "Checking and repairing archive inconsistencies..."
     
     # Execute Python repair script
-    python3 -c "
+    PRODUCTION_MODE=1 python3 -c "
 import sys
 sys.path.append('.')
 from app_helpers.services.text_archive_service import TextArchiveService
@@ -1495,7 +1495,7 @@ cmd_heal_archives() {
     log "Creating missing archive files for existing prayers..."
     
     # Execute the healing script with proper production mode handling
-    python3 heal_prayer_archives.py
+    PRODUCTION_MODE=1 python3 heal_prayer_archives.py
 }
 
 cmd_sync_archives() {
@@ -1512,10 +1512,35 @@ cmd_sync_archives() {
     echo ""
     warning "This will run all necessary commands to synchronize archives with database"
     echo "Steps to be performed:"
+    echo "  0. Check database initialization (if needed)"
     echo "  1. Validate current archive structure"
     echo "  2. Import any missing data from text archives"
     echo "  3. Create missing archive files for existing prayers"
     echo "  4. Generate final validation report"
+    echo ""
+    
+    # Step 0: Check if database is initialized
+    log "Step 0: Checking database initialization..."
+    if [ -f "thywill.db" ]; then
+        log "Database file exists"
+    else
+        warning "Database file not found - database may need initialization"
+        echo ""
+        read -p "Initialize database now? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            log "Initializing database..."
+            if ! cmd_db_init; then
+                error "Database initialization failed"
+                exit 1
+            fi
+        else
+            error "Database initialization required but skipped"
+            echo "Please run: thywill db init"
+            exit 1
+        fi
+    fi
+    
     echo ""
     
     # Step 1: Validate archives
@@ -1568,6 +1593,7 @@ cmd_sync_archives() {
     success "Archive synchronization completed!"
     echo ""
     echo "Summary:"
+    echo "  ✅ Database initialization checked"
     echo "  ✅ Archive structure validated"
     echo "  ✅ Text archives imported"
     echo "  ✅ Missing archive files created"
@@ -1590,7 +1616,7 @@ cmd_recovery_report() {
     log "Generating recovery capability report..."
     
     # Execute Python report script
-    python3 -c "
+    PRODUCTION_MODE=1 python3 -c "
 import sys
 from pathlib import Path
 sys.path.append('.')
