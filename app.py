@@ -118,6 +118,16 @@ async def health_check():
             status_code=500
         )
 
+# Test route for share functionality
+@app.get("/test-share", response_class=HTMLResponse)
+async def test_share(request: Request):
+    """Test page for share functionality across different browsers"""
+    return templates.TemplateResponse("test_share.html", {
+        "request": request,
+        "test_url": "https://thywill.com/claim/abcd1234test5678",
+        "test_title": "Join ThyWill Prayer Community"
+    })
+
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
