@@ -615,4 +615,41 @@ function cancelPrayerEdit() {
     document.getElementById('preview-prayer-display').style.display = 'block';
     document.getElementById('edit-prayer-btn').style.display = 'inline-block';
 }
+
+// Safari-specific fix for invite button
+function handleInviteClick(button) {
+    // Only use fallback on Safari where HTMX events may fail
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    
+    if (!isSafari) {
+        // Let HTMX handle it on other browsers
+        return;
+    }
+    
+    // Safari fallback
+    if (button.disabled) return;
+    
+    button.disabled = true;
+    button.textContent = '📧 Creating...';
+    
+    fetch('/invites', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.text())
+    .then(html => {
+        document.body.insertAdjacentHTML('beforeend', html);
+    })
+    .catch(error => {
+        console.error('Invite creation failed:', error);
+        alert('Failed to create invite. Please try again.');
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.textContent = '📧 Invite Someone';
+    });
+}
 </script>
