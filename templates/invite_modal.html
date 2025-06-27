@@ -51,6 +51,15 @@
     <!-- Actions -->
     <div class="bg-gray-50 dark:bg-gray-700 px-6 py-4">
       <div class="flex flex-col sm:flex-row gap-3">
+        <!-- Share Button -->
+        <button onclick="shareInviteLink('{{ url }}', 'Join ThyWill Prayer Community')"
+                id="shareInviteBtn"
+                class="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-800 dark:hover:bg-blue-900 text-white font-medium px-4 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2">
+          <span id="shareIcon">📤</span>
+          <span id="shareText">Share</span>
+        </button>
+        
+        <!-- Copy Link Button -->
         <button onclick="copyInviteLink('{{ url }}')" 
                 class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-medium px-4 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 flex items-center justify-center gap-2">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,12 +67,48 @@
           </svg>
           Copy Link
         </button>
+        
+        <!-- Close Button -->
         <button onclick="closeInviteModal()" 
-                class="flex-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 font-medium px-4 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                class="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 font-medium px-4 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
           Close
         </button>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Customize share button based on capabilities -->
+<script>
+(function() {
+    // Wait for DOM to be ready and functions to be available
+    setTimeout(function() {
+        if (typeof getShareCapabilities === 'function') {
+            const capabilities = getShareCapabilities();
+            const shareBtn = document.getElementById('shareInviteBtn');
+            const shareIcon = document.getElementById('shareIcon');
+            const shareText = document.getElementById('shareText');
+            
+            if (shareBtn && shareIcon && shareText) {
+                if (capabilities.hasWebShare) {
+                    // Native share available
+                    shareIcon.textContent = '📤';
+                    shareText.textContent = 'Share';
+                    shareBtn.title = 'Share using your device\'s native sharing';
+                } else if (capabilities.isMobile) {
+                    // Mobile without native share
+                    shareIcon.textContent = '📱';
+                    shareText.textContent = 'Share';
+                    shareBtn.title = 'Share via email, SMS, or copy link';
+                } else {
+                    // Desktop fallback
+                    shareIcon.textContent = '📧';
+                    shareText.textContent = 'Email';
+                    shareBtn.title = 'Share via email';
+                }
+            }
+        }
+    }, 100);
+})();
+</script>
 

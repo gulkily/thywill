@@ -307,6 +307,140 @@ function copyInviteLink(url) {
     });
 }
 
+// Share functionality
+async function shareInviteLink(url, title = "Join ThyWill Prayer Community") {
+    // Check if Web Share API is available
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: title,
+                text: "You're invited to join our prayer community. Click the link to create your account.",
+                url: url
+            });
+            return true;
+        } catch (error) {
+            // User cancelled or error occurred
+            if (error.name !== 'AbortError') {
+                console.warn('Web Share API failed:', error);
+                return shareInviteLinkFallback(url, title);
+            }
+            return true; // User cancelled, treat as success
+        }
+    }
+    
+    // Fallback for desktop/unsupported browsers
+    return shareInviteLinkFallback(url, title);
+}
+
+function shareInviteLinkFallback(url, title) {
+    const capabilities = getShareCapabilities();
+    
+    if (capabilities.isMobile) {
+        // Mobile fallback - show share menu
+        showShareMenu(url, title);
+    } else {
+        // Desktop fallback - direct email
+        openEmailShare(url, title);
+    }
+    return true;
+}
+
+function getShareCapabilities() {
+    return {
+        hasWebShare: !!navigator.share,
+        hasClipboard: !!navigator.clipboard,
+        isMobile: /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+        isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
+        isAndroid: /Android/.test(navigator.userAgent)
+    };
+}
+
+function openEmailShare(url, title) {
+    const subject = encodeURIComponent(title);
+    const body = encodeURIComponent(`You're invited to join our prayer community!\n\n${url}\n\nClick the link above to create your account and start sharing in our faith journey together.`);
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_self');
+}
+
+function openSMSShare(url, title) {
+    const text = encodeURIComponent(`${title}\n${url}`);
+    window.open(`sms:?body=${text}`, '_self');
+}
+
+// Share menu variables
+let currentShareUrl = '';
+let currentShareTitle = '';
+
+function showShareMenu(url, title) {
+    currentShareUrl = url;
+    currentShareTitle = title;
+    
+    // Create share menu if it doesn't exist
+    let shareMenu = document.getElementById('invite-share-menu');
+    if (!shareMenu) {
+        shareMenu = document.createElement('div');
+        shareMenu.id = 'invite-share-menu';
+        shareMenu.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        shareMenu.style.display = 'none';
+        
+        shareMenu.innerHTML = `
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Share Options</h3>
+                <div class="space-y-3">
+                    <button onclick="shareMenuAction('email')" 
+                            class="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center gap-2">
+                        <span>📧</span> Email
+                    </button>
+                    <button onclick="shareMenuAction('sms')" 
+                            class="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center gap-2">
+                        <span>💬</span> SMS
+                    </button>
+                    <button onclick="shareMenuAction('copy')" 
+                            class="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center gap-2">
+                        <span>📋</span> Copy Link
+                    </button>
+                </div>
+                <button onclick="closeShareMenu()" 
+                        class="mt-4 w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                    Cancel
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(shareMenu);
+        
+        // Add event listeners
+        shareMenu.addEventListener('click', function(e) {
+            if (e.target === shareMenu) {
+                closeShareMenu();
+            }
+        });
+    }
+    
+    shareMenu.style.display = 'flex';
+}
+
+function closeShareMenu() {
+    const shareMenu = document.getElementById('invite-share-menu');
+    if (shareMenu) {
+        shareMenu.style.display = 'none';
+    }
+}
+
+function shareMenuAction(action) {
+    switch(action) {
+        case 'email':
+            openEmailShare(currentShareUrl, currentShareTitle);
+            break;
+        case 'sms':
+            openSMSShare(currentShareUrl, currentShareTitle);
+            break;
+        case 'copy':
+            copyInviteLink(currentShareUrl);
+            break;
+    }
+    closeShareMenu();
+}
+
 // Close modal when clicking on backdrop
 document.addEventListener('click', function(event) {
     const modal = document.getElementById('invite-modal');
@@ -319,6 +453,7 @@ document.addEventListener('click', function(event) {
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         closeInviteModal();
+        closeShareMenu();
     }
 });
 
