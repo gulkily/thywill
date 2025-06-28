@@ -69,12 +69,12 @@ def current_user(req: Request) -> tuple[User, SessionModel]:
         return user, sess
 
 
-def require_full_auth(req: Request) -> User:
+def require_full_auth(req: Request) -> tuple[User, SessionModel]:
     """Require full authentication for protected routes"""
     user, session = current_user(req)
     if not session.is_fully_authenticated:
         raise HTTPException(403, "Full authentication required")
-    return user
+    return user, session
 
 
 def validate_session_security(session: SessionModel, request: Request) -> bool:

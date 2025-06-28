@@ -6,16 +6,29 @@
     margin: 20px 0;
 }
 
+.dark .archive-download-section {
+    background: #374151;
+    border-color: #4b5563;
+}
+
 .archive-download-section h3 {
     margin: 0 0 10px 0;
     color: #495057;
     font-size: 1.25em;
 }
 
+.dark .archive-download-section h3 {
+    color: #f3f4f6;
+}
+
 .archive-download-section > p {
     margin: 0 0 20px 0;
     color: #6c757d;
     line-height: 1.5;
+}
+
+.dark .archive-download-section > p {
+    color: #d1d5db;
 }
 
 .archive-stats {
@@ -35,15 +48,28 @@
     flex: 1;
 }
 
+.dark .stat-item {
+    background: #1f2937;
+    border-color: #374151;
+}
+
 .stat-item strong {
     display: block;
     font-size: 1.5em;
     color: #007bff;
 }
 
+.dark .stat-item strong {
+    color: #60a5fa;
+}
+
 .stat-item span {
     color: #6c757d;
     font-size: 0.9em;
+}
+
+.dark .stat-item span {
+    color: #9ca3af;
 }
 
 .download-options {
@@ -60,15 +86,28 @@
     padding: 15px;
 }
 
+.dark .download-option {
+    background: #1f2937;
+    border-color: #374151;
+}
+
 .download-option h4 {
     margin: 0 0 8px 0;
     color: #495057;
+}
+
+.dark .download-option h4 {
+    color: #f3f4f6;
 }
 
 .download-option p {
     margin: 0 0 15px 0;
     color: #6c757d;
     font-size: 0.9em;
+}
+
+.dark .download-option p {
+    color: #d1d5db;
 }
 
 .btn {
@@ -93,6 +132,16 @@
     border-color: #0056b3;
 }
 
+.dark .btn-primary {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+.dark .btn-primary:hover {
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
 .btn-secondary {
     background-color: #6c757d;
     border-color: #6c757d;
@@ -104,6 +153,16 @@
     border-color: #545b62;
 }
 
+.dark .btn-secondary {
+    background-color: #4b5563;
+    border-color: #4b5563;
+}
+
+.dark .btn-secondary:hover {
+    background-color: #374151;
+    border-color: #374151;
+}
+
 .archive-info {
     background: #e7f3ff;
     border: 1px solid #b8daff;
@@ -112,9 +171,18 @@
     margin: 20px 0;
 }
 
+.dark .archive-info {
+    background: #1e3a8a;
+    border-color: #3b82f6;
+}
+
 .archive-info h4 {
     margin: 0 0 10px 0;
     color: #004085;
+}
+
+.dark .archive-info h4 {
+    color: #dbeafe;
 }
 
 .archive-info ul {
@@ -125,6 +193,10 @@
 .archive-info li {
     color: #004085;
     margin: 5px 0;
+}
+
+.dark .archive-info li {
+    color: #dbeafe;
 }
 
 .download-status {

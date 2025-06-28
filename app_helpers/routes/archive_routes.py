@@ -72,6 +72,8 @@ async def list_community_archives(
 ):
     """List all community archive files (available to all users)"""
     
+    current_user_obj, current_session = current_session_user
+    
     try:
         download_service = get_archive_service()
         archives = download_service.list_community_archives()
@@ -85,6 +87,8 @@ async def download_community_archive(
     current_session_user = Depends(require_full_auth)
 ):
     """Download complete community text archive (available to all users)"""
+    
+    current_user_obj, current_session = current_session_user
     
     try:
         download_service = get_archive_service()
@@ -107,6 +111,8 @@ async def get_prayer_archive_file(
     current_session_user = Depends(require_full_auth)
 ):
     """Get direct link to prayer's text archive file"""
+    
+    current_user_obj, current_session = current_session_user
     
     try:
         with Session(engine) as db:
