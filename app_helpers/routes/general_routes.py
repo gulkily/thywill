@@ -76,9 +76,20 @@ async def dismiss_welcome(user_session: tuple = Depends(current_user)):
 def export_page(request: Request, user_session: tuple = Depends(current_user)):
     """Community export information and download page."""
     user, session = user_session
+    
+    # Get export statistics for server-side rendering
+    from app_helpers.services.export_service import CommunityExportService
+    export_service = CommunityExportService()
+    export_info = export_service.get_export_info()
+    
     return templates.TemplateResponse(
         "export.html",
-        {"request": request, "me": user, "session": session}
+        {
+            "request": request, 
+            "me": user, 
+            "session": session,
+            "export_info": export_info
+        }
     )
 
 @router.get("/export/info")
@@ -154,3 +165,37 @@ async def export_database(user_session: tuple = Depends(current_user)):
         media_type="application/zip",
         headers=headers
     )
+
+@router.get("/export/text-archive")
+async def export_text_archive(user_session: tuple = Depends(current_user)):
+    """
+    Export complete community text archive as ZIP file.
+    Available to any authenticated user for community transparency.
+    Contains human-readable text files organized by date and type.
+    """
+    user, session = user_session
+    
+    try:
+        # Import the archive download service
+        from app_helpers.services.archive_download_service import ArchiveDownloadService
+        from app import TEXT_ARCHIVE_BASE_DIR
+        from fastapi.responses import FileResponse
+        
+        # Create the service and generate the full community archive
+        download_service = ArchiveDownloadService(TEXT_ARCHIVE_BASE_DIR)
+        zip_path = download_service.create_full_community_zip()
+        
+        # Return the file for download
+        filename = os.path.basename(zip_path)
+        return FileResponse(
+            path=zip_path,
+            filename=filename,
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Text archive export failed: {str(e)}"
+        )

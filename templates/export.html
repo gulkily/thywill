@@ -94,19 +94,27 @@
       
       <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
         <div class="text-gray-600 dark:text-gray-400">Estimated Size</div>
-        <div class="font-medium text-gray-900 dark:text-gray-100" id="archive-size">Calculating...</div>
+        <div class="font-medium text-gray-900 dark:text-gray-100">~{{ export_info.estimated_size }}</div>
         <div class="text-xs text-gray-500 dark:text-gray-500">Compressed archive</div>
       </div>
       
       <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
         <div class="text-gray-600 dark:text-gray-400">Cache Status</div>
-        <div class="font-medium text-gray-900 dark:text-gray-100" id="cache-status">Checking...</div>
-        <div class="text-xs text-gray-500 dark:text-gray-500" id="cache-details">Speeds up downloads</div>
+        <div class="font-medium text-gray-900 dark:text-gray-100 {% if export_info.cache_available %}text-green-600 dark:text-green-400{% else %}text-orange-600 dark:text-orange-400{% endif %}">
+          {% if export_info.cache_available %}✅ Available{% else %}🔄 Will generate{% endif %}
+        </div>
+        <div class="text-xs text-gray-500 dark:text-gray-500">
+          {% if export_info.cache_available %}
+            {% if export_info.cache_age_minutes == 0 %}Fresh data ready{% else %}Generated {{ export_info.cache_age_minutes }}m ago{% endif %}
+          {% else %}
+            Cached for {{ export_info.cache_ttl_minutes }}m
+          {% endif %}
+        </div>
       </div>
       
       <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
         <div class="text-gray-600 dark:text-gray-400">Community Data</div>
-        <div class="font-medium text-gray-900 dark:text-gray-100" id="community-stats">Loading...</div>
+        <div class="font-medium text-gray-900 dark:text-gray-100">{{ export_info.users }} users, {{ export_info.prayers }} prayers</div>
         <div class="text-xs text-gray-500 dark:text-gray-500">Users, prayers, activity</div>
       </div>
     </div>
@@ -151,12 +159,77 @@
     </div>
   </div>
 
-  <!-- Download Section -->
+  <!-- Text Archives Section -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <div class="flex items-center mb-4">
+      <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-4">
+        <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+      </div>
+      <div>
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">📄 Text Archives</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Human-readable text files with complete activity logs</p>
+      </div>
+    </div>
+
+    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-6">
+      <div class="flex items-start">
+        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+        </svg>
+        <div>
+          <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">About Text Archives</h3>
+          <div class="mt-2 text-sm text-blue-700 dark:text-blue-300">
+            <p>Text archives contain the same data as the JSON export but in human-readable format. Each prayer, user registration, and activity is stored as individual text files with timestamps and complete history.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Text Archive Download Options -->
+    <div id="archive-download-container">
+      <!-- Archive download component will render here -->
+    </div>
+    
+    <!-- HERO DOWNLOAD SECTION -->
+    <div class="mt-6 p-8 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 dark:from-indigo-600 dark:via-purple-600 dark:to-pink-600 rounded-xl shadow-2xl">
+      <div class="text-center">
+        <div class="mb-4">
+          <span class="inline-block p-3 bg-white/20 rounded-full mb-4">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </span>
+        </div>
+        <h2 class="text-2xl font-bold text-white mb-3">
+          📄 Complete Site Text Archive
+        </h2>
+        <p class="text-lg text-white/90 mb-6 max-w-md mx-auto">
+          Download everything as readable text files. No database required.
+        </p>
+        <a href="/export/text-archive" 
+           class="inline-flex items-center px-12 py-5 bg-white text-indigo-600 font-bold text-lg rounded-xl hover:bg-gray-100 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105 hover:-translate-y-1">
+          <svg class="w-7 h-7 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          Download Now
+        </a>
+        <div class="mt-6 flex justify-center items-center space-x-6 text-sm text-white/80">
+          <span>✨ {{ export_info.prayers }} Prayers</span>
+          <span>👥 {{ export_info.users }} Users</span>
+          <span>📊 Complete History</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Database Export Section -->
   <div class="bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-800 dark:to-blue-800 rounded-lg shadow-lg p-6 text-white">
     <div class="text-center">
-      <h3 class="text-xl font-semibold mb-2">Ready to Export?</h3>
+      <h3 class="text-xl font-semibold mb-2">📊 Database Export</h3>
       <p class="text-purple-100 dark:text-purple-200 mb-6">
-        Download a complete archive of your community data. The export process may take a few moments for large communities.
+        Download a complete JSON archive of your community database. The export process may take a few moments for large communities.
       </p>
       
       <div class="space-y-4">
@@ -164,7 +237,7 @@
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
           </svg>
-          <span id="export-btn-text">Download Community Archive</span>
+          <span id="export-btn-text">Download Community Database</span>
         </button>
         
         <div id="export-progress" class="hidden">
@@ -214,51 +287,17 @@
 </div>
 
 <script>
-// Load community statistics on page load
+// Update export button text based on cache status
 document.addEventListener('DOMContentLoaded', function() {
-  loadCommunityStats();
+  const exportBtnText = document.getElementById('export-btn-text');
+  if (exportBtnText) {
+    {% if export_info.cache_available %}
+      exportBtnText.textContent = 'Download Community Archive';
+    {% else %}
+      exportBtnText.textContent = 'Generate & Download Archive';
+    {% endif %}
+  }
 });
-
-function loadCommunityStats() {
-  fetch('/export/info')
-    .then(response => response.json())
-    .then(data => {
-      document.getElementById('community-stats').textContent = 
-        `${data.users} users, ${data.prayers} prayers`;
-      document.getElementById('archive-size').textContent = 
-        `~${data.estimated_size}`;
-      
-      // Update cache status
-      const cacheStatus = document.getElementById('cache-status');
-      const cacheDetails = document.getElementById('cache-details');
-      
-      // Update button text based on cache status
-      const exportBtnText = document.getElementById('export-btn-text');
-      
-      if (data.cache_available) {
-        cacheStatus.textContent = '✅ Available';
-        cacheStatus.className = 'font-medium text-green-600 dark:text-green-400';
-        if (data.cache_age_minutes === 0) {
-          cacheDetails.textContent = 'Fresh data ready';
-        } else {
-          cacheDetails.textContent = `Generated ${data.cache_age_minutes}m ago`;
-        }
-        exportBtnText.textContent = 'Download Community Archive';
-      } else {
-        cacheStatus.textContent = '🔄 Will generate';
-        cacheStatus.className = 'font-medium text-orange-600 dark:text-orange-400';
-        cacheDetails.textContent = `Cached for ${data.cache_ttl_minutes}m`;
-        exportBtnText.textContent = 'Generate & Download Archive';
-      }
-    })
-    .catch(error => {
-      console.error('Error loading stats:', error);
-      document.getElementById('community-stats').textContent = 'Stats unavailable';
-      document.getElementById('archive-size').textContent = 'Size unknown';
-      document.getElementById('cache-status').textContent = 'Unknown';
-      document.getElementById('cache-details').textContent = 'Cache info unavailable';
-    });
-}
 
 // Track whether the simulation has run
 let hasRunSimulation = false;
@@ -348,4 +387,12 @@ function startExport() {
   }
 }
 </script>
+
+<!-- Archive Download CSS and JavaScript -->
+<link rel="stylesheet" href="/static/css/archive.css?v=4">
+<script src="/static/js/components/ArchiveDownload.js?v=4"></script>
+
+<!-- Add current user metadata for JavaScript -->
+<meta name="current-user" content='{"id": "{{ me.id }}", "display_name": "{{ me.display_name }}"}'>
+
 {% endblock %}
