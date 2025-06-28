@@ -243,6 +243,6 @@ function showTab(tabName) {
 <script src="/static/js/components/ArchiveDownload.js?v=3"></script>
 
 <!-- Add current user metadata for JavaScript -->
-<meta name="current-user" content='{"id": {{ profile_user.id }}, "display_name": "{{ profile_user.display_name }}"}'>
+<meta name="current-user" content='{"id": "{{ profile_user.id }}", "display_name": "{{ profile_user.display_name }}"}'>
 
 {% endblock %}
