@@ -1217,14 +1217,24 @@ cmd_import_text_archives() {
         exit 1
     fi
     
-    # Check if text_archives directory exists
-    if [ ! -d "text_archives" ]; then
-        error "text_archives directory not found"
-        echo "Please ensure text_archives/ directory exists in the project root"
-        exit 1
+    # Check if we have a ZIP file argument or text_archives directory
+    if [ "$#" -gt 0 ] && [[ "$1" == *.zip ]]; then
+        # ZIP file provided
+        if [ ! -f "$1" ]; then
+            error "ZIP file not found: $1"
+            exit 1
+        fi
+        log "Importing data from ZIP file: $1"
+    else
+        # Check if text_archives directory exists
+        if [ ! -d "text_archives" ]; then
+            error "text_archives directory not found"
+            echo "Please ensure text_archives/ directory exists in the project root"
+            echo "Or provide a ZIP file: thywill import text-archives archive.zip"
+            exit 1
+        fi
+        log "Importing data from text_archives/ directory..."
     fi
-    
-    log "Importing data from text_archives/ directory..."
     
     # Execute Python import script with all arguments
     PRODUCTION_MODE=1 python3 import_text_archives.py "$@"
