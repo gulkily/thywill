@@ -151,7 +151,7 @@ class TestSessionHelpers:
         with patch('app_helpers.services.auth.session_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
-            returned_user = require_full_auth(mock_request)
+            returned_user, returned_session = require_full_auth(mock_request)
             assert returned_user.id == user.id
     
     def test_require_full_auth_with_half_session(self, test_session):
