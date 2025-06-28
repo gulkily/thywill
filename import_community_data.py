@@ -98,7 +98,7 @@ class CommunityImportService:
             raise ValueError("Invalid export file format")
         
         # Show file info
-        metadata = validation.get('metadata', {})
+        metadata = validation.get('metadata', {}) or {}
         export_date = metadata.get('export_date', 'Unknown')
         export_version = metadata.get('version', 'Unknown')
         
