@@ -27,8 +27,6 @@ setup_test_environment() {
     # Create minimal files to satisfy directory checks
     touch models.py
     touch thywill.db
-    touch import_community_data.py
-    chmod +x import_community_data.py
     
     # Create deployment directory structure
     mkdir -p deployment
@@ -96,7 +94,7 @@ setup_mocks() {
                     return 0
                 fi
                 ;;
-            "import_community_data.py")
+            *)
                 echo "🚀 ThyWill Community Data Import"
                 echo "========================================="
                 echo "📦 Export Info:"
@@ -239,13 +237,4 @@ from sqlalchemy import create_engine
 engine = create_engine("sqlite:///thywill.db")
 EOF
     
-    # Create minimal import script
-    cat > import_community_data.py << 'EOF'
-#!/usr/bin/env python3
-import sys
-print("🚀 ThyWill Community Data Import")
-print("✅ Mock import completed successfully")
-sys.exit(0)
-EOF
-    chmod +x import_community_data.py
 }
