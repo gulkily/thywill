@@ -2,6 +2,11 @@
 
 # ThyWill CLI - Git-style command-line utility for deployment and backup operations
 # Usage: ./thywill <command> [options]
+#
+# IMPORTANT: This CLI script should ONLY be used as a dispatcher to run Python scripts.
+# DO NOT add business logic, complex processing, or application-specific functionality here.
+# All actual work should be delegated to Python modules in the app_helpers/ directory.
+# This script exists purely to provide a clean command-line interface and should remain minimal.
 
 set -euo pipefail
 
@@ -121,6 +126,8 @@ show_help() {
     echo "    heal-archives          Create missing archive files for existing prayers and users"
     echo "    sync-archives          Complete archive synchronization (safe post-deploy)"
     echo "    recovery-report        Generate recovery capability report"
+    echo "    analyze-orphaned-prayers  Analyze prayers not visible in any feeds"
+    echo "    heal-orphaned-prayers     Fix orphaned prayers by creating compatible users"
     echo ""
     header "  Database Commands:"
     echo "    db init             Initialize database tables (first time only)"
@@ -156,6 +163,8 @@ show_help() {
     echo "    thywill heal-archives                            # Create missing archive files for prayers and users"
     echo "    thywill sync-archives                            # Complete post-deploy sync"
     echo "    thywill recovery-report                          # Generate recovery report"
+    echo "    thywill analyze-orphaned-prayers                 # Analyze orphaned prayers"
+    echo "    thywill heal-orphaned-prayers                    # Fix orphaned prayers"
     echo "    thywill sqlite                                    # Open SQLite3 CLI with database"
     echo "    thywill deploy                                    # Safe deployment"
     echo "    thywill backup                                    # Create database backup"
@@ -356,34 +365,8 @@ cmd_verify() {
         exit 1
     fi
     
-    header "Verifying Backup Integrity"
-    
-    if [ ! -f "$backup_file" ]; then
-        error "Backup file not found: $backup_file"
-        exit 1
-    fi
-    
-    log "Checking file integrity..."
-    if [ -f "${backup_file}.sha256" ]; then
-        if sha256sum -c "${backup_file}.sha256" > /dev/null 2>&1; then
-            success "Checksum verification passed"
-        else
-            error "Checksum verification failed"
-            exit 1
-        fi
-    else
-        warning "No checksum file found, skipping checksum verification"
-    fi
-    
-    log "Checking database integrity..."
-    if sqlite3 "$backup_file" "PRAGMA integrity_check;" | grep -q "ok"; then
-        success "Database integrity check passed"
-    else
-        error "Database integrity check failed"
-        exit 1
-    fi
-    
-    success "Backup verification completed successfully"
+    # Use Python CLI module for backup verification
+    run_python -m app_helpers.cli.backup_verification "$backup_file"
 }
 
 # Admin commands
@@ -1748,6 +1731,38 @@ except Exception as e:
 "
 }
 
+cmd_analyze_orphaned_prayers() {
+    header "Analyzing Orphaned Prayers"
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Analyzing prayers not visible in any feeds..."
+    
+    # Execute Python analysis module
+    run_python -m app_helpers.cli.prayer_analysis
+}
+
+cmd_heal_orphaned_prayers() {
+    header "Healing Orphaned Prayers"
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Fixing orphaned prayers by creating compatible users..."
+    
+    # Execute Python healing module
+    run_python -m app_helpers.cli.prayer_healing
+}
+
 # Database commands
 cmd_db() {
     local subcommand="${1:-}"
@@ -2444,45 +2459,13 @@ cmd_uninstall() {
 
 # Duplicate user management commands
 cmd_check_duplicates() {
-    header "Checking for Duplicate Users"
-    
-    # Check if we're in the right directory
-    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
-        error "Must run from ThyWill project directory"
-        echo "Database or models.py not found"
-        exit 1
-    fi
-    
-    # Check if migration script exists
-    if [ ! -f "migrations/duplicate_user_migration.py" ]; then
-        error "Migration script not found: migrations/duplicate_user_migration.py"
-        echo "Please ensure the migration script is in the project directory"
-        exit 1
-    fi
-    
-    # Call the migration script with check-only flag
-    run_python migrations/duplicate_user_migration.py --check-only
+    # Use Python CLI module for duplicate checking
+    run_python -m app_helpers.cli.user_management check
 }
 
 cmd_merge_duplicates() {
-    header "Merging Duplicate Users"
-    
-    # Check if we're in the right directory  
-    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
-        error "Must run from ThyWill project directory"
-        echo "Database or models.py not found"
-        exit 1
-    fi
-    
-    # Check if migration script exists
-    if [ ! -f "migrations/duplicate_user_migration.py" ]; then
-        error "Migration script not found: migrations/duplicate_user_migration.py"
-        echo "Please ensure the migration script is in the project directory"
-        exit 1
-    fi
-    
-    # Call the migration script with interactive flag
-    run_python migrations/duplicate_user_migration.py --interactive
+    # Use Python CLI module for duplicate merging
+    run_python -m app_helpers.cli.user_management merge
 }
 
 # Main command dispatcher
@@ -2560,6 +2543,12 @@ main() {
             ;;
         recovery-report)
             cmd_recovery_report "$@"
+            ;;
+        analyze-orphaned-prayers)
+            cmd_analyze_orphaned_prayers "$@"
+            ;;
+        heal-orphaned-prayers)
+            cmd_heal_orphaned_prayers "$@"
             ;;
         
         # Database commands
