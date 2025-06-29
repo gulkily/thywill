@@ -128,6 +128,8 @@ show_help() {
     echo "    recovery-report        Generate recovery capability report"
     echo "    analyze-orphaned-prayers  Analyze prayers not visible in any feeds"
     echo "    heal-orphaned-prayers     Fix orphaned prayers by creating compatible users"
+    echo "    reconstruct-from-archives Rebuild database relationships from text archives"
+    echo "    validate-consistency      Validate archive-database consistency"
     echo ""
     header "  Database Commands:"
     echo "    db init             Initialize database tables (first time only)"
@@ -165,6 +167,9 @@ show_help() {
     echo "    thywill recovery-report                          # Generate recovery report"
     echo "    thywill analyze-orphaned-prayers                 # Analyze orphaned prayers"
     echo "    thywill heal-orphaned-prayers                    # Fix orphaned prayers"
+    echo "    thywill reconstruct-from-archives --dry-run     # Preview archive-based reconstruction"
+    echo "    thywill reconstruct-from-archives --execute     # Fix orphaned relationships from archives"
+    echo "    thywill validate-consistency                     # Check archive-database consistency"
     echo "    thywill sqlite                                    # Open SQLite3 CLI with database"
     echo "    thywill deploy                                    # Safe deployment"
     echo "    thywill backup                                    # Create database backup"
@@ -893,6 +898,40 @@ cmd_heal_orphaned_prayers() {
     run_python -m app_helpers.cli.prayer_healing
 }
 
+cmd_reconstruct_from_archives() {
+    header "Archive-Based Database Reconstruction"
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Rebuilding database relationships from text archives..."
+    log "This tool fixes orphaned prayers and prayer marks using archive data as source of truth"
+    
+    # Execute reconstruction script with arguments passed through
+    PRODUCTION_MODE=1 python3 reconstruct_from_archives.py "$@"
+}
+
+cmd_validate_consistency() {
+    header "Archive-Database Consistency Validation"
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Validating consistency between text archives and database..."
+    log "This provides a comprehensive report on data integrity"
+    
+    # Execute validation script with arguments passed through
+    PRODUCTION_MODE=1 python3 validate_archive_consistency.py "$@"
+}
+
 # Database commands
 cmd_db() {
     local subcommand="${1:-}"
@@ -1537,6 +1576,12 @@ main() {
             ;;
         heal-orphaned-prayers)
             cmd_heal_orphaned_prayers "$@"
+            ;;
+        reconstruct-from-archives)
+            cmd_reconstruct_from_archives "$@"
+            ;;
+        validate-consistency)
+            cmd_validate_consistency "$@"
             ;;
         
         # Database commands
