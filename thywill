@@ -2453,47 +2453,15 @@ cmd_check_duplicates() {
         exit 1
     fi
     
-    run_python -c "
-import sys
-sys.path.append('.')
-from sqlmodel import Session, text
-from models import engine
-
-with Session(engine) as session:
-    # Find duplicate usernames
-    result = session.exec(text('''
-        SELECT display_name, COUNT(*) as count 
-        FROM user 
-        GROUP BY display_name 
-        HAVING COUNT(*) > 1
-        ORDER BY count DESC
-    '''))
+    # Check if migration script exists
+    if [ ! -f "migrations/duplicate_user_migration.py" ]; then
+        error "Migration script not found: migrations/duplicate_user_migration.py"
+        echo "Please ensure the migration script is in the project directory"
+        exit 1
+    fi
     
-    duplicates = result.fetchall()
-    
-    if not duplicates:
-        print('✅ No duplicate usernames found')
-        sys.exit(0)
-    
-    print(f'⚠️  Found {len(duplicates)} usernames with duplicates:')
-    for username, count in duplicates:
-        print(f'   \"{username}\": {count} users')
-    
-    # Get specific user IDs for each duplicate
-    for username, count in duplicates:
-        stmt = text('''
-            SELECT id, created_at, invited_by_user_id 
-            FROM user 
-            WHERE display_name = :username 
-            ORDER BY created_at
-        ''').bindparams(username=username)
-        users = session.exec(stmt).fetchall()
-        
-        print(f'\\n📋 Users with username \"{username}\":')
-        for i, (user_id, created_at, invited_by) in enumerate(users):
-            marker = '👑 PRIMARY' if i == 0 else '🔄 DUPLICATE'
-            print(f'   {marker}: {user_id} (created: {created_at})')
-"
+    # Call the migration script with check-only flag
+    run_python migrations/duplicate_user_migration.py --check-only
 }
 
 cmd_merge_duplicates() {
@@ -2506,192 +2474,15 @@ cmd_merge_duplicates() {
         exit 1
     fi
     
-    # Check for duplicates first (suppress extra output)
-    duplicates_found=$(PRODUCTION_MODE=1 python3 -c "
-import sys
-sys.path.append('.')
-from sqlmodel import Session, text
-from models import engine
-
-with Session(engine) as session:
-    result = session.exec(text('''
-        SELECT COUNT(*) as duplicate_count
-        FROM (
-            SELECT display_name, COUNT(*) as count 
-            FROM user 
-            GROUP BY display_name 
-            HAVING COUNT(*) > 1
-        )
-    '''))
-    
-    count = result.fetchone()[0]
-    print(count)
-" 2>/dev/null)
-
-    if [ -z "$duplicates_found" ] || [ "$duplicates_found" -eq 0 ]; then
-        echo "✅ No duplicate users found - nothing to merge"
-        echo "Debug: duplicates_found='$duplicates_found'"
-        return 0
-    fi
-    
-    echo "⚠️  Found $duplicates_found duplicate usernames. This will:"
-    echo "   - Merge duplicate user accounts"
-    echo "   - Preserve all data (prayers, sessions, etc.)"
-    echo "   - Keep the oldest account as primary"
-    echo "   - Add unique constraint to prevent future duplicates"
-    echo ""
-    echo "Debug: About to prompt for confirmation..."
-    
-    read -p "Proceed with duplicate user merge? (y/N): " -n 1 -r
-    echo
-    echo "Debug: User replied: '$REPLY'"
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Merge cancelled"
-        return 0
-    fi
-    
-    echo "Debug: Proceeding with merge..."
-    
-    # Create backup first
-    backup_file="thywill_backup_$(date +%Y%m%d_%H%M%S).db"
-    log "Creating backup: $backup_file"
-    cp thywill.db "$backup_file"
-    
-    echo "Debug: Starting Python execution..."
-    
-    # Run the migration inline with verbose debugging
-    run_python -c "
-import sys
-sys.path.append('.')
-from sqlmodel import Session, select, text
-from models import engine, User, Prayer, Session as UserSession, PrayerMark, PrayerSkip
-from datetime import datetime
-
-def merge_duplicate_users():
-    print('🚀 Starting merge_duplicate_users function')
-    
-    with Session(engine) as session:
-        try:
-            print('📊 Finding duplicate usernames...')
-            # Find all duplicate usernames
-            duplicates_result = session.exec(text('''
-                SELECT display_name, COUNT(*) as count 
-                FROM user 
-                GROUP BY display_name 
-                HAVING COUNT(*) > 1
-                ORDER BY count DESC
-            '''))
-            
-            duplicates = duplicates_result.fetchall()
-            print(f'📋 Found {len(duplicates)} duplicate username groups')
-            
-            if not duplicates:
-                print('ℹ️  No duplicates found to merge')
-                return True
-            
-            merged_count = 0
-            
-            for username, count in duplicates:
-                print(f'\\n🔄 Processing {count} users with username: \"{username}\"')
-                
-                # Get all users with this username, ordered by creation date (oldest first)
-                stmt = text('''
-                    SELECT id, created_at 
-                    FROM user 
-                    WHERE display_name = :username 
-                    ORDER BY created_at ASC
-                ''').bindparams(username=username)
-                
-                print(f'🔍 Executing query for username: {username}')
-                users = session.exec(stmt).fetchall()
-                print(f'📝 Found {len(users)} users for username \"{username}\"')
-                
-                if len(users) < 2:
-                    print(f'⚠️  Skipping \"{username}\" - less than 2 users found')
-                    continue
-                    
-                primary_user_id = users[0][0]  # Keep the oldest user
-                duplicate_user_ids = [user[0] for user in users[1:]]  # Mark others for merging
-                
-                print(f'👑 Primary user: {primary_user_id[:8]}... (keeping)')
-                for dup_id in duplicate_user_ids:
-                    print(f'🔄 Will merge: {dup_id[:8]}... -> {primary_user_id[:8]}...')
-                
-                # Update prayers
-                print('📿 Updating prayers...')
-                for dup_id in duplicate_user_ids:
-                    stmt = text('UPDATE prayer SET author_id = :primary WHERE author_id = :dup').bindparams(primary=primary_user_id, dup=dup_id)
-                    result = session.exec(stmt)
-                    print(f'   Prayer updates for {dup_id[:8]}...: {result.rowcount if hasattr(result, \"rowcount\") else \"unknown\"} rows')
-                
-                # Update sessions  
-                print('🔐 Updating sessions...')
-                for dup_id in duplicate_user_ids:
-                    stmt = text('UPDATE session SET user_id = :primary WHERE user_id = :dup').bindparams(primary=primary_user_id, dup=dup_id)
-                    result = session.exec(stmt)
-                    print(f'   Session updates for {dup_id[:8]}...: {result.rowcount if hasattr(result, \"rowcount\") else \"unknown\"} rows')
-                
-                # Update prayer marks
-                print('✅ Updating prayer marks...')
-                for dup_id in duplicate_user_ids:
-                    stmt = text('UPDATE prayermark SET user_id = :primary WHERE user_id = :dup').bindparams(primary=primary_user_id, dup=dup_id)
-                    result = session.exec(stmt)
-                    print(f'   PrayerMark updates for {dup_id[:8]}...: {result.rowcount if hasattr(result, \"rowcount\") else \"unknown\"} rows')
-                
-                # Update prayer skips
-                print('⏭️  Updating prayer skips...')
-                for dup_id in duplicate_user_ids:
-                    stmt = text('UPDATE prayerskip SET user_id = :primary WHERE user_id = :dup').bindparams(primary=primary_user_id, dup=dup_id)
-                    result = session.exec(stmt)
-                    print(f'   PrayerSkip updates for {dup_id[:8]}...: {result.rowcount if hasattr(result, \"rowcount\") else \"unknown\"} rows')
-                
-                # Delete duplicate users
-                print('🗑️  Deleting duplicate users...')
-                for dup_id in duplicate_user_ids:
-                    stmt = text('DELETE FROM user WHERE id = :dup').bindparams(dup=dup_id)
-                    result = session.exec(stmt)
-                    print(f'   Deleted user {dup_id[:8]}...: {result.rowcount if hasattr(result, \"rowcount\") else \"unknown\"} rows')
-                
-                merged_count += len(duplicate_user_ids)
-                print(f'✨ Completed merging for \"{username}\" - merged {len(duplicate_user_ids)} users')
-            
-            print(f'\\n💾 Committing transaction...')
-            session.commit()
-            print(f'✅ Successfully merged {merged_count} duplicate users total')
-            return True
-            
-        except Exception as e:
-            print(f'❌ Exception occurred: {e}')
-            session.rollback()
-            print(f'🔄 Transaction rolled back')
-            import traceback
-            traceback.print_exc()
-            return False
-
-print('🏁 Calling merge_duplicate_users...')
-result = merge_duplicate_users()
-print(f'🎯 Function returned: {result}')
-
-if result:
-    print('✅ Exiting with success')
-    sys.exit(0)
-else:
-    print('❌ Exiting with failure')
-    sys.exit(1)
-"
-    
-    python_exit_code=$?
-    echo "Debug: Python execution finished with exit code: $python_exit_code"
-    
-    if [ $python_exit_code -eq 0 ]; then
-        success "Duplicate users merged successfully"
-        echo "Backup saved as: $backup_file"
-    else
-        error "Merge failed - database unchanged"
-        echo "Debug: Removing backup file: $backup_file"
-        rm -f "$backup_file" 2>/dev/null
+    # Check if migration script exists
+    if [ ! -f "migrations/duplicate_user_migration.py" ]; then
+        error "Migration script not found: migrations/duplicate_user_migration.py"
+        echo "Please ensure the migration script is in the project directory"
         exit 1
     fi
+    
+    # Call the migration script with interactive flag
+    run_python migrations/duplicate_user_migration.py --interactive
 }
 
 # Main command dispatcher
