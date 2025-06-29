@@ -2552,7 +2552,7 @@ with Session(engine) as session:
     log "Creating backup: $backup_file"
     cp thywill.db "$backup_file"
     
-    # Run the migration inline
+    # Run the migration inline with verbose debugging
     run_python -c "
 import sys
 sys.path.append('.')
@@ -2561,8 +2561,11 @@ from models import engine, User, Prayer, Session as UserSession, PrayerMark, Pra
 from datetime import datetime
 
 def merge_duplicate_users():
+    print('🚀 Starting merge_duplicate_users function')
+    
     with Session(engine) as session:
         try:
+            print('📊 Finding duplicate usernames...')
             # Find all duplicate usernames
             duplicates_result = session.exec(text('''
                 SELECT display_name, COUNT(*) as count 
@@ -2573,10 +2576,16 @@ def merge_duplicate_users():
             '''))
             
             duplicates = duplicates_result.fetchall()
+            print(f'📋 Found {len(duplicates)} duplicate username groups')
+            
+            if not duplicates:
+                print('ℹ️  No duplicates found to merge')
+                return True
+            
             merged_count = 0
             
             for username, count in duplicates:
-                print(f'🔄 Merging {count} users with username: {username}')
+                print(f'\\n🔄 Processing {count} users with username: \"{username}\"')
                 
                 # Get all users with this username, ordered by creation date (oldest first)
                 stmt = text('''
@@ -2585,59 +2594,82 @@ def merge_duplicate_users():
                     WHERE display_name = :username 
                     ORDER BY created_at ASC
                 ''').bindparams(username=username)
+                
+                print(f'🔍 Executing query for username: {username}')
                 users = session.exec(stmt).fetchall()
+                print(f'📝 Found {len(users)} users for username \"{username}\"')
                 
                 if len(users) < 2:
+                    print(f'⚠️  Skipping \"{username}\" - less than 2 users found')
                     continue
                     
                 primary_user_id = users[0][0]  # Keep the oldest user
                 duplicate_user_ids = [user[0] for user in users[1:]]  # Mark others for merging
                 
-                print(f'   Primary user: {primary_user_id} (keeping)')
+                print(f'👑 Primary user: {primary_user_id[:8]}... (keeping)')
                 for dup_id in duplicate_user_ids:
-                    print(f'   Merging: {dup_id} -> {primary_user_id}')
+                    print(f'🔄 Will merge: {dup_id[:8]}... -> {primary_user_id[:8]}...')
                 
                 # Update prayers
+                print('📿 Updating prayers...')
                 for dup_id in duplicate_user_ids:
                     stmt = text('UPDATE prayer SET author_id = :primary WHERE author_id = :dup').bindparams(primary=primary_user_id, dup=dup_id)
-                    session.exec(stmt)
+                    result = session.exec(stmt)
+                    print(f'   Prayer updates for {dup_id[:8]}...: {result.rowcount if hasattr(result, \"rowcount\") else \"unknown\"} rows')
                 
-                # Update sessions
+                # Update sessions  
+                print('🔐 Updating sessions...')
                 for dup_id in duplicate_user_ids:
                     stmt = text('UPDATE session SET user_id = :primary WHERE user_id = :dup').bindparams(primary=primary_user_id, dup=dup_id)
-                    session.exec(stmt)
+                    result = session.exec(stmt)
+                    print(f'   Session updates for {dup_id[:8]}...: {result.rowcount if hasattr(result, \"rowcount\") else \"unknown\"} rows')
                 
                 # Update prayer marks
+                print('✅ Updating prayer marks...')
                 for dup_id in duplicate_user_ids:
                     stmt = text('UPDATE prayermark SET user_id = :primary WHERE user_id = :dup').bindparams(primary=primary_user_id, dup=dup_id)
-                    session.exec(stmt)
+                    result = session.exec(stmt)
+                    print(f'   PrayerMark updates for {dup_id[:8]}...: {result.rowcount if hasattr(result, \"rowcount\") else \"unknown\"} rows')
                 
                 # Update prayer skips
+                print('⏭️  Updating prayer skips...')
                 for dup_id in duplicate_user_ids:
                     stmt = text('UPDATE prayerskip SET user_id = :primary WHERE user_id = :dup').bindparams(primary=primary_user_id, dup=dup_id)
-                    session.exec(stmt)
+                    result = session.exec(stmt)
+                    print(f'   PrayerSkip updates for {dup_id[:8]}...: {result.rowcount if hasattr(result, \"rowcount\") else \"unknown\"} rows')
                 
                 # Delete duplicate users
+                print('🗑️  Deleting duplicate users...')
                 for dup_id in duplicate_user_ids:
                     stmt = text('DELETE FROM user WHERE id = :dup').bindparams(dup=dup_id)
-                    session.exec(stmt)
+                    result = session.exec(stmt)
+                    print(f'   Deleted user {dup_id[:8]}...: {result.rowcount if hasattr(result, \"rowcount\") else \"unknown\"} rows')
                 
                 merged_count += len(duplicate_user_ids)
+                print(f'✨ Completed merging for \"{username}\" - merged {len(duplicate_user_ids)} users')
             
+            print(f'\\n💾 Committing transaction...')
             session.commit()
-            print(f'✅ Successfully merged {merged_count} duplicate users')
+            print(f'✅ Successfully merged {merged_count} duplicate users total')
             return True
             
         except Exception as e:
+            print(f'❌ Exception occurred: {e}')
             session.rollback()
-            print(f'❌ Error during merge: {e}')
+            print(f'🔄 Transaction rolled back')
             import traceback
             traceback.print_exc()
             return False
 
-if merge_duplicate_users():
+print('🏁 Calling merge_duplicate_users...')
+result = merge_duplicate_users()
+print(f'🎯 Function returned: {result}')
+
+if result:
+    print('✅ Exiting with success')
     sys.exit(0)
 else:
+    print('❌ Exiting with failure')
     sys.exit(1)
 "
     
