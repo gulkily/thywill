@@ -41,6 +41,42 @@ header() {
     echo -e "${BOLD}${CYAN}$1${NC}"
 }
 
+# Virtual environment activation function
+ensure_venv() {
+    # Check if we're already in a virtual environment
+    if [ -n "${VIRTUAL_ENV:-}" ]; then
+        return 0
+    fi
+    
+    # Check if virtual environment exists
+    if [ -d "venv" ]; then
+        log "Activating virtual environment..."
+        source venv/bin/activate
+        return 0
+    elif [ -d "$APP_DIR/venv" ]; then
+        log "Activating virtual environment from $APP_DIR..."
+        source "$APP_DIR/venv/bin/activate"
+        return 0
+    else
+        warning "Virtual environment not found"
+        echo "Please run: python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt"
+        return 1
+    fi
+}
+
+# Python execution wrapper that ensures venv is activated
+run_python() {
+    if ! ensure_venv; then
+        error "Virtual environment activation failed"
+        echo "Please ensure you have a working virtual environment:"
+        echo "  python3 -m venv venv"
+        echo "  source venv/bin/activate"
+        echo "  pip install -r requirements.txt"
+        exit 1
+    fi
+    PRODUCTION_MODE=1 python3 "$@"
+}
+
 # Help functions
 show_help() {
     header "ThyWill CLI - Deployment and Backup Management"
@@ -154,8 +190,7 @@ cmd_start() {
         source venv/bin/activate
         pip install -r requirements.txt
     else
-        log "Activating virtual environment..."
-        source venv/bin/activate
+        ensure_venv
     fi
     
     # Check if uvicorn is installed
@@ -400,7 +435,7 @@ cmd_admin_grant() {
     log "Looking up user: $user_identifier"
     
     # Run Python script to grant admin role
-    PRODUCTION_MODE=1 python3 -c "
+    run_python -c "
 import sys
 sys.path.append('.')
 from sqlmodel import Session, select
@@ -514,7 +549,7 @@ cmd_admin_revoke() {
     
     log "Looking up user: $user_identifier"
     
-    PRODUCTION_MODE=1 python3 -c "
+    run_python -c "
 import sys
 sys.path.append('.')
 from sqlmodel import Session, select
@@ -603,7 +638,7 @@ cmd_admin_list() {
         exit 1
     fi
     
-    PRODUCTION_MODE=1 python3 -c "
+    run_python -c "
 import sys
 sys.path.append('.')
 from sqlmodel import Session, select, func
@@ -677,7 +712,7 @@ cmd_admin_token() {
     fi
     
     # Call the standalone Python script to create admin token
-    if ! PRODUCTION_MODE=1 python3 create_admin_token.py --hours "$hours"; then
+    if ! run_python create_admin_token.py --hours "$hours"; then
         error "Failed to create admin token"
         exit 1
     fi
@@ -720,7 +755,7 @@ cmd_role_list() {
         exit 1
     fi
     
-    PRODUCTION_MODE=1 python3 -c "
+    run_python -c "
 import sys
 sys.path.append('.')
 from sqlmodel import Session, select
@@ -792,7 +827,7 @@ cmd_role_grant() {
     log "Looking up user: $user_identifier"
     log "Role to grant: $role_name"
     
-    PRODUCTION_MODE=1 python3 -c "
+    run_python -c "
 import sys
 sys.path.append('.')
 from sqlmodel import Session, select
@@ -897,7 +932,7 @@ cmd_role_revoke() {
     log "Looking up user: $user_identifier"
     log "Role to revoke: $role_name"
     
-    PRODUCTION_MODE=1 python3 -c "
+    run_python -c "
 import sys
 sys.path.append('.')
 from sqlmodel import Session, select
@@ -1037,14 +1072,14 @@ cmd_import_prayers() {
     log "Validating JSON file..."
     
     # Validate JSON first
-    if ! python3 -c "import json; json.load(open('$file_path'))" 2>/dev/null; then
+    if ! run_python -c "import json; json.load(open('$file_path'))" 2>/dev/null; then
         error "Invalid JSON file"
         exit 1
     fi
     
     log "Importing prayers..."
     
-    PRODUCTION_MODE=1 python3 -c "
+    run_python -c "
 import sys
 sys.path.append('.')
 import json
@@ -1187,7 +1222,7 @@ cmd_import_text_archives() {
     fi
     
     # Execute Python import script with all arguments
-    PRODUCTION_MODE=1 python3 import_text_archives.py "$@"
+    run_python import_text_archives.py "$@"
 }
 
 # Archive validation and recovery commands
@@ -1210,7 +1245,7 @@ cmd_validate_archives() {
     log "Validating archive completeness and integrity..."
     
     # Execute Python validation script
-    PRODUCTION_MODE=1 python3 -c "
+    run_python -c "
 import sys
 sys.path.append('.')
 from app_helpers.services.database_recovery import CompleteSystemRecovery
@@ -1273,7 +1308,7 @@ cmd_test_recovery() {
     warning "This is a simulation - no actual changes will be made"
     
     # Execute Python recovery script in dry run mode
-    PRODUCTION_MODE=1 python3 -c "
+    run_python -c "
 import sys
 sys.path.append('.')
 from app_helpers.services.database_recovery import CompleteSystemRecovery
@@ -1359,7 +1394,7 @@ cmd_full_recovery() {
     fi
     
     # Execute Python recovery script
-    PRODUCTION_MODE=1 python3 -c "
+    run_python -c "
 import sys
 sys.path.append('.')
 from app_helpers.services.database_recovery import CompleteSystemRecovery
@@ -1420,7 +1455,7 @@ cmd_repair_archives() {
     log "Checking and repairing archive inconsistencies..."
     
     # Execute Python repair script
-    PRODUCTION_MODE=1 python3 -c "
+    run_python -c "
 import sys
 sys.path.append('.')
 from app_helpers.services.text_archive_service import TextArchiveService
@@ -1452,10 +1487,11 @@ cmd_heal_archives() {
         exit 1
     fi
     
+    
     log "Creating missing archive files for existing prayers and users..."
     
     # Execute the healing script with proper production mode handling
-    PRODUCTION_MODE=1 python3 heal_prayer_archives.py
+    run_python heal_prayer_archives.py
 }
 
 cmd_sync_archives() {
@@ -1576,7 +1612,7 @@ cmd_recovery_report() {
     log "Generating recovery capability report..."
     
     # Execute Python report script
-    PRODUCTION_MODE=1 python3 -c "
+    run_python -c "
 import sys
 from pathlib import Path
 sys.path.append('.')
@@ -1776,7 +1812,7 @@ cmd_migrate_legacy() {
     log "Running database migrations..."
     
     # Run the migration through Python
-    if python3 -c "
+    if run_python -c "
 from app_helpers.utils.database_helpers import migrate_database
 try:
     migrate_database()
@@ -1805,7 +1841,7 @@ cmd_migrate_new() {
     log "Running enhanced migrations..."
     
     # Run the enhanced migration system
-    PRODUCTION_MODE=1 python3 -c "
+    run_python -c "
 import sys
 sys.path.append('.')
 from app_helpers.utils.enhanced_migration import MigrationManager
@@ -1847,7 +1883,7 @@ cmd_migrate_status() {
     fi
     
     # Show migration status
-    PRODUCTION_MODE=1 python3 -c "
+    run_python -c "
 import sys
 sys.path.append('.')
 from app_helpers.utils.enhanced_migration import MigrationManager
@@ -1922,7 +1958,7 @@ cmd_migrate_rollback() {
         # Show available migrations to rollback
         warning "No migration ID specified. Finding last applied migration..."
         
-        migration_id=$(python3 -c "
+        migration_id=$(run_python -c "
 import sys
 sys.path.append('.')
 from app_helpers.utils.enhanced_migration import MigrationManager
@@ -1956,7 +1992,7 @@ except:
     log "Rolling back migration: $migration_id"
     
     # Perform rollback
-    PRODUCTION_MODE=1 python3 -c "
+    run_python -c "
 import sys
 sys.path.append('.')
 from app_helpers.utils.enhanced_migration import MigrationManager
@@ -2016,7 +2052,7 @@ cmd_db_init() {
     echo ""
     
     # Execute the standalone database creation script
-    python3 create_database.py
+    run_python create_database.py
     
     if [ $? -eq 0 ]; then
         echo ""
