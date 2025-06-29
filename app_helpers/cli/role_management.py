@@ -247,6 +247,59 @@ def list_all_roles() -> List[Role]:
         return []
 
 
+def revoke_role(user_identifier: str, role_name: str) -> bool:
+    """
+    Revoke any role from a user.
+    
+    Args:
+        user_identifier: User ID or display name
+        role_name: Name of role to revoke
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        with Session(engine) as session:
+            user = find_user_by_identifier(session, user_identifier)
+            if not user:
+                return False
+            
+            # Get role
+            stmt = select(Role).where(Role.name == role_name)
+            role = session.exec(stmt).first()
+            
+            if not role:
+                print(f'❌ Role "{role_name}" not found')
+                return False
+            
+            # Check if user has this role
+            if not user.has_role(role_name, session):
+                print(f'ℹ️  User "{user.display_name}" does not have role "{role_name}"')
+                return True
+            
+            # Revoke role
+            stmt = select(UserRole).where(
+                UserRole.user_id == user.id,
+                UserRole.role_id == role.id
+            )
+            user_roles = session.exec(stmt).all()
+            
+            for user_role in user_roles:
+                session.delete(user_role)
+            
+            session.commit()
+            
+            print(f'✅ Role "{role_name}" revoked from: "{user.display_name}"')
+            print(f'   User ID: {user.id[:8]}...')
+            return True
+            
+    except Exception as e:
+        print(f'❌ Error revoking role: {e}')
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def print_roles_list():
     """Print formatted list of all available roles."""
     print('🎭 Available Roles')
@@ -296,17 +349,22 @@ def main():
             
     elif command == "revoke":
         if len(sys.argv) < 3:
-            print("Usage: python role_management.py revoke <user_identifier>")
+            print("Usage: python role_management.py revoke <user_identifier> [role_name]")
+            print("Default role is 'admin' if not specified")
             sys.exit(1)
         
         user_identifier = sys.argv[2]
-        print(f"🔓 Revoking Admin Role from: {user_identifier}")
+        role_name = sys.argv[3] if len(sys.argv) > 3 else "admin"
+        
+        print(f"🔓 Revoking {role_name} Role from: {user_identifier}")
         print("=" * 40)
         
-        if revoke_admin_role(user_identifier):
-            sys.exit(0)
+        if role_name == "admin":
+            success = revoke_admin_role(user_identifier)
         else:
-            sys.exit(1)
+            success = revoke_role(user_identifier, role_name)
+            
+        sys.exit(0 if success else 1)
             
     elif command == "list":
         print_admin_list()
