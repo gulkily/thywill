@@ -2481,12 +2481,13 @@ with Session(engine) as session:
     
     # Get specific user IDs for each duplicate
     for username, count in duplicates:
-        users = session.exec(text('''
+        stmt = text('''
             SELECT id, created_at, invited_by_user_id 
             FROM user 
             WHERE display_name = :username 
             ORDER BY created_at
-        '''), {'username': username}).fetchall()
+        ''')
+        users = session.exec(stmt, {'username': username}).fetchall()
         
         print(f'\\n📋 Users with username \"{username}\":')
         for i, (user_id, created_at, invited_by) in enumerate(users):
@@ -2506,33 +2507,42 @@ cmd_merge_duplicates() {
     fi
     
     # Check for duplicates first
-    if run_python -c "
+    duplicates_found=$(run_python -c "
 import sys
 sys.path.append('.')
-from migrations.duplicate_user_migration import find_duplicate_usernames
-from sqlmodel import Session
+from sqlmodel import Session, text
 from models import engine
 
 with Session(engine) as session:
-    duplicates = find_duplicate_usernames(session)
-    if not duplicates:
-        print('✅ No duplicate users found')
-        sys.exit(1)
-    else:
-        sys.exit(0)
-"; then
+    result = session.exec(text('''
+        SELECT COUNT(*) as duplicate_count
+        FROM (
+            SELECT display_name, COUNT(*) as count 
+            FROM user 
+            GROUP BY display_name 
+            HAVING COUNT(*) > 1
+        )
+    '''))
+    
+    count = result.fetchone()[0]
+    print(count)
+")
+
+    if [ "$duplicates_found" -eq 0 ]; then
         echo "✅ No duplicate users found - nothing to merge"
         return 0
     fi
     
-    echo "⚠️  Duplicate users detected. This will:"
+    echo "⚠️  Found $duplicates_found duplicate usernames. This will:"
     echo "   - Merge duplicate user accounts"
     echo "   - Preserve all data (prayers, sessions, etc.)"
     echo "   - Keep the oldest account as primary"
     echo "   - Add unique constraint to prevent future duplicates"
     echo ""
     
-    if ! confirm "Proceed with duplicate user merge?"; then
+    read -p "Proceed with duplicate user merge? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo "Merge cancelled"
         return 0
     fi
@@ -2542,18 +2552,91 @@ with Session(engine) as session:
     log "Creating backup: $backup_file"
     cp thywill.db "$backup_file"
     
-    # Run the migration
+    # Run the migration inline
     run_python -c "
 import sys
 sys.path.append('.')
-from migrations.duplicate_user_migration import run_duplicate_user_migration
+from sqlmodel import Session, select, text
+from models import engine, User, Prayer, Session as UserSession, PrayerMark, PrayerSkip
+from datetime import datetime
 
-success = run_duplicate_user_migration()
-if success:
-    print('✅ Duplicate user merge completed successfully')
+def merge_duplicate_users():
+    with Session(engine) as session:
+        try:
+            # Find all duplicate usernames
+            duplicates_result = session.exec(text('''
+                SELECT display_name, COUNT(*) as count 
+                FROM user 
+                GROUP BY display_name 
+                HAVING COUNT(*) > 1
+                ORDER BY count DESC
+            '''))
+            
+            duplicates = duplicates_result.fetchall()
+            merged_count = 0
+            
+            for username, count in duplicates:
+                print(f'🔄 Merging {count} users with username: {username}')
+                
+                # Get all users with this username, ordered by creation date (oldest first)
+                stmt = text('''
+                    SELECT id, created_at 
+                    FROM user 
+                    WHERE display_name = :username 
+                    ORDER BY created_at ASC
+                ''')
+                users = session.exec(stmt, {'username': username}).fetchall()
+                
+                if len(users) < 2:
+                    continue
+                    
+                primary_user_id = users[0][0]  # Keep the oldest user
+                duplicate_user_ids = [user[0] for user in users[1:]]  # Mark others for merging
+                
+                print(f'   Primary user: {primary_user_id} (keeping)')
+                for dup_id in duplicate_user_ids:
+                    print(f'   Merging: {dup_id} -> {primary_user_id}')
+                
+                # Update prayers
+                for dup_id in duplicate_user_ids:
+                    session.exec(text('UPDATE prayer SET author_id = :primary WHERE author_id = :dup'),
+                               {'primary': primary_user_id, 'dup': dup_id})
+                
+                # Update sessions
+                for dup_id in duplicate_user_ids:
+                    session.exec(text('UPDATE session SET user_id = :primary WHERE user_id = :dup'),
+                               {'primary': primary_user_id, 'dup': dup_id})
+                
+                # Update prayer marks
+                for dup_id in duplicate_user_ids:
+                    session.exec(text('UPDATE prayermark SET user_id = :primary WHERE user_id = :dup'),
+                               {'primary': primary_user_id, 'dup': dup_id})
+                
+                # Update prayer skips
+                for dup_id in duplicate_user_ids:
+                    session.exec(text('UPDATE prayerskip SET user_id = :primary WHERE user_id = :dup'),
+                               {'primary': primary_user_id, 'dup': dup_id})
+                
+                # Delete duplicate users
+                for dup_id in duplicate_user_ids:
+                    session.exec(text('DELETE FROM user WHERE id = :dup'), {'dup': dup_id})
+                
+                merged_count += len(duplicate_user_ids)
+            
+            session.commit()
+            print(f'✅ Successfully merged {merged_count} duplicate users')
+            return True
+            
+        except Exception as e:
+            session.rollback()
+            print(f'❌ Error during merge: {e}')
+            import traceback
+            traceback.print_exc()
+            return False
+
+if merge_duplicate_users():
     sys.exit(0)
 else:
-    print('❌ Duplicate user merge failed')
     sys.exit(1)
 "
     
