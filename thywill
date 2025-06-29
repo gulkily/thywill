@@ -487,60 +487,8 @@ cmd_role() {
 }
 
 cmd_role_list() {
-    header "Available Roles"
-    
-    # Check if we're in the right directory
-    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
-        error "Must run from ThyWill project directory"
-        exit 1
-    fi
-    
-    run_python -c "
-import sys
-sys.path.append('.')
-from sqlmodel import Session, select
-from models import engine, Role, UserRole, User
-import json
-
-try:
-    with Session(engine) as session:
-        # Get all roles
-        stmt = select(Role)
-        roles = session.exec(stmt).all()
-        
-        if not roles:
-            print('ℹ️  No roles found. Run migration first: python migrate_to_roles.py')
-            sys.exit(0)
-        
-        for role in roles:
-            try:
-                permissions = json.loads(role.permissions)
-            except:
-                permissions = []
-            
-            # Count users with this role
-            stmt = select(UserRole).where(UserRole.role_id == role.id)
-            user_count = len(list(session.exec(stmt)))
-            
-            system_marker = ' 🔒' if role.is_system_role else ''
-            
-            print(f'📋 {role.name}{system_marker}')
-            print(f'   Description: {role.description or \"No description\"}')
-            print(f'   Users: {user_count}')
-            print(f'   Permissions: {len(permissions)}')
-            if permissions:
-                perm_preview = ', '.join(permissions[:3])
-                if len(permissions) > 3:
-                    perm_preview += f' ... (+{len(permissions)-3} more)'
-                print(f'              {perm_preview}')
-            print()
-
-except Exception as e:
-    print(f'❌ Error listing roles: {e}')
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
-"
+    # Use Python CLI module for role management
+    run_python -m app_helpers.cli.role_management list-roles
 }
 
 cmd_role_grant() {
@@ -556,28 +504,8 @@ cmd_role_grant() {
         exit 1
     fi
     
-    header "Granting Role: $role_name"
-    
-    # Check if we're in the right directory
-    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
-        error "Must run from ThyWill project directory"
-        exit 1
-    fi
-    
-    log "Looking up user: $user_identifier"
-    log "Role to grant: $role_name"
-    
-    run_python -c "
-import sys
-sys.path.append('.')
-from sqlmodel import Session, select
-from models import engine, User, Role, UserRole
-from datetime import datetime
-
-user_identifier = '$user_identifier'
-role_name = '$role_name'
-
-def find_user(session, identifier):
+    # Use Python CLI module for role management
+    run_python -m app_helpers.cli.role_management grant "$user_identifier" "$role_name"
     # User lookup logic (same as admin commands)
     stmt = select(User).where(User.id == identifier)
     user = session.exec(stmt).first()

@@ -180,27 +180,119 @@ def print_admin_list():
         print('   Run: python migrate_to_roles.py')
 
 
+def grant_role(user_identifier: str, role_name: str) -> bool:
+    """
+    Grant any role to a user (not just admin).
+    
+    Args:
+        user_identifier: User ID or display name
+        role_name: Name of role to grant
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        with Session(engine) as session:
+            user = find_user_by_identifier(session, user_identifier)
+            if not user:
+                return False
+            
+            # Get role
+            stmt = select(Role).where(Role.name == role_name)
+            role = session.exec(stmt).first()
+            
+            if not role:
+                print(f'❌ Role "{role_name}" not found.')
+                return False
+            
+            # Check if user already has role
+            if user.has_role(role_name, session):
+                print(f'ℹ️  User "{user.display_name}" already has {role_name} role')
+                return True
+            
+            # Grant role
+            user_role = UserRole(
+                user_id=user.id,
+                role_id=role.id,
+                granted_by=None,  # CLI granted
+                granted_at=datetime.utcnow()
+            )
+            session.add(user_role)
+            session.commit()
+            
+            print(f'✅ {role_name} role granted to: "{user.display_name}"')
+            print(f'   User ID: {user.id[:8]}...')
+            return True
+            
+    except Exception as e:
+        print(f'❌ Error granting {role_name} role: {e}')
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def list_all_roles() -> List[Role]:
+    """
+    List all available roles in the system.
+    
+    Returns:
+        List of Role objects
+    """
+    try:
+        with Session(engine) as session:
+            stmt = select(Role)
+            return list(session.exec(stmt))
+    except Exception as e:
+        print(f'❌ Error listing roles: {e}')
+        return []
+
+
+def print_roles_list():
+    """Print formatted list of all available roles."""
+    print('🎭 Available Roles')
+    print('=' * 25)
+    print()
+    
+    roles = list_all_roles()
+    
+    if not roles:
+        print('ℹ️  No roles found')
+        print('   Roles may not be configured yet')
+        return
+    
+    for role in roles:
+        print(f'• {role.name}')
+        if role.description:
+            print(f'  Description: {role.description}')
+        print()
+
+
 def main():
     """Main entry point when run as a standalone script."""
     if len(sys.argv) < 2:
-        print("Usage: python role_management.py [grant|revoke|list] [user_identifier]")
+        print("Usage: python role_management.py [grant|revoke|list|list-roles] [user_identifier] [role_name]")
         sys.exit(1)
     
     command = sys.argv[1]
     
     if command == "grant":
         if len(sys.argv) < 3:
-            print("Usage: python role_management.py grant <user_identifier>")
+            print("Usage: python role_management.py grant <user_identifier> [role_name]")
+            print("Default role is 'admin' if not specified")
             sys.exit(1)
         
         user_identifier = sys.argv[2]
-        print(f"🔑 Granting Admin Rights to: {user_identifier}")
+        role_name = sys.argv[3] if len(sys.argv) > 3 else "admin"
+        
+        print(f"🔑 Granting {role_name} Role to: {user_identifier}")
         print("=" * 40)
         
-        if grant_admin_role(user_identifier):
-            sys.exit(0)
+        if role_name == "admin":
+            success = grant_admin_role(user_identifier)
         else:
-            sys.exit(1)
+            success = grant_role(user_identifier, role_name)
+            
+        sys.exit(0 if success else 1)
             
     elif command == "revoke":
         if len(sys.argv) < 3:
@@ -219,9 +311,12 @@ def main():
     elif command == "list":
         print_admin_list()
         
+    elif command == "list-roles":
+        print_roles_list()
+        
     else:
         print(f"Unknown command: {command}")
-        print("Usage: python role_management.py [grant|revoke|list] [user_identifier]")
+        print("Usage: python role_management.py [grant|revoke|list|list-roles] [user_identifier] [role_name]")
         sys.exit(1)
 
 
