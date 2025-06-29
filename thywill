@@ -982,21 +982,16 @@ cmd_import() {
         prayers)
             cmd_import_prayers "$file_path"
             ;;
-        community)
-            cmd_import_community "$file_path" "${@:3}"
-            ;;
         text-archives)
             cmd_import_text_archives "${@:2}"
             ;;
         *)
             error "Unknown import type: $import_type"
-            echo "Available import types: prayers, community, text-archives"
+            echo "Available import types: prayers, text-archives"
             echo "Usage: thywill import <type> <file> [options]"
             echo ""
             echo "Examples:"
             echo "  thywill import prayers backup.json"
-            echo "  thywill import community export.zip"
-            echo "  thywill import community export.zip --dry-run"
             echo "  thywill import text-archives"
             echo "  thywill import text-archives --dry-run"
             exit 1
@@ -1154,51 +1149,6 @@ except Exception as e:
 "
 }
 
-cmd_import_community() {
-    local file_path="${1:-}"
-    shift || true  # Remove file_path from arguments
-    
-    if [ -z "$file_path" ]; then
-        error "File path required"
-        echo "Usage: thywill import community <zip_file> [options]"
-        echo ""
-        echo "Options:"
-        echo "  --dry-run      Preview import without making changes"
-        echo "  --overwrite    Overwrite existing records"
-        echo ""
-        echo "Examples:"
-        echo "  thywill import community community_export_2024-12-06.zip"
-        echo "  thywill import community export.zip --dry-run"
-        echo "  thywill import community export.zip --overwrite"
-        exit 1
-    fi
-    
-    if [ ! -f "$file_path" ]; then
-        error "File not found: $file_path"
-        exit 1
-    fi
-    
-    header "Importing Community Data from $file_path"
-    
-    # Check if we're in the right directory
-    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
-        error "Must run from ThyWill project directory"
-        echo "Database or models.py not found"
-        exit 1
-    fi
-    
-    # Check if import script exists
-    if [ ! -f "import_community_data.py" ]; then
-        error "Community import script not found: import_community_data.py"
-        echo "Please ensure the import script is in the project directory"
-        exit 1
-    fi
-    
-    log "Running community data import..."
-    
-    # Execute Python import script with all remaining arguments
-    PRODUCTION_MODE=1 python3 import_community_data.py "$file_path" "$@"
-}
 
 cmd_import_text_archives() {
     header "Importing Text Archives"
