@@ -287,10 +287,31 @@ def create_user_with_text_archive(user_data: Dict, user_id: str = None) -> Tuple
         if user_id:
             user_kwargs['id'] = user_id
             
-        user = User(**user_kwargs)
-        s.add(user)
-        s.commit()
-        s.refresh(user)
+        # Check for existing user with same display_name
+        from sqlmodel import select
+        existing_user = s.exec(select(User).where(User.display_name == user_data['display_name'])).first()
+        
+        if existing_user:
+            # User already exists - return existing user instead of creating duplicate
+            logger.warning(f"User with display_name '{user_data['display_name']}' already exists (ID: {existing_user.id}). Returning existing user.")
+            return existing_user, existing_user.text_file_path or archive_file_path
+        
+        try:
+            user = User(**user_kwargs)
+            s.add(user)
+            s.commit()
+            s.refresh(user)
+        except Exception as e:
+            # Handle potential constraint violation or other database errors
+            s.rollback()
+            # Check if another user was created concurrently
+            existing_user = s.exec(select(User).where(User.display_name == user_data['display_name'])).first()
+            if existing_user:
+                logger.warning(f"Concurrent user creation detected for '{user_data['display_name']}'. Returning existing user.")
+                return existing_user, existing_user.text_file_path or archive_file_path
+            else:
+                # Re-raise if it's not a duplicate user issue
+                raise e
     
     logger.info(f"Created user {user.id} ({user.display_name}) with archive: {archive_file_path}")
     

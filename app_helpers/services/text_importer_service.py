@@ -206,17 +206,38 @@ class TextImporterService:
                 if inviter:
                     invited_by_user_id = inviter.id
             
-            # Create new user
-            user = User(
-                display_name=user_data['display_name'],
-                created_at=user_data['created_at'],
-                invited_by_user_id=invited_by_user_id,
-                text_file_path=source_file,
-                religious_preference='unspecified'  # Default value
-            )
+            # Check for existing user with same display_name
+            existing_user = s.exec(
+                select(User).where(User.display_name == user_data['display_name'])
+            ).first()
             
-            s.add(user)
-            s.commit()
+            if existing_user:
+                logger.info(f"User '{user_data['display_name']}' already exists, skipping import")
+                return
+            
+            # Create new user
+            try:
+                user = User(
+                    display_name=user_data['display_name'],
+                    created_at=user_data['created_at'],
+                    invited_by_user_id=invited_by_user_id,
+                    text_file_path=source_file,
+                    religious_preference='unspecified'  # Default value
+                )
+                
+                s.add(user)
+                s.commit()
+            except Exception as e:
+                s.rollback()
+                # Check if user was created concurrently
+                existing_user = s.exec(
+                    select(User).where(User.display_name == user_data['display_name'])
+                ).first()
+                if existing_user:
+                    logger.info(f"Concurrent user creation detected for '{user_data['display_name']}', skipping")
+                    return
+                else:
+                    raise e
             
             self.import_stats['users_imported'] += 1
             logger.info(f"Imported user: {user_data['display_name']}")
@@ -281,17 +302,26 @@ class TextImporterService:
             ).first()
             
             if not author_user:
-                # Create missing user
+                # Create missing user safely
                 logger.info(f"Creating missing user for prayer {prayer_id}: {author_name}")
-                author_user = User(
-                    display_name=author_name,
-                    religious_preference='unspecified',
-                    created_at=self._parse_timestamp(parsed_data.get('submitted', ''))
-                )
-                s.add(author_user)
-                s.commit()
-                s.refresh(author_user)
-                self.import_stats['users_imported'] += 1
+                try:
+                    author_user = User(
+                        display_name=author_name,
+                        religious_preference='unspecified',
+                        created_at=self._parse_timestamp(parsed_data.get('submitted', ''))
+                    )
+                    s.add(author_user)
+                    s.commit()
+                    s.refresh(author_user)
+                    self.import_stats['users_imported'] += 1
+                except Exception as e:
+                    s.rollback()
+                    # Check if user was created concurrently
+                    author_user = s.exec(
+                        select(User).where(User.display_name == author_name)
+                    ).first()
+                    if not author_user:
+                        raise e
             
             # Create prayer record
             prayer = Prayer(
@@ -336,17 +366,26 @@ class TextImporterService:
         ).first()
         
         if not user:
-            # Create missing user
+            # Create missing user safely
             logger.info(f"Creating missing user for activity: {user_name}")
-            user = User(
-                display_name=user_name,
-                religious_preference='unspecified',
-                created_at=self._parse_timestamp(timestamp_str)
-            )
-            session.add(user)
-            session.commit()
-            session.refresh(user)
-            self.import_stats['users_imported'] += 1
+            try:
+                user = User(
+                    display_name=user_name,
+                    religious_preference='unspecified',
+                    created_at=self._parse_timestamp(timestamp_str)
+                )
+                session.add(user)
+                session.commit()
+                session.refresh(user)
+                self.import_stats['users_imported'] += 1
+            except Exception as e:
+                session.rollback()
+                # Check if user was created concurrently
+                user = session.exec(
+                    select(User).where(User.display_name == user_name)
+                ).first()
+                if not user:
+                    raise e
         
         # Parse timestamp
         activity_time = self._parse_timestamp(timestamp_str)
