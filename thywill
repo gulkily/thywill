@@ -82,7 +82,7 @@ show_help() {
     echo "    test-recovery          Simulate complete database recovery"
     echo "    full-recovery          Perform complete database reconstruction"
     echo "    repair-archives        Fix archive inconsistencies"
-    echo "    heal-archives          Create missing archive files for existing prayers"
+    echo "    heal-archives          Create missing archive files for existing prayers and users"
     echo "    sync-archives          Complete archive synchronization (safe post-deploy)"
     echo "    recovery-report        Generate recovery capability report"
     echo ""
@@ -116,7 +116,7 @@ show_help() {
     echo "    thywill validate-archives                        # Check archive integrity"
     echo "    thywill test-recovery                            # Simulate complete recovery"
     echo "    thywill full-recovery                            # Complete database reconstruction"
-    echo "    thywill heal-archives                            # Create missing archive files"
+    echo "    thywill heal-archives                            # Create missing archive files for prayers and users"
     echo "    thywill sync-archives                            # Complete post-deploy sync"
     echo "    thywill recovery-report                          # Generate recovery report"
     echo "    thywill deploy                                    # Safe deployment"
@@ -1443,7 +1443,7 @@ except Exception as e:
 }
 
 cmd_heal_archives() {
-    header "Prayer Archive Healing"
+    header "Archive Healing (Prayers & Users)"
     
     # Check if we're in the right directory
     if [ ! -f "heal_prayer_archives.py" ]; then
@@ -1452,7 +1452,7 @@ cmd_heal_archives() {
         exit 1
     fi
     
-    log "Creating missing archive files for existing prayers..."
+    log "Creating missing archive files for existing prayers and users..."
     
     # Execute the healing script with proper production mode handling
     PRODUCTION_MODE=1 python3 heal_prayer_archives.py
