@@ -19,59 +19,43 @@ def validate_archives() -> bool:
     Returns:
         True if validation passes, False otherwise
     """
-    print("🔍 Validating Archive Structure")
-    print("=" * 35)
-    
     try:
-        # Use existing text archive service for validation
-        result = subprocess.run([sys.executable, "-c", """
-import sys
-sys.path.append('.')
-from pathlib import Path
-from app_helpers.services.text_archive_service import TextArchiveService
-
-try:
-    service = TextArchiveService()
-    
-    print('📁 Checking archive directories...')
-    
-    # Check base archive structure
-    archive_base = Path('text_archives')
-    if not archive_base.exists():
-        print('❌ Base archive directory missing: text_archives/')
-        sys.exit(1)
-    
-    # Check main directories
-    required_dirs = ['prayers', 'users', 'activity']
-    for dir_name in required_dirs:
-        dir_path = archive_base / dir_name
-        if dir_path.exists():
-            file_count = len(list(dir_path.rglob('*.txt')))
-            print(f'✅ {dir_name}/: {file_count} files')
-        else:
-            print(f'⚠️  {dir_name}/: directory missing')
-    
-    print()
-    print('🔍 Archive integrity check completed')
-    print('✅ Archive validation passed')
-    
-except Exception as e:
-    print(f'❌ Archive validation failed: {e}')
-    sys.exit(1)
-"""], check=True, capture_output=True, text=True)
+        from app_helpers.services.database_recovery import CompleteSystemRecovery
         
-        print(result.stdout)
-        if result.stderr:
-            print(result.stderr, file=sys.stderr)
+        recovery = CompleteSystemRecovery('text_archives')
+        print('🔍 Validating archive structure...')
+        recovery._validate_archive_structure()
         
-        return result.returncode == 0
+        print('📊 Archive Structure Report:')
+        print('=' * 50)
         
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Archive validation failed: {e}")
-        if e.stdout:
-            print(e.stdout)
-        if e.stderr:
-            print(e.stderr, file=sys.stderr)
+        # Check core directories
+        core_dirs = ['prayers', 'users', 'activity']
+        for dir_name in core_dirs:
+            path = recovery.archive_dir / dir_name
+            if path.exists():
+                file_count = len(list(path.glob('*.txt')))
+                print(f'✅ {dir_name}/: {file_count} files')
+            else:
+                print(f'❌ {dir_name}/: missing')
+        
+        # Check new directories
+        new_dirs = ['auth', 'roles', 'system']
+        for dir_name in new_dirs:
+            path = recovery.archive_dir / dir_name
+            if path.exists():
+                file_count = len(list(path.rglob('*.txt')))
+                print(f'✅ {dir_name}/: {file_count} files')
+            else:
+                print(f'⚠️  {dir_name}/: not found (will use defaults)')
+        
+        print()
+        print('📋 Validation complete!')
+        print('💡 Use "thywill test-recovery" to simulate recovery')
+        return True
+        
+    except Exception as e:
+        print(f'❌ Validation failed: {e}')
         return False
 
 
@@ -82,68 +66,45 @@ def test_recovery() -> bool:
     Returns:
         True if test passes, False otherwise
     """
-    print("🧪 Testing Recovery Capabilities")
-    print("=" * 35)
-    
     try:
-        # Use existing database recovery service for testing
-        result = subprocess.run([sys.executable, "-c", """
-import sys
-sys.path.append('.')
-from app_helpers.services.database_recovery import CompleteSystemRecovery
-
-try:
-    recovery = CompleteSystemRecovery('text_archives')
-    
-    print('🔍 Testing recovery system...')
-    
-    # Test archive accessibility
-    archive_dir = recovery.archive_dir
-    if not archive_dir.exists():
-        print(f'❌ Archive directory not found: {archive_dir}')
-        sys.exit(1)
-    
-    print(f'✅ Archive directory accessible: {archive_dir}')
-    
-    # Test key recovery components
-    prayers_dir = archive_dir / 'prayers'
-    users_dir = archive_dir / 'users'
-    
-    if prayers_dir.exists():
-        prayer_files = list(prayers_dir.rglob('*.txt'))
-        print(f'✅ Prayer recovery: {len(prayer_files)} files available')
-    else:
-        print('⚠️  Prayer recovery: limited (no archive files)')
-    
-    if users_dir.exists():
-        user_files = list(users_dir.glob('*.txt'))
-        print(f'✅ User recovery: {len(user_files)} files available')
-    else:
-        print('⚠️  User recovery: limited (no archive files)')
-    
-    print()
-    print('🎉 Recovery test completed successfully')
-    print('💡 System can be recovered from text archives')
-    
-except Exception as e:
-    print(f'❌ Recovery test failed: {e}')
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
-"""], check=True, capture_output=True, text=True)
+        from app_helpers.services.database_recovery import CompleteSystemRecovery
         
-        print(result.stdout)
-        if result.stderr:
-            print(result.stderr, file=sys.stderr)
+        recovery = CompleteSystemRecovery('text_archives')
+        result = recovery.perform_complete_recovery(dry_run=True)
         
-        return result.returncode == 0
-        
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Recovery test failed: {e}")
-        if e.stdout:
-            print(e.stdout)
-        if e.stderr:
-            print(e.stderr, file=sys.stderr)
+        if result['success']:
+            print('🎉 Recovery simulation completed successfully!')
+            print()
+            print('📊 Recovery Statistics:')
+            print('=' * 50)
+            stats = result['stats']
+            for key, value in stats.items():
+                if isinstance(value, int) and value > 0:
+                    print(f'{key.replace("_", " ").title()}: {value}')
+            
+            if stats.get('warnings'):
+                print()
+                print('⚠️  Warnings:')
+                for warning in stats['warnings']:
+                    print(f'  • {warning}')
+            
+            if stats.get('errors'):
+                print()
+                print('❌ Errors:')
+                for error in stats['errors']:
+                    print(f'  • {error}')
+            
+            print()
+            print('💡 Use "thywill full-recovery" to perform actual recovery')
+            return True
+        else:
+            print(f'❌ Recovery simulation failed: {result.get("error", "Unknown error")}')
+            return False
+            
+    except Exception as e:
+        print(f'❌ Recovery simulation failed: {e}')
+        import traceback
+        traceback.print_exc()
         return False
 
 
@@ -217,10 +178,60 @@ except Exception as e:
         return False
 
 
+def full_recovery() -> bool:
+    """
+    Perform complete database recovery from archives.
+    
+    Returns:
+        True if recovery succeeds, False otherwise
+    """
+    try:
+        from app_helpers.services.database_recovery import CompleteSystemRecovery
+        
+        recovery = CompleteSystemRecovery('text_archives')
+        result = recovery.perform_complete_recovery(dry_run=False)
+        
+        if result['success']:
+            print('🎉 Complete database recovery finished successfully!')
+            print()
+            print('📊 Recovery Results:')
+            print('=' * 50)
+            stats = result['stats']
+            for key, value in stats.items():
+                if isinstance(value, int) and value > 0:
+                    print(f'{key.replace("_", " ").title()}: {value}')
+            
+            if stats.get('warnings'):
+                print()
+                print('⚠️  Warnings:')
+                for warning in stats['warnings']:
+                    print(f'  • {warning}')
+            
+            if stats.get('errors'):
+                print()
+                print('❌ Errors:')
+                for error in stats['errors']:
+                    print(f'  • {error}')
+            
+            print()
+            print('✅ Database reconstruction complete!')
+            print('💡 Test your application to ensure everything is working correctly')
+            return True
+        else:
+            print(f'❌ Recovery failed: {result.get("error", "Unknown error")}')
+            return False
+            
+    except Exception as e:
+        print(f'❌ Recovery failed: {e}')
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def main():
     """Main entry point when run as a standalone script."""
     if len(sys.argv) < 2:
-        print("Usage: python archive_validation.py [validate|test-recovery|repair]")
+        print("Usage: python archive_validation.py [validate|test-recovery|full-recovery|repair]")
         sys.exit(1)
     
     command = sys.argv[1]
@@ -237,6 +248,12 @@ def main():
         else:
             sys.exit(1)
             
+    elif command == "full-recovery":
+        if full_recovery():
+            sys.exit(0)
+        else:
+            sys.exit(1)
+            
     elif command == "repair":
         if repair_archives():
             sys.exit(0)
@@ -245,7 +262,7 @@ def main():
             
     else:
         print(f"Unknown command: {command}")
-        print("Usage: python archive_validation.py [validate|test-recovery|repair]")
+        print("Usage: python archive_validation.py [validate|test-recovery|full-recovery|repair]")
         sys.exit(1)
 
 

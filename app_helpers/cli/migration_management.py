@@ -201,9 +201,17 @@ def main():
         else:
             sys.exit(1)
             
+    elif command == "get-current-version":
+        # Simple command to get current version (used by CLI script)
+        version = get_last_migration()
+        if version:
+            print(version)
+        # Don't print anything if no version - just exit
+        sys.exit(0)
+            
     else:
         print(f"Unknown command: {command}")
-        print("Usage: python migration_management.py [status|rollback] [migration_id]")
+        print("Usage: python migration_management.py [status|rollback|get-current-version] [migration_id]")
         sys.exit(1)
 
 
