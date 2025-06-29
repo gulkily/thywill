@@ -2528,8 +2528,9 @@ with Session(engine) as session:
     print(count)
 " 2>/dev/null)
 
-    if [ "$duplicates_found" -eq 0 ]; then
+    if [ -z "$duplicates_found" ] || [ "$duplicates_found" -eq 0 ]; then
         echo "✅ No duplicate users found - nothing to merge"
+        echo "Debug: duplicates_found='$duplicates_found'"
         return 0
     fi
     
@@ -2539,18 +2540,24 @@ with Session(engine) as session:
     echo "   - Keep the oldest account as primary"
     echo "   - Add unique constraint to prevent future duplicates"
     echo ""
+    echo "Debug: About to prompt for confirmation..."
     
     read -p "Proceed with duplicate user merge? (y/N): " -n 1 -r
     echo
+    echo "Debug: User replied: '$REPLY'"
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo "Merge cancelled"
         return 0
     fi
     
+    echo "Debug: Proceeding with merge..."
+    
     # Create backup first
     backup_file="thywill_backup_$(date +%Y%m%d_%H%M%S).db"
     log "Creating backup: $backup_file"
     cp thywill.db "$backup_file"
+    
+    echo "Debug: Starting Python execution..."
     
     # Run the migration inline with verbose debugging
     run_python -c "
@@ -2673,11 +2680,15 @@ else:
     sys.exit(1)
 "
     
-    if [ $? -eq 0 ]; then
+    python_exit_code=$?
+    echo "Debug: Python execution finished with exit code: $python_exit_code"
+    
+    if [ $python_exit_code -eq 0 ]; then
         success "Duplicate users merged successfully"
         echo "Backup saved as: $backup_file"
     else
         error "Merge failed - database unchanged"
+        echo "Debug: Removing backup file: $backup_file"
         rm -f "$backup_file" 2>/dev/null
         exit 1
     fi
