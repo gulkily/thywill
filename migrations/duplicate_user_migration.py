@@ -2,12 +2,16 @@
 Duplicate user migration module for automatic execution on startup
 """
 
+import sys
+import os
+# Add the parent directory to Python path so we can import models
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from sqlmodel import Session, select, text
 from models import engine, User
 from datetime import datetime
 import uuid
 import sqlite3
-import sys
 import argparse
 
 def find_duplicate_usernames(session: Session):
