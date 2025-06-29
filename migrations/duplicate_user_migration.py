@@ -13,22 +13,39 @@ from datetime import datetime
 import uuid
 import sqlite3
 import argparse
+from app_helpers.utils.username_helpers import (
+    normalize_username, 
+    normalize_username_for_lookup, 
+    usernames_are_equivalent,
+    find_users_with_equivalent_usernames
+)
 
 def find_duplicate_usernames(session: Session):
-    """Find all usernames that have duplicates"""
-    result = session.exec(text("""
-        SELECT display_name, COUNT(*) as count 
-        FROM user 
-        GROUP BY display_name 
-        HAVING COUNT(*) > 1
-        ORDER BY count DESC
-    """))
-    return result.fetchall()
+    """Find all usernames that have duplicates after normalization"""
+    # Get all users and group by normalized username
+    all_users = session.exec(select(User)).all()
+    
+    # Group users by normalized username
+    normalized_groups = {}
+    for user in all_users:
+        normalized = normalize_username_for_lookup(user.display_name)
+        if normalized:
+            if normalized not in normalized_groups:
+                normalized_groups[normalized] = []
+            normalized_groups[normalized].append(user)
+    
+    # Find groups with more than one user
+    duplicates = []
+    for normalized_name, users in normalized_groups.items():
+        if len(users) > 1:
+            # Use the display name of the first user as representative
+            duplicates.append((users[0].display_name, len(users)))
+    
+    return duplicates
 
 def get_users_by_username(session: Session, username: str):
-    """Get all users with a specific username"""
-    stmt = select(User).where(User.display_name == username)
-    return session.exec(stmt).all()
+    """Get all users with equivalent usernames (normalized)"""
+    return find_users_with_equivalent_usernames(session, username)
 
 def select_primary_user(users):
     """Select which user to keep as primary (oldest by creation date)"""
@@ -199,6 +216,31 @@ def add_unique_constraint():
         print(f"❌ Error adding constraint: {e}")
         return False
 
+def normalize_existing_usernames(session: Session):
+    """Normalize all existing usernames in the database"""
+    print("🧹 Normalizing existing usernames...")
+    
+    all_users = session.exec(select(User)).all()
+    normalized_count = 0
+    
+    for user in all_users:
+        original_name = user.display_name
+        normalized_name = normalize_username(original_name)
+        
+        if normalized_name and normalized_name != original_name:
+            print(f"   Normalizing: '{original_name}' -> '{normalized_name}'")
+            user.display_name = normalized_name
+            session.add(user)
+            normalized_count += 1
+    
+    if normalized_count > 0:
+        session.commit()
+        print(f"✅ Normalized {normalized_count} usernames")
+    else:
+        print("✅ All usernames already normalized")
+    
+    return normalized_count
+
 def run_duplicate_user_migration():
     """Main migration function called from startup"""
     # Check if constraint already exists - if so, migration already completed
@@ -208,7 +250,10 @@ def run_duplicate_user_migration():
     print("🔄 Checking for duplicate users...")
     
     with Session(engine) as session:
-        # Find duplicate usernames
+        # First normalize all existing usernames
+        normalize_existing_usernames(session)
+        
+        # Find duplicate usernames after normalization
         duplicates = find_duplicate_usernames(session)
         
         if not duplicates:
