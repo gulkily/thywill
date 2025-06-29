@@ -408,108 +408,8 @@ cmd_admin_grant() {
         exit 1
     fi
     
-    header "Granting Admin Rights"
-    
-    # Check if we're in the right directory
-    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
-        error "Must run from ThyWill project directory"
-        echo "Database or models.py not found"
-        exit 1
-    fi
-    
-    log "Looking up user: $user_identifier"
-    
-    # Run Python script to grant admin role
-    run_python -c "
-import sys
-sys.path.append('.')
-from sqlmodel import Session, select
-from models import engine, User, Role, UserRole
-from datetime import datetime
-
-user_identifier = '$user_identifier'
-
-def find_user(session, identifier):
-    # First try exact ID match
-    stmt = select(User).where(User.id == identifier)
-    user = session.exec(stmt).first()
-    
-    if not user:
-        # Try exact display_name match
-        stmt = select(User).where(User.display_name == identifier)
-        user = session.exec(stmt).first()
-    
-    if not user:
-        # Try partial display_name match
-        stmt = select(User).where(User.display_name.contains(identifier))
-        users = list(session.exec(stmt))
-        
-        if not users:
-            print(f'❌ No user found matching: {identifier}')
-            print('   Available users:')
-            # Show first 10 users as examples
-            all_users = list(session.exec(select(User).limit(10)))
-            for u in all_users:
-                print(f'   - \"{u.display_name}\" (ID: {u.id[:8]}...)')
-            if len(all_users) == 10:
-                print('   ... (showing first 10 users)')
-            return None
-        elif len(users) > 1:
-            print(f'❌ Multiple users found matching: {identifier}')
-            print('   Be more specific. Found:')
-            for u in users:
-                print(f'   - \"{u.display_name}\" (ID: {u.id[:8]}...)')
-            return None
-        else:
-            return users[0]
-    
-    return user
-
-try:
-    with Session(engine) as session:
-        user = find_user(session, user_identifier)
-        if not user:
-            sys.exit(1)
-        
-        # Get admin role
-        stmt = select(Role).where(Role.name == 'admin')
-        admin_role = session.exec(stmt).first()
-        
-        if not admin_role:
-            print('❌ Admin role not found. Run migration first: python migrate_to_roles.py')
-            sys.exit(1)
-        
-        # Check if user already has admin role
-        if user.has_role('admin', session):
-            print(f'ℹ️  User \"{user.display_name}\" already has admin role')
-            sys.exit(0)
-        
-        # Check for backward compatibility (old system)
-        if user.id == 'admin':
-            print(f'ℹ️  User \"{user.display_name}\" already has admin rights (old system)')
-            print('   Run migration to convert to role-based system: python migrate_to_roles.py')
-            sys.exit(0)
-        
-        # Grant admin role
-        user_role = UserRole(
-            user_id=user.id,
-            role_id=admin_role.id,
-            granted_by=None,  # CLI granted
-            granted_at=datetime.utcnow()
-        )
-        session.add(user_role)
-        session.commit()
-        
-        print(f'✅ Admin role granted to: \"{user.display_name}\"')
-        print(f'   User ID: {user.id[:8]}...')
-        print('   ✨ Using new role-based permission system')
-
-except Exception as e:
-    print(f'❌ Error granting admin role: {e}')
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
-"
+    # Use Python CLI module for role management
+    run_python -m app_helpers.cli.role_management grant "$user_identifier"
 }
 
 cmd_admin_revoke() {
@@ -524,158 +424,13 @@ cmd_admin_revoke() {
         exit 1
     fi
     
-    header "Revoking Admin Role"
-    
-    # Check if we're in the right directory
-    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
-        error "Must run from ThyWill project directory"
-        exit 1
-    fi
-    
-    log "Looking up user: $user_identifier"
-    
-    run_python -c "
-import sys
-sys.path.append('.')
-from sqlmodel import Session, select
-from models import engine, User, Role, UserRole
-
-user_identifier = '$user_identifier'
-
-def find_user(session, identifier):
-    # First try exact ID match
-    stmt = select(User).where(User.id == identifier)
-    user = session.exec(stmt).first()
-    
-    if not user:
-        # Try exact display_name match
-        stmt = select(User).where(User.display_name == identifier)
-        user = session.exec(stmt).first()
-    
-    if not user:
-        # Try partial display_name match
-        stmt = select(User).where(User.display_name.contains(identifier))
-        users = list(session.exec(stmt))
-        
-        if not users:
-            print(f'❌ No user found matching: {identifier}')
-            return None
-        elif len(users) > 1:
-            print(f'❌ Multiple users found matching: {identifier}')
-            print('   Be more specific. Found:')
-            for u in users:
-                print(f'   - \"{u.display_name}\" (ID: {u.id[:8]}...)')
-            return None
-        else:
-            return users[0]
-    
-    return user
-
-try:
-    with Session(engine) as session:
-        user = find_user(session, user_identifier)
-        if not user:
-            sys.exit(1)
-        
-        # Get admin role
-        stmt = select(Role).where(Role.name == 'admin')
-        admin_role = session.exec(stmt).first()
-        
-        if not admin_role:
-            print('❌ Admin role not found. Run migration first: python migrate_to_roles.py')
-            sys.exit(1)
-        
-        # Check if user has admin role
-        if not user.has_role('admin', session):
-            print(f'ℹ️  User \"{user.display_name}\" does not have admin role')
-            sys.exit(0)
-        
-        # Remove admin role
-        stmt = select(UserRole).where(
-            UserRole.user_id == user.id,
-            UserRole.role_id == admin_role.id
-        )
-        user_roles = session.exec(stmt).all()
-        
-        for user_role in user_roles:
-            session.delete(user_role)
-        
-        session.commit()
-        
-        print(f'✅ Admin role revoked from: \"{user.display_name}\"')
-        print(f'   User ID: {user.id[:8]}...')
-        print('   ✨ Using new role-based permission system')
-
-except Exception as e:
-    print(f'❌ Error revoking admin role: {e}')
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
-"
+    # Use Python CLI module for role management
+    run_python -m app_helpers.cli.role_management revoke "$user_identifier"
 }
 
 cmd_admin_list() {
-    header "Admin Users"
-    
-    # Check if we're in the right directory
-    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
-        error "Must run from ThyWill project directory"
-        exit 1
-    fi
-    
-    run_python -c "
-import sys
-sys.path.append('.')
-from sqlmodel import Session, select, func
-from models import engine, User, Role, UserRole
-
-try:
-    with Session(engine) as session:
-        # Try role-based system first
-        try:
-            stmt = select(User).join(UserRole, User.id == UserRole.user_id).join(Role, UserRole.role_id == Role.id).where(
-                Role.name == 'admin',
-                (UserRole.expires_at.is_(None)) | (UserRole.expires_at > func.datetime('now'))
-            )
-            admin_users = session.exec(stmt).all()
-            
-            if admin_users:
-                print('👑 Admin Users (Role-based system):')
-                for user in admin_users:
-                    roles = user.get_roles(session)
-                    role_names = [r.name for r in roles]
-                    print(f'   • {user.display_name}')
-                    print(f'     ID: {user.id[:8]}...')
-                    print(f'     Roles: {\", \".join(role_names)}')
-                    print(f'     Created: {user.created_at}')
-                    print()
-            else:
-                print('ℹ️  No admin users found in role-based system')
-        except Exception as role_error:
-            print('⚠️  Role-based system not available (tables not created yet)')
-            
-        # Check old system for backward compatibility
-        stmt = select(User).where(User.id == 'admin')
-        old_admin = session.exec(stmt).first()
-        
-        if old_admin:
-            print('👑 Admin User (Old system - needs migration):')
-            print(f'   • {old_admin.display_name}')
-            print(f'     ID: admin (legacy)')
-            print(f'     Created: {old_admin.created_at}')
-            print()
-            print('💡 Run \"python migrate_to_roles.py\" to upgrade to role-based system')
-        
-        if not admin_users and not old_admin:
-            print('ℹ️  No admin users found')
-            print('   Use \"thywill admin token\" to create an admin invite')
-
-except Exception as e:
-    print(f'❌ Error listing admins: {e}')
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
-"
+    # Use Python CLI module for role management
+    run_python -m app_helpers.cli.role_management list
 }
 
 cmd_admin_token() {
@@ -1041,132 +796,8 @@ cmd_import_prayers() {
         exit 1
     fi
     
-    if [ ! -f "$file_path" ]; then
-        error "File not found: $file_path"
-        exit 1
-    fi
-    
-    header "Importing Prayers from $file_path"
-    
-    # Check if we're in the right directory
-    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
-        error "Must run from ThyWill project directory"
-        exit 1
-    fi
-    
-    log "Validating JSON file..."
-    
-    # Validate JSON first
-    if ! run_python -c "import json; json.load(open('$file_path'))" 2>/dev/null; then
-        error "Invalid JSON file"
-        exit 1
-    fi
-    
-    log "Importing prayers..."
-    
-    run_python -c "
-import sys
-sys.path.append('.')
-import json
-import uuid
-from datetime import datetime
-from sqlmodel import Session, select
-from models import engine, User, Prayer
-
-file_path = '$file_path'
-
-try:
-    with open(file_path, 'r') as f:
-        prayers_data = json.load(f)
-    
-    if not isinstance(prayers_data, list):
-        print('❌ JSON file must contain an array of prayer objects')
-        sys.exit(1)
-    
-    imported_count = 0
-    skipped_count = 0
-    error_count = 0
-    
-    with Session(engine) as session:
-        for i, prayer_data in enumerate(prayers_data):
-            try:
-                # Validate required fields
-                if 'text' not in prayer_data:
-                    print(f'⚠️  Skipping prayer {i+1}: missing \"text\" field')
-                    skipped_count += 1
-                    continue
-                
-                # Find or create user by ID or display name
-                author_id = prayer_data.get('author_id')
-                author_name = prayer_data.get('author_name', 'Imported User')
-                
-                author = None
-                
-                # First try to find by existing ID
-                if author_id:
-                    stmt = select(User).where(User.id == author_id)
-                    author = session.exec(stmt).first()
-                
-                # Then try to find by display name
-                if not author:
-                    stmt = select(User).where(User.display_name == author_name)
-                    author = session.exec(stmt).first()
-                
-                # Create new user if not found
-                if not author:
-                    author = User(
-                        id=uuid.uuid4().hex,
-                        display_name=author_name,
-                        religious_preference=prayer_data.get('religious_preference', 'unspecified')
-                    )
-                    session.add(author)
-                    session.flush()  # Get the ID
-                
-                # Parse created_at if provided
-                created_at = datetime.utcnow()
-                if 'created_at' in prayer_data:
-                    try:
-                        created_at = datetime.fromisoformat(prayer_data['created_at'].replace('Z', '+00:00'))
-                    except:
-                        pass  # Use current time if parsing fails
-                
-                # Create prayer
-                prayer = Prayer(
-                    id=uuid.uuid4().hex,
-                    author_id=author.id,
-                    text=prayer_data['text'],
-                    generated_prayer=prayer_data.get('generated_prayer'),
-                    project_tag=prayer_data.get('project_tag'),
-                    target_audience=prayer_data.get('target_audience', 'all'),
-                    created_at=created_at
-                )
-                
-                session.add(prayer)
-                imported_count += 1
-                
-                if imported_count % 100 == 0:
-                    print(f'   Imported {imported_count} prayers...')
-                
-            except Exception as e:
-                print(f'❌ Error importing prayer {i+1}: {e}')
-                error_count += 1
-                continue
-        
-        # Commit all changes
-        session.commit()
-    
-    print()
-    print('✅ Prayer import completed!')
-    print(f'   Imported: {imported_count} prayers')
-    if skipped_count > 0:
-        print(f'   Skipped: {skipped_count} prayers (missing data)')
-    if error_count > 0:
-        print(f'   Errors: {error_count} prayers (failed to import)')
-
-except Exception as e:
-    print(f'❌ Error importing prayers: {e}')
-    sys.exit(1)
-"
+    # Use Python CLI module for prayer import
+    run_python -m app_helpers.cli.prayer_import "$file_path"
 }
 
 
@@ -1463,20 +1094,8 @@ except Exception as e:
 }
 
 cmd_heal_archives() {
-    header "Archive Healing (Prayers & Users)"
-    
-    # Check if we're in the right directory
-    if [ ! -f "heal_prayer_archives.py" ]; then
-        error "heal_prayer_archives.py not found in current directory"
-        echo "Please run this command from your ThyWill project directory"
-        exit 1
-    fi
-    
-    
-    log "Creating missing archive files for existing prayers and users..."
-    
-    # Execute the healing script with proper production mode handling
-    run_python heal_prayer_archives.py
+    # Use Python CLI module for archive management
+    run_python -m app_helpers.cli.archive_management heal
 }
 
 cmd_sync_archives() {
@@ -1584,20 +1203,14 @@ cmd_sync_archives() {
     echo "💡 Run 'thywill recovery-report' to see complete recovery capability"
 }
 
+cmd_sync_archives() {
+    # Use Python CLI module for archive management
+    run_python -m app_helpers.cli.archive_management sync
+}
+
 cmd_recovery_report() {
-    header "Recovery Capability Report"
-    
-    # Check if we're in the right directory
-    if [ ! -f "app.py" ]; then
-        error "app.py not found in current directory"
-        echo "Please run this command from your ThyWill project directory"
-        exit 1
-    fi
-    
-    log "Generating recovery capability report..."
-    
-    # Execute Python report script
-    run_python -c "
+    # Use Python CLI module for recovery reports
+    run_python -m app_helpers.cli.recovery_report
 import sys
 from pathlib import Path
 sys.path.append('.')
@@ -1890,73 +1503,8 @@ except Exception as e:
 }
 
 cmd_migrate_status() {
-    header "Migration Status"
-    
-    # Check if we're in the right directory
-    if [ ! -f "models.py" ]; then
-        error "models.py not found in current directory"
-        echo "Please run this command from your ThyWill project directory"
-        exit 1
-    fi
-    
-    # Show migration status
-    run_python -c "
-import sys
-sys.path.append('.')
-from app_helpers.utils.enhanced_migration import MigrationManager
-
-try:
-    manager = MigrationManager()
-    
-    # Get current version
-    current = manager.get_current_version()
-    if current:
-        print(f'📊 Current schema version: {current}')
-    else:
-        print('📊 No migrations applied yet')
-    
-    # Get applied migrations
-    applied = manager.get_applied_migrations()
-    if applied:
-        print(f'✅ Applied migrations ({len(applied)}):')
-        for migration in applied:
-            print(f'   - {migration}')
-    else:
-        print('ℹ️  No migrations applied yet')
-    
-    print()
-    
-    # Get pending migrations
-    pending = manager.get_pending_migrations()
-    if pending:
-        print(f'⏳ Pending migrations ({len(pending)}):')
-        for migration in pending:
-            metadata = migration['metadata']
-            estimated_time = manager.estimate_migration_time(migration)
-            maintenance_mode = manager.should_enable_maintenance_mode(migration)
-            
-            print(f'   - {migration[\"id\"]}')
-            print(f'     Description: {metadata.get(\"description\", \"No description\")}')
-            print(f'     Estimated time: {estimated_time}s')
-            if maintenance_mode:
-                print(f'     ⚠️  Requires maintenance mode')
-            print()
-    else:
-        print('✅ No pending migrations - database is up to date')
-    
-    # Schema integrity check
-    print('🔍 Schema integrity check:')
-    if manager.validate_schema_integrity():
-        print('   ✅ Database integrity verified')
-    else:
-        print('   ❌ Database integrity check failed')
-        
-except Exception as e:
-    print(f'❌ Error checking migration status: {e}')
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
-"
+    # Use Python CLI module for migration management
+    run_python -m app_helpers.cli.migration_management status
 }
 
 cmd_migrate_rollback() {
@@ -2006,45 +1554,11 @@ except:
         fi
     fi
     
-    log "Rolling back migration: $migration_id"
-    
-    # Perform rollback
-    run_python -c "
-import sys
-sys.path.append('.')
-from app_helpers.utils.enhanced_migration import MigrationManager
-
-migration_id = '$migration_id'
-
-try:
-    manager = MigrationManager()
-    
-    if not manager.acquire_migration_lock():
-        print('❌ Could not acquire migration lock - another migration may be in progress')
-        sys.exit(1)
-    
-    try:
-        if manager.rollback_migration(migration_id):
-            print(f'✅ Successfully rolled back migration: {migration_id}')
-        else:
-            print(f'❌ Failed to rollback migration: {migration_id}')
-            sys.exit(1)
-    finally:
-        manager.release_migration_lock()
-        
-except Exception as e:
-    print(f'❌ Rollback failed: {e}')
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
-"
-    
-    if [ $? -eq 0 ]; then
-        success "Migration rollback completed successfully"
-        log "Run 'thywill migrate status' to verify the rollback"
+    # Use Python CLI module for migration management
+    if [ -n "$migration_id" ]; then
+        run_python -m app_helpers.cli.migration_management rollback "$migration_id"
     else
-        error "Migration rollback failed"
-        exit 1
+        run_python -m app_helpers.cli.migration_management rollback
     fi
 }
 
