@@ -135,6 +135,7 @@ show_help() {
     echo "    install             Install thywill globally (no more ./)"
     echo "    uninstall           Remove global installation"
     echo "    config              Show current configuration"
+    echo "    sqlite              Open SQLite3 with helpful flags and table listing"
     echo "    help                Show this help message"
     echo "    version             Show version information"
     echo ""
@@ -155,6 +156,7 @@ show_help() {
     echo "    thywill heal-archives                            # Create missing archive files for prayers and users"
     echo "    thywill sync-archives                            # Complete post-deploy sync"
     echo "    thywill recovery-report                          # Generate recovery report"
+    echo "    thywill sqlite                                    # Open SQLite3 CLI with database"
     echo "    thywill deploy                                    # Safe deployment"
     echo "    thywill backup                                    # Create database backup"
     echo "    thywill rollback                                  # Rollback to previous"
@@ -2069,6 +2071,75 @@ cmd_db_init() {
     fi
 }
 
+cmd_sqlite() {
+    header "Opening SQLite3 Database Shell"
+    
+    # Check if we're in the right directory
+    if [ ! -f "thywill.db" ]; then
+        error "Database file 'thywill.db' not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        echo "If database doesn't exist, run: thywill db init"
+        exit 1
+    fi
+    
+    # Check if sqlite3 is installed
+    if ! command -v sqlite3 >/dev/null 2>&1; then
+        error "sqlite3 command not found"
+        echo "Please install sqlite3:"
+        echo "  Ubuntu/Debian: sudo apt install sqlite3"
+        echo "  macOS: brew install sqlite3"
+        exit 1
+    fi
+    
+    log "Opening thywill.db with SQLite3..."
+    log "Helpful commands will be shown after connecting"
+    echo ""
+    
+    # Create a temporary init file with helpful settings and commands
+    temp_init=$(mktemp)
+    cat > "$temp_init" << 'EOF'
+-- SQLite3 helpful settings
+.headers on
+.mode column
+.width 20 40 20 15
+
+-- Show helpful information
+.print "🗄️  ThyWill Database Shell"
+.print "================================"
+.print ""
+.print "📋 Available Tables:"
+.tables
+.print ""
+.print "💡 Helpful Commands:"
+.print "  .tables                    -- List all tables"
+.print "  .schema TABLE_NAME         -- Show table structure"
+.print "  .schema                    -- Show all table schemas"
+.print "  .headers on|off            -- Toggle column headers"
+.print "  .mode column|list|csv      -- Change output format"
+.print "  .width 10 20 30            -- Set column widths"
+.print "  .help                      -- Show all SQLite commands"
+.print "  .quit or .exit             -- Exit SQLite shell"
+.print ""
+.print "🔍 Quick Queries:"
+.print "  SELECT COUNT(*) FROM user;              -- Count users"
+.print "  SELECT COUNT(*) FROM prayer;            -- Count prayers"
+.print "  SELECT display_name FROM user LIMIT 5;  -- Show first 5 users"
+.print "  SELECT text FROM prayer LIMIT 3;        -- Show first 3 prayers"
+.print ""
+.print "Ready! Type your SQL commands below:"
+.print ""
+EOF
+    
+    # Launch sqlite3 with the init file
+    sqlite3 -init "$temp_init" thywill.db
+    
+    # Clean up temp file
+    rm -f "$temp_init"
+    
+    echo ""
+    success "SQLite3 session ended"
+}
+
 # Utility commands
 cmd_setup() {
     header "ThyWill Complete Ubuntu Setup"
@@ -2371,6 +2442,131 @@ cmd_uninstall() {
     fi
 }
 
+# Duplicate user management commands
+cmd_check_duplicates() {
+    header "Checking for Duplicate Users"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
+        error "Must run from ThyWill project directory"
+        echo "Database or models.py not found"
+        exit 1
+    fi
+    
+    run_python -c "
+import sys
+sys.path.append('.')
+from sqlmodel import Session, text
+from models import engine
+
+with Session(engine) as session:
+    # Find duplicate usernames
+    result = session.exec(text('''
+        SELECT display_name, COUNT(*) as count 
+        FROM user 
+        GROUP BY display_name 
+        HAVING COUNT(*) > 1
+        ORDER BY count DESC
+    '''))
+    
+    duplicates = result.fetchall()
+    
+    if not duplicates:
+        print('✅ No duplicate usernames found')
+        sys.exit(0)
+    
+    print(f'⚠️  Found {len(duplicates)} usernames with duplicates:')
+    for username, count in duplicates:
+        print(f'   \"{username}\": {count} users')
+    
+    # Get specific user IDs for each duplicate
+    for username, count in duplicates:
+        users = session.exec(text('''
+            SELECT id, created_at, invited_by_user_id 
+            FROM user 
+            WHERE display_name = :username 
+            ORDER BY created_at
+        '''), {'username': username}).fetchall()
+        
+        print(f'\\n📋 Users with username \"{username}\":')
+        for i, (user_id, created_at, invited_by) in enumerate(users):
+            marker = '👑 PRIMARY' if i == 0 else '🔄 DUPLICATE'
+            print(f'   {marker}: {user_id} (created: {created_at})')
+"
+}
+
+cmd_merge_duplicates() {
+    header "Merging Duplicate Users"
+    
+    # Check if we're in the right directory  
+    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
+        error "Must run from ThyWill project directory"
+        echo "Database or models.py not found"
+        exit 1
+    fi
+    
+    # Check for duplicates first
+    if run_python -c "
+import sys
+sys.path.append('.')
+from migrations.duplicate_user_migration import find_duplicate_usernames
+from sqlmodel import Session
+from models import engine
+
+with Session(engine) as session:
+    duplicates = find_duplicate_usernames(session)
+    if not duplicates:
+        print('✅ No duplicate users found')
+        sys.exit(1)
+    else:
+        sys.exit(0)
+"; then
+        echo "✅ No duplicate users found - nothing to merge"
+        return 0
+    fi
+    
+    echo "⚠️  Duplicate users detected. This will:"
+    echo "   - Merge duplicate user accounts"
+    echo "   - Preserve all data (prayers, sessions, etc.)"
+    echo "   - Keep the oldest account as primary"
+    echo "   - Add unique constraint to prevent future duplicates"
+    echo ""
+    
+    if ! confirm "Proceed with duplicate user merge?"; then
+        echo "Merge cancelled"
+        return 0
+    fi
+    
+    # Create backup first
+    backup_file="thywill_backup_$(date +%Y%m%d_%H%M%S).db"
+    log "Creating backup: $backup_file"
+    cp thywill.db "$backup_file"
+    
+    # Run the migration
+    run_python -c "
+import sys
+sys.path.append('.')
+from migrations.duplicate_user_migration import run_duplicate_user_migration
+
+success = run_duplicate_user_migration()
+if success:
+    print('✅ Duplicate user merge completed successfully')
+    sys.exit(0)
+else:
+    print('❌ Duplicate user merge failed')
+    sys.exit(1)
+"
+    
+    if [ $? -eq 0 ]; then
+        success "Duplicate users merged successfully"
+        echo "Backup saved as: $backup_file"
+    else
+        error "Merge failed - database unchanged"
+        rm -f "$backup_file" 2>/dev/null
+        exit 1
+    fi
+}
+
 # Main command dispatcher
 main() {
     local command="${1:-help}"
@@ -2454,6 +2650,17 @@ main() {
             ;;
         migrate)
             cmd_migrate "$@"
+            ;;
+        sqlite)
+            cmd_sqlite "$@"
+            ;;
+        
+        # Duplicate user management commands
+        check-duplicates)
+            cmd_check_duplicates "$@"
+            ;;
+        merge-duplicates)
+            cmd_merge_duplicates "$@"
             ;;
         
         # Utility commands
