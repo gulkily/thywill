@@ -275,6 +275,14 @@ def startup():
         # Fallback to legacy migration system
         migrate_database()
     
+    # Run duplicate user migration
+    try:
+        from migrations.duplicate_user_migration import run_duplicate_user_migration
+        run_duplicate_user_migration()
+    except Exception as e:
+        print(f"❌ Duplicate user migration failed: {e}")
+        # Continue startup - this is not critical for basic functionality
+    
     # Then seed invite
     with Session(engine) as s:
         if not s.exec(select(InviteToken)).first():
