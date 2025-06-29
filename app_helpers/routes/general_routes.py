@@ -7,6 +7,7 @@ from fastapi.templating import Jinja2Templates
 import io
 
 from app_helpers.services.auth_helpers import current_user
+from app_helpers.services.auth.validation_helpers import is_admin
 from models import engine, Session as SessionModel
 from sqlmodel import Session
 
@@ -23,7 +24,7 @@ def menu(request: Request, user_session: tuple = Depends(current_user)):
     user, session = user_session
     return templates.TemplateResponse(
         "menu.html",
-        {"request": request, "me": user, "session": session}
+        {"request": request, "me": user, "session": session, "is_admin": is_admin(user)}
     )
 
 @router.get("/logged-out", response_class=HTMLResponse)

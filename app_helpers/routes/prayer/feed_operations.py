@@ -19,6 +19,7 @@ from models import (
 # Import helper functions
 from app_helpers.services.auth_helpers import current_user
 from app_helpers.services.prayer_helpers import get_feed_counts, todays_prompt
+from app_helpers.services.auth.validation_helpers import is_admin
 from app import PRAYER_MODE_ENABLED
 
 # Initialize templates
@@ -210,5 +211,5 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
         "feed.html",
         {"request": request, "prayers": prayers_with_authors, "prompt": todays_prompt(), 
          "me": user, "session": session, "current_feed": feed_type, "feed_counts": feed_counts,
-         "PRAYER_MODE_ENABLED": PRAYER_MODE_ENABLED}
+         "PRAYER_MODE_ENABLED": PRAYER_MODE_ENABLED, "is_admin": is_admin(user)}
     )
