@@ -223,17 +223,24 @@ def normalize_existing_usernames(session: Session):
     all_users = session.exec(select(User)).all()
     normalized_count = 0
     
+    print(f"   Found {len(all_users)} total users to check")
+    
     for user in all_users:
         original_name = user.display_name
         normalized_name = normalize_username(original_name)
         
+        print(f"   Checking: '{original_name}' (len={len(original_name)}) -> '{normalized_name}' (len={len(normalized_name) if normalized_name else 0})")
+        
         if normalized_name and normalized_name != original_name:
-            print(f"   Normalizing: '{original_name}' -> '{normalized_name}'")
+            print(f"   ✏️  Normalizing: '{original_name}' -> '{normalized_name}'")
             user.display_name = normalized_name
             session.add(user)
             normalized_count += 1
+        else:
+            print(f"   ✅ No change needed for: '{original_name}'")
     
     if normalized_count > 0:
+        print(f"💾 Committing {normalized_count} username changes...")
         session.commit()
         print(f"✅ Normalized {normalized_count} usernames")
     else:
@@ -243,10 +250,6 @@ def normalize_existing_usernames(session: Session):
 
 def run_duplicate_user_migration():
     """Main migration function called from startup"""
-    # Check if constraint already exists - if so, migration already completed
-    if check_constraint_exists():
-        return True
-        
     print("🔄 Checking for duplicate users...")
     
     with Session(engine) as session:
@@ -258,9 +261,14 @@ def run_duplicate_user_migration():
         
         if not duplicates:
             print("✅ No duplicate users found")
-            # Add constraint and finish
-            if add_unique_constraint():
-                print("✅ Unique constraint added to display_name")
+            # Add constraint and finish (only if it doesn't exist)
+            if not check_constraint_exists():
+                if add_unique_constraint():
+                    print("✅ Unique constraint added to display_name")
+                else:
+                    print("⚠️  Could not add unique constraint")
+            else:
+                print("✅ Unique constraint already exists")
             return True
         
         print(f"⚠️  Found {len(duplicates)} usernames with duplicates - merging...")
@@ -283,13 +291,17 @@ def run_duplicate_user_migration():
         session.commit()
         print(f"✅ Merged {total_merged} duplicate users")
         
-        # Add unique constraint
-        if add_unique_constraint():
-            print("✅ Unique constraint added to display_name")
-            return True
+        # Add unique constraint (only if it doesn't exist)
+        if not check_constraint_exists():
+            if add_unique_constraint():
+                print("✅ Unique constraint added to display_name")
+                return True
+            else:
+                print("❌ Failed to add unique constraint")
+                return False
         else:
-            print("❌ Failed to add unique constraint")
-            return False
+            print("✅ Unique constraint already exists")
+            return True
 
 def check_duplicates_only():
     """Check and display duplicate users without merging"""
