@@ -33,6 +33,12 @@ from app_helpers.utils.invite_tree_validation import (
 )
 from app_helpers.utils.user_management import is_user_deactivated
 from app_helpers.services.archive_first_service import create_user_with_text_archive
+from app_helpers.utils.username_helpers import (
+    normalize_username, 
+    normalize_username_for_lookup, 
+    validate_username,
+    find_users_with_equivalent_usernames
+)
 
 # Template and config setup
 templates = Jinja2Templates(directory="templates")
@@ -156,10 +162,18 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
                 "error": "This invite link has expired or has already been used. Please request a new invite link."
             })
 
-        # Check for existing users normally (both admin and regular tokens)
-        existing_user = s.exec(
-            select(User).where(User.display_name == display_name)
-        ).first()
+        # Validate and normalize the display name
+        is_valid, normalized_display_name = validate_username(display_name)
+        if not is_valid:
+            return templates.TemplateResponse("claim.html", {
+                "request": request, 
+                "token": token,
+                "error": "Please enter a valid username (2-50 characters, letters, numbers, spaces, and basic punctuation only)."
+            })
+        
+        # Check for existing users with equivalent usernames (case-insensitive, normalized)
+        existing_users = find_users_with_equivalent_usernames(s, normalized_display_name)
+        existing_user = existing_users[0] if existing_users else None
         
         # Check if this is an admin token for special role handling
         is_admin_token = (inv.created_by_user == "system")
@@ -211,7 +225,7 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             # Validate and ensure proper invite relationship
             user_data = {
                 'id': uid,
-                'display_name': display_name[:40]
+                'display_name': normalized_display_name
             }
             user_data = validate_new_user_invite_relationship(user_data, token, s)
             
@@ -327,10 +341,21 @@ def login_post(username: str = Form(...), request: Request = None):
     ip_address = request.client.host if request else "Unknown"
     
     with Session(engine) as db:
-        # Check if user exists
-        existing_user = db.exec(
-            select(User).where(User.display_name == username.strip())
-        ).first()
+        # Normalize username for lookup
+        normalized_username = normalize_username_for_lookup(username)
+        if not normalized_username:
+            return templates.TemplateResponse(
+                "login.html", 
+                {
+                    "request": request, 
+                    "error": "Please enter a valid username.",
+                    "username": username.strip()
+                }
+            )
+        
+        # Check if user exists using normalized lookup
+        existing_users = find_users_with_equivalent_usernames(db, normalized_username)
+        existing_user = existing_users[0] if existing_users else None
         
         if not existing_user:
             return templates.TemplateResponse(
