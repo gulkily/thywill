@@ -45,15 +45,37 @@ def main():
             print(f'  "{u.display_name}" -> {u.id}')
         
         # Show some prayers with valid authors for comparison
-        valid_prayers = session.exec(
+        all_valid_prayers = session.exec(
             select(Prayer).where(Prayer.author_id.is_not(None))
-        ).limit(3).all()
+        ).all()
         
-        print(f'\nValid prayers (for comparison): {len(valid_prayers)} total')
-        for p in valid_prayers:
+        print(f'\nValid prayers: {len(all_valid_prayers)} total')
+        
+        # Show first 3 prayers
+        for p in all_valid_prayers[:3]:
             author = session.get(User, p.author_id)
             author_name = author.display_name if author else "UNKNOWN"
             print(f'  Prayer {p.id}: author_id={p.author_id} ("{author_name}")')
+        
+        # Check for prayers with invalid author_ids (exist but point to deleted users)
+        print(f'\nChecking for prayers with invalid author references...')
+        invalid_refs = 0
+        for p in all_valid_prayers[:10]:  # Check first 10
+            author = session.get(User, p.author_id)
+            if not author:
+                print(f'  Prayer {p.id}: author_id={p.author_id} -> USER NOT FOUND!')
+                invalid_refs += 1
+        
+        if invalid_refs == 0:
+            print("  All checked prayers have valid user references")
+        
+        # Show total counts
+        total_prayers = len(all_valid_prayers)
+        print(f'\nSUMMARY:')
+        print(f'  Total prayers: {total_prayers}')
+        print(f'  Orphaned prayers: {len(orphaned)}')
+        print(f'  Valid prayers: {total_prayers}')
+        print(f'  Users: {len(users)}')
 
 if __name__ == '__main__':
     main()
