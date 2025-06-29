@@ -253,14 +253,13 @@ def run_duplicate_user_migration():
     print("🔄 Checking for duplicate users...")
     
     with Session(engine) as session:
-        # First normalize all existing usernames
-        normalize_existing_usernames(session)
-        
-        # Find duplicate usernames after normalization
+        # Find duplicate usernames BEFORE normalization (to catch equivalent names)
         duplicates = find_duplicate_usernames(session)
         
         if not duplicates:
             print("✅ No duplicate users found")
+            # Normalize usernames now that there are no duplicates
+            normalize_existing_usernames(session)
             # Add constraint and finish (only if it doesn't exist)
             if not check_constraint_exists():
                 if add_unique_constraint():
@@ -290,6 +289,9 @@ def run_duplicate_user_migration():
         # Commit all changes
         session.commit()
         print(f"✅ Merged {total_merged} duplicate users")
+        
+        # Now normalize usernames after merging duplicates
+        normalize_existing_usernames(session)
         
         # Add unique constraint (only if it doesn't exist)
         if not check_constraint_exists():
