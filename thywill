@@ -2486,7 +2486,7 @@ with Session(engine) as session:
             FROM user 
             WHERE display_name = :username 
             ORDER BY created_at
-        ''').bindparam(username=username)
+        ''').bindparams(username=username)
         users = session.exec(stmt).fetchall()
         
         print(f'\\n📋 Users with username \"{username}\":')
@@ -2584,7 +2584,7 @@ def merge_duplicate_users():
                     FROM user 
                     WHERE display_name = :username 
                     ORDER BY created_at ASC
-                ''').bindparam(username=username)
+                ''').bindparams(username=username)
                 users = session.exec(stmt).fetchall()
                 
                 if len(users) < 2:
@@ -2599,27 +2599,27 @@ def merge_duplicate_users():
                 
                 # Update prayers
                 for dup_id in duplicate_user_ids:
-                    stmt = text('UPDATE prayer SET author_id = :primary WHERE author_id = :dup').bindparam(primary=primary_user_id, dup=dup_id)
+                    stmt = text('UPDATE prayer SET author_id = :primary WHERE author_id = :dup').bindparams(primary=primary_user_id, dup=dup_id)
                     session.exec(stmt)
                 
                 # Update sessions
                 for dup_id in duplicate_user_ids:
-                    stmt = text('UPDATE session SET user_id = :primary WHERE user_id = :dup').bindparam(primary=primary_user_id, dup=dup_id)
+                    stmt = text('UPDATE session SET user_id = :primary WHERE user_id = :dup').bindparams(primary=primary_user_id, dup=dup_id)
                     session.exec(stmt)
                 
                 # Update prayer marks
                 for dup_id in duplicate_user_ids:
-                    stmt = text('UPDATE prayermark SET user_id = :primary WHERE user_id = :dup').bindparam(primary=primary_user_id, dup=dup_id)
+                    stmt = text('UPDATE prayermark SET user_id = :primary WHERE user_id = :dup').bindparams(primary=primary_user_id, dup=dup_id)
                     session.exec(stmt)
                 
                 # Update prayer skips
                 for dup_id in duplicate_user_ids:
-                    stmt = text('UPDATE prayerskip SET user_id = :primary WHERE user_id = :dup').bindparam(primary=primary_user_id, dup=dup_id)
+                    stmt = text('UPDATE prayerskip SET user_id = :primary WHERE user_id = :dup').bindparams(primary=primary_user_id, dup=dup_id)
                     session.exec(stmt)
                 
                 # Delete duplicate users
                 for dup_id in duplicate_user_ids:
-                    stmt = text('DELETE FROM user WHERE id = :dup').bindparam(dup=dup_id)
+                    stmt = text('DELETE FROM user WHERE id = :dup').bindparams(dup=dup_id)
                     session.exec(stmt)
                 
                 merged_count += len(duplicate_user_ids)
