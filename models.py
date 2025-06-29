@@ -5,7 +5,7 @@ import secrets
 
 class User(SQLModel, table=True):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
-    display_name: str
+    display_name: str = Field(unique=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     # Religious preference fields
     religious_preference: str | None = Field(default="unspecified", max_length=50)  # "christian", "unspecified"
