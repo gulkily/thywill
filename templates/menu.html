@@ -125,7 +125,7 @@
     {% endif %}
 
     <!-- Admin Section (if admin) -->
-    {% if me.id == 'admin' %}
+    {% if is_admin %}
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
       <div class="flex items-center mb-4">
         <div class="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mr-4 flex-shrink-0">

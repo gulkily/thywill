@@ -9,7 +9,7 @@ from sqlmodel import Session, select, func
 
 from models import engine, User, Prayer, PrayerMark, Session as SessionModel
 from app_helpers.services.auth_helpers import current_user
-from app_helpers.services.auth.validation_helpers import log_security_event
+from app_helpers.services.auth.validation_helpers import log_security_event, is_admin
 from app_helpers.utils.user_management import is_user_deactivated
 
 templates = Jinja2Templates(directory="templates")
@@ -116,7 +116,8 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
                 "recent_marked_prayers": recent_marked_prayers,
                 "inviter": inviter,
                 "user_roles": user_roles,
-                "role_names": role_names
+                "role_names": role_names,
+                "is_admin": is_admin(user)
             }
         )
 
@@ -191,7 +192,7 @@ def users_list(request: Request, user_session: tuple = Depends(current_user)):
         
         return templates.TemplateResponse(
             "users.html",
-            {"request": request, "users": users_with_stats, "me": user, "session": session}
+            {"request": request, "users": users_with_stats, "me": user, "session": session, "is_admin": is_admin(user)}
         )
 
 @router.get("/preferences", response_class=HTMLResponse)
@@ -205,7 +206,8 @@ async def get_user_preferences(request: Request, user_session: tuple = Depends(c
             "request": request,
             "user": db_user,
             "me": user,
-            "session": session
+            "session": session,
+            "is_admin": is_admin(user)
         })
 
 @router.post("/preferences")
@@ -260,7 +262,8 @@ async def get_user_preferences_alt(request: Request, user_session: tuple = Depen
             "request": request,
             "user": db_user,
             "me": user,
-            "session": session
+            "session": session,
+            "is_admin": is_admin(user)
         })
 
 @router.post("/profile/preferences")
