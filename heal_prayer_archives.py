@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Prayer Archive Healing Script
+Archive Healing Script
 
-This script creates missing text archive files for prayers that exist in the database
+This script creates missing text archive files for prayers and users that exist in the database
 but don't have corresponding archive files.
 """
 
@@ -12,6 +12,7 @@ from sqlmodel import Session, select
 from sqlalchemy import inspect
 from models import engine, Prayer, User
 from app_helpers.services.text_archive_service import text_archive_service
+from datetime import datetime
 
 def check_database_tables():
     """Check if required database tables exist"""
@@ -110,8 +111,81 @@ def heal_prayer_archives():
         
         return True
 
+def heal_user_archives():
+    """Create missing archive files for users without them"""
+    
+    print("🔍 Scanning for users without archive files...")
+    
+    with Session(engine) as session:
+        # Find all users without text_file_path or with missing files
+        users_query = select(User)
+        users = session.exec(users_query).all()
+        
+        healed_count = 0
+        total_count = len(users)
+        
+        for user in users:
+            needs_healing = False
+            
+            # Check if user needs healing
+            if not user.text_file_path:
+                needs_healing = True
+                reason = "No archive path in database"
+            elif not os.path.exists(user.text_file_path):
+                needs_healing = True
+                reason = "Archive file missing from filesystem"
+            
+            if needs_healing:
+                print(f"🔧 Healing user {user.id} ({user.display_name}): {reason}")
+                
+                try:
+                    # Create user archive by writing to monthly registration file
+                    if text_archive_service.enabled:
+                        # Get inviting user info if available
+                        inviting_user = None
+                        if user.invited_by_user_id:
+                            inviting_user = session.get(User, user.invited_by_user_id)
+                        
+                        invite_source = inviting_user.display_name if inviting_user else ""
+                        
+                        # Create the user registration archive entry
+                        archive_file_path = text_archive_service.append_user_registration(
+                            user.display_name,
+                            invite_source
+                        )
+                        
+                        # Update user record with archive path
+                        user.text_file_path = archive_file_path
+                        session.add(user)
+                        
+                        print(f"✅ Created user archive entry in: {archive_file_path}")
+                        healed_count += 1
+                    else:
+                        print("⚠️  Text archives disabled - setting placeholder path")
+                        user.text_file_path = f"disabled_archive_for_user_{user.id}"
+                        session.add(user)
+                        healed_count += 1
+                        
+                except Exception as e:
+                    print(f"❌ Failed to heal user {user.id}: {e}")
+        
+        # Commit all changes
+        session.commit()
+        
+        print(f"\n📊 User Healing Summary:")
+        print(f"  Total users: {total_count}")
+        print(f"  Users healed: {healed_count}")
+        print(f"  Users already healthy: {total_count - healed_count}")
+        
+        if healed_count > 0:
+            print(f"\n🎉 Successfully healed {healed_count} users!")
+        else:
+            print(f"\n✨ All users already have archive files!")
+        
+        return True
+
 if __name__ == "__main__":
-    print("🏥 Prayer Archive Healing Script")
+    print("🏥 Archive Healing Script")
     print("=" * 50)
     
     # Check if text archives are enabled
@@ -121,15 +195,32 @@ if __name__ == "__main__":
         print("")
     
     # Ask for confirmation
-    response = input("Do you want to create missing archive files for all prayers? (y/N): ")
+    print("This script will heal both prayers and users missing archive files.")
+    response = input("Do you want to create missing archive files for all prayers and users? (y/N): ")
     if response.lower() != 'y':
         print("❌ Healing cancelled")
         sys.exit(0)
     
     try:
-        success = heal_prayer_archives()
-        if not success:
+        print("\n" + "="*50)
+        print("HEALING PRAYERS")
+        print("="*50)
+        prayer_success = heal_prayer_archives()
+        
+        print("\n" + "="*50)  
+        print("HEALING USERS")
+        print("="*50)
+        user_success = heal_user_archives()
+        
+        if not (prayer_success and user_success):
             sys.exit(1)
+            
+        print("\n" + "="*50)
+        print("🎉 COMPLETE HEALING FINISHED!")
+        print("="*50)
+        print("All prayers and users now have archive files.")
+        print("You can now export complete archives that include all users.")
+        
     except Exception as e:
         print(f"💥 Healing failed: {e}")
         sys.exit(1)
