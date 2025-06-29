@@ -93,29 +93,25 @@
       </div>
       
       <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-        <div class="text-gray-600 dark:text-gray-400">Estimated Size</div>
-        <div class="font-medium text-gray-900 dark:text-gray-100">~{{ export_info.estimated_size }}</div>
-        <div class="text-xs text-gray-500 dark:text-gray-500">Compressed archive</div>
+        <div class="text-gray-600 dark:text-gray-400">Archive Format</div>
+        <div class="font-medium text-gray-900 dark:text-gray-100">Human-readable text files</div>
+        <div class="text-xs text-gray-500 dark:text-gray-500">Organized in ZIP archive</div>
       </div>
       
       <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-        <div class="text-gray-600 dark:text-gray-400">Cache Status</div>
-        <div class="font-medium text-gray-900 dark:text-gray-100 {% if export_info.cache_available %}text-green-600 dark:text-green-400{% else %}text-orange-600 dark:text-orange-400{% endif %}">
-          {% if export_info.cache_available %}✅ Available{% else %}🔄 Will generate{% endif %}
+        <div class="text-gray-600 dark:text-gray-400">Data Transparency</div>
+        <div class="font-medium text-gray-900 dark:text-gray-100 text-green-600 dark:text-green-400">
+          ✅ Complete access
         </div>
         <div class="text-xs text-gray-500 dark:text-gray-500">
-          {% if export_info.cache_available %}
-            {% if export_info.cache_age_minutes == 0 %}Fresh data ready{% else %}Generated {{ export_info.cache_age_minutes }}m ago{% endif %}
-          {% else %}
-            Cached for {{ export_info.cache_ttl_minutes }}m
-          {% endif %}
+          All your data, always available
         </div>
       </div>
       
       <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-        <div class="text-gray-600 dark:text-gray-400">Community Data</div>
-        <div class="font-medium text-gray-900 dark:text-gray-100">{{ export_info.users }} users, {{ export_info.prayers }} prayers</div>
-        <div class="text-xs text-gray-500 dark:text-gray-500">Users, prayers, activity</div>
+        <div class="text-gray-600 dark:text-gray-400">Content Included</div>
+        <div class="font-medium text-gray-900 dark:text-gray-100">Prayers, users, activity logs</div>
+        <div class="text-xs text-gray-500 dark:text-gray-500">Complete community data</div>
       </div>
     </div>
   </div>
@@ -216,39 +212,14 @@
           Download Now
         </a>
         <div class="mt-6 flex justify-center items-center space-x-6 text-sm text-white/80">
-          <span>✨ {{ export_info.prayers }} Prayers</span>
-          <span>👥 {{ export_info.users }} Users</span>
+          <span>✨ All Prayers</span>
+          <span>👥 All Users</span>
           <span>📊 Complete History</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Database Export Section -->
-  <div class="bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-800 dark:to-blue-800 rounded-lg shadow-lg p-6 text-white">
-    <div class="text-center">
-      <h3 class="text-xl font-semibold mb-2">📊 Database Export</h3>
-      <p class="text-purple-100 dark:text-purple-200 mb-6">
-        Download a complete JSON archive of your community database. The export process may take a few moments for large communities.
-      </p>
-      
-      <div class="space-y-4">
-        <button id="export-btn" onclick="startExport()" class="inline-flex items-center px-6 py-3 bg-white text-purple-600 font-medium rounded-lg hover:bg-gray-100 transition-colors shadow-md">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
-          </svg>
-          <span id="export-btn-text">Download Community Database</span>
-        </button>
-        
-        <div id="export-progress" class="hidden">
-          <div class="bg-white bg-opacity-20 rounded-full h-2 mb-2">
-            <div class="bg-white h-2 rounded-full transition-all duration-300" style="width: 0%" id="progress-bar"></div>
-          </div>
-          <p class="text-sm text-purple-100 dark:text-purple-200" id="progress-text">Preparing export...</p>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- Technical Details -->
   <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
@@ -258,23 +229,6 @@
         <span class="float-right group-open:rotate-180 transition-transform">▼</span>
       </summary>
       
-      <div class="mt-4 space-y-3 text-sm text-gray-600 dark:text-gray-400">
-        <div>
-          <strong>File Format:</strong> ZIP archive containing multiple JSON files organized by table/data type
-        </div>
-        <div>
-          <strong>Individual Files:</strong> Separate JSON files for each table (users.json, prayers.json, etc.) for easy analysis
-        </div>
-        <div>
-          <strong>Combined File:</strong> Complete export in single JSON file for compatibility and full restoration
-        </div>
-        <div>
-          <strong>File Naming:</strong> community_export_YYYY-MM-DD.zip (e.g., community_export_2025-06-11.zip)
-        </div>
-        <div>
-          <strong>Metadata:</strong> Separate metadata.json with export version, timestamp, and schema details
-        </div>
-      </div>
     </details>
   </div>
 
@@ -286,107 +240,6 @@
   </div>
 </div>
 
-<script>
-// Update export button text based on cache status
-document.addEventListener('DOMContentLoaded', function() {
-  const exportBtnText = document.getElementById('export-btn-text');
-  if (exportBtnText) {
-    {% if export_info.cache_available %}
-      exportBtnText.textContent = 'Download Community Archive';
-    {% else %}
-      exportBtnText.textContent = 'Generate & Download Archive';
-    {% endif %}
-  }
-});
-
-// Track whether the simulation has run
-let hasRunSimulation = false;
-
-function startExport() {
-  const btn = document.getElementById('export-btn');
-  const progress = document.getElementById('export-progress');
-  const progressBar = document.getElementById('progress-bar');
-  const progressText = document.getElementById('progress-text');
-  
-  // Start actual download immediately
-  const downloadLink = document.createElement('a');
-  downloadLink.href = '/export/database';
-  downloadLink.download = 'community_export_' + new Date().toISOString().split('T')[0] + '.zip';
-  downloadLink.style.display = 'none';
-  document.body.appendChild(downloadLink);
-  
-  if (!hasRunSimulation) {
-    // First time - show full progress simulation
-    hasRunSimulation = true;
-    
-    // Show progress UI
-    btn.style.display = 'none';
-    progress.classList.remove('hidden');
-    
-    // Simulate progress for better UX on first download
-    let currentProgress = 0;
-    const progressSteps = [
-      { percent: 20, text: 'Collecting user data...' },
-      { percent: 40, text: 'Gathering prayer requests...' },
-      { percent: 60, text: 'Processing community activity...' },
-      { percent: 80, text: 'Compressing archive...' },
-      { percent: 95, text: 'Finalizing export...' }
-    ];
-    
-    let stepIndex = 0;
-    const progressInterval = setInterval(() => {
-      if (stepIndex < progressSteps.length) {
-        const step = progressSteps[stepIndex];
-        progressBar.style.width = step.percent + '%';
-        progressText.textContent = step.text;
-        stepIndex++;
-      }
-    }, 800);
-    
-    // Trigger download after a delay to show progress
-    setTimeout(() => {
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      
-      // Complete progress
-      setTimeout(() => {
-        clearInterval(progressInterval);
-        progressBar.style.width = '100%';
-        progressText.textContent = 'Export complete!';
-        
-        // Reset UI after delay
-        setTimeout(() => {
-          btn.style.display = 'inline-flex';
-          progress.classList.add('hidden');
-          progressBar.style.width = '0%';
-        }, 2000);
-      }, 1000);
-    }, 4000);
-  } else {
-    // Subsequent downloads - just show brief feedback and download immediately
-    btn.style.display = 'none';
-    progress.classList.remove('hidden');
-    progressBar.style.width = '100%';
-    progressText.textContent = 'Starting download...';
-    
-    // Start download immediately
-    setTimeout(() => {
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      
-      // Brief completion message
-      progressText.textContent = 'Download started!';
-      
-      // Reset UI quickly
-      setTimeout(() => {
-        btn.style.display = 'inline-flex';
-        progress.classList.add('hidden');
-        progressBar.style.width = '0%';
-      }, 1000);
-    }, 100);
-  }
-}
-</script>
 
 <!-- Archive Download CSS and JavaScript -->
 <link rel="stylesheet" href="/static/css/archive.css?v=4">
