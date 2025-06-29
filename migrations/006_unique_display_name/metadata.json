@@ -1,0 +1,10 @@
+{
+    "migration_id": "006_unique_display_name",
+    "description": "Add unique constraint to display_name field and merge duplicate users",
+    "depends_on": ["005_security_log_table"],
+    "estimated_duration_seconds": 30,
+    "requires_maintenance_mode": false,
+    "affected_tables": ["user"],
+    "merge_duplicates": true,
+    "creates_constraint": true
+}
