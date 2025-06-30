@@ -45,7 +45,7 @@
 
 ### 1. Export Critical Data
 ```bash
-# Export active sessions (if needed)
+# Export active sessions
 PRODUCTION_MODE=1 python tools/export_active_sessions.py
 
 # Export user roles/permissions (if applicable)
@@ -85,11 +85,11 @@ print(result)
 
 ### 1. Restore System State
 ```bash
+# Restore user sessions (keeps users logged in)
+PRODUCTION_MODE=1 python tools/restore_active_sessions.py
+
 # Recreate admin users (if lost)
 ./thywill add-admin-user <username>
-
-# Restore user sessions (if exported)
-PRODUCTION_MODE=1 python tools/restore_sessions.py
 
 # Regenerate invite tokens (if needed)
 ```
@@ -112,14 +112,15 @@ curl -s http://localhost:8000/health
 ## Recommended Upgrade Process
 
 ### Safe Upgrade Procedure
-1. **Archive Everything**: Ensure complete archive coverage
-2. **Export State**: Save sessions, tokens, config
-3. **Backup Database**: Full backup before changes
-4. **Test Import**: Dry-run import validation
+1. **Archive Everything**: `./thywill heal-archives`
+2. **Export State**: `python tools/export_active_sessions.py`
+3. **Backup Database**: `./thywill backup`
+4. **Test Import**: `./thywill import text-archives --dry-run`
 5. **Deploy Code**: Update application code
-6. **Import Data**: Rebuild from archives
-7. **Restore State**: Recover sessions/config
-8. **Validate**: Comprehensive testing
+6. **Import Data**: `./thywill import text-archives`
+7. **Restore Sessions**: `python tools/restore_active_sessions.py`
+8. **Restore Config**: Manual admin/token restoration
+9. **Validate**: Comprehensive testing
 
 ### Rollback Strategy
 ```bash
