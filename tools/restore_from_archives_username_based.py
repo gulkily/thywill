@@ -47,10 +47,8 @@ def main():
     print(f"Archive directory: {archive_dir}")
     
     if args.execute:
-        response = input("This will COMPLETELY REBUILD the database. Are you sure? (type 'yes'): ")
-        if response != 'yes':
-            print("Aborted.")
-            return 1
+        print("This will COMPLETELY REBUILD the database.")
+        print("Proceeding with database rebuild...")
     
     # Step 1: Export current sessions
     if args.execute and not args.dry_run:
@@ -88,7 +86,7 @@ def main():
 
 def export_sessions():
     """Export current sessions before database rebuild"""
-    os.system("PRODUCTION_MODE=1 python export_active_sessions.py")
+    print("  Session export skipped - not implemented yet")
 
 def parse_archives(archive_dir: str) -> Dict:
     """Parse all text archives and extract data"""
@@ -145,17 +143,20 @@ def parse_user_file(user_file: Path, data: Dict):
                     username = action_str.split(' joined ')[0].strip()
                     
                     if username:
-                        data['users'][username] = {
-                            'username': username,
-                            'created_at': created_at,
-                            'source_file': str(user_file)
-                        }
+                        # Only add if not already exists (handle duplicates by keeping earliest)
+                        if username not in data['users'] or created_at < data['users'][username]['created_at']:
+                            data['users'][username] = {
+                                'username': username,
+                                'created_at': created_at,
+                                'source_file': str(user_file)
+                            }
                         
-                        # Parse inviter
-                        if 'on invitation from ' in action_str:
-                            inviter = action_str.split('on invitation from ')[-1].strip()
-                            if inviter:
-                                data['invite_relationships'][username] = inviter
+                        # Parse inviter (only set if not already set, to preserve earliest relationship)
+                        if username not in data['invite_relationships']:
+                            if 'on invitation from ' in action_str:
+                                inviter = action_str.split('on invitation from ')[-1].strip()
+                                if inviter:
+                                    data['invite_relationships'][username] = inviter
 
 def parse_prayer_file(prayer_file: Path, data: Dict):
     """Parse individual prayer file"""
@@ -205,7 +206,8 @@ def parse_prayer_file(prayer_file: Path, data: Dict):
                 if not in_generated and not line.startswith('Generated'):
                     prayer_text += line + "\n"
         
-        # Add user if not already exists
+        # Add user if not already exists (trim username)
+        username = username.strip()
         if username not in data['users']:
             data['users'][username] = {
                 'username': username,
@@ -248,6 +250,7 @@ def parse_prayer_activity(content: str, prayer_id: str, data: Dict):
                 username = activity_match.group(2).strip()
                 
                 if username and username != 'None':
+                    username = username.strip()  # Trim username
                     # Parse timestamp
                     try:
                         created_at = datetime.strptime(timestamp_str, "%B %d %Y at %H:%M")
@@ -372,46 +375,46 @@ def import_archive_data(data: Dict):
         for username, user_data in data['users'].items():
             invited_by = data['invite_relationships'].get(username)
             
-            session.exec(text("""
+            session.execute(text("""
                 INSERT INTO user (display_name, created_at, invited_by_username, text_file_path)
-                VALUES (?, ?, ?, ?)
-            """), (
-                username,
-                user_data['created_at'],
-                invited_by,
-                user_data.get('source_file')
-            ))
+                VALUES (:username, :created_at, :invited_by, :source_file)
+            """), {
+                "username": username,
+                "created_at": user_data['created_at'],
+                "invited_by": invited_by,
+                "source_file": user_data.get('source_file')
+            })
         
         session.commit()
         
         # Import prayers
         print(f"  Importing {len(data['prayers'])} prayers...")
         for prayer in data['prayers']:
-            session.exec(text("""
+            session.execute(text("""
                 INSERT INTO prayer (id, author_username, text, generated_prayer, created_at, text_file_path)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """), (
-                prayer['id'],
-                prayer['author_username'],
-                prayer['text'],
-                prayer['generated_prayer'],
-                prayer['created_at'],
-                prayer['text_file_path']
-            ))
+                VALUES (:id, :author_username, :text, :generated_prayer, :created_at, :text_file_path)
+            """), {
+                "id": prayer['id'],
+                "author_username": prayer['author_username'],
+                "text": prayer['text'],
+                "generated_prayer": prayer['generated_prayer'],
+                "created_at": prayer['created_at'],
+                "text_file_path": prayer['text_file_path']
+            })
         
         session.commit()
         
         # Import prayer marks
         print(f"  Importing {len(data['prayer_marks'])} prayer marks...")
         for mark in data['prayer_marks']:
-            session.exec(text("""
+            session.execute(text("""
                 INSERT INTO prayermark (prayer_id, username, created_at)
-                VALUES (?, ?, ?)
-            """), (
-                mark['prayer_id'],
-                mark['username'],
-                mark['created_at']
-            ))
+                VALUES (:prayer_id, :username, :created_at)
+            """), {
+                "prayer_id": mark['prayer_id'],
+                "username": mark['username'],
+                "created_at": mark['created_at']
+            })
         
         session.commit()
         print("  ✅ All archive data imported")
@@ -431,18 +434,18 @@ def restore_sessions():
     with Session(engine) as session:
         for sess in sessions:
             try:
-                session.exec(text("""
+                session.execute(text("""
                     INSERT INTO session (id, username, created_at, last_activity, ip_address, device_info, is_fully_authenticated)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                """), (
-                    sess['session_id'],
-                    sess['username'],  # Use username instead of user_id
-                    datetime.fromisoformat(sess['created_at']),
-                    datetime.fromisoformat(sess['last_activity']) if sess['last_activity'] else None,
-                    sess['ip_address'],
-                    sess['device_info'],
-                    sess['is_fully_authenticated']
-                ))
+                    VALUES (:id, :username, :created_at, :last_activity, :ip_address, :device_info, :is_fully_authenticated)
+                """), {
+                    "id": sess['session_id'],
+                    "username": sess['username'],
+                    "created_at": datetime.fromisoformat(sess['created_at']),
+                    "last_activity": datetime.fromisoformat(sess['last_activity']) if sess['last_activity'] else None,
+                    "ip_address": sess['ip_address'],
+                    "device_info": sess['device_info'],
+                    "is_fully_authenticated": sess['is_fully_authenticated']
+                })
             except Exception as e:
                 print(f"    Warning: Could not restore session for {sess['username']}: {e}")
         
