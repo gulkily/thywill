@@ -21,7 +21,7 @@ def main():
     
     with Session(engine) as session:
         # Get a sample prayer and check its author resolution
-        prayers = session.exec(select(Prayer)).limit(5).all()
+        prayers = session.exec(select(Prayer)).all()[:5]
         
         print(f"\n1. Prayer Author Resolution Test:")
         print(f"Found {len(prayers)} prayers to test")
