@@ -122,7 +122,7 @@ def parse_archives(archive_dir: str) -> Dict:
 def parse_user_file(user_file: Path, data: Dict):
     """Parse user registration file"""
     content = user_file.read_text(encoding='utf-8')
-    lines = content.split('\\n')
+    lines = content.split('\n')
     
     for line in lines:
         line = line.strip()
@@ -168,7 +168,7 @@ def parse_prayer_file(prayer_file: Path, data: Dict):
             prayer_id = prayer_file.stem.split('prayer_at_')[-1]
         
         # Parse header: "Prayer <id> by <username>"
-        header_match = re.search(r'Prayer\\s+([a-f0-9]+)\\s+by\\s+(.+)', content)
+        header_match = re.search(r'Prayer\s+([a-f0-9]+)\s+by\s+(.+)', content)
         if not header_match:
             return
         
@@ -179,7 +179,7 @@ def parse_prayer_file(prayer_file: Path, data: Dict):
             return
         
         # Parse timestamp
-        timestamp_match = re.search(r'Submitted (.+ at \\d{2}:\\d{2})', content)
+        timestamp_match = re.search(r'Submitted (.+ at \d{2}:\d{2})', content)
         created_at = datetime.now()
         if timestamp_match:
             try:
@@ -188,7 +188,7 @@ def parse_prayer_file(prayer_file: Path, data: Dict):
                 pass
         
         # Extract prayer text and generated prayer
-        lines = content.split('\\n')
+        lines = content.split('\n')
         prayer_text = ""
         generated_prayer = ""
         in_generated = False
@@ -197,13 +197,13 @@ def parse_prayer_file(prayer_file: Path, data: Dict):
             if line.startswith('Generated Prayer:'):
                 in_generated = True
                 continue
-            elif line.startswith('Activity Log:'):
+            elif line.startswith('Activity:'):
                 break
             elif in_generated:
-                generated_prayer += line + "\\n"
-            elif line and not line.startswith('Prayer ') and not line.startswith('Submitted'):
+                generated_prayer += line + "\n"
+            elif line and not line.startswith('Prayer ') and not line.startswith('Submitted') and not line.startswith('Audience:'):
                 if not in_generated and not line.startswith('Generated'):
-                    prayer_text += line + "\\n"
+                    prayer_text += line + "\n"
         
         # Add user if not already exists
         if username not in data['users']:
@@ -224,7 +224,7 @@ def parse_prayer_file(prayer_file: Path, data: Dict):
         }
         data['prayers'].append(prayer_data)
         
-        # Parse activity log for prayer marks
+        # Parse activity log for prayer marks (different format: "Activity:" instead of "Activity Log:")
         parse_prayer_activity(content, file_prayer_id, data)
         
     except Exception as e:
@@ -232,25 +232,33 @@ def parse_prayer_file(prayer_file: Path, data: Dict):
 
 def parse_prayer_activity(content: str, prayer_id: str, data: Dict):
     """Parse activity log section for prayer marks"""
-    lines = content.split('\\n')
+    lines = content.split('\n')
     in_activity = False
     
     for line in lines:
-        if line.startswith('Activity Log:'):
+        if line.startswith('Activity:'):
             in_activity = True
             continue
         
         if in_activity and line.strip():
-            # Parse: "21:17 - username prayed for prayer"
-            activity_match = re.search(r'\\d{2}:\\d{2} - (.+?) prayed for prayer', line)
+            # Parse: "June 25 2025 at 18:45 - ilyag prayed this prayer"
+            activity_match = re.search(r'(.+ at \d{2}:\d{2}) - (.+?) prayed this prayer', line)
             if activity_match:
-                username = activity_match.group(1).strip()
+                timestamp_str = activity_match.group(1)
+                username = activity_match.group(2).strip()
+                
                 if username and username != 'None':
+                    # Parse timestamp
+                    try:
+                        created_at = datetime.strptime(timestamp_str, "%B %d %Y at %H:%M")
+                    except:
+                        created_at = datetime.now()
+                    
                     # Add user if not exists
                     if username not in data['users']:
                         data['users'][username] = {
                             'username': username,
-                            'created_at': datetime.now(),
+                            'created_at': created_at,
                             'source_file': 'activity_log'
                         }
                     
@@ -258,7 +266,7 @@ def parse_prayer_activity(content: str, prayer_id: str, data: Dict):
                     data['prayer_marks'].append({
                         'prayer_id': prayer_id,
                         'username': username,
-                        'created_at': datetime.now()  # Could parse timestamp
+                        'created_at': created_at
                     })
 
 def print_archive_summary(data: Dict):
