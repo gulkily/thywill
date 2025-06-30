@@ -3,12 +3,13 @@ Invite system helper functions extracted from app.py
 This module contains invite tree management and statistics functions.
 """
 
+import os
 from datetime import datetime, timedelta
 from sqlmodel import Session, select, func
 from models import User, InviteToken, engine
 
 # Constants (these should match app.py)
-TOKEN_EXP_H = 12  # invite links valid 12 h
+TOKEN_EXP_H = int(os.getenv("INVITE_TOKEN_EXPIRATION_HOURS", "12"))  # invite links expiration hours
 
 
 def get_invite_tree() -> dict:

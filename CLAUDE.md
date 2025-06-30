@@ -135,6 +135,7 @@ MULTI_DEVICE_AUTH_ENABLED=true              # Enable multi-device auth
 REQUIRE_APPROVAL_FOR_EXISTING_USERS=true    # Require approval for existing users  
 PEER_APPROVAL_COUNT=2                       # Number of peer approvals needed
 REQUIRE_VERIFICATION_CODE=false             # Enhanced verification security
+INVITE_TOKEN_EXPIRATION_HOURS=12            # Invite link expiration time in hours
 JWT_SECRET=your_jwt_secret_for_tokens       # For invite token generation
 ```
 

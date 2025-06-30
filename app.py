@@ -23,7 +23,7 @@ import sqlite3
 
 # ───────── Config ─────────
 SESSION_DAYS = 14
-TOKEN_EXP_H = 12          # invite links valid 12 h
+TOKEN_EXP_H = int(os.getenv("INVITE_TOKEN_EXPIRATION_HOURS", "12"))  # invite links expiration hours
 MAX_AUTH_REQUESTS_PER_HOUR = 3  # Rate limit for auth requests
 MAX_FAILED_ATTEMPTS = 5   # Max failed login attempts before temporary block
 BLOCK_DURATION_MINUTES = 15  # How long to block after max failed attempts
