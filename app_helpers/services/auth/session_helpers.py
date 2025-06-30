@@ -4,9 +4,12 @@ Session management functions.
 
 Contains functionality for creating, validating, and managing user sessions.
 Extracted from auth_helpers.py for better maintainability.
+
+Enhanced with real-time system state archival for zero-downtime upgrades.
 """
 
 import uuid
+import logging
 from datetime import datetime, timedelta
 from fastapi import Request, HTTPException
 from sqlmodel import Session
@@ -15,15 +18,17 @@ from models import (
     User, Session as SessionModel, engine
 )
 
+logger = logging.getLogger(__name__)
+
 # Constants
 SESSION_DAYS = 14
 
 
 def create_session(user_id: str, auth_request_id: str = None, device_info: str = None, ip_address: str = None, is_fully_authenticated: bool = True) -> str:
-    """Create a new user session"""
+    """Create a new user session with real-time system archival"""
     sid = uuid.uuid4().hex
     with Session(engine) as db:
-        db.add(SessionModel(
+        session_data = SessionModel(
             id=sid,
             user_id=user_id,
             expires_at=datetime.utcnow() + timedelta(days=SESSION_DAYS),
@@ -31,8 +36,16 @@ def create_session(user_id: str, auth_request_id: str = None, device_info: str =
             device_info=device_info,
             ip_address=ip_address,
             is_fully_authenticated=is_fully_authenticated
-        ))
+        )
+        db.add(session_data)
         db.commit()
+        
+        # Archive session creation in real-time
+        try:
+            _archive_session_event('created', session_data, user_id)
+        except Exception as e:
+            logger.warning(f"Failed to archive session creation: {e}")
+    
     return sid
 
 
@@ -55,6 +68,7 @@ def current_user(req: Request) -> tuple[User, SessionModel]:
         
         # Handle deleted user - invalidate session
         if not user:
+            _archive_session_event('deleted', sess, sess.user_id, reason="user_deleted")
             db.delete(sess)
             db.commit()
             raise HTTPException(401, detail="user_deleted")
@@ -62,6 +76,7 @@ def current_user(req: Request) -> tuple[User, SessionModel]:
         # Check if user is deactivated - block access if so
         if user.has_role("deactivated", db):
             # Invalidate session for deactivated users
+            _archive_session_event('deleted', sess, sess.user_id, reason="account_deactivated")
             db.delete(sess)
             db.commit()
             raise HTTPException(401, detail="account_deactivated")
@@ -96,3 +111,44 @@ def validate_session_security(session: SessionModel, request: Request) -> bool:
         # For now, just log it - could invalidate session in production
     
     return True
+
+
+def _archive_session_event(event_type: str, session: SessionModel, user_id: int, reason: str = None):
+    """Archive session lifecycle events for system state preservation"""
+    try:
+        from ..system_archive_service import SystemArchiveService
+        
+        system_archive = SystemArchiveService()
+        session_data = {
+            'id': session.id,
+            'user_id': session.user_id,
+            'created_at': session.created_at.isoformat() if session.created_at else None,
+            'expires_at': session.expires_at.isoformat() if session.expires_at else None,
+            'last_activity': session.last_activity.isoformat() if session.last_activity else None,
+            'ip_address': session.ip_address,
+            'device_info': session.device_info,
+            'is_fully_authenticated': session.is_fully_authenticated,
+            'is_active': session.is_active,
+            'auth_request_id': session.auth_request_id
+        }
+        
+        if reason:
+            session_data['reason'] = reason
+        
+        system_archive.log_session_event(event_type, session_data, user_id)
+        
+    except Exception as e:
+        # Don't let archival failures break session operations
+        logger.error(f"Session archival failed: {e}")
+
+
+def invalidate_session(session_id: str, reason: str = "manual_logout"):
+    """Invalidate a session with archival logging"""
+    with Session(engine) as db:
+        session = db.get(SessionModel, session_id)
+        if session:
+            _archive_session_event('deleted', session, session.user_id, reason=reason)
+            db.delete(session)
+            db.commit()
+            return True
+    return False
