@@ -69,7 +69,6 @@ def main():
         print(f"\n3. Common App Query Patterns Test:")
         
         # Test the pattern likely used in templates - JOIN query
-        from sqlmodel import select
         try:
             # This mimics how the app might query prayers with authors
             result = session.exec(
