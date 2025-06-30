@@ -252,8 +252,8 @@ class TestAnsweredEndpoints:
 class TestPermissionChecks:
     """Test authorization for prayer status changes"""
     
-    def test_half_authenticated_user_cannot_manage_prayers(self, client, test_session, mock_half_authenticated_user):
-        """Test that half-authenticated users cannot manage prayer status"""
+    def test_pending_authentication_user_cannot_manage_prayers(self, client, test_session, mock_half_authenticated_user):
+        """Test that users with pending authentication cannot manage prayer status"""
         user, session = mock_half_authenticated_user
         prayer = PrayerFactory.create(author_id=user.id)
         test_session.add(prayer)

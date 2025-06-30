@@ -152,14 +152,14 @@ def mock_authenticated_user(test_session):
 
 @pytest.fixture(scope="function")
 def mock_half_authenticated_user(test_session):
-    """Mock a half-authenticated user for testing permission restrictions"""
+    """Mock a user with pending authentication for testing permission restrictions"""
     from app import app, current_user
     from unittest.mock import Mock
     
     # Create simple mock objects to avoid any database interaction
     user = Mock()
     user.id = "test_half_auth_user_id"
-    user.display_name = "Half Auth User"
+    user.display_name = "Pending Auth User"
     user.created_at = datetime.utcnow()
     user.religious_preference = "unspecified"
     user.prayer_style = None
@@ -179,7 +179,7 @@ def mock_half_authenticated_user(test_session):
     session.is_fully_authenticated = False  # Half-authenticated
     
     # Create real objects in test database for operations that need them
-    real_user = UserFactory.create(id="test_half_auth_user_id", display_name="Half Auth User")
+    real_user = UserFactory.create(id="test_half_auth_user_id", display_name="Pending Auth User")
     real_session = SessionFactory.create(id="test_half_auth_session_id", user_id="test_half_auth_user_id", is_fully_authenticated=False)
     test_session.add_all([real_user, real_session])
     test_session.commit()
