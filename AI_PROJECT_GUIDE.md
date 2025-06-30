@@ -193,7 +193,7 @@ The prayer system now uses a flexible attributes approach instead of simple bool
 **Method 1: Direct Login Form (New)**
 1. User visits `/login` and enters username
 2. System validates username exists and creates authentication request
-3. User enters half-authenticated state with limited access
+3. User enters pending authentication state with limited access
 4. Redirected to `/auth/status` (lobby page) to wait for approval
 5. Approval required via one of three methods:
    - **Admin approval**: Instant approval by any administrator
@@ -204,7 +204,7 @@ The prayer system now uses a flexible attributes approach instead of simple bool
 **Method 2: Invite Link (Original)**
 1. User visits `/claim/{token}` with existing display name
 2. System creates authentication request (if enabled via config)
-3. User enters half-authenticated state with limited access
+3. User enters pending authentication state with limited access
 4. Same approval process as Method 1
 
 ## Environment Variables
