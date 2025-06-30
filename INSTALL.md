@@ -73,7 +73,7 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ## Configuration
 
 - **Session Duration**: Sessions last 14 days by default
-- **Invite Token Expiration**: Invite tokens expire after 12 hours
+- **Invite Token Expiration**: Invite tokens expire after 12 hours (configurable via `INVITE_TOKEN_EXPIRATION_HOURS`)
 - **Database**: Uses SQLite (`thywill.db`) by default
 - **Text Archives**: Human-readable data backups stored in `./text_archives/`
 

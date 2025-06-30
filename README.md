@@ -226,7 +226,7 @@ See `DATABASE_PROTECTION.md` for complete safety documentation.
 
 ### Application Settings
 - Session duration: 14 days
-- Invite token expiration: 12 hours
+- Invite token expiration: 12 hours (configurable via `INVITE_TOKEN_EXPIRATION_HOURS`)
 - Max authentication requests per hour: 3
 - Failed login attempt limit: 5 (15-minute block)
 
