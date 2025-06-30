@@ -10,7 +10,7 @@ import argparse
 import os
 import secrets
 import sys
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from sqlmodel import Session
 from models import engine, InviteToken
@@ -24,7 +24,7 @@ def create_admin_token(hours=12):
     try:
         # Generate token using same format as regular invites (16-char hex)
         token = secrets.token_hex(8)
-        expires_at = datetime.now(UTC) + timedelta(hours=hours)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=hours)
         
         # Save to database
         with Session(engine) as session:
