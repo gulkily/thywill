@@ -129,11 +129,11 @@ class TestUserPreferencesRoutes:
 class TestUserAuthenticationRoutes:
     """Test user authentication-related routes"""
     
-    def test_half_authenticated_user_restrictions(self, client, mock_half_authenticated_user):
-        """Test that half-authenticated users have proper restrictions"""
+    def test_pending_authentication_user_restrictions(self, client, mock_half_authenticated_user):
+        """Test that users with pending authentication have proper restrictions"""
         user, session = mock_half_authenticated_user
         
-        # Half-authenticated users should have limited access
+        # Users with pending authentication should have limited access
         response = client.get("/profile")
         
         # Response depends on implementation - could be redirect to auth or limited view
