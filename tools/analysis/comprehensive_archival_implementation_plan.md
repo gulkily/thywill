@@ -25,11 +25,14 @@ Extend the text archive system to include ALL system state, eliminating data los
 #### Archive Structure
 ```
 text_archives/
-├── sessions/
-│   ├── 2025_06_sessions.txt        # Monthly session records
-│   ├── session_events_2025_06.txt  # Session creation/destruction events
-│   └── device_registrations.txt    # Device fingerprint history
+├── private/                         # 🔒 INTERNAL ONLY - Never downloadable
+│   ├── sessions/
+│   │   ├── 2025_06_sessions.txt        # Monthly session records
+│   │   ├── session_events_2025_06.txt  # Session creation/destruction events
+│   │   └── device_registrations.txt    # Device fingerprint history
 ```
+
+⚠️ **SECURITY NOTE**: Session data contains sensitive information (session IDs, IP addresses, device fingerprints) that would enable session hijacking if included in downloadable archives. Sessions are archived for server-side upgrade continuity only.
 
 #### Session Archive Format
 ```
