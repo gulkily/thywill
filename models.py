@@ -193,7 +193,7 @@ class PrayerAttribute(SQLModel, table=True):
 
 class PrayerMark(SQLModel, table=True):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
-    username: str
+    user_id: str = Field(foreign_key="user.display_name")
     prayer_id: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     # Text archive tracking
