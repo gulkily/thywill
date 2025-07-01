@@ -154,11 +154,9 @@ def _archive_session_event(event_type: str, session: SessionModel, user_id: int,
             'user_id': session.username,
             'created_at': session.created_at.isoformat() if session.created_at else None,
             'expires_at': session.expires_at.isoformat() if session.expires_at else None,
-            'last_activity': session.last_activity.isoformat() if session.last_activity else None,
             'ip_address': session.ip_address,
             'device_info': session.device_info,
             'is_fully_authenticated': session.is_fully_authenticated,
-            'is_active': session.is_active,
             'auth_request_id': session.auth_request_id
         }
         

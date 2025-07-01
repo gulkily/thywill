@@ -71,7 +71,6 @@ def apply_fixes_to_file(file_path):
             
             # Session fixes (these should stay as username for database compatibility)
             (r'SessionModel\.user_id', 'SessionModel.username'),
-            (r'session\.user_id', 'session.username'),
             (r'sess\.user_id', 'sess.username'),
             
             # Function parameter fixes for common functions
