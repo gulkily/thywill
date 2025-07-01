@@ -29,7 +29,7 @@ def get_deactivated_role_id(session: Session) -> str:
 def is_user_deactivated(user_id: str, session: Session) -> bool:
     """Check if a user is deactivated (has deactivated role)"""
     try:
-        user = session.exec(select(User).where(User.id == user_id)).first()
+        user = session.exec(select(User).where(User.display_name == user_id)).first()
         if not user:
             return False
         return user.has_role("deactivated", session)
@@ -78,7 +78,7 @@ def deactivate_user(user_id: str, admin_id: str, reason: str = None, session: Se
     
     try:
         # Check if user exists
-        user = session.exec(select(User).where(User.id == user_id)).first()
+        user = session.exec(select(User).where(User.display_name == user_id)).first()
         if not user:
             raise UserManagementError(f"User not found: {user_id}")
         
@@ -140,7 +140,7 @@ def reactivate_user(user_id: str, admin_id: str, session: Session = None) -> boo
     
     try:
         # Check if user exists
-        user = session.exec(select(User).where(User.id == user_id)).first()
+        user = session.exec(select(User).where(User.display_name == user_id)).first()
         if not user:
             raise UserManagementError(f"User not found: {user_id}")
         
@@ -191,7 +191,7 @@ def get_deactivated_users(session: Session) -> list:
         deactivated_role_id = get_deactivated_role_id(session)
         
         stmt = select(User, UserRole).join(
-            UserRole, User.id == UserRole.user_id
+            UserRole, User.display_name == UserRole.user_id
         ).where(
             UserRole.role_id == deactivated_role_id,
             (UserRole.expires_at.is_(None)) | (UserRole.expires_at > datetime.utcnow())
@@ -220,7 +220,7 @@ def get_active_users(session: Session) -> list:
         
         # Get all users who don't have active deactivated role
         stmt = select(User).where(
-            ~User.id.in_(
+            ~User.display_name.in_(
                 select(UserRole.user_id).where(
                     UserRole.role_id == deactivated_role_id,
                     (UserRole.expires_at.is_(None)) | (UserRole.expires_at > datetime.utcnow())

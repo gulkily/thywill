@@ -42,7 +42,7 @@
          onclick="event.stopPropagation();">
       <div class="py-1">
       <!-- Prayer management buttons for prayer authors -->
-      {% if prayer_session.is_fully_authenticated and prayer.author_id == me.id %}
+      {% if prayer_session.is_fully_authenticated and prayer.author_id == me.display_name %}
         {% if not prayer.is_answered %}
           <button onclick="showAnsweredModal('{{ prayer_id }}'); hideDropdown('{{ prayer_id }}')"
                   class="block w-full text-left px-4 py-3 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-800 dark:hover:text-green-300 transition-colors duration-150 font-medium whitespace-nowrap">

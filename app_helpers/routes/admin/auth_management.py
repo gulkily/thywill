@@ -61,7 +61,7 @@ def bulk_approve_requests(request: Request, user_session: tuple = Depends(curren
             
             # Approve each request
             auth_req.status = "approved"
-            auth_req.approved_by_user_id = user.id
+            auth_req.approved_by_user_id = user.display_name
             auth_req.approved_at = datetime.utcnow()
             approved_count += 1
             
@@ -72,7 +72,7 @@ def bulk_approve_requests(request: Request, user_session: tuple = Depends(curren
             log_auth_action(
                 auth_request_id=auth_req_id,
                 action="approved",
-                actor_user_id=user.id,
+                actor_user_id=user.display_name,
                 actor_type="admin",
                 details="Request approved via bulk admin action"
             )

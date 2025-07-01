@@ -18,7 +18,7 @@
     <a href="/user/{{ node.user.id }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline">
       {{ node.user.display_name }}
     </a>
-    {% if node.user.id == me.id %}
+    {% if node.user.id == me.display_name %}
       <span class="ml-2 text-gray-600 dark:text-gray-400">(You)</span>
     {% endif %}
   </div>
@@ -156,7 +156,7 @@
                 </div>
               {% endif %}
               <p class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 truncate max-w-20">{{ step.user.display_name }}</p>
-              {% if step.user.id == me.id %}
+              {% if step.user.id == me.display_name %}
                 <p class="text-xs text-gray-600 dark:text-gray-400 font-bold">You</p>
               {% endif %}
             </div>

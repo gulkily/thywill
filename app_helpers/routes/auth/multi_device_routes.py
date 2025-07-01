@@ -75,13 +75,13 @@ def create_authentication_request(display_name: str = Form(...), request: Reques
             raise HTTPException(400, "Username not found. Please use an invite link to create a new account.")
         
         # Security: Check rate limits
-        if not check_rate_limit(existing_user.id, ip_address):
+        if not check_rate_limit(existing_user.display_name, ip_address):
             raise HTTPException(429, "Too many authentication requests. Please try again later.")
         
         # Check for existing pending request from same IP/device in last hour
         recent_request = db.exec(
             select(AuthenticationRequest)
-            .where(AuthenticationRequest.user_id == existing_user.id)
+            .where(AuthenticationRequest.user_id == existing_user.display_name)
             .where(AuthenticationRequest.ip_address == ip_address)
             .where(AuthenticationRequest.status == "pending")
             .where(AuthenticationRequest.created_at > datetime.utcnow() - timedelta(hours=1))
@@ -90,7 +90,7 @@ def create_authentication_request(display_name: str = Form(...), request: Reques
         if recent_request:
             # Redirect to existing auth status with the pending request
             sid = create_session(
-                user_id=existing_user.id,
+                user_id=existing_user.display_name,
                 auth_request_id=recent_request.id,
                 device_info=device_info,
                 ip_address=ip_address,
@@ -101,11 +101,11 @@ def create_authentication_request(display_name: str = Form(...), request: Reques
             return resp
         
         # Create the authentication request
-        request_id = create_auth_request(existing_user.id, device_info, ip_address)
+        request_id = create_auth_request(existing_user.display_name, device_info, ip_address)
         
         # Create a half-authenticated session
         sid = create_session(
-            user_id=existing_user.id,
+            user_id=existing_user.display_name,
             auth_request_id=request_id,
             device_info=device_info,
             ip_address=ip_address,
@@ -146,7 +146,7 @@ def pending_requests(request: Request, user_session: tuple = Depends(current_use
     if not session.is_fully_authenticated:
         raise HTTPException(403, "Full authentication required")
     
-    pending_requests = get_pending_requests_for_approval(user.id)
+    pending_requests = get_pending_requests_for_approval(user.display_name)
     
     return templates.TemplateResponse(
         "auth_requests.html",
@@ -155,7 +155,8 @@ def pending_requests(request: Request, user_session: tuple = Depends(current_use
             "pending_requests": pending_requests, 
             "me": user, 
             "session": session,
-            "peer_approval_count": PEER_APPROVAL_COUNT
+            "peer_approval_count": PEER_APPROVAL_COUNT,
+            "is_admin": is_admin(user)
         }
     )
 
@@ -184,7 +185,7 @@ def approve_request(request_id: str, user_session: tuple = Depends(current_user)
     if not session.is_fully_authenticated:
         raise HTTPException(403, "Full authentication required")
     
-    success = approve_auth_request(request_id, user.id)
+    success = approve_auth_request(request_id, user.display_name)
     if not success:
         raise HTTPException(400, "Unable to approve request")
     
@@ -221,14 +222,14 @@ def reject_request(request_id: str, user_session: tuple = Depends(current_user))
             raise HTTPException(400, "Request not found or already processed")
         
         auth_req.status = "rejected"
-        auth_req.approved_by_user_id = user.id
+        auth_req.approved_by_user_id = user.display_name
         auth_req.approved_at = datetime.utcnow()
         
         # Log the rejection
         log_auth_action(
             auth_request_id=request_id,
             action="rejected",
-            actor_user_id=user.id,
+            actor_user_id=user.display_name,
             actor_type="admin",
             details="Request rejected by admin"
         )
@@ -267,7 +268,7 @@ def my_auth_requests(request: Request, user_session: tuple = Depends(current_use
         # Get user's authentication requests
         user_requests = db.exec(
             select(AuthenticationRequest)
-            .where(AuthenticationRequest.user_id == user.id)
+            .where(AuthenticationRequest.user_id == user.display_name)
             .order_by(AuthenticationRequest.created_at.desc())
         ).all()
         
@@ -276,7 +277,7 @@ def my_auth_requests(request: Request, user_session: tuple = Depends(current_use
         for auth_req in user_requests:
             approvals = db.exec(
                 select(AuthApproval, User.display_name)
-                .join(User, AuthApproval.approver_user_id == User.id)
+                .join(User, AuthApproval.approver_user_id == User.display_name)
                 .where(AuthApproval.auth_request_id == auth_req.id)
             ).all()
             
@@ -286,7 +287,7 @@ def my_auth_requests(request: Request, user_session: tuple = Depends(current_use
                     'approver_name': approver_name,
                     'approved_at': approval.created_at,
                     'is_admin': approval.approver_user_id == "admin",
-                    'is_self': approval.approver_user_id == user.id
+                    'is_self': approval.approver_user_id == user.display_name
                 })
             
             requests_with_approvals.append({

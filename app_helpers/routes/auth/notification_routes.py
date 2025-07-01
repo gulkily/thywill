@@ -35,7 +35,7 @@ def get_notifications(request: Request, user_session: tuple = Depends(current_us
         return HTMLResponse(content='<div class="p-4 text-center text-gray-500">Please complete authentication</div>')
     
     try:
-        notifications = get_unread_auth_notifications(user.id)
+        notifications = get_unread_auth_notifications(user.display_name)
         
         context = {
             "request": request,
@@ -71,7 +71,7 @@ def mark_notification_as_read(
     if not session.is_fully_authenticated:
         raise HTTPException(403, "Authentication required")
     
-    success = mark_notification_read(notification_id, user.id)
+    success = mark_notification_read(notification_id, user.display_name)
     if not success:
         raise HTTPException(404, "Notification not found")
     

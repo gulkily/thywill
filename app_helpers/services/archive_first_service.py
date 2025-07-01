@@ -54,7 +54,7 @@ def create_prayer_with_text_archive(prayer_data: Dict) -> Tuple[Prayer, str]:
     # Step 2: Create database record pointing to archive file
     with Session(engine) as s:
         prayer = Prayer(
-            author_id=prayer_data['author_id'],
+            author_username=prayer_data['author_username'],
             text=prayer_data['text'],
             generated_prayer=prayer_data.get('generated_prayer'),
             project_tag=prayer_data.get('project_tag'),
@@ -119,7 +119,7 @@ def append_prayer_activity_with_archive(prayer_id: str, action: str, user: User,
             logger.info(f"Prayer {prayer_id} missing text archive - creating one now")
             
             # Get prayer author for archive
-            author = s.get(User, prayer.author_id)
+            author = s.get(User, prayer.author_username)
             author_name = author.display_name if author else "Unknown"
             
             # Create archive data from database prayer
@@ -164,7 +164,7 @@ def append_prayer_activity_with_archive(prayer_id: str, action: str, user: User,
             # Create PrayerMark record
             prayer_mark = PrayerMark(
                 prayer_id=prayer_id,
-                user_id=user.id,
+                username=user.display_name,
                 text_file_path=prayer.text_file_path,  # Same archive path
                 created_at=datetime.now()
             )
@@ -172,16 +172,16 @@ def append_prayer_activity_with_archive(prayer_id: str, action: str, user: User,
             
         elif action in ["answered", "archived", "flagged"]:
             # Create or update PrayerAttribute
-            prayer.set_attribute(action, "true", user.id, s)
+            prayer.set_attribute(action, "true", user.display_name, s)
             
             # For answered prayers, also set the answer date
             if action == "answered":
                 answer_date = datetime.now().isoformat()
-                prayer.set_attribute("answer_date", answer_date, user.id, s)
+                prayer.set_attribute("answer_date", answer_date, user.display_name, s)
             
             # Set testimony if provided with answered action
             if action == "answered" and extra:
-                prayer.set_attribute("answer_testimony", extra, user.id, s)
+                prayer.set_attribute("answer_testimony", extra, user.display_name, s)
                 
                 # Also append testimony to the prayer's text archive file
                 if text_archive_service.enabled and not prayer.text_file_path.startswith("disabled_archive_"):
@@ -195,7 +195,7 @@ def append_prayer_activity_with_archive(prayer_id: str, action: str, user: User,
                 # Create separate testimony activity log
                 testimony_log = PrayerActivityLog(
                     prayer_id=prayer_id,
-                    user_id=user.id,
+                    username=user.display_name,
                     action="testimony",
                     old_value=None,
                     new_value=extra,
@@ -206,14 +206,14 @@ def append_prayer_activity_with_archive(prayer_id: str, action: str, user: User,
                 
         elif action == "restored":
             # Remove archived attribute
-            prayer.remove_attribute('archived', s, user.id)
+            prayer.remove_attribute('archived', s, user.display_name)
         
         # Create activity log entry only for actions that don't already create logs
         # set_attribute already creates logs, so we skip for those actions
         if action in ["prayed"]:  # Only actions that don't use set_attribute
             activity_record = PrayerActivityLog(
                 prayer_id=prayer_id,
-                user_id=user.id,
+                user_id=user.display_name,
                 action=action,
                 old_value=None,
                 new_value=extra if extra else "true",
@@ -256,7 +256,7 @@ def create_user_with_text_archive(user_data: Dict, user_id: str = None) -> Tuple
         - invited_by_display_name: Display name of inviting user (if any)
         - religious_preference: User's religious preference
         - prayer_style: User's prayer style
-        - invited_by_user_id: ID of inviting user
+        - invited_by_username: ID of inviting user
         - invite_token_used: Token used for registration
         user_id: Optional specific ID to use (if None, database will auto-generate)
     
@@ -277,7 +277,7 @@ def create_user_with_text_archive(user_data: Dict, user_id: str = None) -> Tuple
             'display_name': user_data['display_name'],
             'religious_preference': user_data.get('religious_preference', 'unspecified'),
             'prayer_style': user_data.get('prayer_style'),
-            'invited_by_user_id': user_data.get('invited_by_user_id'),
+            'invited_by_username': user_data.get('invited_by_username'),
             'invite_token_used': user_data.get('invite_token_used'),
             'text_file_path': archive_file_path,  # Track source archive
             'created_at': datetime.now()
@@ -293,7 +293,7 @@ def create_user_with_text_archive(user_data: Dict, user_id: str = None) -> Tuple
         
         if existing_user:
             # User already exists - return existing user instead of creating duplicate
-            logger.warning(f"User with display_name '{user_data['display_name']}' already exists (ID: {existing_user.id}). Returning existing user.")
+            logger.warning(f"User with display_name '{user_data['display_name']}' already exists (ID: {existing_user.display_name}). Returning existing user.")
             return existing_user, existing_user.text_file_path or archive_file_path
         
         try:
@@ -313,7 +313,7 @@ def create_user_with_text_archive(user_data: Dict, user_id: str = None) -> Tuple
                 # Re-raise if it's not a duplicate user issue
                 raise e
     
-    logger.info(f"Created user {user.id} ({user.display_name}) with archive: {archive_file_path}")
+    logger.info(f"Created user {user.display_name} ({user.display_name}) with archive: {archive_file_path}")
     
     # Log to monthly activity
     if text_archive_service.enabled:
@@ -418,7 +418,7 @@ def submit_prayer_archive_first(text: str, author: User, tag: str = None,
         Created Prayer record
     """
     prayer_data = {
-        'author_id': author.id,
+        'author_username': author.display_name,
         'author_display_name': author.display_name,
         'text': text,
         'generated_prayer': generated_prayer,

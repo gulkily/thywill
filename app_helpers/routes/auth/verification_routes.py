@@ -64,7 +64,7 @@ def auth_status(request: Request, user_session: tuple = Depends(current_user)):
         # Get approval count and approvers
         approvals = db.exec(
             select(AuthApproval, User.display_name)
-            .join(User, AuthApproval.approver_user_id == User.id)
+            .join(User, AuthApproval.approver_user_id == User.display_name)
             .where(AuthApproval.auth_request_id == auth_req.id)
         ).all()
         
@@ -74,7 +74,7 @@ def auth_status(request: Request, user_session: tuple = Depends(current_user)):
                 'approver_name': approver_name,
                 'approved_at': approval.created_at,
                 'is_admin': approval.approver_user_id == "admin",
-                'is_self': approval.approver_user_id == user.id
+                'is_self': approval.approver_user_id == user.display_name
             })
         
         # Check if approved
@@ -171,7 +171,7 @@ def auth_status_check(request: Request, user_session: tuple = Depends(current_us
         # Get approval info (same as main route)
         approvals = db.exec(
             select(AuthApproval, User.display_name)
-            .join(User, AuthApproval.approver_user_id == User.id)
+            .join(User, AuthApproval.approver_user_id == User.display_name)
             .where(AuthApproval.auth_request_id == auth_req.id)
         ).all()
         
@@ -181,7 +181,7 @@ def auth_status_check(request: Request, user_session: tuple = Depends(current_us
                 'approver_name': approver_name,
                 'approved_at': approval.created_at,
                 'is_admin': approval.approver_user_id == "admin",
-                'is_self': approval.approver_user_id == user.id
+                'is_self': approval.approver_user_id == user.display_name
             })
         
         context = {

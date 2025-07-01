@@ -4,14 +4,13 @@ import uuid
 import secrets
 
 class User(SQLModel, table=True):
-    id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
-    display_name: str = Field(unique=True)
+    display_name: str = Field(primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     # Religious preference fields
     religious_preference: str | None = Field(default="unspecified", max_length=50)  # "christian", "unspecified"
     prayer_style: str | None = Field(default=None, max_length=100)  # e.g., "in_jesus_name", "interfaith"
     # Invite tree fields
-    invited_by_user_id: str | None = Field(default=None)  # ID of the user who invited this user
+    invited_by_username: str | None = Field(default=None)  # Username of the user who invited this user
     invite_token_used: str | None = Field(default=None)   # Token that was used to create this account
     # Welcome message tracking
     welcome_message_dismissed: bool = Field(default=False)  # Whether user has dismissed the welcome message
@@ -22,7 +21,7 @@ class User(SQLModel, table=True):
         """Check if user has a specific role"""
         from sqlmodel import select
         stmt = select(UserRole).join(Role, UserRole.role_id == Role.id).where(
-            UserRole.user_id == self.id,
+            UserRole.user_id == self.display_name,
             Role.name == role_name,
             (UserRole.expires_at.is_(None)) | (UserRole.expires_at > datetime.utcnow())
         )
@@ -33,7 +32,7 @@ class User(SQLModel, table=True):
         import json
         from sqlmodel import select
         stmt = select(Role).join(UserRole, Role.id == UserRole.role_id).where(
-            UserRole.user_id == self.id,
+            UserRole.user_id == self.display_name,
             (UserRole.expires_at.is_(None)) | (UserRole.expires_at > datetime.utcnow())
         )
         roles = session.exec(stmt).all()
@@ -51,7 +50,7 @@ class User(SQLModel, table=True):
         """Get all active roles for this user"""
         from sqlmodel import select
         stmt = select(Role).join(UserRole, Role.id == UserRole.role_id).where(
-            UserRole.user_id == self.id,
+            UserRole.user_id == self.display_name,
             (UserRole.expires_at.is_(None)) | (UserRole.expires_at > datetime.utcnow())
         )
         return list(session.exec(stmt).all())
@@ -63,7 +62,7 @@ class Role(SQLModel, table=True):
     description: str | None = Field(default=None, max_length=255)
     permissions: str = Field(default="[]")  # JSON string of permissions list
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: str | None = Field(default=None, foreign_key="user.id")
+    created_by: str | None = Field(default=None, foreign_key="user.display_name")
     is_system_role: bool = Field(default=False)  # System roles cannot be deleted
 
 class UserRole(SQLModel, table=True):
@@ -71,15 +70,15 @@ class UserRole(SQLModel, table=True):
     __tablename__ = "user_roles"
     
     id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
-    user_id: str = Field(foreign_key="user.id")
+    user_id: str = Field(foreign_key="user.display_name")
     role_id: str = Field(foreign_key="role.id")
-    granted_by: str | None = Field(default=None, foreign_key="user.id")  # Who granted this role
+    granted_by: str | None = Field(default=None, foreign_key="user.display_name")  # Who granted this role
     granted_at: datetime = Field(default_factory=datetime.utcnow)
     expires_at: datetime | None = Field(default=None)  # Optional expiration
 
 class Prayer(SQLModel, table=True):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
-    author_id: str
+    author_username: str
     text: str
     generated_prayer: str | None = None  # LLM-generated prayer
     project_tag: str | None = None
@@ -188,13 +187,13 @@ class PrayerAttribute(SQLModel, table=True):
     attribute_name: str = Field(max_length=50)
     attribute_value: str | None = Field(default="true", max_length=255)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: str | None = Field(default=None, foreign_key="user.id")
+    created_by: str | None = Field(default=None, foreign_key="user.display_name")
     # Text archive tracking
     text_file_path: str | None = Field(default=None)  # Path to the text archive file where this attribute change is logged
 
 class PrayerMark(SQLModel, table=True):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
-    user_id: str
+    username: str
     prayer_id: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     # Text archive tracking
@@ -246,7 +245,7 @@ class SecurityLog(SQLModel, table=True):
 
 class Session(SQLModel, table=True):
     id: str = Field(primary_key=True)          # random hex
-    user_id: str
+    username: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     expires_at: datetime
     # New fields for multi-device auth
@@ -259,7 +258,7 @@ class NotificationState(SQLModel, table=True):
     __tablename__ = 'notification_state'
     
     id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
-    user_id: str = Field(foreign_key="user.id")  # User who should receive the notification
+    user_id: str = Field(foreign_key="user.display_name")  # User who should receive the notification
     auth_request_id: str = Field(foreign_key="authenticationrequest.id")  # Associated auth request
     notification_type: str = Field(default="auth_request", max_length=50)  # Type of notification
     is_read: bool = Field(default=False)  # Whether notification has been read
@@ -271,7 +270,7 @@ class PrayerActivityLog(SQLModel, table=True):
     
     id: str = Field(default_factory=lambda: secrets.token_hex(16), primary_key=True)
     prayer_id: str = Field(foreign_key="prayer.id")
-    user_id: str = Field(foreign_key="user.id")
+    user_id: str = Field(foreign_key="user.display_name")
     action: str = Field(max_length=50)  # 'archived', 'restored', 'answered', 'flagged', 'unflagged'
     old_value: str | None = Field(default=None, max_length=255)
     new_value: str | None = Field(default=None, max_length=255)
@@ -341,7 +340,7 @@ if os.environ.get('PRODUCTION_MODE') == '1':
             table_names = [row[0] for row in tables_exist]
             
             if 'user' in table_names:
-                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_invited_by ON user(invited_by_user_id)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_invited_by ON user(invited_by_username)"))
                 conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_invite_token ON user(invite_token_used)"))
             
             if 'invitetoken' in table_names:

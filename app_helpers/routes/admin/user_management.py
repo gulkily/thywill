@@ -52,20 +52,20 @@ def admin_users(request: Request, user_session: tuple = Depends(current_user)):
             # Get prayer counts
             prayers_authored = s.exec(
                 select(func.count(Prayer.id))
-                .where(Prayer.author_id == profile_user.id)
+                .where(Prayer.author_username == profile_user.display_name)
                 .where(Prayer.flagged == False)
             ).first() or 0
             
             prayers_marked = s.exec(
                 select(func.count(PrayerMark.id))
-                .where(PrayerMark.user_id == profile_user.id)
+                .where(PrayerMark.username == profile_user.display_name)
             ).first() or 0
             
             # Check deactivation status
-            is_deactivated = is_user_deactivated(profile_user.id, s)
+            is_deactivated = is_user_deactivated(profile_user.display_name, s)
             deactivation_info = None
             if is_deactivated:
-                deactivation_info = get_user_deactivation_info(profile_user.id, s)
+                deactivation_info = get_user_deactivation_info(profile_user.display_name, s)
             
             users_with_stats.append({
                 'user': profile_user,
@@ -104,18 +104,18 @@ def deactivate_user_route(user_id: str, request: Request, user_session: tuple = 
     try:
         with Session(engine) as db:
             # Check if target user exists
-            target_user = db.exec(select(User).where(User.id == user_id)).first()
+            target_user = db.exec(select(User).where(User.display_name == user_id)).first()
             if not target_user:
                 raise HTTPException(404, "User not found")
             
             # Prevent self-deactivation
-            if user_id == user.id:
+            if user_id == user.display_name:
                 raise HTTPException(400, "Cannot deactivate your own account")
             
             # Deactivate the user
             success = deactivate_user(
                 user_id=user_id,
-                admin_id=user.id,
+                admin_id=user.display_name,
                 reason=f"Deactivated by admin {user.display_name}",
                 session=db
             )
@@ -148,14 +148,14 @@ def reactivate_user_route(user_id: str, request: Request, user_session: tuple = 
     try:
         with Session(engine) as db:
             # Check if target user exists
-            target_user = db.exec(select(User).where(User.id == user_id)).first()
+            target_user = db.exec(select(User).where(User.display_name == user_id)).first()
             if not target_user:
                 raise HTTPException(404, "User not found")
             
             # Reactivate the user
             success = reactivate_user(
                 user_id=user_id,
-                admin_id=user.id,
+                admin_id=user.display_name,
                 session=db
             )
             
@@ -187,7 +187,7 @@ def get_user_status(user_id: str, request: Request, user_session: tuple = Depend
     try:
         with Session(engine) as db:
             # Check if user exists
-            target_user = db.exec(select(User).where(User.id == user_id)).first()
+            target_user = db.exec(select(User).where(User.display_name == user_id)).first()
             if not target_user:
                 raise HTTPException(404, "User not found")
             

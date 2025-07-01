@@ -23,7 +23,7 @@ def is_admin(user: User) -> bool:
     from models import engine
     
     # For backward compatibility during migration, check both systems
-    if user.id == "admin":
+    if user.display_name == "admin":
         return True
     
     # Check role-based system
@@ -32,7 +32,7 @@ def is_admin(user: User) -> bool:
             return user.has_role("admin", session)
     except Exception:
         # Fallback to old system if role tables don't exist yet
-        return user.id == "admin"
+        return user.display_name == "admin"
 
 
 def log_auth_action(auth_request_id: str, action: str, actor_user_id: str = None, 

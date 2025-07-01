@@ -241,7 +241,7 @@ class CompleteSystemRecovery:
             # Validate user-prayer relationships
             orphaned_prayers = session.exec(
                 select(Prayer).where(
-                    ~Prayer.author_id.in_(select(User.id))
+                    ~Prayer.author_username.in_(select(User.display_name))
                 )
             ).all()
             
@@ -253,8 +253,8 @@ class CompleteSystemRecovery:
             # Validate invite relationships
             broken_invites = session.exec(
                 select(User).where(
-                    User.invited_by_user_id.is_not(None),
-                    ~User.invited_by_user_id.in_(select(User.id))
+                    User.invited_by_username.is_not(None),
+                    ~User.invited_by_username.in_(select(User.display_name))
                 )
             ).all()
             
@@ -266,7 +266,7 @@ class CompleteSystemRecovery:
             # Validate role assignments
             orphaned_roles = session.exec(
                 select(UserRole).where(
-                    ~UserRole.user_id.in_(select(User.id))
+                    ~UserRole.user_id.in_(select(User.display_name))
                 )
             ).all()
             
@@ -291,9 +291,9 @@ class CompleteSystemRecovery:
                         first_user = session.exec(select(User)).first()
                         if first_user:
                             admin_assignment = UserRole(
-                                user_id=first_user.id,
+                                user_id=first_user.display_name,
                                 role_id=admin_role.id,
-                                granted_by=first_user.id,  # self-granted
+                                granted_by=first_user.display_name,  # self-granted
                                 granted_at=datetime.utcnow()
                             )
                             session.add(admin_assignment)

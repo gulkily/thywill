@@ -19,7 +19,7 @@ router = APIRouter()
 @router.get("/profile", response_class=HTMLResponse)
 def my_profile(request: Request, user_session: tuple = Depends(current_user)):
     user, session = user_session
-    return user_profile(request, user.id, user_session)
+    return user_profile(request, user.display_name, user_session)
 
 @router.get("/user/{user_id}", response_class=HTMLResponse)
 def user_profile(request: Request, user_id: str, user_session: tuple = Depends(current_user)):
@@ -30,12 +30,12 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
         if not profile_user:
             raise HTTPException(404, "User not found")
         
-        is_own_profile = user_id == user.id
+        is_own_profile = user_id == user.display_name
         
         # Get inviter information
         inviter = None
-        if profile_user.invited_by_user_id:
-            inviter = s.get(User, profile_user.invited_by_user_id)
+        if profile_user.invited_by_username:
+            inviter = s.get(User, profile_user.invited_by_username)
         
         # Get prayer statistics
         stats = {}
@@ -43,26 +43,26 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
         # Total prayers authored
         stats['prayers_authored'] = s.exec(
             select(func.count(Prayer.id))
-            .where(Prayer.author_id == user_id)
+            .where(Prayer.author_username == user_id)
             .where(Prayer.flagged == False)
         ).first() or 0
         
         # Total prayers marked (how many times they've prayed)
         stats['prayers_marked'] = s.exec(
             select(func.count(PrayerMark.id))
-            .where(PrayerMark.user_id == user_id)
+            .where(PrayerMark.username == user_id)
         ).first() or 0
         
         # Distinct prayers marked (unique prayers they've prayed)
         stats['distinct_prayers_marked'] = s.exec(
             select(func.count(func.distinct(PrayerMark.prayer_id)))
-            .where(PrayerMark.user_id == user_id)
+            .where(PrayerMark.username == user_id)
         ).first() or 0
         
         # Recent prayer requests (last 5)
         recent_requests_stmt = (
             select(Prayer)
-            .where(Prayer.author_id == user_id)
+            .where(Prayer.author_username == user_id)
             .where(Prayer.flagged == False)
             .order_by(Prayer.created_at.desc())
             .limit(5)
@@ -73,8 +73,8 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
         recent_marks_stmt = (
             select(Prayer, func.max(PrayerMark.created_at).label('last_marked'))
             .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
-            .outerjoin(User, Prayer.author_id == User.id)
-            .where(PrayerMark.user_id == user_id)
+            .outerjoin(User, Prayer.author_username == User.display_name)
+            .where(PrayerMark.username == user_id)
             .where(Prayer.flagged == False)
             .group_by(Prayer.id)
             .order_by(func.max(PrayerMark.created_at).desc())
@@ -84,7 +84,7 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
         recent_marked_prayers = []
         for prayer, last_marked in recent_marks_results:
             # Get author name
-            author = s.get(User, prayer.author_id)
+            author = s.get(User, prayer.author_username)
             recent_marked_prayers.append({
                 'prayer': prayer,
                 'author_name': author.display_name if author else "Unknown",
@@ -100,7 +100,7 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
             user_roles = []
             role_names = []
             # Check old admin system for backward compatibility
-            if profile_user.id == 'admin':
+            if profile_user.display_name == 'admin':
                 role_names = ['admin (legacy)']
         
         return templates.TemplateResponse(
@@ -134,32 +134,32 @@ def users_list(request: Request, user_session: tuple = Depends(current_user)):
             # Get statistics for each user
             prayers_authored = s.exec(
                 select(func.count(Prayer.id))
-                .where(Prayer.author_id == profile_user.id)
+                .where(Prayer.author_username == profile_user.display_name)
                 .where(Prayer.flagged == False)
             ).first() or 0
             
             prayers_marked = s.exec(
                 select(func.count(PrayerMark.id))
-                .where(PrayerMark.user_id == profile_user.id)
+                .where(PrayerMark.username == profile_user.display_name)
             ).first() or 0
             
             distinct_prayers_marked = s.exec(
                 select(func.count(func.distinct(PrayerMark.prayer_id)))
-                .where(PrayerMark.user_id == profile_user.id)
+                .where(PrayerMark.username == profile_user.display_name)
             ).first() or 0
             
             # Get last activity
             last_activity = None
             last_prayer_mark = s.exec(
                 select(PrayerMark.created_at)
-                .where(PrayerMark.user_id == profile_user.id)
+                .where(PrayerMark.username == profile_user.display_name)
                 .order_by(PrayerMark.created_at.desc())
                 .limit(1)
             ).first()
             
             last_prayer_request = s.exec(
                 select(Prayer.created_at)
-                .where(Prayer.author_id == profile_user.id)
+                .where(Prayer.author_username == profile_user.display_name)
                 .where(Prayer.flagged == False)
                 .order_by(Prayer.created_at.desc())
                 .limit(1)
@@ -173,10 +173,10 @@ def users_list(request: Request, user_session: tuple = Depends(current_user)):
                 last_activity = last_prayer_request
             
             # Check if user is deactivated
-            is_deactivated = is_user_deactivated(profile_user.id, s)
+            is_deactivated = is_user_deactivated(profile_user.display_name, s)
             
             # For regular users, filter out deactivated users (except themselves)
-            if is_deactivated and profile_user.id != user.id:
+            if is_deactivated and profile_user.display_name != user.display_name:
                 continue
             
             users_with_stats.append({
@@ -185,7 +185,7 @@ def users_list(request: Request, user_session: tuple = Depends(current_user)):
                 'prayers_marked': prayers_marked,
                 'distinct_prayers_marked': distinct_prayers_marked,
                 'last_activity': last_activity,
-                'is_me': profile_user.id == user.id,
+                'is_me': profile_user.display_name == user.display_name,
                 'is_deactivated': is_deactivated,
                 'is_admin': profile_user.has_role("admin", s)
             })
@@ -201,7 +201,7 @@ async def get_user_preferences(request: Request, user_session: tuple = Depends(c
     user, session = user_session
     
     with Session(engine) as db:
-        db_user = db.get(User, user.id)
+        db_user = db.get(User, user.display_name)
         return templates.TemplateResponse("preferences.html", {
             "request": request,
             "user": db_user,
@@ -231,7 +231,7 @@ async def update_user_preferences(
         raise HTTPException(400, "Invalid prayer style")
     
     with Session(engine) as db:
-        db_user = db.get(User, user.id)
+        db_user = db.get(User, user.display_name)
         old_preference = db_user.religious_preference
         old_style = db_user.prayer_style
         
@@ -247,7 +247,7 @@ async def update_user_preferences(
         db.commit()
         
         # Log the preference change for analytics
-        print(f"User {user.id} changed preference: {old_preference} -> {religious_preference}, style: {old_style} -> {db_user.prayer_style}")
+        print(f"User {user.display_name} changed preference: {old_preference} -> {religious_preference}, style: {old_style} -> {db_user.prayer_style}")
     
     return RedirectResponse("/profile", status_code=303)
 
@@ -257,7 +257,7 @@ async def get_user_preferences_alt(request: Request, user_session: tuple = Depen
     user, session = user_session
     
     with Session(engine) as db:
-        db_user = db.get(User, user.id)
+        db_user = db.get(User, user.display_name)
         return templates.TemplateResponse("preferences.html", {
             "request": request,
             "user": db_user,
@@ -287,7 +287,7 @@ async def update_religious_preferences(
         raise HTTPException(400, "Invalid prayer style")
     
     with Session(engine) as db:
-        db_user = db.get(User, user.id)
+        db_user = db.get(User, user.display_name)
         old_preference = db_user.religious_preference
         old_style = db_user.prayer_style
         
@@ -303,7 +303,7 @@ async def update_religious_preferences(
         db.commit()
         
         # Log the preference change for analytics
-        print(f"User {user.id} changed preference: {old_preference} -> {religious_preference}, style: {old_style} -> {db_user.prayer_style}")
+        print(f"User {user.display_name} changed preference: {old_preference} -> {religious_preference}, style: {old_style} -> {db_user.prayer_style}")
     
     return RedirectResponse("/profile", status_code=303)
 
@@ -324,7 +324,7 @@ async def logout(request: Request, user_session: tuple = Depends(current_user)):
     # Log the logout event
     log_security_event(
         event_type="logout",
-        user_id=user.id,
+        user_id=user.display_name,
         ip_address=client_ip,
         user_agent=user_agent,
         details=f"User {user.display_name} logged out"

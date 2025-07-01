@@ -51,8 +51,8 @@ def create_auth_request(user_id: str, device_info: str = None, ip_address: str =
         
         # 2. Notifications for all other users (for peer approval)
         other_users = db.exec(
-            select(User.id)
-            .where(User.id != user_id)
+            select(User.display_name)
+            .where(User.display_name != user_id)
         ).all()
         
         for other_user_id in other_users:
@@ -127,7 +127,7 @@ def approve_auth_request(request_id: str, approver_id: str) -> bool:
         elif approver_id == auth_req.user_id:
             full_session = db.exec(
                 select(SessionModel)
-                .where(SessionModel.user_id == approver_id)
+                .where(SessionModel.username == approver_id)
                 .where(SessionModel.is_fully_authenticated == True)
                 .where(SessionModel.expires_at > datetime.utcnow())
             ).first()
@@ -175,7 +175,7 @@ def get_pending_requests_for_approval(user_id: str) -> list:
     with Session(engine) as db:
         stmt = (
             select(AuthenticationRequest, User.display_name)
-            .join(User, AuthenticationRequest.user_id == User.id)
+            .join(User, AuthenticationRequest.user_id == User.display_name)
             .where(AuthenticationRequest.status == "pending")
             .where(AuthenticationRequest.expires_at > datetime.utcnow())
             .order_by(AuthenticationRequest.created_at.desc())
@@ -257,7 +257,7 @@ def get_unread_auth_notifications(user_id: str) -> list:
         stmt = (
             select(NotificationState, AuthenticationRequest, User.display_name)
             .join(AuthenticationRequest, NotificationState.auth_request_id == AuthenticationRequest.id)
-            .join(User, AuthenticationRequest.user_id == User.id)
+            .join(User, AuthenticationRequest.user_id == User.display_name)
             .where(NotificationState.user_id == user_id)
             .where(NotificationState.is_read == False)
             .where(AuthenticationRequest.status == "pending")

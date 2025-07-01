@@ -72,19 +72,19 @@ def flag_prayer(pid: str, request: Request, user_session: tuple = Depends(curren
                 else:
                     # If unflagging from main feed, restore the full prayer view
                     # Get author name and prayer marks
-                    author = s.get(User, p.author_id)
+                    author = s.get(User, p.author_username)
                     author_name = author.display_name if author else "Unknown"
                     
                     # Get mark counts
                     mark_count_stmt = select(func.count(PrayerMark.id)).where(PrayerMark.prayer_id == p.id)
                     total_mark_count = s.exec(mark_count_stmt).first() or 0
                     
-                    distinct_user_count_stmt = select(func.count(func.distinct(PrayerMark.user_id))).where(PrayerMark.prayer_id == p.id)
+                    distinct_user_count_stmt = select(func.count(func.distinct(PrayerMark.username))).where(PrayerMark.prayer_id == p.id)
                     distinct_user_count = s.exec(distinct_user_count_stmt).first() or 0
                     
                     user_mark_count_stmt = select(func.count(PrayerMark.id)).where(
                         PrayerMark.prayer_id == p.id,
-                        PrayerMark.user_id == user.id
+                        PrayerMark.username == user.display_name
                     )
                     user_mark_count = s.exec(user_mark_count_stmt).first() or 0
                     

@@ -145,7 +145,7 @@ def prayer_marks(prayer_id: str, request: Request, user_session: tuple = Depends
         # Get all marks for this prayer with user info
         stmt = (
             select(PrayerMark, User.display_name)
-            .outerjoin(User, PrayerMark.user_id == User.id)
+            .outerjoin(User, PrayerMark.username == User.display_name)
             .where(PrayerMark.prayer_id == prayer_id)
             .order_by(PrayerMark.created_at.desc())
         )
@@ -155,9 +155,9 @@ def prayer_marks(prayer_id: str, request: Request, user_session: tuple = Depends
         for mark, user_name in marks_results:
             marks_with_users.append({
                 'user_name': user_name,
-                'user_id': mark.user_id,
+                'user_id': mark.username,
                 'created_at': mark.created_at,
-                'is_me': mark.user_id == user.id
+                'is_me': mark.username == user.display_name
             })
         
         # Calculate statistics
@@ -192,7 +192,7 @@ def answered_celebration(request: Request, user_session: tuple = Depends(current
         # Get recent answered prayers (last 10)
         recent_stmt = (
             select(Prayer, User.display_name)
-            .outerjoin(User, Prayer.author_id == User.id)
+            .outerjoin(User, Prayer.author_username == User.display_name)
             .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
             .where(Prayer.flagged == False)
             .where(PrayerAttribute.attribute_name == 'answered')
@@ -209,7 +209,7 @@ def answered_celebration(request: Request, user_session: tuple = Depends(current
         mark_counts_results = s.exec(mark_counts_stmt).all()
         mark_counts = {prayer_id: count for prayer_id, count in mark_counts_results}
         
-        distinct_user_counts_stmt = select(PrayerMark.prayer_id, func.count(func.distinct(PrayerMark.user_id))).where(
+        distinct_user_counts_stmt = select(PrayerMark.prayer_id, func.count(func.distinct(PrayerMark.username))).where(
             PrayerMark.prayer_id.in_(answered_prayer_ids)
         ).group_by(PrayerMark.prayer_id)
         distinct_user_counts_results = s.exec(distinct_user_counts_stmt).all()
@@ -315,17 +315,17 @@ def recent_activity(request: Request, user_session: tuple = Depends(current_user
             # Get prayer info
             prayer = s.get(Prayer, mark.prayer_id)
             # Get marker name
-            marker = s.get(User, mark.user_id)
+            marker = s.get(User, mark.username)
             # Get author name
-            author = s.get(User, prayer.author_id)
+            author = s.get(User, prayer.author_username)
             
             activity_items.append({
                 'mark': mark,
                 'prayer': prayer,
                 'marker_name': marker.display_name if marker else None,
                 'author_name': author.display_name if author else None,
-                'is_my_mark': mark.user_id == user.id,
-                'is_my_prayer': prayer.author_id == user.id
+                'is_my_mark': mark.username == user.display_name,
+                'is_my_prayer': prayer.author_username == user.display_name
             })
     
     return templates.TemplateResponse(

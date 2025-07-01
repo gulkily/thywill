@@ -68,7 +68,7 @@ def new_invite(request: Request, user_session: tuple = Depends(current_user)):
     with Session(engine) as db:
         db.add(InviteToken(
             token=token,
-            created_by_user=user.id,
+            created_by_user=user.display_name,
             expires_at=datetime.utcnow() + timedelta(hours=TOKEN_EXP_H)
         ))
         db.commit()
@@ -93,7 +93,7 @@ def invite_tree(request: Request, user_session: tuple = Depends(current_user)):
     stats = get_invite_stats()
     
     # Get current user's invite path
-    user_path = get_user_invite_path(user.id)
+    user_path = get_user_invite_path(user.display_name)
     
     return templates.TemplateResponse(
         "invite_tree.html",
