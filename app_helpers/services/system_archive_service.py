@@ -180,11 +180,11 @@ class SystemArchiveService:
                 lines.append("")
                 
                 for sess in active_sessions:
-                    user = session.get(User, sess.user_id) if sess.user_id else None
+                    user = session.get(User, sess.username) if sess.username else None
                     username = user.display_name if user else "Unknown User"
                     
                     lines.append(f"Session {sess.id}:")
-                    lines.append(f"  User: {username} (ID: {sess.user_id})")
+                    lines.append(f"  User: {username} (ID: {sess.username})")
                     lines.append(f"  Created: {sess.created_at}")
                     lines.append(f"  Last seen: {sess.last_activity}")
                     lines.append(f"  IP: {sess.ip_address}")
@@ -216,7 +216,7 @@ class SystemArchiveService:
                 lines.append("")
                 
                 for user in admin_users:
-                    lines.append(f"Admin User {user.id}:")
+                    lines.append(f"Admin User {user.display_name}:")
                     lines.append(f"  Username: {user.display_name}")
                     lines.append(f"  Joined: {user.created_at}")
                     lines.append("")
@@ -285,7 +285,7 @@ class SystemArchiveService:
                 lines.append("")
                 
                 for req in pending_requests:
-                    user = session.get(User, req.user_id) if req.user_id else None
+                    user = session.exec(select(User).where(User.display_name == req.user_id)).first() if req.user_id else None
                     username = user.display_name if user else "Unknown User"
                     
                     lines.append(f"Auth Request {req.id}:")

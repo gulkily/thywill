@@ -30,7 +30,7 @@ def create_session(user_id: str, auth_request_id: str = None, device_info: str =
     with Session(engine) as db:
         session_data = SessionModel(
             id=sid,
-            user_id=user_id,
+            username=user_id,
             expires_at=datetime.utcnow() + timedelta(days=SESSION_DAYS),
             auth_request_id=auth_request_id,
             device_info=device_info,
@@ -64,11 +64,11 @@ def current_user(req: Request) -> tuple[User, SessionModel]:
         # Security: Validate session
         validate_session_security(sess, req)
         
-        user = db.get(User, sess.user_id)
+        user = db.get(User, sess.username)
         
         # Handle deleted user - invalidate session
         if not user:
-            _archive_session_event('deleted', sess, sess.user_id, reason="user_deleted")
+            _archive_session_event('deleted', sess, sess.username, reason="user_deleted")
             db.delete(sess)
             db.commit()
             raise HTTPException(401, detail="user_deleted")
@@ -76,7 +76,7 @@ def current_user(req: Request) -> tuple[User, SessionModel]:
         # Check if user is deactivated - block access if so
         if user.has_role("deactivated", db):
             # Invalidate session for deactivated users
-            _archive_session_event('deleted', sess, sess.user_id, reason="account_deactivated")
+            _archive_session_event('deleted', sess, sess.username, reason="account_deactivated")
             db.delete(sess)
             db.commit()
             raise HTTPException(401, detail="account_deactivated")
@@ -103,7 +103,7 @@ def validate_session_security(session: SessionModel, request: Request) -> bool:
     if session.ip_address and session.ip_address != current_ip:
         log_security_event(
             event_type="ip_change",
-            user_id=session.user_id,
+            user_id=session.username,
             ip_address=current_ip,
             user_agent=current_ua,
             details=f"IP changed from {session.ip_address} to {current_ip}"
@@ -121,7 +121,7 @@ def _archive_session_event(event_type: str, session: SessionModel, user_id: int,
         system_archive = SystemArchiveService()
         session_data = {
             'id': session.id,
-            'user_id': session.user_id,
+            'user_id': session.username,
             'created_at': session.created_at.isoformat() if session.created_at else None,
             'expires_at': session.expires_at.isoformat() if session.expires_at else None,
             'last_activity': session.last_activity.isoformat() if session.last_activity else None,
@@ -147,7 +147,7 @@ def invalidate_session(session_id: str, reason: str = "manual_logout"):
     with Session(engine) as db:
         session = db.get(SessionModel, session_id)
         if session:
-            _archive_session_event('deleted', session, session.user_id, reason=reason)
+            _archive_session_event('deleted', session, session.username, reason=reason)
             db.delete(session)
             db.commit()
             return True

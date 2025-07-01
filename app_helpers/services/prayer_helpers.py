@@ -21,7 +21,7 @@ def get_feed_counts(user_id: str) -> dict:
         counts = {}
         
         # Get user's religious preference for filtering
-        user = s.exec(select(User).where(User.id == user_id)).first()
+        user = s.exec(select(User).where(User.display_name == user_id)).first()
         user_religious_preference = user.religious_preference if user else None
         
         # Helper to exclude archived and flagged prayers
@@ -97,14 +97,14 @@ def get_feed_counts(user_id: str) -> dict:
             .select_from(Prayer)
             .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
             .where(Prayer.flagged == False)
-            .where(PrayerMark.user_id == user_id)
+            .where(PrayerMark.username == user_id)
         ).first()
         
         # My requests - include all statuses  
         counts['my_requests'] = s.exec(
             select(func.count(Prayer.id))
             .where(Prayer.flagged == False)
-            .where(Prayer.author_id == user_id)
+            .where(Prayer.author_username == user_id)
         ).first()
         
         # Recent activity (prayers with marks in last 7 days, with religious filtering)
@@ -140,7 +140,7 @@ def get_feed_counts(user_id: str) -> dict:
             .select_from(Prayer)
             .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
             .where(Prayer.flagged == False)
-            .where(Prayer.author_id == user_id)
+            .where(Prayer.author_username == user_id)
             .where(PrayerAttribute.attribute_name == 'archived')
         ).first()
         
@@ -196,7 +196,7 @@ def find_compatible_prayer_partner(prayer: Prayer, db: Session, exclude_user_ids
     
     # Exclude users who have already been assigned this prayer
     assigned_user_ids = db.exec(
-        select(PrayerMark.user_id).where(PrayerMark.prayer_id == prayer.id)
+        select(PrayerMark.username).where(PrayerMark.prayer_id == prayer.id)
     ).all()
     
     # Add additional exclusions if provided
@@ -204,10 +204,10 @@ def find_compatible_prayer_partner(prayer: Prayer, db: Session, exclude_user_ids
         assigned_user_ids.extend(exclude_user_ids)
     
     if assigned_user_ids:
-        user_query = user_query.where(~User.id.in_(assigned_user_ids))
+        user_query = user_query.where(~User.display_name.in_(assigned_user_ids))
     
     # Exclude the prayer author
-    user_query = user_query.where(User.id != prayer.author_id)
+    user_query = user_query.where(User.display_name != prayer.author_username)
     
     return db.exec(user_query).first()
 

@@ -47,17 +47,17 @@ def _build_user_tree_node_with_orphans(user: User, db: Session, depth: int = 0) 
     # Get all users directly invited by this user
     descendants_stmt = (
         select(User)
-        .where(User.invited_by_user_id == user.id)
+        .where(User.invited_by_username == user.display_name)
         .order_by(User.created_at.asc())
     )
     direct_descendants = db.exec(descendants_stmt).all()
     
-    # If this is the root user (depth 0), also include orphaned users (users with no invited_by_user_id except root itself)
+    # If this is the root user (depth 0), also include orphaned users (users with no invited_by_username except root itself)
     if depth == 0:
         orphaned_users_stmt = (
             select(User)
-            .where(User.invited_by_user_id.is_(None))
-            .where(User.id != user.id)  # Don't include root user itself
+            .where(User.invited_by_username.is_(None))
+            .where(User.display_name != user.display_name)  # Don't include root user itself
             .order_by(User.created_at.asc())
         )
         orphaned_users = db.exec(orphaned_users_stmt).all()
@@ -66,11 +66,11 @@ def _build_user_tree_node_with_orphans(user: User, db: Session, depth: int = 0) 
     # Count total invites sent by this user
     invites_sent = db.exec(
         select(func.count(InviteToken.token))
-        .where(InviteToken.created_by_user == user.id)
+        .where(InviteToken.created_by_user == user.display_name)
     ).first() or 0
     
     # Count successful invites (users that were actually invited vs orphaned)
-    actual_invites = len([d for d in direct_descendants if d.invited_by_user_id == user.id])
+    actual_invites = len([d for d in direct_descendants if d.invited_by_username == user.display_name])
     
     # Build children nodes recursively
     children = []
@@ -85,10 +85,10 @@ def _build_user_tree_node_with_orphans(user: User, db: Session, depth: int = 0) 
     
     return {
         "user": {
-            "id": user.id,
+            "id": user.display_name,
             "display_name": user.display_name,
             "created_at": user.created_at.isoformat(),
-            "invited_by_user_id": user.invited_by_user_id,
+            "invited_by_username": user.invited_by_username,
             "invite_token_used": user.invite_token_used
         },
         "invites_sent": invites_sent,
@@ -104,7 +104,7 @@ def _build_user_tree_node(user: User, db: Session, depth: int = 0) -> dict:
     # Get all users directly invited by this user
     descendants_stmt = (
         select(User)
-        .where(User.invited_by_user_id == user.id)
+        .where(User.invited_by_username == user.display_name)
         .order_by(User.created_at.asc())
     )
     direct_descendants = db.exec(descendants_stmt).all()
@@ -112,7 +112,7 @@ def _build_user_tree_node(user: User, db: Session, depth: int = 0) -> dict:
     # Count total invites sent by this user
     invites_sent = db.exec(
         select(func.count(InviteToken.token))
-        .where(InviteToken.created_by_user == user.id)
+        .where(InviteToken.created_by_user == user.display_name)
     ).first() or 0
     
     # Count successful invites (used tokens that created users)
@@ -131,10 +131,10 @@ def _build_user_tree_node(user: User, db: Session, depth: int = 0) -> dict:
     
     return {
         "user": {
-            "id": user.id,
+            "id": user.display_name,
             "display_name": user.display_name,
             "created_at": user.created_at.isoformat(),
-            "invited_by_user_id": user.invited_by_user_id,
+            "invited_by_username": user.invited_by_username,
             "invite_token_used": user.invite_token_used
         },
         "invites_sent": invites_sent,
@@ -166,8 +166,8 @@ def get_user_descendants(user_id: str) -> list[dict]:
             
             # Count their direct descendants
             direct_children = s.exec(
-                select(func.count(User.id))
-                .where(User.invited_by_user_id == desc.id)
+                select(func.count(User.display_name))
+                .where(User.invited_by_username == desc.id)
             ).first() or 0
             
             enriched_descendants.append({
@@ -175,7 +175,7 @@ def get_user_descendants(user_id: str) -> list[dict]:
                     "id": desc.id,
                     "display_name": desc.display_name,
                     "created_at": desc.created_at.isoformat(),
-                    "invited_by_user_id": desc.invited_by_user_id,
+                    "invited_by_username": desc.invited_by_username,
                     "invite_token_used": desc.invite_token_used
                 },
                 "invites_sent": invites_sent,
@@ -198,7 +198,7 @@ def _collect_descendants(user_id: str, db: Session, descendants: list, visited: 
     
     # Get direct children
     direct_children = db.exec(
-        select(User).where(User.invited_by_user_id == user_id)
+        select(User).where(User.invited_by_username == user_id)
     ).all()
     
     for child in direct_children:
@@ -218,8 +218,8 @@ def get_user_invite_path(user_id: str) -> list[dict]:
         current_user = user
         visited = set()  # Prevent infinite loops
         
-        while current_user and current_user.id not in visited:
-            visited.add(current_user.id)
+        while current_user and current_user.display_name not in visited:
+            visited.add(current_user.display_name)
             
             # Get invite token details if available
             token_info = None
@@ -234,18 +234,18 @@ def get_user_invite_path(user_id: str) -> list[dict]:
             
             path.append({
                 "user": {
-                    "id": current_user.id,
+                    "id": current_user.display_name,
                     "display_name": current_user.display_name,
                     "created_at": current_user.created_at.isoformat(),
-                    "is_admin": current_user.id == "admin"
+                    "is_admin": current_user.display_name == "admin"
                 },
-                "invited_by_user_id": current_user.invited_by_user_id,
+                "invited_by_username": current_user.invited_by_username,
                 "token_info": token_info
             })
             
             # Move up the chain
-            if current_user.invited_by_user_id:
-                current_user = s.get(User, current_user.invited_by_user_id)
+            if current_user.invited_by_username:
+                current_user = s.get(User, current_user.invited_by_username)
             else:
                 break
         
@@ -257,7 +257,7 @@ def get_invite_stats() -> dict:
     """Calculate invite tree statistics"""
     with Session(engine) as s:
         # Total users
-        total_users = s.exec(select(func.count(User.id))).first() or 0
+        total_users = s.exec(select(func.count(User.display_name))).first() or 0
         
         # Total invite tokens created
         total_invites_sent = s.exec(select(func.count(InviteToken.token))).first() or 0
@@ -269,7 +269,7 @@ def get_invite_stats() -> dict:
         
         # Users with invite relationships (exclude admin/system users)
         users_with_inviters = s.exec(
-            select(func.count(User.id)).where(User.invited_by_user_id.isnot(None))
+            select(func.count(User.display_name)).where(User.invited_by_username.isnot(None))
         ).first() or 0
         
         # Calculate max depth by finding the longest invite chain
@@ -278,10 +278,10 @@ def get_invite_stats() -> dict:
         # Top inviters (users who have successfully invited the most people)
         # Get all users who have invited someone
         inviters = s.exec(
-            select(User.invited_by_user_id, func.count(User.id).label('count'))
-            .where(User.invited_by_user_id.isnot(None))
-            .group_by(User.invited_by_user_id)
-            .order_by(func.count(User.id).desc())
+            select(User.invited_by_username, func.count(User.display_name).label('count'))
+            .where(User.invited_by_username.isnot(None))
+            .group_by(User.invited_by_username)
+            .order_by(func.count(User.display_name).desc())
         ).all()
         
         top_inviters = []
@@ -289,7 +289,7 @@ def get_invite_stats() -> dict:
             inviter = s.get(User, inviter_id)
             if inviter:
                 top_inviters.append({
-                    "user_id": inviter.id,
+                    "user_id": inviter.display_name,
                     "display_name": inviter.display_name,
                     "invite_count": count
                 })
@@ -297,7 +297,7 @@ def get_invite_stats() -> dict:
         # Recent growth (users joined in last 30 days)
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
         recent_users = s.exec(
-            select(func.count(User.id))
+            select(func.count(User.display_name))
             .where(User.created_at >= thirty_days_ago)
         ).first() or 0
         
@@ -336,7 +336,7 @@ def _calculate_max_depth(db: Session) -> int:
         
         # Get all users invited by this user
         descendants = db.exec(
-            select(User.id).where(User.invited_by_user_id == user_id)
+            select(User.display_name).where(User.invited_by_username == user_id)
         ).all()
         
         if not descendants:
@@ -350,13 +350,13 @@ def _calculate_max_depth(db: Session) -> int:
         return max_child_depth
     
     # Since orphaned users are treated as depth 1 under root, the minimum depth is 1 if there are orphaned users
-    depth = get_depth(admin_user.id)
+    depth = get_depth(admin_user.display_name)
     
     # Check if there are orphaned users (if so, min depth is 1)
     orphaned_count = db.exec(
-        select(func.count(User.id))
-        .where(User.invited_by_user_id.is_(None))
-        .where(User.id != admin_user.id)
+        select(func.count(User.display_name))
+        .where(User.invited_by_username.is_(None))
+        .where(User.display_name != admin_user.display_name)
     ).first() or 0
     
     return max(depth, 1 if orphaned_count > 0 else 0)

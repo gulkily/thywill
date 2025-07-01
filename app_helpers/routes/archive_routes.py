@@ -26,7 +26,7 @@ async def download_user_archive(
     current_user_obj, current_session = current_session_user
     
     # Verify user can access this archive (own archive or admin)
-    if current_user_obj.id != user_id and current_user_obj.display_name != "admin":
+    if current_user_obj.display_name != user_id and current_user_obj.display_name != "admin":
         raise HTTPException(status_code=403, detail="Access denied")
     
     try:
@@ -55,7 +55,7 @@ async def get_user_archive_metadata(
     current_user_obj, current_session = current_session_user
     
     # Verify user can access this metadata (own metadata or admin)
-    if current_user_obj.id != user_id and current_user_obj.display_name != "admin":
+    if current_user_obj.display_name != user_id and current_user_obj.display_name != "admin":
         raise HTTPException(status_code=403, detail="Access denied")
     
     try:

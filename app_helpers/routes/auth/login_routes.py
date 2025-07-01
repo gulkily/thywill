@@ -186,10 +186,10 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             # Allow immediate login for existing users with valid invites
             # Mark invite as used and create full session
             inv.used = True
-            inv.used_by_user_id = existing_user.id
+            inv.used_by_user_id = existing_user.display_name
             
             # Check if user is deactivated before allowing login
-            if is_user_deactivated(existing_user.id, s):
+            if is_user_deactivated(existing_user.display_name, s):
                 return templates.TemplateResponse("error.html", {
                     "request": request,
                     "error_title": "Account Deactivated",
@@ -201,12 +201,12 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             # CRITICAL FIX: Update existing user's invite relationship if not already set
             # This ensures existing users get properly connected to the invite tree
             if validate_existing_user_invite_update(existing_user, token, s):
-                existing_user.invited_by_user_id = inv.created_by_user if inv.created_by_user != "system" else None
+                existing_user.invited_by_username = inv.created_by_user if inv.created_by_user != "system" else None
                 existing_user.invite_token_used = token
                 s.add(existing_user)
             
             # Store user ID before any commits to avoid ObjectDeletedError
-            user_id = existing_user.id
+            user_id = existing_user.display_name
             
             # Grant admin role if this is a system-generated token
             grant_admin_role_for_system_token(user_id, token, s)
@@ -242,7 +242,7 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
                 'invited_by_display_name': inviter_display_name,
                 'religious_preference': user_data.get('religious_preference', 'unspecified'),
                 'prayer_style': user_data.get('prayer_style'),
-                'invited_by_user_id': user_data.get('invited_by_user_id'),
+                'invited_by_username': user_data.get('invited_by_username'),
                 'invite_token_used': user_data.get('invite_token_used', token)
             }
             
@@ -368,7 +368,7 @@ def login_post(username: str = Form(...), request: Request = None):
             )
         
         # Check if user is deactivated
-        if is_user_deactivated(existing_user.id, db):
+        if is_user_deactivated(existing_user.display_name, db):
             return templates.TemplateResponse(
                 "login.html", 
                 {
@@ -379,7 +379,7 @@ def login_post(username: str = Form(...), request: Request = None):
             )
         
         # Security: Check rate limits
-        if not check_rate_limit(existing_user.id, ip_address):
+        if not check_rate_limit(existing_user.display_name, ip_address):
             return templates.TemplateResponse(
                 "login.html", 
                 {
@@ -393,7 +393,7 @@ def login_post(username: str = Form(...), request: Request = None):
         # Modified to allow separate requests per device by checking both IP and device_info
         recent_request = db.exec(
             select(AuthenticationRequest)
-            .where(AuthenticationRequest.user_id == existing_user.id)
+            .where(AuthenticationRequest.user_id == existing_user.display_name)
             .where(AuthenticationRequest.ip_address == ip_address)
             .where(AuthenticationRequest.device_info == device_info)
             .where(AuthenticationRequest.status == "pending")
@@ -403,7 +403,7 @@ def login_post(username: str = Form(...), request: Request = None):
         if recent_request:
             # Redirect to existing auth status with the pending request
             sid = create_session(
-                user_id=existing_user.id,
+                user_id=existing_user.display_name,
                 auth_request_id=recent_request.id,
                 device_info=device_info,
                 ip_address=ip_address,
@@ -414,11 +414,11 @@ def login_post(username: str = Form(...), request: Request = None):
             return resp
         
         # Create the authentication request (reusing existing helper)
-        request_id = create_auth_request(existing_user.id, device_info, ip_address)
+        request_id = create_auth_request(existing_user.display_name, device_info, ip_address)
         
         # Create a half-authenticated session (reusing existing logic)
         sid = create_session(
-            user_id=existing_user.id,
+            user_id=existing_user.display_name,
             auth_request_id=request_id,
             device_info=device_info,
             ip_address=ip_address,

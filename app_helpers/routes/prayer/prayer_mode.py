@@ -117,7 +117,7 @@ def initialize_prayer_queue(session: Session, user: User, feed_type: str = "new_
         user_prayer_marks = session.exec(
             select(PrayerMark).where(
                 PrayerMark.prayer_id == prayer.id,
-                PrayerMark.user_id == user.id
+                PrayerMark.username == user.display_name
             ).order_by(PrayerMark.created_at.desc())
         ).all()
         
@@ -141,7 +141,7 @@ def initialize_prayer_queue(session: Session, user: User, feed_type: str = "new_
         user_skips = session.exec(
             select(PrayerSkip).where(
                 PrayerSkip.prayer_id == prayer.id,
-                PrayerSkip.user_id == user.id
+                PrayerSkip.username == user.display_name
             ).order_by(PrayerSkip.created_at.desc())
         ).all()
         
@@ -207,7 +207,7 @@ def prayer_mode(
         if user:
             existing_mark = s.exec(
                 select(PrayerMark).where(
-                    PrayerMark.user_id == user.id,
+                    PrayerMark.username == user.display_name,
                     PrayerMark.prayer_id == current_prayer.id
                 )
             ).first()
@@ -219,7 +219,7 @@ def prayer_mode(
         ).one()
         
         distinct_users = s.exec(
-            select(func.count(func.distinct(PrayerMark.user_id))).where(PrayerMark.prayer_id == current_prayer.id)
+            select(func.count(func.distinct(PrayerMark.username))).where(PrayerMark.prayer_id == current_prayer.id)
         ).one()
         
         # Generate prayer age text
@@ -251,7 +251,7 @@ def skip_prayer(prayer_id: str, user_session: tuple = Depends(current_user)):
         # Check if skip already exists for this user and prayer
         existing_skip = s.exec(
             select(PrayerSkip).where(
-                PrayerSkip.user_id == user.id,
+                PrayerSkip.username == user.display_name,
                 PrayerSkip.prayer_id == prayer_id
             )
         ).first()
@@ -259,7 +259,7 @@ def skip_prayer(prayer_id: str, user_session: tuple = Depends(current_user)):
         # Add skip record (allow multiple skips)
         if not existing_skip:
             skip_record = PrayerSkip(
-                user_id=user.id,
+                user_id=user.display_name,
                 prayer_id=prayer_id
             )
             s.add(skip_record)

@@ -19,7 +19,7 @@ class ArchiveDownloadService:
         
         with Session(engine) as db:
             # Get user info
-            user = db.query(User).filter_by(id=user_id).first()
+            user = db.query(User).filter_by(display_name=user_id).first()
             if not user:
                 raise ValueError(f"User {user_id} not found")
             
@@ -42,7 +42,7 @@ class ArchiveDownloadService:
                 prayers_dir = user_archive_dir / "prayers"
                 prayers_dir.mkdir()
                 
-                user_prayers = db.query(Prayer).filter_by(author_id=user_id).all()
+                user_prayers = db.query(Prayer).filter_by(author_username=user_id).all()
                 for prayer in user_prayers:
                     if prayer.text_file_path and Path(prayer.text_file_path).exists():
                         # Read from archive (handles compressed files)
@@ -55,7 +55,7 @@ class ArchiveDownloadService:
                 activities_dir.mkdir()
                 
                 # Get all prayers user has interacted with
-                user_marks = db.query(PrayerMark).filter_by(user_id=user_id).all()
+                user_marks = db.query(PrayerMark).filter_by(username=user_id).all()
                 activity_summary = self._create_user_activity_summary(user, user_marks)
                 (activities_dir / "my_prayer_activities.txt").write_text(activity_summary, encoding='utf-8')
                 
@@ -169,13 +169,13 @@ class ArchiveDownloadService:
         """Get comprehensive metadata about user's archives"""
         
         with Session(engine) as db:
-            user = db.query(User).filter_by(id=user_id).first()
+            user = db.query(User).filter_by(display_name=user_id).first()
             if not user:
                 raise ValueError(f"User {user_id} not found")
             
             metadata = {
                 "user": {
-                    "id": user.id,
+                    "id": user.display_name,
                     "display_name": user.display_name,
                     "registration_date": user.created_at.isoformat() if user.created_at else None,
                     "text_file_path": user.text_file_path
@@ -191,7 +191,7 @@ class ArchiveDownloadService:
             }
             
             # Get user's prayers with archive info
-            user_prayers = db.query(Prayer).filter_by(author_id=user_id).all()
+            user_prayers = db.query(Prayer).filter_by(author_username=user_id).all()
             for prayer in user_prayers:
                 prayer_info = {
                     "id": prayer.id,
@@ -203,7 +203,7 @@ class ArchiveDownloadService:
                 metadata["prayers"].append(prayer_info)
             
             # Get user's activities
-            user_marks = db.query(PrayerMark).filter_by(user_id=user_id).all()
+            user_marks = db.query(PrayerMark).filter_by(username=user_id).all()
             for mark in user_marks:
                 activity_info = {
                     "prayer_id": mark.prayer_id,

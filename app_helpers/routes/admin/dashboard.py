@@ -51,7 +51,7 @@ def admin(request: Request, user_session: tuple = Depends(current_user)):
         # Join Prayer and User tables to get author display names for flagged prayers
         stmt = (
             select(Prayer, User.display_name)
-            .outerjoin(User, Prayer.author_id == User.id)
+            .outerjoin(User, Prayer.author_username == User.display_name)
             .where(Prayer.flagged == True)
         )
         results = s.exec(stmt).all()
@@ -73,7 +73,7 @@ def admin(request: Request, user_session: tuple = Depends(current_user)):
                 User.display_name,
                 func.count(AuthApproval.id).label("approval_count")
             )
-            .join(User, AuthenticationRequest.user_id == User.id)
+            .join(User, AuthenticationRequest.user_id == User.display_name)
             .outerjoin(AuthApproval, AuthenticationRequest.id == AuthApproval.auth_request_id)
             .where(AuthenticationRequest.status == "pending")
             .group_by(
@@ -134,7 +134,7 @@ def auth_audit_log(request: Request, user_session: tuple = Depends(current_user)
                 User.display_name.label("actor_name"),
                 AuthenticationRequest.user_id
             )
-            .outerjoin(User, AuthAuditLog.actor_user_id == User.id)
+            .outerjoin(User, AuthAuditLog.actor_user_id == User.display_name)
             .outerjoin(AuthenticationRequest, AuthAuditLog.auth_request_id == AuthenticationRequest.id)
             .group_by(
                 AuthAuditLog.created_at,

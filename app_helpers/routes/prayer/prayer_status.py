@@ -61,13 +61,13 @@ def mark_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(
             total_mark_count = s.exec(mark_count_stmt).first()
             
             # Get updated distinct user count (how many people)
-            distinct_user_count_stmt = select(func.count(func.distinct(PrayerMark.user_id))).where(PrayerMark.prayer_id == prayer_id)
+            distinct_user_count_stmt = select(func.count(func.distinct(PrayerMark.username))).where(PrayerMark.prayer_id == prayer_id)
             distinct_user_count = s.exec(distinct_user_count_stmt).first()
             
             # Get updated mark count for current user
             user_mark_count_stmt = select(func.count(PrayerMark.id)).where(
                 PrayerMark.prayer_id == prayer_id,
-                PrayerMark.user_id == user.id
+                PrayerMark.username == user.display_name
             )
             user_mark_count = s.exec(user_mark_count_stmt).first()
             
@@ -122,7 +122,7 @@ def archive_prayer(prayer_id: str, request: Request, user_session: tuple = Depen
             raise HTTPException(404, "Prayer not found")
         
         # Only prayer author or admin can archive prayers
-        if prayer.author_id != user.id and not is_admin(user):
+        if prayer.author_username != user.display_name and not is_admin(user):
             raise HTTPException(403, "Only prayer author or admin can archive this prayer")
         
         # Use archive-first approach: write to text archive FIRST, then database
@@ -168,7 +168,7 @@ def restore_prayer(prayer_id: str, request: Request, user_session: tuple = Depen
             raise HTTPException(404, "Prayer not found")
         
         # Only prayer author or admin can restore prayers
-        if prayer.author_id != user.id and not is_admin(user):
+        if prayer.author_username != user.display_name and not is_admin(user):
             raise HTTPException(403, "Only prayer author or admin can restore this prayer")
         
         # Use archive-first approach: write to text archive FIRST, then database
@@ -218,7 +218,7 @@ def mark_prayer_answered(prayer_id: str, request: Request,
             raise HTTPException(404, "Prayer not found")
         
         # Only prayer author or admin can mark prayers as answered
-        if prayer.author_id != user.id and not is_admin(user):
+        if prayer.author_username != user.display_name and not is_admin(user):
             raise HTTPException(403, "Only prayer author or admin can mark this prayer as answered")
         
         # Use archive-first approach: write to text archive FIRST, then database

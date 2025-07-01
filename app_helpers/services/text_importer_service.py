@@ -197,14 +197,14 @@ class TextImporterService:
                     logger.info(f"Updated existing user archive reference: {user_data['display_name']}")
                 return
             
-            # Find invited_by_user_id if applicable
-            invited_by_user_id = None
+            # Find invited_by_username if applicable
+            invited_by_username = None
             if user_data.get('invited_by_display_name'):
                 inviter = s.exec(
                     select(User).where(User.display_name == user_data['invited_by_display_name'])
                 ).first()
                 if inviter:
-                    invited_by_user_id = inviter.id
+                    invited_by_username = inviter.display_name
             
             # Check for existing user with same display_name
             existing_user = s.exec(
@@ -220,7 +220,7 @@ class TextImporterService:
                 user = User(
                     display_name=user_data['display_name'],
                     created_at=user_data['created_at'],
-                    invited_by_user_id=invited_by_user_id,
+                    invited_by_username=invited_by_username,
                     text_file_path=source_file,
                     religious_preference='unspecified'  # Default value
                 )
@@ -326,7 +326,7 @@ class TextImporterService:
             # Create prayer record
             prayer = Prayer(
                 id=prayer_id,
-                author_id=author_user.id,
+                author_username=author_user.display_name,
                 text=parsed_data.get('original_request', ''),
                 generated_prayer=parsed_data.get('generated_prayer'),
                 project_tag=parsed_data.get('project_tag'),
@@ -394,7 +394,7 @@ class TextImporterService:
             # Create prayer mark
             prayer_mark = PrayerMark(
                 prayer_id=prayer.id,
-                user_id=user.id,
+                user_id=user.display_name,
                 text_file_path=prayer.text_file_path,
                 created_at=activity_time
             )
@@ -407,7 +407,7 @@ class TextImporterService:
                 prayer_id=prayer.id,
                 attribute_name=action,
                 attribute_value='true',
-                set_by_user_id=user.id,
+                set_by_user_id=user.display_name,
                 created_at=activity_time
             )
             session.add(prayer_attr)
@@ -419,7 +419,7 @@ class TextImporterService:
                     prayer_id=prayer.id,
                     attribute_name='answer_date',
                     attribute_value=activity_time.isoformat(),
-                    set_by_user_id=user.id,
+                    set_by_user_id=user.display_name,
                     created_at=activity_time
                 )
                 session.add(answer_date_attr)
@@ -433,7 +433,7 @@ class TextImporterService:
                     prayer_id=prayer.id,
                     attribute_name='answer_testimony',
                     attribute_value=testimony_text[1],
-                    set_by_user_id=user.id,
+                    set_by_user_id=user.display_name,
                     created_at=activity_time
                 )
                 session.add(testimony_attr)
@@ -442,7 +442,7 @@ class TextImporterService:
         # Always create activity log entry
         activity_log = PrayerActivityLog(
             prayer_id=prayer.id,
-            user_id=user.id,
+            user_id=user.display_name,
             action=action,
             old_value=None,
             new_value='true',
@@ -529,7 +529,7 @@ class TextImporterService:
                 validation_results['users_checked'] += 1
                 
                 if not user.text_file_path:
-                    validation_results['missing_archives'].append(f"User {user.id} ({user.display_name}) has no archive file reference")
+                    validation_results['missing_archives'].append(f"User {user.display_name} ({user.display_name}) has no archive file reference")
         
         return validation_results
     

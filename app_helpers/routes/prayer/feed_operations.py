@@ -72,7 +72,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             # New prayers and prayers that have never been prayed (exclude archived)
             stmt = (
                 select(Prayer, User.display_name)
-                .outerjoin(User, Prayer.author_id == User.id)
+                .outerjoin(User, Prayer.author_username == User.display_name)
                 .outerjoin(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
@@ -85,7 +85,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             # Most prayed prayers (by total prayer count, exclude archived)
             stmt = (
                 select(Prayer, User.display_name, func.count(PrayerMark.id).label('mark_count'))
-                .outerjoin(User, Prayer.author_id == User.id)
+                .outerjoin(User, Prayer.author_username == User.display_name)
                 .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
@@ -98,10 +98,10 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             # Prayers the current user has marked as prayed (include all statuses)
             stmt = (
                 select(Prayer, User.display_name)
-                .outerjoin(User, Prayer.author_id == User.id)
+                .outerjoin(User, Prayer.author_username == User.display_name)
                 .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
-                .where(PrayerMark.user_id == user.id)
+                .where(PrayerMark.username == user.display_name)
                 .group_by(Prayer.id)
                 .order_by(func.max(PrayerMark.created_at).desc())
             )
@@ -109,16 +109,16 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             # Prayer requests submitted by the current user (include all statuses)
             stmt = (
                 select(Prayer, User.display_name)
-                .outerjoin(User, Prayer.author_id == User.id)
+                .outerjoin(User, Prayer.author_username == User.display_name)
                 .where(Prayer.flagged == False)
-                .where(Prayer.author_id == user.id)
+                .where(Prayer.author_username == user.display_name)
                 .order_by(Prayer.created_at.desc())
             )
         elif feed_type == "recent_activity":
             # Prayers with recent prayer marks (most recently prayed, exclude archived)
             stmt = (
                 select(Prayer, User.display_name)
-                .outerjoin(User, Prayer.author_id == User.id)
+                .outerjoin(User, Prayer.author_username == User.display_name)
                 .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
@@ -131,7 +131,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             # Answered prayers (public celebration feed)
             stmt = (
                 select(Prayer, User.display_name)
-                .outerjoin(User, Prayer.author_id == User.id)
+                .outerjoin(User, Prayer.author_username == User.display_name)
                 .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(PrayerAttribute.attribute_name == 'answered')
@@ -142,10 +142,10 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             # Archived prayers (personal feed for prayer authors only)
             stmt = (
                 select(Prayer, User.display_name)
-                .outerjoin(User, Prayer.author_id == User.id)
+                .outerjoin(User, Prayer.author_username == User.display_name)
                 .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
                 .where(Prayer.flagged == False)
-                .where(Prayer.author_id == user.id)  # Only user's own prayers
+                .where(Prayer.author_username == user.display_name)  # Only user's own prayers
                 .where(PrayerAttribute.attribute_name == 'archived')
                 .order_by(Prayer.created_at.desc())
             )
@@ -153,7 +153,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             # All prayers (exclude archived)
             stmt = (
                 select(Prayer, User.display_name)
-                .outerjoin(User, Prayer.author_id == User.id)
+                .outerjoin(User, Prayer.author_username == User.display_name)
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
                 .where(apply_religious_filter())
@@ -163,7 +163,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
         results = s.exec(stmt).all()
         
         # Get all prayer marks for the current user
-        user_marks_stmt = select(PrayerMark.prayer_id, func.count(PrayerMark.id)).where(PrayerMark.user_id == user.id).group_by(PrayerMark.prayer_id)
+        user_marks_stmt = select(PrayerMark.prayer_id, func.count(PrayerMark.id)).where(PrayerMark.username == user.display_name).group_by(PrayerMark.prayer_id)
         user_marks_results = s.exec(user_marks_stmt).all()
         user_mark_counts = {prayer_id: count for prayer_id, count in user_marks_results}
         
@@ -173,7 +173,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
         mark_counts = {prayer_id: count for prayer_id, count in mark_counts_results}
         
         # Get distinct user counts for all prayers (how many people prayed)
-        distinct_user_counts_stmt = select(PrayerMark.prayer_id, func.count(func.distinct(PrayerMark.user_id))).group_by(PrayerMark.prayer_id)
+        distinct_user_counts_stmt = select(PrayerMark.prayer_id, func.count(func.distinct(PrayerMark.username))).group_by(PrayerMark.prayer_id)
         distinct_user_counts_results = s.exec(distinct_user_counts_stmt).all()
         distinct_user_counts = {prayer_id: count for prayer_id, count in distinct_user_counts_results}
         
@@ -186,7 +186,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 
             prayer_dict = {
                 'id': prayer.id,
-                'author_id': prayer.author_id,
+                'author_id': prayer.author_username,
                 'text': prayer.text,
                 'generated_prayer': prayer.generated_prayer,
                 'project_tag': prayer.project_tag,
@@ -205,7 +205,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             prayers_with_authors.append(prayer_dict)
     
     # Get feed counts
-    feed_counts = get_feed_counts(user.id)
+    feed_counts = get_feed_counts(user.display_name)
     
     return templates.TemplateResponse(
         "feed.html",
