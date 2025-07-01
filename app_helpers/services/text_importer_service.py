@@ -394,7 +394,7 @@ class TextImporterService:
             # Create prayer mark
             prayer_mark = PrayerMark(
                 prayer_id=prayer.id,
-                user_id=user.display_name,
+                username=user.display_name,
                 text_file_path=prayer.text_file_path,
                 created_at=activity_time
             )
