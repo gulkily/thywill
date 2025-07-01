@@ -293,6 +293,9 @@ class TextImporterService:
                     s.add(existing_prayer)
                     s.commit()
                     logger.info(f"Updated existing prayer archive reference: {prayer_id}")
+                
+                # Import prayer activities for existing prayer
+                self._import_prayer_activities(s, existing_prayer, parsed_activities)
                 return
             
             # Find or create author user
@@ -391,15 +394,25 @@ class TextImporterService:
         activity_time = self._parse_timestamp(timestamp_str)
         
         if action == 'prayed':
-            # Create prayer mark
-            prayer_mark = PrayerMark(
-                prayer_id=prayer.id,
-                username=user.display_name,
-                text_file_path=prayer.text_file_path,
-                created_at=activity_time
-            )
-            session.add(prayer_mark)
-            self.import_stats['prayer_marks_imported'] += 1
+            # Check for existing prayer mark to avoid duplicates
+            existing_mark = session.exec(
+                select(PrayerMark).where(
+                    PrayerMark.prayer_id == prayer.id,
+                    PrayerMark.username == user.display_name,
+                    PrayerMark.created_at == activity_time
+                )
+            ).first()
+            
+            if not existing_mark:
+                # Create prayer mark
+                prayer_mark = PrayerMark(
+                    prayer_id=prayer.id,
+                    username=user.display_name,
+                    text_file_path=prayer.text_file_path,
+                    created_at=activity_time
+                )
+                session.add(prayer_mark)
+                self.import_stats['prayer_marks_imported'] += 1
             
         elif action in ['answered', 'archived', 'flagged']:
             # Create prayer attribute
