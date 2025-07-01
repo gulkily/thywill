@@ -72,6 +72,22 @@ def log_security_event(event_type: str, user_id: str = None, ip_address: str = N
         )
         db.add(log_entry)
         db.commit()
+        
+        # Archive the security event
+        try:
+            from ..archive_writers import auth_archive_writer
+            auth_archive_writer.log_security_event({
+                'event_type': event_type,
+                'user_id': user_id,
+                'ip_address': ip_address,
+                'user_agent': user_agent,
+                'created_at': datetime.utcnow(),
+                'details': details
+            })
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to archive security event: {e}")
 
 
 def check_rate_limit(user_id: str, ip_address: str) -> bool:

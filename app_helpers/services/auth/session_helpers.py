@@ -42,7 +42,15 @@ def create_session(user_id: str, auth_request_id: str = None, device_info: str =
         
         # Archive session creation in real-time
         try:
-            _archive_session_event('created', session_data, user_id)
+            from ..archive_writers import auth_archive_writer
+            auth_archive_writer.log_security_event({
+                'event_type': 'session_created',
+                'user_id': user_id,
+                'ip_address': ip_address or 'unknown',
+                'user_agent': device_info or 'unknown',
+                'created_at': datetime.utcnow(),
+                'details': f'session_id={sid}, fully_authenticated={is_fully_authenticated}'
+            })
         except Exception as e:
             logger.warning(f"Failed to archive session creation: {e}")
     
@@ -68,7 +76,18 @@ def current_user(req: Request) -> tuple[User, SessionModel]:
         
         # Handle deleted user - invalidate session
         if not user:
-            _archive_session_event('deleted', sess, sess.username, reason="user_deleted")
+            try:
+                from ..archive_writers import auth_archive_writer
+                auth_archive_writer.log_security_event({
+                    'event_type': 'session_deleted',
+                    'user_id': sess.username,
+                    'ip_address': req.client.host if req.client else 'unknown',
+                    'user_agent': req.headers.get("User-Agent", "unknown"),
+                    'created_at': datetime.utcnow(),
+                    'details': f'session_id={sess.id}, reason=user_deleted'
+                })
+            except Exception as e:
+                logger.warning(f"Failed to archive session deletion: {e}")
             db.delete(sess)
             db.commit()
             raise HTTPException(401, detail="user_deleted")
@@ -76,7 +95,18 @@ def current_user(req: Request) -> tuple[User, SessionModel]:
         # Check if user is deactivated - block access if so
         if user.has_role("deactivated", db):
             # Invalidate session for deactivated users
-            _archive_session_event('deleted', sess, sess.username, reason="account_deactivated")
+            try:
+                from ..archive_writers import auth_archive_writer
+                auth_archive_writer.log_security_event({
+                    'event_type': 'session_deleted',
+                    'user_id': sess.username,
+                    'ip_address': req.client.host if req.client else 'unknown',
+                    'user_agent': req.headers.get("User-Agent", "unknown"),
+                    'created_at': datetime.utcnow(),
+                    'details': f'session_id={sess.id}, reason=account_deactivated'
+                })
+            except Exception as e:
+                logger.warning(f"Failed to archive session deletion: {e}")
             db.delete(sess)
             db.commit()
             raise HTTPException(401, detail="account_deactivated")
@@ -147,7 +177,18 @@ def invalidate_session(session_id: str, reason: str = "manual_logout"):
     with Session(engine) as db:
         session = db.get(SessionModel, session_id)
         if session:
-            _archive_session_event('deleted', session, session.username, reason=reason)
+            try:
+                from ..archive_writers import auth_archive_writer
+                auth_archive_writer.log_security_event({
+                    'event_type': 'session_deleted',
+                    'user_id': session.username,
+                    'ip_address': session.ip_address or 'unknown',
+                    'user_agent': session.device_info or 'unknown',
+                    'created_at': datetime.utcnow(),
+                    'details': f'session_id={session_id}, reason={reason}'
+                })
+            except Exception as e:
+                logger.warning(f"Failed to archive session deletion: {e}")
             db.delete(session)
             db.commit()
             return True
