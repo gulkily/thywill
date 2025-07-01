@@ -116,6 +116,24 @@ def deactivate_user(user_id: str, admin_id: str, reason: str = None, session: Se
         session.add(deactivated_role)
         session.commit()
         
+        # Archive the role change
+        try:
+            from ..services.archive_writers import role_archive_writer
+            role_assignment = {
+                'user_id': user_id,
+                'role_name': 'deactivated',
+                'action': 'assigned',
+                'granted_by': admin_id,
+                'granted_at': datetime.utcnow(),
+                'expires_at': None,
+                'details': reason or 'User deactivated by admin'
+            }
+            role_archive_writer.log_role_assignment(role_assignment)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to archive role assignment: {e}")
+        
         return True
         
     except Exception as e:
@@ -178,6 +196,25 @@ def reactivate_user(user_id: str, admin_id: str, session: Session = None) -> boo
             session.add(restored_role)
         
         session.commit()
+        
+        # Archive the role change
+        try:
+            from ..services.archive_writers import role_archive_writer
+            role_assignment = {
+                'user_id': user_id,
+                'role_name': 'user',
+                'action': 'assigned',
+                'granted_by': admin_id,
+                'granted_at': datetime.utcnow(),
+                'expires_at': None,
+                'details': 'User reactivated by admin'
+            }
+            role_archive_writer.log_role_assignment(role_assignment)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to archive role assignment: {e}")
+        
         return True
         
     except Exception as e:

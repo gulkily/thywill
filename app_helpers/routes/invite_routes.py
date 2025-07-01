@@ -66,12 +66,26 @@ def new_invite(request: Request, user_session: tuple = Depends(current_user)):
         raise HTTPException(403, "Full authentication required to create invites")
     token = generate_short_token()
     with Session(engine) as db:
-        db.add(InviteToken(
+        invite_token = InviteToken(
             token=token,
             created_by_user=user.display_name,
             expires_at=datetime.utcnow() + timedelta(hours=TOKEN_EXP_H)
-        ))
+        )
+        db.add(invite_token)
         db.commit()
+        
+        # Archive the invite token creation
+        try:
+            from app_helpers.services.archive_writers import system_archive_writer
+            system_archive_writer.log_invite_usage(
+                token=token,
+                used_by='',  # Not used yet
+                created_by=user.display_name
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to archive invite token creation: {e}")
 
     url = request.url_for("claim_get", token=token)  # absolute link
     qr_code_data_url = generate_qr_code_data_url(str(url))

@@ -188,6 +188,19 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             inv.used = True
             inv.used_by_user_id = existing_user.display_name
             
+            # Archive the invite token usage
+            try:
+                from app_helpers.services.archive_writers import system_archive_writer
+                system_archive_writer.log_invite_usage(
+                    token=token,
+                    used_by=existing_user.display_name,
+                    created_by=inv.created_by_user
+                )
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Failed to archive invite token usage: {e}")
+            
             # Check if user is deactivated before allowing login
             if is_user_deactivated(existing_user.display_name, s):
                 return templates.TemplateResponse("error.html", {
@@ -252,6 +265,19 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             inv.used = True
             inv.used_by_user_id = uid
             s.add(inv)
+            
+            # Archive the invite token usage
+            try:
+                from app_helpers.services.archive_writers import system_archive_writer
+                system_archive_writer.log_invite_usage(
+                    token=token,
+                    used_by=uid,
+                    created_by=inv.created_by_user
+                )
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Failed to archive invite token usage: {e}")
             
             # Grant admin role if this is a system-generated token
             grant_admin_role_for_system_token(uid, token, s)

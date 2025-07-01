@@ -26,6 +26,7 @@ from app_helpers.services.auth_helpers import (
     create_auth_request, approve_auth_request, get_pending_requests_for_approval,
     log_auth_action, check_rate_limit
 )
+from app_helpers.services.archive_writers import auth_archive_writer
 
 # Template and config setup
 templates = Jinja2Templates(directory="templates")
@@ -102,6 +103,21 @@ def create_authentication_request(display_name: str = Form(...), request: Reques
         
         # Create the authentication request
         request_id = create_auth_request(existing_user.display_name, device_info, ip_address)
+        
+        # Archive the authentication request
+        with Session(engine) as db:
+            auth_req = db.get(AuthenticationRequest, request_id)
+            if auth_req:
+                auth_archive_writer.log_auth_request({
+                    'id': auth_req.id,
+                    'user_id': auth_req.user_id,
+                    'device_info': auth_req.device_info,
+                    'ip_address': auth_req.ip_address,
+                    'status': auth_req.status,
+                    'created_at': auth_req.created_at,
+                    'expires_at': auth_req.expires_at,
+                    'verification_code': auth_req.verification_code
+                })
         
         # Create a half-authenticated session
         sid = create_session(
@@ -189,6 +205,15 @@ def approve_request(request_id: str, user_session: tuple = Depends(current_user)
     if not success:
         raise HTTPException(400, "Unable to approve request")
     
+    # Archive the approval
+    auth_archive_writer.log_auth_approval({
+        'auth_request_id': request_id,
+        'approver_user_id': user.display_name,
+        'action': 'approved',
+        'created_at': datetime.utcnow(),
+        'details': 'Request approved via web interface'
+    })
+    
     return RedirectResponse("/auth/pending", 303)
 
 
@@ -233,6 +258,15 @@ def reject_request(request_id: str, user_session: tuple = Depends(current_user))
             actor_type="admin",
             details="Request rejected by admin"
         )
+        
+        # Archive the rejection
+        auth_archive_writer.log_auth_approval({
+            'auth_request_id': request_id,
+            'approver_user_id': user.display_name,
+            'action': 'rejected',
+            'created_at': datetime.utcnow(),
+            'details': 'Request rejected by admin via web interface'
+        })
         
         db.commit()
     
