@@ -10,7 +10,9 @@ APP_DIR="/home/thywill/thywill"
 BACKUP_DIR="/home/thywill/backups"
 DEPLOY_LOG_DIR="/home/thywill/deploy_logs"
 SERVICE_NAME="thywill"
-HEALTH_CHECK_URL="http://127.0.0.1:8000/health"
+# Load PORT from environment, default to 8000
+PORT=${PORT:-8000}
+HEALTH_CHECK_URL="http://127.0.0.1:${PORT}/health"
 ROLLBACK_TIMEOUT=60  # seconds to wait before rollback on failure
 
 # Colors for output

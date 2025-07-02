@@ -24,6 +24,21 @@ deployment/
 └── DEPLOYMENT_GUIDE.md      # This guide
 ```
 
+## Configuration
+
+### Server Port
+
+The application server port is configurable via the `PORT` environment variable in `.env`:
+
+```bash
+# Server Port Configuration
+PORT=8000  # Default: 8000
+```
+
+If you change the port, you must also update:
+- Nginx configuration files (`deployment/nginx-*.conf`) to proxy to the new port
+- Health check endpoints and deployment scripts will automatically use the new port
+
 ## Quick Start
 
 ### 1. Initial Setup
@@ -55,7 +70,7 @@ crontab -e
 ### 3. Test Health Check
 
 ```bash
-# Test the health check endpoint
+# Test the health check endpoint (adjust port if you changed PORT in .env)
 curl http://127.0.0.1:8000/health
 ```
 

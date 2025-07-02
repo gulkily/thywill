@@ -8,7 +8,8 @@ User=thywill
 Group=thywill
 WorkingDirectory=/home/thywill/thywill
 Environment=PATH=/home/thywill/thywill/venv/bin
-ExecStart=/home/thywill/thywill/venv/bin/uvicorn app:app --host 127.0.0.1 --port 8000
+EnvironmentFile=/home/thywill/thywill/.env
+ExecStart=/home/thywill/thywill/venv/bin/uvicorn app:app --host 127.0.0.1 --port ${PORT}
 Restart=always
 RestartSec=3
 
