@@ -24,7 +24,7 @@ class TestMultiDeviceAuthWorkflows:
         
         # Create auth request
         auth_req = AuthenticationRequestFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             device_info="iPhone Safari",
             ip_address="192.168.1.100",
             status="pending"
@@ -33,7 +33,7 @@ class TestMultiDeviceAuthWorkflows:
         test_session.commit()
         
         # Verify request was created correctly
-        assert auth_req.user_id == user.id
+        assert auth_req.user_id == user.display_name
         assert auth_req.status == "pending"
         assert auth_req.device_info == "iPhone Safari"
         assert auth_req.ip_address == "192.168.1.100"
@@ -49,7 +49,7 @@ class TestMultiDeviceAuthWorkflows:
         
         # Create existing pending request from same IP
         existing_req = AuthenticationRequestFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             ip_address="192.168.1.100",
             status="pending",
             created_at=datetime.utcnow() - timedelta(minutes=30)
@@ -61,7 +61,7 @@ class TestMultiDeviceAuthWorkflows:
         # Check for existing pending request (simulating app logic)
         recent_request = test_session.exec(
             select(AuthenticationRequest)
-            .where(AuthenticationRequest.user_id == user.id)
+            .where(AuthenticationRequest.user_id == user.display_name)
             .where(AuthenticationRequest.ip_address == "192.168.1.100")
             .where(AuthenticationRequest.status == "pending")
             .where(AuthenticationRequest.created_at > datetime.utcnow() - timedelta(hours=1))
@@ -77,14 +77,14 @@ class TestMultiDeviceAuthWorkflows:
         
         # Create expired request
         expired_req = AuthenticationRequestFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             status="pending",
             expires_at=datetime.utcnow() - timedelta(hours=1)
         )
         
         # Create valid request
         valid_req = AuthenticationRequestFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             status="pending",
             expires_at=datetime.utcnow() + timedelta(days=1)
         )
@@ -117,10 +117,10 @@ class TestAuthApprovalProcesses:
     def test_admin_approval_instant(self, test_session):
         """Test admin approval provides instant approval"""
         user = UserFactory.create()
-        admin = UserFactory.create(id="admin")
+        admin = UserFactory.create(display_name="admin")
         
         auth_req = AuthenticationRequestFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             status="pending"
         )
         
@@ -154,13 +154,13 @@ class TestAuthApprovalProcesses:
         
         # Create full authenticated session for user
         full_session = SessionFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             is_fully_authenticated=True,
             expires_at=datetime.utcnow() + timedelta(days=1)
         )
         
         auth_req = AuthenticationRequestFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             status="pending"
         )
         
@@ -172,14 +172,14 @@ class TestAuthApprovalProcesses:
              patch('app_helpers.services.auth.validation_helpers.log_auth_action') as mock_log:
             mock_session_class.return_value.__enter__.return_value = test_session
             
-            result = approve_auth_request(auth_req.id, user.id)
+            result = approve_auth_request(auth_req.id, user.display_name)
         
         assert result is True
         
         # Check request was approved
         updated_req = test_session.get(AuthenticationRequest, auth_req.id)
         assert updated_req.status == "approved"
-        assert updated_req.approved_by_user_id == user.id
+        assert updated_req.approved_by_user_id == user.display_name
         
         # Verify audit logging shows self approval
         mock_log.assert_called()
@@ -193,13 +193,13 @@ class TestAuthApprovalProcesses:
         
         # Create half authenticated session
         half_session = SessionFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             is_fully_authenticated=False,
             expires_at=datetime.utcnow() + timedelta(days=1)
         )
         
         auth_req = AuthenticationRequestFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             status="pending"
         )
         
@@ -211,7 +211,7 @@ class TestAuthApprovalProcesses:
              patch('app_helpers.services.auth.validation_helpers.log_auth_action') as mock_log:
             mock_session_class.return_value.__enter__.return_value = test_session
             
-            result = approve_auth_request(auth_req.id, user.id)
+            result = approve_auth_request(auth_req.id, user.display_name)
         
         # Should not be approved (no full session found)
         assert result is True  # Function returns True but doesn't approve
@@ -228,12 +228,12 @@ class TestAuthApprovalProcesses:
     def test_peer_approval_progression(self, test_session):
         """Test peer approval requires multiple approvals"""
         # Setup users
-        requester = UserFactory.create(id="requester")
-        peer1 = UserFactory.create(id="peer1")
-        peer2 = UserFactory.create(id="peer2")
+        requester = UserFactory.create(display_name="requester")
+        peer1 = UserFactory.create(display_name="peer1")
+        peer2 = UserFactory.create(display_name="peer2")
         
         auth_req = AuthenticationRequestFactory.create(
-            user_id=requester.id,
+            username=requester.id,
             status="pending"
         )
         
@@ -283,7 +283,7 @@ class TestAuthApprovalProcesses:
         approver = UserFactory.create()
         
         auth_req = AuthenticationRequestFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             status="pending"
         )
         
@@ -307,27 +307,27 @@ class TestAuthApprovalProcesses:
     
     def test_get_pending_requests_for_approval(self, test_session):
         """Test getting pending requests that user can approve"""
-        user1 = UserFactory.create(id="user1")
-        user2 = UserFactory.create(id="user2")
-        approver = UserFactory.create(id="approver")
+        user1 = UserFactory.create(display_name="user1")
+        user2 = UserFactory.create(display_name="user2")
+        approver = UserFactory.create(display_name="approver")
         
         # Request user1 can approve
         req1 = AuthenticationRequestFactory.create(
-            user_id=user1.id,
+            username=user1.display_name,
             status="pending",
             expires_at=datetime.utcnow() + timedelta(days=1)
         )
         
         # Request user2 can approve  
         req2 = AuthenticationRequestFactory.create(
-            user_id=user2.id,
+            username=user2.display_name,
             status="pending",
             expires_at=datetime.utcnow() + timedelta(days=1)
         )
         
         # Request already approved by approver
         req3 = AuthenticationRequestFactory.create(
-            user_id=user1.id,
+            username=user1.display_name,
             status="pending",
             expires_at=datetime.utcnow() + timedelta(days=1)
         )
@@ -338,7 +338,7 @@ class TestAuthApprovalProcesses:
         
         # Expired request
         req4 = AuthenticationRequestFactory.create(
-            user_id=user2.id,
+            username=user2.display_name,
             status="pending",
             expires_at=datetime.utcnow() - timedelta(hours=1)
         )
@@ -432,10 +432,10 @@ class TestAuditLogging:
     def test_audit_log_progression_workflow(self, test_session):
         """Test audit logging throughout approval workflow"""
         user = UserFactory.create()
-        admin = UserFactory.create(id="admin")
+        admin = UserFactory.create(display_name="admin")
         
         auth_req = AuthenticationRequestFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             status="pending"
         )
         
@@ -447,7 +447,7 @@ class TestAuditLogging:
         log_auth_action(
             auth_request_id=auth_req.id,
             action="created",
-            actor_user_id=user.id,
+            actor_username=user.display_name,
             actor_type="user",
             details="Authentication request created",
             db_session=test_session
@@ -478,7 +478,7 @@ class TestAuditLogging:
         # Check creation log
         creation_log = log_entries[0]
         assert creation_log.action == "created"
-        assert creation_log.actor_user_id == user.id
+        assert creation_log.actor_user_id == user.display_name
         assert creation_log.actor_type == "user"
         
         # Check approval log
@@ -496,7 +496,7 @@ class TestAuditLogging:
             
             log_security_event(
                 event_type="failed_login",
-                user_id="test_user",
+                username="test_user",
                 ip_address="192.168.1.100",
                 user_agent="Chrome Browser",
                 details="Multiple failed login attempts detected"

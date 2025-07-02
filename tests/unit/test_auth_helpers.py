@@ -27,7 +27,7 @@ class TestSessionHelpers:
         with patch('app_helpers.services.auth.session_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
-            session_id = create_session(user.id)
+            session_id = create_session(user.display_name)
             
             assert session_id is not None
             assert len(session_id) == 32  # UUID hex length
@@ -35,7 +35,7 @@ class TestSessionHelpers:
             # Verify session was created in database
             created_session = test_session.get(SessionModel, session_id)
             assert created_session is not None
-            assert created_session.user_id == user.id
+            assert created_session.username == user.display_name
             assert created_session.is_fully_authenticated is True
     
     def test_create_session_with_auth_request(self, test_session):
@@ -48,7 +48,7 @@ class TestSessionHelpers:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             session_id = create_session(
-                user_id=user.id,
+                user_id=user.display_name,
                 auth_request_id="auth_req_123",
                 device_info="Test Browser",
                 ip_address="192.168.1.100",
@@ -65,7 +65,7 @@ class TestSessionHelpers:
         """Test current_user with valid session"""
         user = UserFactory.create()
         session = SessionFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             expires_at=datetime.utcnow() + timedelta(days=1)
         )
         test_session.add_all([user, session])
@@ -82,7 +82,7 @@ class TestSessionHelpers:
             
             returned_user, returned_session = current_user(mock_request)
             
-            assert returned_user.id == user.id
+            assert returned_user.display_name == user.display_name
             assert returned_session.id == session.id
     
     def test_current_user_no_session_cookie(self, test_session):
@@ -99,7 +99,7 @@ class TestSessionHelpers:
         """Test current_user with expired session raises 401"""
         user = UserFactory.create()
         session = SessionFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             expires_at=datetime.utcnow() - timedelta(days=1)  # Expired
         )
         test_session.add_all([user, session])
@@ -137,7 +137,7 @@ class TestSessionHelpers:
         """Test require_full_auth with fully authenticated session"""
         user = UserFactory.create()
         session = SessionFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             is_fully_authenticated=True
         )
         test_session.add_all([user, session])
@@ -152,13 +152,13 @@ class TestSessionHelpers:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             returned_user, returned_session = require_full_auth(mock_request)
-            assert returned_user.id == user.id
+            assert returned_user.display_name == user.display_name
     
     def test_require_full_auth_with_half_session(self, test_session):
         """Test require_full_auth with half-authenticated session raises 403"""
         user = UserFactory.create()
         session = SessionFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             is_fully_authenticated=False
         )
         test_session.add_all([user, session])
@@ -185,21 +185,20 @@ class TestAdminHelpers:
     
     def test_is_admin_with_admin_user(self):
         """Test is_admin returns True for admin user"""
-        admin_user = UserFactory.create(id="admin")
+        admin_user = UserFactory.create(display_name="admin")
         assert is_admin(admin_user) is True
     
     def test_is_admin_with_regular_user(self):
         """Test is_admin returns False for regular user"""
-        regular_user = UserFactory.create(id="regular_user_123")
+        regular_user = UserFactory.create(display_name="regular_user_123")
         assert is_admin(regular_user) is False
     
     def test_is_admin_with_user_named_admin(self):
-        """Test is_admin only checks ID, not display name"""
+        """Test is_admin returns True for user with display_name 'admin'"""
         user_named_admin = UserFactory.create(
-            id="not_admin", 
             display_name="admin"
         )
-        assert is_admin(user_named_admin) is False
+        assert is_admin(user_named_admin) is True
 
 
 @pytest.mark.unit
@@ -217,7 +216,7 @@ class TestAuthRequestHelpers:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             request_id = create_auth_request(
-                user_id=user.id,
+                username=user.display_name,
                 device_info="Test Browser",
                 ip_address="127.0.0.1"
             )
@@ -228,7 +227,7 @@ class TestAuthRequestHelpers:
             # Verify request was created in database
             auth_req = test_session.get(AuthenticationRequest, request_id)
             assert auth_req is not None
-            assert auth_req.user_id == user.id
+            assert auth_req.user_id == user.display_name
             assert auth_req.device_info == "Test Browser"
             assert auth_req.ip_address == "127.0.0.1"
             assert auth_req.status == "pending"
@@ -246,7 +245,7 @@ class TestAuthRequestHelpers:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             # No existing requests, should be allowed
-            result = check_rate_limit(user.id, "127.0.0.1")
+            result = check_rate_limit(user.display_name, "127.0.0.1")
             assert result is True
     
     def test_check_rate_limit_exceeded_by_user(self, test_session):
@@ -258,7 +257,7 @@ class TestAuthRequestHelpers:
         auth_requests = []
         for i in range(11):  # Exceeds MAX_AUTH_REQUESTS_PER_HOUR (10)
             req = AuthenticationRequestFactory.create(
-                user_id=user.id,
+                username=user.display_name,
                 created_at=recent_time + timedelta(minutes=i),
                 ip_address="127.0.0.1"
             )
@@ -271,7 +270,7 @@ class TestAuthRequestHelpers:
              patch('app_helpers.services.auth.validation_helpers.log_security_event') as mock_log:
             mock_session_class.return_value.__enter__.return_value = test_session
             
-            result = check_rate_limit(user.id, "127.0.0.1")
+            result = check_rate_limit(user.display_name, "127.0.0.1")
             assert result is False
             
             # Verify security event was logged
@@ -286,7 +285,7 @@ class TestAuthRequestHelpers:
         old_requests = []
         for i in range(5):  # Many old requests
             req = AuthenticationRequestFactory.create(
-                user_id=user.id,
+                username=user.display_name,
                 created_at=old_time,
                 ip_address="127.0.0.1"
             )
@@ -299,7 +298,7 @@ class TestAuthRequestHelpers:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             # Should be allowed since old requests don't count
-            result = check_rate_limit(user.id, "127.0.0.1")
+            result = check_rate_limit(user.display_name, "127.0.0.1")
             assert result is True
 
 
@@ -342,7 +341,7 @@ class TestSecurityHelpers:
             mock_log.assert_called_once()
             args = mock_log.call_args[1]
             assert args['event_type'] == 'ip_change'
-            assert args['user_id'] == session.user_id
+            assert args['user_id'] == session.username
     
     def test_validate_session_security_no_original_ip(self, test_session):
         """Test session security validation with no original IP stored"""
@@ -368,7 +367,7 @@ class TestSecurityHelpers:
             
             log_security_event(
                 event_type="failed_login",
-                user_id="test_user",
+                username="test_user",
                 ip_address="127.0.0.1",
                 user_agent="Test Browser",
                 details="Multiple failed attempts"

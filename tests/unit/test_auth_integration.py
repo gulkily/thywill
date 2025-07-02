@@ -46,12 +46,12 @@ class TestUserRegistrationWorkflow:
         # Step 5: Create session for new user
         with patch('app_helpers.services.auth.session_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
-            session_id = create_session(new_user.id)
+            session_id = create_session(new_user.display_name)
         
         # Verify complete workflow
         assert session_id is not None
         created_session = test_session.get(SessionModel, session_id)
-        assert created_session.user_id == new_user.id
+        assert created_session.username == new_user.display_name
         assert created_session.is_fully_authenticated is True
         
         # Verify token is marked as used
@@ -90,7 +90,7 @@ class TestUserRegistrationWorkflow:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             auth_req_id = create_auth_request(
-                user_id=existing_user.id,
+                username=existing_user.display_name,
                 device_info="New Device",
                 ip_address="192.168.1.100"
             )
@@ -98,7 +98,7 @@ class TestUserRegistrationWorkflow:
         # Verify auth request was created
         auth_req = test_session.get(AuthenticationRequest, auth_req_id)
         assert auth_req is not None
-        assert auth_req.user_id == existing_user.id
+        assert auth_req.user_id == existing_user.display_name
         assert auth_req.status == "pending"
         
         # Step 3: Create half-authenticated session
@@ -106,7 +106,7 @@ class TestUserRegistrationWorkflow:
             mock_session_class.return_value.__enter__.return_value = test_session
             
             session_id = create_session(
-                user_id=existing_user.id,
+                username=existing_user.display_name,
                 auth_request_id=auth_req_id,
                 device_info="New Device",
                 ip_address="192.168.1.100",
@@ -115,7 +115,7 @@ class TestUserRegistrationWorkflow:
         
         # Verify half-authenticated session
         session = test_session.get(SessionModel, session_id)
-        assert session.user_id == existing_user.id
+        assert session.username == existing_user.display_name
         assert session.auth_request_id == auth_req_id
         assert session.is_fully_authenticated is False
 
@@ -129,7 +129,7 @@ class TestSessionAuthenticationWorkflow:
         # Step 1: Create user and full session
         user = UserFactory.create()
         session = SessionFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             is_fully_authenticated=True,
             expires_at=datetime.utcnow() + timedelta(days=1)
         )
@@ -149,7 +149,7 @@ class TestSessionAuthenticationWorkflow:
             authenticated_user, authenticated_session = current_user(mock_request)
         
         # Verify authentication
-        assert authenticated_user.id == user.id
+        assert authenticated_user.display_name == user.display_name
         assert authenticated_session.id == session.id
         assert authenticated_session.is_fully_authenticated is True
     
@@ -157,7 +157,7 @@ class TestSessionAuthenticationWorkflow:
         """Test half-authenticated session workflow"""
         user = UserFactory.create()
         session = SessionFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             is_fully_authenticated=False,
             expires_at=datetime.utcnow() + timedelta(days=1)
         )
@@ -175,7 +175,7 @@ class TestSessionAuthenticationWorkflow:
             
             authenticated_user, authenticated_session = current_user(mock_request)
         
-        assert authenticated_user.id == user.id
+        assert authenticated_user.display_name == user.display_name
         assert authenticated_session.is_fully_authenticated is False
         
         # Step 2: But cannot access full-auth-required features
@@ -204,7 +204,7 @@ class TestRateLimitingWorkflow:
         with patch('app_helpers.services.auth.validation_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
-            result1 = check_rate_limit(user.id, "127.0.0.1")
+            result1 = check_rate_limit(user.display_name, "127.0.0.1")
             assert result1 is True
         
         # Step 2: Create multiple recent requests (exceed limit)
@@ -212,7 +212,7 @@ class TestRateLimitingWorkflow:
         auth_requests = []
         for i in range(10):  # Reaches MAX_AUTH_REQUESTS_PER_HOUR (10)
             req = AuthenticationRequestFactory.create(
-                user_id=user.id,
+                username=user.display_name,
                 created_at=recent_time + timedelta(minutes=i*5),
                 ip_address="127.0.0.1"
             )
@@ -226,7 +226,7 @@ class TestRateLimitingWorkflow:
              patch('app_helpers.services.auth.validation_helpers.log_security_event') as mock_log:
             mock_session_class.return_value.__enter__.return_value = test_session
             
-            result2 = check_rate_limit(user.id, "127.0.0.1")
+            result2 = check_rate_limit(user.display_name, "127.0.0.1")
             assert result2 is False
             
             # Verify security event was logged
@@ -245,7 +245,7 @@ class TestRateLimitingWorkflow:
         old_requests = []
         for i in range(5):  # Many old requests
             req = AuthenticationRequestFactory.create(
-                user_id=user.id,
+                username=user.display_name,
                 created_at=old_time,
                 ip_address="127.0.0.1"
             )
@@ -258,7 +258,7 @@ class TestRateLimitingWorkflow:
         with patch('app_helpers.services.auth.validation_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
-            result = check_rate_limit(user.id, "127.0.0.1")
+            result = check_rate_limit(user.display_name, "127.0.0.1")
             assert result is True
 
 
@@ -297,14 +297,14 @@ class TestSecurityWorkflow:
             mock_log.assert_called_once()
             args = mock_log.call_args[1]
             assert args['event_type'] == 'ip_change'
-            assert args['user_id'] == session.user_id
+            assert args['user_id'] == session.username
     
     def test_admin_privilege_workflow(self, test_session):
         """Test admin privilege checking workflow"""
         from app import is_admin
         
         # Step 1: Create admin user
-        admin_user = UserFactory.create(id="admin", display_name="Admin")
+        admin_user = UserFactory.create(display_name="admin")
         test_session.add(admin_user)
         test_session.commit()
         
