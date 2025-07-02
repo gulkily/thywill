@@ -23,7 +23,8 @@ from app_helpers.services.auth_helpers import (
 )
 
 # Initialize templates
-templates = Jinja2Templates(directory="templates")
+# Use shared templates instance with filters registered
+from app_helpers.shared_templates import templates
 
 # Create router for this module
 router = APIRouter()

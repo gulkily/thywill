@@ -39,7 +39,7 @@
               <span class="inline-block bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs px-2 py-1 rounded-full">Deactivated</span>
             {% endif %}
           </div>
-          <p class="text-sm text-gray-500 dark:text-gray-400">Member since {{ user_data.user.created_at.strftime('%B %Y') }}</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Member since {{ user_data.user.created_at|timezone_format(user_timezone) }}</p>
         </div>
       </div>
 
@@ -63,7 +63,7 @@
       <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
         {% if user_data.last_activity %}
           <p class="text-xs text-gray-500 dark:text-gray-400">
-            Last active: {{ user_data.last_activity.strftime('%B %d, %Y') }}
+            Last active: {{ user_data.last_activity|timezone_format(user_timezone) }}
           </p>
         {% else %}
           <p class="text-xs text-gray-400 dark:text-gray-500">No activity yet</p>
@@ -80,7 +80,7 @@
               </button>
               {% if user_data.deactivation_info %}
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Deactivated: {{ user_data.deactivation_info.deactivated_at.strftime('%b %d, %Y') }}
+                  Deactivated: {{ user_data.deactivation_info.deactivated_at|timezone_format(user_timezone) }}
                 </p>
               {% endif %}
             {% else %}

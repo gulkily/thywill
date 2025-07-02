@@ -25,7 +25,8 @@ from models import (
 from app_helpers.services.auth_helpers import current_user
 
 # Initialize templates
-templates = Jinja2Templates(directory="templates")
+# Use shared templates instance with filters registered
+from app_helpers.shared_templates import templates
 
 # Create router for prayer mode operations
 router = APIRouter()

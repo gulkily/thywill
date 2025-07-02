@@ -51,6 +51,50 @@
     }
   </style>
   <script>
+    // Timezone detection and management
+    document.addEventListener('DOMContentLoaded', function() {
+      // Detect user timezone
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      
+      // Store in sessionStorage for immediate use
+      sessionStorage.setItem('userTimezone', userTimezone);
+      
+      // Check if timezone cookie needs to be set/updated
+      const currentCookie = getCookie('user_timezone');
+      if (currentCookie !== userTimezone) {
+        // Set cookie with 30-day expiration for server-side rendering
+        setCookie('user_timezone', userTimezone, 30);
+        
+        // If timezone changed, reload page to show correct timestamps
+        if (currentCookie && currentCookie !== 'UTC') {
+          window.location.reload();
+        }
+      }
+      
+      // Add timezone to all HTMX requests
+      document.body.addEventListener('htmx:configRequest', function(evt) {
+        evt.detail.headers['X-User-Timezone'] = sessionStorage.getItem('userTimezone') || 'UTC';
+      });
+    });
+    
+    // Cookie utility functions
+    function setCookie(name, value, days) {
+      const expires = new Date();
+      expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+      document.cookie = name + '=' + value + ';expires=' + expires.toUTCString() + ';path=/;SameSite=Strict';
+    }
+    
+    function getCookie(name) {
+      const nameEQ = name + '=';
+      const ca = document.cookie.split(';');
+      for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+      }
+      return null;
+    }
+    
     // Theme management
     document.addEventListener('DOMContentLoaded', function() {
       const toggle = document.getElementById('theme-toggle');

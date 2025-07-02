@@ -17,7 +17,8 @@ from app_helpers.services.invite_helpers import get_invite_tree, get_invite_stat
 # Configuration from app.py
 TOKEN_EXP_H = 12  # invite links valid 12 h
 
-templates = Jinja2Templates(directory="templates")
+# Use shared templates instance with filters registered
+from app_helpers.shared_templates import templates
 
 router = APIRouter()
 

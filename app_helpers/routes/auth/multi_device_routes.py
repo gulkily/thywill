@@ -29,7 +29,8 @@ from app_helpers.services.auth_helpers import (
 from app_helpers.services.archive_writers import auth_archive_writer
 
 # Template and config setup
-templates = Jinja2Templates(directory="templates")
+# Use shared templates instance with filters registered
+from app_helpers.shared_templates import templates
 router = APIRouter()
 
 # Configuration

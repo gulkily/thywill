@@ -41,7 +41,8 @@ from app_helpers.utils.username_helpers import (
 )
 
 # Template and config setup
-templates = Jinja2Templates(directory="templates")
+# Use shared templates instance with filters registered
+from app_helpers.shared_templates import templates
 router = APIRouter()
 
 # Configuration

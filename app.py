@@ -42,7 +42,8 @@ TEXT_ARCHIVE_COMPRESSION_AFTER_DAYS = int(os.getenv("TEXT_ARCHIVE_COMPRESSION_AF
 # Prayer Mode Settings
 PRAYER_MODE_ENABLED = os.getenv("PRAYER_MODE_ENABLED", "true").lower() == "true"
 
-templates = Jinja2Templates(directory="templates")
+# Use shared templates instance with filters registered
+from app_helpers.shared_templates import templates
 
 # Initialize Anthropic client
 anthropic_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))

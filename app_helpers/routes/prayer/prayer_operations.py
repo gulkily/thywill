@@ -22,8 +22,8 @@ from app_helpers.services.auth_helpers import current_user
 from app_helpers.services.prayer_helpers import generate_prayer, find_compatible_prayer_partner
 from app_helpers.services.archive_first_service import submit_prayer_archive_first
 
-# Initialize templates
-templates = Jinja2Templates(directory="templates")
+# Use shared templates instance with filters registered
+from app_helpers.shared_templates import templates
 
 # Create router for CRUD operations
 router = APIRouter()
