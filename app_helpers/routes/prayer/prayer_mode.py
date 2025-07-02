@@ -23,7 +23,6 @@ from models import (
 
 # Import helper functions
 from app_helpers.services.auth_helpers import current_user
-from app_helpers.services.prayer_helpers import get_filtered_prayers_for_user
 
 # Initialize templates
 templates = Jinja2Templates(directory="templates")
@@ -80,19 +79,11 @@ def initialize_prayer_queue(session: Session, user: User, feed_type: str = "new_
             .where(PrayerAttribute.attribute_name == 'archived')
         )
     
-    # Religious preference filtering
-    def apply_religious_filter():
-        if user.religious_preference == "christian":
-            return Prayer.target_audience.in_(["all", "christians_only"])
-        else:
-            return Prayer.target_audience == "all"
-    
     # Get all eligible prayers
     base_stmt = (
         select(Prayer)
         .where(Prayer.flagged == False)
         .where(exclude_archived())
-        .where(apply_religious_filter())
     )
     
     prayers = session.exec(base_stmt).all()
@@ -141,7 +132,7 @@ def initialize_prayer_queue(session: Session, user: User, feed_type: str = "new_
         user_skips = session.exec(
             select(PrayerSkip).where(
                 PrayerSkip.prayer_id == prayer.id,
-                PrayerSkip.username == user.display_name
+                PrayerSkip.user_id == user.display_name
             ).order_by(PrayerSkip.created_at.desc())
         ).all()
         
@@ -251,7 +242,7 @@ def skip_prayer(prayer_id: str, user_session: tuple = Depends(current_user)):
         # Check if skip already exists for this user and prayer
         existing_skip = s.exec(
             select(PrayerSkip).where(
-                PrayerSkip.username == user.display_name,
+                PrayerSkip.user_id == user.display_name,
                 PrayerSkip.prayer_id == prayer_id
             )
         ).first()

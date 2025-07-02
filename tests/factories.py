@@ -13,16 +13,12 @@ class UserFactory:
     def create(
         display_name: Optional[str] = None,
         created_at: Optional[datetime] = None,
-        religious_preference: str = "unspecified",
-        prayer_style: Optional[str] = None,
         invited_by_username: Optional[str] = None,
         invite_token_used: Optional[str] = None
     ) -> User:
         return User(
             display_name=display_name or f"TestUser{uuid.uuid4().hex[:8]}",
             created_at=created_at or datetime.utcnow(),
-            religious_preference=religious_preference,
-            prayer_style=prayer_style,
             invited_by_username=invited_by_username,
             invite_token_used=invite_token_used
         )
@@ -32,8 +28,6 @@ class UserFactory:
         return User(
             display_name="admin",
             created_at=datetime.utcnow(),
-            religious_preference="unspecified",
-            prayer_style=None,
             invited_by_username=None,
             invite_token_used=None
         )

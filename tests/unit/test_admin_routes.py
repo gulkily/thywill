@@ -208,40 +208,7 @@ class TestAdminPrayerModerationRoutes:
 class TestAdminAPIRoutes:
     """Test admin API routes"""
     
-    def test_religious_preference_stats_api_as_admin(self, client, mock_admin_user, test_session, clean_db):
-        """Test religious preference statistics API as admin"""
-        user, session = mock_admin_user
-        
-        with patch('app_helpers.routes.admin.analytics.get_religious_preference_stats') as mock_stats:
-            mock_stats.return_value = {
-                "user_preferences": {
-                    "christian": 10,
-                    "islamic": 5,
-                    "jewish": 3,
-                    "unspecified": 20
-                },
-                "prayer_targets": {
-                    "all": 30,
-                    "christians_only": 8
-                }
-            }
-            
-            response = client.get("/api/religious-preference-stats")
-            
-            assert response.status_code == 200
-            data = response.json()
-            assert "user_preferences" in data
-            assert "prayer_targets" in data
-            assert "christian" in data["user_preferences"]
-            assert "islamic" in data["user_preferences"]
-    
-    def test_religious_preference_stats_api_access_denied(self, client, mock_authenticated_user):
-        """Test religious preference stats API access denied for regular users"""
-        user, session = mock_authenticated_user
-        
-        response = client.get("/api/religious-preference-stats")
-        
-        assert response.status_code in [403, 302]
+    # Religious preference API tests removed as part of cleanup
     
     def test_users_api_as_admin(self, client, mock_admin_user, test_session, clean_db):
         """Test users API endpoint as admin"""

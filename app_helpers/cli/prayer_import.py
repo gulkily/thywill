@@ -126,7 +126,7 @@ def import_prayers_from_json(file_path: str) -> Dict[str, int]:
                     text=prayer_data['text'],
                     generated_prayer=prayer_data.get('generated_prayer'),
                     project_tag=prayer_data.get('project_tag'),
-                    target_audience=prayer_data.get('target_audience', 'all'),
+                    target_audience='all',  # All prayers use target_audience='all'
                     created_at=created_at
                 )
                 

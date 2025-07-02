@@ -32,7 +32,6 @@ router = APIRouter()
 @router.post("/prayers/preview")
 def preview_prayer(text: str = Form(...),
                    tag: Optional[str] = Form(None),
-                   target_audience: str = Form("all"),
                    user_session: tuple = Depends(current_user)):
     """
     Generate prayer preview without saving to database.
@@ -40,7 +39,6 @@ def preview_prayer(text: str = Form(...),
     Args:
         text: The prayer request text (max 500 chars)
         tag: Optional project tag for categorization
-        target_audience: Target audience ("all" or "christians_only")
         user_session: Current authenticated user session
     
     Returns:
@@ -49,11 +47,6 @@ def preview_prayer(text: str = Form(...),
     user, session = user_session
     if not session.is_fully_authenticated:
         raise HTTPException(403, "Full authentication required to preview prayers")
-    
-    # Validate target audience
-    valid_audiences = ["all", "christians_only"]
-    if target_audience not in valid_audiences:
-        target_audience = "all"
     
     # Generate a proper prayer from the user's prompt
     prayer_result = generate_prayer(text)
@@ -67,7 +60,6 @@ def preview_prayer(text: str = Form(...),
         "generated_prayer": prayer_result['prayer'],
         "service_status": prayer_result['service_status'],
         "tag": tag,
-        "target_audience": target_audience,
         "preview_token": preview_token
     }
 
@@ -75,7 +67,6 @@ def preview_prayer(text: str = Form(...),
 @router.post("/prayers")
 def submit_prayer(text: str = Form(...),
                   tag: Optional[str] = Form(None),
-                  target_audience: str = Form("all"),
                   generated_prayer: Optional[str] = Form(None),
                   user_session: tuple = Depends(current_user)):
     """
@@ -84,7 +75,6 @@ def submit_prayer(text: str = Form(...),
     Args:
         text: The prayer request text (max 500 chars)
         tag: Optional project tag for categorization
-        target_audience: Target audience ("all" or "christians_only")
         generated_prayer: Pre-generated prayer from preview (optional)
         user_session: Current authenticated user session
     
@@ -94,11 +84,6 @@ def submit_prayer(text: str = Form(...),
     user, session = user_session
     if not session.is_fully_authenticated:
         raise HTTPException(403, "Full authentication required to submit prayers")
-    
-    # Validate target audience
-    valid_audiences = ["all", "christians_only"]
-    if target_audience not in valid_audiences:
-        target_audience = "all"
     
     # Use pre-generated prayer if provided, otherwise generate new one
     if generated_prayer:
@@ -112,7 +97,6 @@ def submit_prayer(text: str = Form(...),
         text=text,
         author=user,
         tag=tag,
-        target_audience=target_audience,
         generated_prayer=final_prayer
     )
     

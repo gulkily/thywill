@@ -59,14 +59,6 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .where(PrayerAttribute.attribute_name == 'archived')
             )
         
-        # Religious preference filtering
-        def apply_religious_filter():
-            if user and user.religious_preference == "christian":
-                # Christians see: all prayers + christian-only prayers
-                return Prayer.target_audience.in_(["all", "christians_only"])
-            else:
-                # All faiths (unspecified) users see only "all" prayers
-                return Prayer.target_audience == "all"
         
         if feed_type == "new_unprayed":
             # New prayers and prayers that have never been prayed (exclude archived)
@@ -76,7 +68,6 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .outerjoin(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
-                .where(apply_religious_filter())
                 .group_by(Prayer.id)
                 .having(func.count(PrayerMark.id) == 0)
                 .order_by(Prayer.created_at.desc())
@@ -89,7 +80,6 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
-                .where(apply_religious_filter())
                 .group_by(Prayer.id)
                 .order_by(func.count(PrayerMark.id).desc())
                 .limit(50)
@@ -122,7 +112,6 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
-                .where(apply_religious_filter())
                 .group_by(Prayer.id)
                 .order_by(func.max(PrayerMark.created_at).desc())
                 .limit(50)
@@ -135,7 +124,6 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
                 .where(Prayer.flagged == False)
                 .where(PrayerAttribute.attribute_name == 'answered')
-                .where(apply_religious_filter())
                 .order_by(Prayer.created_at.desc())
             )
         elif feed_type == "archived":
@@ -156,7 +144,6 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .outerjoin(User, Prayer.author_username == User.display_name)
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
-                .where(apply_religious_filter())
                 .order_by(Prayer.created_at.desc())
             )
             

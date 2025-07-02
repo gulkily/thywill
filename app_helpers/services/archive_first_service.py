@@ -30,7 +30,6 @@ def create_prayer_with_text_archive(prayer_data: Dict) -> Tuple[Prayer, str]:
         - text: Original prayer request text
         - generated_prayer: LLM-generated prayer
         - project_tag: Optional project tag
-        - target_audience: Target audience
         - created_at: Optional timestamp (defaults to now)
     
     Returns:
@@ -44,7 +43,6 @@ def create_prayer_with_text_archive(prayer_data: Dict) -> Tuple[Prayer, str]:
         'text': prayer_data['text'],
         'generated_prayer': prayer_data.get('generated_prayer'),
         'project_tag': prayer_data.get('project_tag'),
-        'target_audience': prayer_data.get('target_audience'),
         'created_at': prayer_data.get('created_at', datetime.now())
     }
     
@@ -58,7 +56,6 @@ def create_prayer_with_text_archive(prayer_data: Dict) -> Tuple[Prayer, str]:
             text=prayer_data['text'],
             generated_prayer=prayer_data.get('generated_prayer'),
             project_tag=prayer_data.get('project_tag'),
-            target_audience=prayer_data.get('target_audience', 'all'),
             text_file_path=temp_file_path,  # Critical: track source archive
             created_at=prayer_data.get('created_at', datetime.now())
         )
@@ -129,7 +126,6 @@ def append_prayer_activity_with_archive(prayer_id: str, action: str, user: User,
                 'text': prayer.text,
                 'generated_prayer': prayer.generated_prayer,
                 'project_tag': prayer.project_tag,
-                'target_audience': prayer.target_audience,
                 'created_at': prayer.created_at
             }
             
@@ -254,8 +250,6 @@ def create_user_with_text_archive(user_data: Dict, user_id: str = None) -> Tuple
         user_data: Dictionary containing user information
         - display_name: User's display name
         - invited_by_display_name: Display name of inviting user (if any)
-        - religious_preference: User's religious preference
-        - prayer_style: User's prayer style
         - invited_by_username: ID of inviting user
         - invite_token_used: Token used for registration
         user_id: Optional specific ID to use (if None, database will auto-generate)
@@ -275,8 +269,6 @@ def create_user_with_text_archive(user_data: Dict, user_id: str = None) -> Tuple
     with Session(engine) as s:
         user_kwargs = {
             'display_name': user_data['display_name'],
-            'religious_preference': user_data.get('religious_preference', 'unspecified'),
-            'prayer_style': user_data.get('prayer_style'),
             'invited_by_username': user_data.get('invited_by_username'),
             'invite_token_used': user_data.get('invite_token_used'),
             'text_file_path': archive_file_path,  # Track source archive
@@ -403,7 +395,7 @@ def validate_archive_database_consistency(prayer_id: str) -> Dict:
 
 # Convenience function for backward compatibility
 def submit_prayer_archive_first(text: str, author: User, tag: str = None, 
-                               target_audience: str = "all", generated_prayer: str = None) -> Prayer:
+                               generated_prayer: str = None) -> Prayer:
     """
     Submit prayer using archive-first approach - convenience wrapper.
     
@@ -411,7 +403,6 @@ def submit_prayer_archive_first(text: str, author: User, tag: str = None,
         text: Prayer request text
         author: User submitting the prayer
         tag: Optional project tag
-        target_audience: Target audience
         generated_prayer: Pre-generated prayer text
     
     Returns:
@@ -422,8 +413,7 @@ def submit_prayer_archive_first(text: str, author: User, tag: str = None,
         'author_display_name': author.display_name,
         'text': text,
         'generated_prayer': generated_prayer,
-        'project_tag': tag,
-        'target_audience': target_audience
+        'project_tag': tag
     }
     
     prayer, _ = create_prayer_with_text_archive(prayer_data)

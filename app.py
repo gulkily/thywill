@@ -56,8 +56,8 @@ from app_helpers.services.auth_helpers import (
     validate_session_security, cleanup_expired_requests
 )
 from app_helpers.services.prayer_helpers import (
-    get_feed_counts, get_filtered_prayers_for_user, find_compatible_prayer_partner,
-    get_religious_preference_stats, todays_prompt, generate_prayer
+    get_feed_counts, find_compatible_prayer_partner,
+    todays_prompt, generate_prayer
 )
 from app_helpers.services.invite_helpers import (
     get_invite_tree, get_user_descendants, get_user_invite_path,

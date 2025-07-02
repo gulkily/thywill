@@ -5,10 +5,11 @@
 
 set -euo pipefail
 
-# Configuration
-DB_PATH="/home/thywill/thywill/thywill.db"
-BACKUP_DIR="/home/thywill/backups"
-REMOTE_BACKUP_DIR="/home/thywill/remote_backups"  # Could be mounted network drive
+# Configuration - Dynamic path detection
+PROJECT_ROOT=$(dirname "$(dirname "$(realpath "$0")")")
+DB_PATH="$PROJECT_ROOT/thywill.db"
+BACKUP_DIR="$PROJECT_ROOT/backups"
+REMOTE_BACKUP_DIR="$PROJECT_ROOT/remote_backups"  # Could be mounted network drive
 BACKUP_RETENTION_DAYS=30
 HOURLY_RETENTION_HOURS=48
 DAILY_RETENTION_DAYS=30

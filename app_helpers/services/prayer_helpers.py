@@ -20,9 +20,6 @@ def get_feed_counts(user_id: str) -> dict:
     with Session(engine) as s:
         counts = {}
         
-        # Get user's religious preference for filtering
-        user = s.exec(select(User).where(User.display_name == user_id)).first()
-        user_religious_preference = user.religious_preference if user else None
         
         # Helper to exclude archived and flagged prayers
         def active_prayer_filter():
@@ -35,16 +32,8 @@ def get_feed_counts(user_id: str) -> dict:
                 )
             )
         
-        # Religious preference filtering (matches feed_operations.py logic)
-        def apply_religious_filter():
-            if user_religious_preference == "christian":
-                # Christians see: all prayers + christian-only prayers
-                return Prayer.target_audience.in_(["all", "christians_only"])
-            else:
-                # All faiths (unspecified) users see only "all" prayers
-                return Prayer.target_audience == "all"
         
-        # All prayers (active only, with religious filtering)
+        # All prayers (active only)
         counts['all'] = s.exec(
             select(func.count(Prayer.id))
             .where(Prayer.flagged == False)
@@ -54,10 +43,9 @@ def get_feed_counts(user_id: str) -> dict:
                     .where(PrayerAttribute.attribute_name == 'archived')
                 )
             )
-            .where(apply_religious_filter())
         ).first()
         
-        # New & unprayed (with religious filtering to match display logic)
+        # New & unprayed
         stmt = (
             select(func.count(Prayer.id))
             .select_from(Prayer)
@@ -69,14 +57,13 @@ def get_feed_counts(user_id: str) -> dict:
                     .where(PrayerAttribute.attribute_name == 'archived')
                 )
             )
-            .where(apply_religious_filter())
             .group_by(Prayer.id)
             .having(func.count(PrayerMark.id) == 0)
         )
         unprayed_prayers = s.exec(stmt).all()
         counts['new_unprayed'] = len(unprayed_prayers)
         
-        # Most prayed (prayers with at least 1 mark, with religious filtering)
+        # Most prayed (prayers with at least 1 mark)
         counts['most_prayed'] = s.exec(
             select(func.count(func.distinct(Prayer.id)))
             .select_from(Prayer)
@@ -88,7 +75,6 @@ def get_feed_counts(user_id: str) -> dict:
                     .where(PrayerAttribute.attribute_name == 'archived')
                 )
             )
-            .where(apply_religious_filter())
         ).first()
         
         # My prayers (prayers user has marked) - include all statuses
@@ -107,7 +93,7 @@ def get_feed_counts(user_id: str) -> dict:
             .where(Prayer.author_username == user_id)
         ).first()
         
-        # Recent activity (prayers with marks in last 7 days, with religious filtering)
+        # Recent activity (prayers with marks in last 7 days)
         week_ago = datetime.utcnow() - timedelta(days=7)
         counts['recent_activity'] = s.exec(
             select(func.count(func.distinct(Prayer.id)))
@@ -120,18 +106,16 @@ def get_feed_counts(user_id: str) -> dict:
                     .where(PrayerAttribute.attribute_name == 'archived')
                 )
             )
-            .where(apply_religious_filter())
             .where(PrayerMark.created_at >= week_ago)
         ).first()
         
-        # Answered prayers count (with religious filtering)
+        # Answered prayers count
         counts['answered'] = s.exec(
             select(func.count(func.distinct(Prayer.id)))
             .select_from(Prayer)
             .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
             .where(Prayer.flagged == False)
             .where(PrayerAttribute.attribute_name == 'answered')
-            .where(apply_religious_filter())
         ).first()
         
         # Archived prayers count (user's own only)
@@ -147,52 +131,13 @@ def get_feed_counts(user_id: str) -> dict:
         return counts
 
 
-def get_filtered_prayers_for_user(user: User, db: Session, include_archived: bool = False, include_answered: bool = False) -> list[Prayer]:
-    """Get prayers filtered based on user's religious preferences and attributes"""
-    
-    # Base query for non-flagged prayers
-    base_query = select(Prayer).where(Prayer.flagged == False)
-    
-    # Apply attribute filtering
-    excluded_attributes = []
-    if not include_archived:
-        excluded_attributes.append('archived')
-    if not include_answered:
-        excluded_attributes.append('answered')
-    
-    if excluded_attributes:
-        excluded_prayer_ids = db.exec(
-            select(PrayerAttribute.prayer_id).where(
-                PrayerAttribute.attribute_name.in_(excluded_attributes)
-            )
-        ).all()
-        
-        if excluded_prayer_ids:
-            base_query = base_query.where(~Prayer.id.in_(excluded_prayer_ids))
-    
-    # Apply religious preference filtering
-    if user.religious_preference == "christian":
-        # Christians see: all prayers + christian-only prayers
-        base_query = base_query.where(
-            Prayer.target_audience.in_(["all", "christians_only"])
-        )
-    else:
-        # All faiths (unspecified) users see only "all" prayers
-        base_query = base_query.where(Prayer.target_audience == "all")
-    
-    return db.exec(base_query.order_by(Prayer.created_at.desc())).all()
 
 
 def find_compatible_prayer_partner(prayer: Prayer, db: Session, exclude_user_ids: list[str] = None) -> User | None:
-    """Find a user compatible with the prayer's religious targeting requirements"""
+    """Find a user to assign to pray for this prayer"""
     
-    # Build user query based on prayer target audience
+    # Build user query
     user_query = select(User)
-    
-    # Apply religious compatibility filtering
-    if prayer.target_audience == "christians_only":
-        user_query = user_query.where(User.religious_preference == "christian")
-    # For "all", no additional religious filtering needed
     
     # Exclude users who have already been assigned this prayer
     assigned_user_ids = db.exec(
@@ -212,23 +157,6 @@ def find_compatible_prayer_partner(prayer: Prayer, db: Session, exclude_user_ids
     return db.exec(user_query).first()
 
 
-def get_religious_preference_stats(db: Session) -> dict:
-    """Get statistics about religious preference distribution"""
-    stats = {}
-    
-    # User preference distribution
-    user_prefs = db.exec(
-        text("SELECT religious_preference, COUNT(*) FROM user GROUP BY religious_preference")
-    ).fetchall()
-    stats['user_preferences'] = {pref: count for pref, count in user_prefs}
-    
-    # Prayer target audience distribution
-    prayer_targets = db.exec(
-        text("SELECT target_audience, COUNT(*) FROM prayer GROUP BY target_audience")
-    ).fetchall()
-    stats['prayer_targets'] = {target: count for target, count in prayer_targets}
-    
-    return stats
 
 
 def todays_prompt() -> str:

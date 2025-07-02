@@ -6,9 +6,6 @@ import secrets
 class User(SQLModel, table=True):
     display_name: str = Field(primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    # Religious preference fields
-    religious_preference: str | None = Field(default="unspecified", max_length=50)  # "christian", "unspecified"
-    prayer_style: str | None = Field(default=None, max_length=100)  # e.g., "in_jesus_name", "interfaith"
     # Invite tree fields
     invited_by_username: str | None = Field(default=None)  # Username of the user who invited this user
     invite_token_used: str | None = Field(default=None)   # Token that was used to create this account
@@ -84,8 +81,6 @@ class Prayer(SQLModel, table=True):
     project_tag: str | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     flagged: bool = False  # Will be deprecated after migration
-    # Religious targeting fields
-    target_audience: str | None = Field(default="all", max_length=50)  # "christians_only", "all"
     # Text archive tracking
     text_file_path: str | None = Field(default=None)  # Path to the text archive file containing this prayer
     
