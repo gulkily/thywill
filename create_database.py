@@ -10,9 +10,73 @@ WARNING: This will create tables but will not overwrite existing data.
 
 import sys
 import os
+import json
 from pathlib import Path
 # Remove direct SQLAlchemy import
-from sqlmodel import SQLModel
+from sqlmodel import SQLModel, Session, select
+
+def create_default_roles():
+    """Create default system roles"""
+    from models import engine, Role
+    
+    with Session(engine) as session:
+        # Admin role with all permissions
+        admin_role = Role(
+            name="admin",
+            description="Full administrative access",
+            permissions=json.dumps([
+                "*",  # Wildcard permission for everything
+                "admin.users",
+                "admin.roles", 
+                "admin.prayers",
+                "admin.system",
+                "moderate.prayers",
+                "view.analytics"
+            ]),
+            is_system_role=True,
+            created_by=None  # System created
+        )
+        
+        # Moderator role
+        moderator_role = Role(
+            name="moderator", 
+            description="Prayer moderation and user management",
+            permissions=json.dumps([
+                "moderate.prayers",
+                "view.users",
+                "flag.prayers",
+                "view.reports"
+            ]),
+            is_system_role=True,
+            created_by=None
+        )
+        
+        # User role (default for all users)
+        user_role = Role(
+            name="user",
+            description="Standard user permissions",
+            permissions=json.dumps([
+                "create.prayers",
+                "view.prayers",
+                "mark.prayers",
+                "view.profile"
+            ]),
+            is_system_role=True,
+            created_by=None
+        )
+        
+        # Check if roles already exist and create them if they don't
+        for role in [admin_role, moderator_role, user_role]:
+            stmt = select(Role).where(Role.name == role.name)
+            existing = session.exec(stmt).first()
+            if existing:
+                print(f"   Role '{role.name}' already exists")
+            else:
+                session.add(role)
+                print(f"   Created role '{role.name}'")
+        
+        session.commit()
+        print("✅ Role system initialized")
 
 def main():
     print("ThyWill Database Creation Script")
@@ -40,11 +104,16 @@ def main():
         from models import engine, User, Prayer, InviteToken, Session as SessionModel
         from models import PrayerMark, PrayerSkip, AuthenticationRequest, AuthApproval
         from models import AuthAuditLog, SecurityLog, PrayerAttribute, PrayerActivityLog
+        from models import Role, UserRole
         
         print("Creating database tables...")
         
         # Create all tables (create_all is safe - it won't overwrite existing tables)
         SQLModel.metadata.create_all(engine)
+        
+        # Set up role system with default roles
+        print("Setting up role-based permission system...")
+        create_default_roles()
         
         # Get table count for verification
         with engine.connect() as conn:
