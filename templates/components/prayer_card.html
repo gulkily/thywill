@@ -118,8 +118,8 @@
                class="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg z-50 hidden"
                onclick="event.stopPropagation();">
             <div class="py-1">
-            <!-- Prayer management buttons for prayer authors -->
-            {% if prayer_session.is_fully_authenticated and p.author_id == me.display_name %}
+            <!-- Prayer management buttons for prayer authors or admins -->
+            {% if prayer_session.is_fully_authenticated and (p.author_id == me.display_name or me.is_admin) %}
               {% if not p.is_answered %}
                 <button onclick="showAnsweredModal('{{ p.id }}'); hideDropdown('{{ p.id }}')"
                         class="block w-full text-left px-4 py-3 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-800 dark:hover:text-green-300 transition-colors duration-150 font-medium whitespace-nowrap">
