@@ -12,7 +12,7 @@ import json
 from datetime import datetime
 
 # Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models import engine, User, Session as UserSession
 from sqlmodel import Session, select
@@ -25,23 +25,23 @@ def main():
         sessions = session.exec(select(UserSession)).all()
         users = session.exec(select(User)).all()
         
-        # Create user lookup by ID
-        user_lookup = {user.id: user for user in users}
+        # Create user lookup by display_name
+        user_lookup = {user.display_name: user for user in users}
         
         # Export session data
         session_export = []
         
         for user_session in sessions:
-            user = user_lookup.get(user_session.user_id)
+            user = user_lookup.get(user_session.username)
             if user:
                 session_data = {
                     'session_id': user_session.id,
-                    'username': user.display_name,  # This is what we'll use to restore
-                    'user_id': user_session.user_id,
+                    'username': user_session.username,  # This is what we'll use to restore
                     'created_at': user_session.created_at.isoformat(),
-                    'last_activity': user_session.last_activity.isoformat() if user_session.last_activity else None,
+                    'expires_at': user_session.expires_at.isoformat(),
                     'ip_address': user_session.ip_address,
                     'device_info': user_session.device_info,
+                    'auth_request_id': user_session.auth_request_id,
                     'is_fully_authenticated': user_session.is_fully_authenticated
                 }
                 session_export.append(session_data)
