@@ -1,0 +1,42 @@
+<!-- Timezone Detection Component -->
+<!-- Standalone timezone detection for entry pages that don't extend base.html -->
+<script>
+  // Timezone detection and cookie management
+  document.addEventListener('DOMContentLoaded', function() {
+    // Detect user timezone
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+    // Store in sessionStorage for immediate use
+    sessionStorage.setItem('userTimezone', userTimezone);
+    
+    // Check if timezone cookie needs to be set/updated
+    const currentCookie = getCookie('user_timezone');
+    if (currentCookie !== userTimezone) {
+      // Set cookie with 30-day expiration for server-side rendering
+      setCookie('user_timezone', userTimezone, 30);
+      
+      // Note: We don't reload on entry pages since they typically don't have timestamps
+      // The cookie will be available for subsequent page loads
+      // When user navigates to pages with timestamps, base.html will detect the existing cookie
+      // and avoid unnecessary reloads, providing smooth user experience
+    }
+  });
+  
+  // Cookie utility functions
+  function setCookie(name, value, days) {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+    document.cookie = name + '=' + value + ';expires=' + expires.toUTCString() + ';path=/;SameSite=Strict';
+  }
+  
+  function getCookie(name) {
+    const nameEQ = name + '=';
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+      let c = ca[i];
+      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+  }
+</script>
