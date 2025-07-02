@@ -17,7 +17,7 @@ return f"Divine Creator, we lift up our friend who asks for help with: {prompt}.
 - Add retry mechanism with user feedback
 - Implementation locations:
   - `templates/components/prayer_card.html`
-  - `app_helpers/routes/prayer/prayer_crud.py`
+  - `app_helpers/routes/prayer/prayer_operations.py`
   - `app_helpers/services/prayer_helpers.py`
 
 ### 2. Multi-Provider Fallback System
@@ -58,7 +58,7 @@ def generate_prayer_with_fallbacks(prompt):
 
 ## Files to Modify
 - `app_helpers/services/prayer_helpers.py` - Core generation logic
-- `app_helpers/routes/prayer/prayer_crud.py` - API endpoints
+- `app_helpers/routes/prayer/prayer_operations.py` - API endpoints
 - `templates/components/prayer_card.html` - UI notifications
 - `requirements.txt` - Additional API dependencies
 - `deployment/sample.env` - Additional API keys

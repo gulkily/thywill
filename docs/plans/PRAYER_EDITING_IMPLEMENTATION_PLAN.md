@@ -92,7 +92,7 @@ Follow existing HTMX patterns used throughout the codebase:
 Based on the modular route structure, add to the appropriate prayer sub-module:
 
 ```python
-# In app_helpers/routes/prayer/prayer_crud.py (or new prayer_editing.py)
+# In app_helpers/routes/prayer/prayer_operations.py (or new prayer_editing.py)
 from fastapi import APIRouter, Request, HTTPException, Form
 from fastapi.responses import HTMLResponse
 from app_helpers.services.auth_helpers import current_user, require_full_auth

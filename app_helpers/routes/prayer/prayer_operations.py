@@ -1,8 +1,8 @@
-# app_helpers/routes/prayer/prayer_crud.py
+# app_helpers/routes/prayer/prayer_operations.py
 """
-Prayer CRUD operations.
+Prayer operations and submission handlers.
 
-Contains Create, Read, Update, Delete operations for prayers.
+Contains prayer submission, preview, and core operational endpoints.
 Extracted from prayer_routes.py for better maintainability.
 """
 

@@ -165,7 +165,7 @@ def main():
     priority_files = [
         # Phase 1: Already fixed
         'app_helpers/routes/prayer/prayer_status.py',
-        'app_helpers/routes/prayer/prayer_crud.py', 
+        'app_helpers/routes/prayer/prayer_operations.py', 
         'app_helpers/routes/prayer/prayer_mode.py',
         'app_helpers/routes/prayer/prayer_moderation.py',
         'app_helpers/routes/user_routes.py',

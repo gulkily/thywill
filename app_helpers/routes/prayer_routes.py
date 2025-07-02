@@ -4,7 +4,7 @@ Prayer-related route handlers - Main aggregator module.
 
 This module has been refactored into focused sub-modules for better maintainability:
 - prayer/feed_operations.py - Feed display and filtering operations
-- prayer/prayer_crud.py - Create, Read, Update, Delete operations  
+- prayer/prayer_operations.py - Prayer submission, preview, and core operations  
 - prayer/prayer_status.py - Status management (marking, archiving, answering)
 - prayer/prayer_moderation.py - Moderation and flagging operations
 
@@ -28,7 +28,7 @@ router = APIRouter()
 
 # Import all sub-module routers and include them
 from .prayer.feed_operations import router as feed_router
-from .prayer.prayer_crud import router as crud_router  
+from .prayer.prayer_operations import router as crud_router  
 from .prayer.prayer_status import router as status_router
 from .prayer.prayer_moderation import router as moderation_router
 from .prayer.prayer_mode import router as prayer_mode_router

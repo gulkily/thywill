@@ -67,7 +67,7 @@ This approach consistently applies:
    - **Breakdown needed**: Token generation, notifications, approvals, validation
 
 ### 📋 **Medium Priority: Prayer & User Management (300+ lines)**
-8. **`app_helpers/routes/prayer/prayer_crud.py`** - 333 lines
+8. **`app_helpers/routes/prayer/prayer_operations.py`** - 333 lines
    - Prayer CRUD operations extracted from prayer_routes.py
    - **Breakdown needed**: Create, read, update, delete operations
 
@@ -214,7 +214,7 @@ app_helpers/services/auth/
 - [x] Analyze prayer_routes.py function groups and dependencies
 - [x] Create app_helpers/routes/prayer/ directory structure
 - [x] Extract feed operations to feed_operations.py (211 lines)
-- [x] Extract CRUD functions to prayer_crud.py (294 lines)
+- [x] Extract CRUD functions to prayer_operations.py (294 lines)
 - [x] Extract status functions to prayer_status.py (244 lines)
 - [x] Extract moderation functions to prayer_moderation.py (117 lines)
 - [x] Update prayer_routes.py to import all sub-modules (reduced to 38 lines)
@@ -279,7 +279,7 @@ app_helpers/services/auth/
   ```
 
 #### 📋 **Phase 4C: Prayer & User Management**
-- [ ] **prayer/prayer_crud.py (333 lines → 3-4 modules + aggregator)**
+- [ ] **prayer/prayer_operations.py (333 lines → 3-4 modules + aggregator)**
   ```
   app_helpers/routes/prayer/crud/
   ├── create.py              # Prayer creation (~85 lines)

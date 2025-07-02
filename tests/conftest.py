@@ -77,7 +77,7 @@ def client(test_session):
         patch('app_helpers.services.archive_first_service.Session', mock_session),
         patch('app_helpers.routes.prayer_routes.Session', mock_session),
         patch('app_helpers.routes.prayer.feed_operations.Session', mock_session),
-        patch('app_helpers.routes.prayer.prayer_crud.Session', mock_session),
+        patch('app_helpers.routes.prayer.prayer_operations.Session', mock_session),
         patch('app_helpers.routes.prayer.prayer_status.Session', mock_session),
         patch('app_helpers.routes.prayer.prayer_moderation.Session', mock_session),
         patch('app_helpers.routes.auth_routes.Session', mock_session),
