@@ -27,7 +27,7 @@ try:
 except ImportError:
     # Fallback defaults for testing - NEVER use production directory
     import os
-    TEXT_ARCHIVE_ENABLED = os.getenv('TEXT_ARCHIVE_ENABLED', 'false').lower() == 'true'
+    TEXT_ARCHIVE_ENABLED = os.getenv('TEXT_ARCHIVE_ENABLED', 'true').lower() == 'true'
     TEXT_ARCHIVE_BASE_DIR = os.getenv('TEXT_ARCHIVE_BASE_DIR', '/tmp/test_archives_fallback')
     TEXT_ARCHIVE_COMPRESSION_AFTER_DAYS = int(os.getenv('TEXT_ARCHIVE_COMPRESSION_AFTER_DAYS', '365'))
 
@@ -111,6 +111,20 @@ class TextArchiveService:
             
         timestamp = datetime.now().strftime("%B %d %Y at %H:%M")
         
+        self._append_activity_with_timestamp(file_path, action, user, timestamp, extra, old_value, new_value)
+    
+    def append_prayer_activity_with_timestamp(self, file_path: str, action: str, user: str, activity_timestamp: datetime, extra: str = "", old_value: str = None, new_value: str = None):
+        """Append activity to prayer archive file with historical timestamp"""
+        if not self.enabled or not file_path:
+            return
+            
+        timestamp = activity_timestamp.strftime("%B %d %Y at %H:%M")
+        
+        self._append_activity_with_timestamp(file_path, action, user, timestamp, extra, old_value, new_value)
+    
+    def _append_activity_with_timestamp(self, file_path: str, action: str, user: str, timestamp: str, extra: str = "", old_value: str = None, new_value: str = None):
+        """Internal method to append activity with formatted timestamp"""
+        
         # Format activity line based on action type
         if action == "prayed":
             activity_line = f"{timestamp} - {user} prayed this prayer"
@@ -148,12 +162,19 @@ class TextArchiveService:
             return ""
             
         now = datetime.now()
-        timestamp = now.strftime("%B %d %Y at %H:%M")
-        monthly_file = self.base_dir / "users" / f"{now.year}_{now.month:02d}_users.txt"
+        return self.append_user_registration_with_timestamp(user_name, invite_source, now)
+    
+    def append_user_registration_with_timestamp(self, user_name: str, invite_source: str, registration_time: datetime):
+        """Append user registration to monthly user file with historical timestamp"""
+        if not self.enabled:
+            return ""
+            
+        timestamp = registration_time.strftime("%B %d %Y at %H:%M")
+        monthly_file = self.base_dir / "users" / f"{registration_time.year}_{registration_time.month:02d}_users.txt"
         
         # Create monthly file if it doesn't exist
         if not monthly_file.exists():
-            header = f"User Registrations for {now.strftime('%B %Y')}\n\n"
+            header = f"User Registrations for {registration_time.strftime('%B %Y')}\n\n"
             self._write_file_atomic(str(monthly_file), header)
         
         # Format registration line
