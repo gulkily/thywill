@@ -35,16 +35,13 @@ def analyze_orphaned_prayers() -> Dict[str, Any]:
         
         results['total_prayers'] = len(all_prayers)
         
-        # Analyze user religious preferences
-        users_by_pref = defaultdict(int)
-        for user in all_users:
-            users_by_pref[user.religious_preference or 'unspecified'] += 1
-        results['user_preferences'] = dict(users_by_pref)
+        # All prayers are available to all users (no preference-based filtering)
+        results['user_preferences'] = {'all_users': len(all_users)}
         
-        # Analyze prayer target audiences
+        # All prayers use target audience 'all'
         prayers_by_audience = defaultdict(int)
         for prayer in all_prayers:
-            prayers_by_audience[prayer.target_audience] += 1
+            prayers_by_audience['all'] += 1
         results['prayer_audiences'] = dict(prayers_by_audience)
         
         # Find orphaned prayers
@@ -65,21 +62,14 @@ def analyze_orphaned_prayers() -> Dict[str, Any]:
             if session.exec(stmt).first():
                 continue
             
-            # Check if prayer has compatible viewers
-            has_viewers = False
-            
-            if prayer.target_audience == 'all':
-                # All users can see 'all' prayers
-                has_viewers = len(all_users) > 0
-            elif prayer.target_audience == 'christians_only':
-                # Only Christian users can see Christian prayers
-                christian_users = [u for u in all_users if u.religious_preference == 'christian']
-                has_viewers = len(christian_users) > 0
+            # All prayers are visible to all users (no orphaned prayers with current system)
+            # This analysis is no longer needed since all prayers have target_audience='all'
+            has_viewers = len(all_users) > 0
             
             if not has_viewers:
                 orphaned_prayers.append({
                     'id': prayer.id,
-                    'target_audience': prayer.target_audience,
+                    'target_audience': 'all',
                     'created_at': prayer.created_at.isoformat() if prayer.created_at else None,
                     'text_preview': prayer.text[:50] + "..." if len(prayer.text) > 50 else prayer.text
                 })
@@ -131,11 +121,8 @@ def print_analysis_report(results: Dict[str, Any]) -> None:
             print()
         
         print('🔧 Healing Options:')
-        christian_only_count = len([p for p in orphaned_prayers if p['target_audience'] == 'christians_only'])
-        if christian_only_count > 0:
-            print(f'   • Create Christian user to view {christian_only_count} Christian-only prayers')
-            print(f'   • Generate invites for Christian users')
         print(f'   • Flag {len(orphaned_prayers)} prayers for admin review')
+        print(f'   • Create new user accounts to ensure viewers exist')
         print()
         print('💡 Run "thywill heal-orphaned-prayers" to fix these issues')
         

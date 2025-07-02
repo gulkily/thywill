@@ -42,16 +42,8 @@ def find_orphaned_prayers() -> List[Prayer]:
             if session.exec(stmt).first():
                 continue
             
-            # Check if prayer has compatible viewers
-            has_viewers = False
-            
-            if prayer.target_audience == 'all':
-                # All users can see 'all' prayers
-                has_viewers = len(all_users) > 0
-            elif prayer.target_audience == 'christians_only':
-                # Only Christian users can see Christian prayers
-                christian_users = [u for u in all_users if u.religious_preference == 'christian']
-                has_viewers = len(christian_users) > 0
+            # All prayers are visible to all users (no preference-based filtering)
+            has_viewers = len(all_users) > 0
             
             if not has_viewers:
                 orphaned_prayers.append(prayer)
@@ -83,36 +75,28 @@ def heal_orphaned_prayers() -> Dict[str, Any]:
         if not orphaned_prayers:
             return results
         
-        # Analyze what healing is needed
-        christian_only_prayers = [p for p in orphaned_prayers if p.target_audience == 'christians_only']
+        # Analyze what healing is needed (simplified since all prayers use target_audience='all')
         all_users = list(session.exec(select(User)))
         
         healing_actions = []
         
-        if christian_only_prayers:
-            # Check if any Christian users exist
-            christian_users = [u for u in all_users if u.religious_preference == 'christian']
-            
-            if not christian_users:
-                healing_actions.append('create_christian_user')
+        # Since all prayers now use target_audience='all', just ensure users exist
+        if not all_users:
+            healing_actions.append('create_general_user')
         
         results['healing_actions'] = healing_actions
         
         # Perform healing actions
         for action in healing_actions:
-            if action == 'create_christian_user':
-                # Create a default Christian user
-                christian_user = User(
-                    id=uuid.uuid4().hex,
-                    display_name='Christian User',
-                    religious_preference='christian',
+            if action == 'create_general_user':
+                # Create a default user
+                general_user = User(
+                    display_name='Default User',
                     created_at=datetime.utcnow()
                 )
-                session.add(christian_user)
+                session.add(general_user)
                 results['created_users'].append({
-                    'id': christian_user.id,
-                    'display_name': christian_user.display_name,
-                    'religious_preference': christian_user.religious_preference
+                    'display_name': general_user.display_name
                 })
                 
                 # Create an invite token for additional Christian users
@@ -140,11 +124,8 @@ def heal_orphaned_prayers() -> Dict[str, Any]:
         for prayer in orphaned_prayers:
             has_viewers = False
             
-            if prayer.target_audience == 'all':
-                has_viewers = len(all_users) > 0
-            elif prayer.target_audience == 'christians_only':
-                christian_users = [u for u in all_users if u.religious_preference == 'christian']
-                has_viewers = len(christian_users) > 0
+            # All prayers use target_audience='all' and are visible to all users
+            has_viewers = len(all_users) > 0
             
             if has_viewers:
                 healed_count += 1

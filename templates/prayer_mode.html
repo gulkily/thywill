@@ -160,20 +160,12 @@
                 {{ prayer.text }}
               </p>
               
-              <!-- Prayer targeting indicators -->
-              {% if prayer.target_audience != "all" or prayer.project_tag %}
+              <!-- Project tag indicator -->
+              {% if prayer.project_tag %}
               <div class="flex flex-wrap gap-2 mt-3">
-                {% if prayer.target_audience == "christians_only" %}
-                  <span class="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full border border-blue-200 dark:border-blue-700">
-                    ✝️ Christians
-                  </span>
-                {% endif %}
-                
-                {% if prayer.project_tag %}
-                  <span class="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full border border-purple-200 dark:border-purple-700">
-                    {{ prayer.project_tag }}
-                  </span>
-                {% endif %}
+                <span class="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full border border-purple-200 dark:border-purple-700">
+                  {{ prayer.project_tag }}
+                </span>
               </div>
               {% endif %}
             </div>
