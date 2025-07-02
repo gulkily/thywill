@@ -21,6 +21,7 @@ pytest                 # Run tests
 ./thywill restore <file>
 ./thywill migrate
 ./thywill import <file>
+./thywill heal-archives   # Comprehensive archive healing with full activity data
 ```
 
 ## Architecture
@@ -43,12 +44,12 @@ ANTHROPIC_API_KEY=your_claude_api_key
 # Optional Auth
 MULTI_DEVICE_AUTH_ENABLED=true
 PEER_APPROVAL_COUNT=2
-JWT_SECRET=your_jwt_secret
+JWT_SECRET=changeme
 
-# Optional
+# Optional  
 TEXT_ARCHIVE_ENABLED=true
-PAYPAL_USERNAME=your_paypal
-VENMO_HANDLE=your_venmo
+PAYPAL_USERNAME=
+VENMO_HANDLE=
 ```
 
 ## Database Models
@@ -80,6 +81,18 @@ VENMO_HANDLE=your_venmo
 ## Security
 **Auth**: 3/hour rate limit, IP monitoring, device fingerprinting, audit logging
 **Content**: Invite-only, community moderation, admin oversight, input validation
+
+## Archive Operations (Enhanced Idempotency)
+**heal-archives**: Creates comprehensive archive files with complete activity history
+- Includes prayer marks, attributes, activity logs in chronological order
+- Fully idempotent - safe to run multiple times, detects incomplete archives
+- Content-based verification ensures archives contain all database activity
+- Round-trip compatible with text-archives import for complete data restoration
+
+**import text-archives**: Fully idempotent import from text archive files
+- Restores complete database state including all activity data
+- Duplicate detection prevents data corruption on repeated imports
+- Both operations guarantee full data coverage and integrity
 
 ## Architecture  
 **Modular**: Backward compatibility, dual imports, incremental adoption
