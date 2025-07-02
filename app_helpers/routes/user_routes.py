@@ -11,8 +11,10 @@ from models import engine, User, Prayer, PrayerMark, Session as SessionModel
 from app_helpers.services.auth_helpers import current_user
 from app_helpers.services.auth.validation_helpers import log_security_event, is_admin
 from app_helpers.utils.user_management import is_user_deactivated
+from app_helpers.timezone_utils import get_user_timezone_from_request
 
-templates = Jinja2Templates(directory="templates")
+# Use shared templates instance with filters registered
+from app_helpers.shared_templates import templates
 
 router = APIRouter()
 
@@ -103,6 +105,8 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
             if profile_user.display_name == 'admin':
                 role_names = ['admin (legacy)']
         
+        user_timezone = get_user_timezone_from_request(request)
+        
         return templates.TemplateResponse(
             "profile.html",
             {
@@ -117,7 +121,8 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
                 "inviter": inviter,
                 "user_roles": user_roles,
                 "role_names": role_names,
-                "is_admin": is_admin(user)
+                "is_admin": is_admin(user),
+                "user_timezone": user_timezone
             }
         )
 
@@ -190,9 +195,11 @@ def users_list(request: Request, user_session: tuple = Depends(current_user)):
                 'is_admin': profile_user.has_role("admin", s)
             })
         
+        user_timezone = get_user_timezone_from_request(request)
+        
         return templates.TemplateResponse(
             "users.html",
-            {"request": request, "users": users_with_stats, "me": user, "session": session, "is_admin": is_admin(user)}
+            {"request": request, "users": users_with_stats, "me": user, "session": session, "is_admin": is_admin(user), "user_timezone": user_timezone}
         )
 
 

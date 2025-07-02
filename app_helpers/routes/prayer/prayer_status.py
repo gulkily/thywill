@@ -20,7 +20,8 @@ from app_helpers.services.auth_helpers import current_user, is_admin
 from app_helpers.services.archive_first_service import append_prayer_activity_with_archive
 
 # Initialize templates
-templates = Jinja2Templates(directory="templates")
+# Use shared templates instance with filters registered
+from app_helpers.shared_templates import templates
 
 # Create router for status operations
 router = APIRouter()

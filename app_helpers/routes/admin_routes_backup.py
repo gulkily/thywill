@@ -37,7 +37,8 @@ from app_helpers.services.prayer_helpers import get_religious_preference_stats
 
 # Initialize router and templates
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+# Use shared templates instance with filters registered
+from app_helpers.shared_templates import templates
 
 
 @router.get("/admin", response_class=HTMLResponse)

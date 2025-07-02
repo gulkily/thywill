@@ -13,7 +13,8 @@ from app_helpers.services.changelog_helpers import (
 )
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+# Use shared templates instance with filters registered
+from app_helpers.shared_templates import templates
 
 @router.get("/changelog", response_class=HTMLResponse)
 async def changelog(request: Request):

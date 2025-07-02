@@ -20,10 +20,11 @@ from models import (
 from app_helpers.services.auth_helpers import current_user
 from app_helpers.services.prayer_helpers import get_feed_counts, todays_prompt
 from app_helpers.services.auth.validation_helpers import is_admin
+from app_helpers.timezone_utils import get_user_timezone_from_request
 from app import PRAYER_MODE_ENABLED
 
-# Initialize templates
-templates = Jinja2Templates(directory="templates")
+# Use shared templates instance with filters registered
+from app_helpers.shared_templates import templates
 
 # Create router for feed operations
 router = APIRouter()
@@ -193,9 +194,13 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
     # Get feed counts
     feed_counts = get_feed_counts(user.display_name)
     
+    # Get user timezone
+    user_timezone = get_user_timezone_from_request(request)
+    
     return templates.TemplateResponse(
         "feed.html",
         {"request": request, "prayers": prayers_with_authors, "prompt": todays_prompt(), 
          "me": user, "session": session, "current_feed": feed_type, "feed_counts": feed_counts,
-         "PRAYER_MODE_ENABLED": PRAYER_MODE_ENABLED, "is_admin": is_admin(user)}
+         "PRAYER_MODE_ENABLED": PRAYER_MODE_ENABLED, "is_admin": is_admin(user),
+         "user_timezone": user_timezone}
     )

@@ -8,6 +8,7 @@ import io
 
 from app_helpers.services.auth_helpers import current_user
 from app_helpers.services.auth.validation_helpers import is_admin
+from app_helpers.timezone_utils import get_user_timezone_from_request
 from models import engine, Session as SessionModel
 from sqlmodel import Session
 
@@ -15,16 +16,18 @@ from sqlmodel import Session
 MULTI_DEVICE_AUTH_ENABLED = os.getenv("MULTI_DEVICE_AUTH_ENABLED", "true").lower() == "true"
 
 
-templates = Jinja2Templates(directory="templates")
+# Use shared templates instance with filters registered
+from app_helpers.shared_templates import templates
 
 router = APIRouter()
 
 @router.get("/menu", response_class=HTMLResponse)
 def menu(request: Request, user_session: tuple = Depends(current_user)):
     user, session = user_session
+    user_timezone = get_user_timezone_from_request(request)
     return templates.TemplateResponse(
         "menu.html",
-        {"request": request, "me": user, "session": session, "is_admin": is_admin(user)}
+        {"request": request, "me": user, "session": session, "is_admin": is_admin(user), "user_timezone": user_timezone}
     )
 
 @router.get("/logged-out", response_class=HTMLResponse)
