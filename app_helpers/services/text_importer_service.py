@@ -415,55 +415,102 @@ class TextImporterService:
                 self.import_stats['prayer_marks_imported'] += 1
             
         elif action in ['answered', 'archived', 'flagged']:
-            # Create prayer attribute
-            prayer_attr = PrayerAttribute(
-                prayer_id=prayer.id,
-                attribute_name=action,
-                attribute_value='true',
-                set_by_user_id=user.display_name,
-                created_at=activity_time
-            )
-            session.add(prayer_attr)
-            self.import_stats['prayer_attributes_imported'] += 1
+            # Check for existing status attribute to avoid duplicates
+            existing_attr = session.exec(
+                select(PrayerAttribute).where(
+                    PrayerAttribute.prayer_id == prayer.id,
+                    PrayerAttribute.attribute_name == action,
+                    PrayerAttribute.attribute_value == 'true',
+                    PrayerAttribute.set_by_user_id == user.display_name,
+                    PrayerAttribute.created_at == activity_time
+                )
+            ).first()
             
-            # For answered prayers, also set answer_date
-            if action == 'answered':
-                answer_date_attr = PrayerAttribute(
+            if not existing_attr:
+                # Create prayer attribute
+                prayer_attr = PrayerAttribute(
                     prayer_id=prayer.id,
-                    attribute_name='answer_date',
-                    attribute_value=activity_time.isoformat(),
+                    attribute_name=action,
+                    attribute_value='true',
                     set_by_user_id=user.display_name,
                     created_at=activity_time
                 )
-                session.add(answer_date_attr)
+                session.add(prayer_attr)
                 self.import_stats['prayer_attributes_imported'] += 1
+            
+            # For answered prayers, also set answer_date
+            if action == 'answered':
+                # Check for existing answer_date attribute to avoid duplicates
+                existing_date_attr = session.exec(
+                    select(PrayerAttribute).where(
+                        PrayerAttribute.prayer_id == prayer.id,
+                        PrayerAttribute.attribute_name == 'answer_date',
+                        PrayerAttribute.attribute_value == activity_time.isoformat(),
+                        PrayerAttribute.set_by_user_id == user.display_name,
+                        PrayerAttribute.created_at == activity_time
+                    )
+                ).first()
+                
+                if not existing_date_attr:
+                    answer_date_attr = PrayerAttribute(
+                        prayer_id=prayer.id,
+                        attribute_name='answer_date',
+                        attribute_value=activity_time.isoformat(),
+                        set_by_user_id=user.display_name,
+                        created_at=activity_time
+                    )
+                    session.add(answer_date_attr)
+                    self.import_stats['prayer_attributes_imported'] += 1
         
         elif action == 'testimony':
             # Create testimony attribute
             testimony_text = activity.get('raw_action', '').split(': ', 1)
             if len(testimony_text) > 1:
-                testimony_attr = PrayerAttribute(
-                    prayer_id=prayer.id,
-                    attribute_name='answer_testimony',
-                    attribute_value=testimony_text[1],
-                    set_by_user_id=user.display_name,
-                    created_at=activity_time
-                )
-                session.add(testimony_attr)
-                self.import_stats['prayer_attributes_imported'] += 1
+                # Check for existing testimony attribute to avoid duplicates
+                existing_testimony_attr = session.exec(
+                    select(PrayerAttribute).where(
+                        PrayerAttribute.prayer_id == prayer.id,
+                        PrayerAttribute.attribute_name == 'answer_testimony',
+                        PrayerAttribute.attribute_value == testimony_text[1],
+                        PrayerAttribute.set_by_user_id == user.display_name,
+                        PrayerAttribute.created_at == activity_time
+                    )
+                ).first()
+                
+                if not existing_testimony_attr:
+                    testimony_attr = PrayerAttribute(
+                        prayer_id=prayer.id,
+                        attribute_name='answer_testimony',
+                        attribute_value=testimony_text[1],
+                        set_by_user_id=user.display_name,
+                        created_at=activity_time
+                    )
+                    session.add(testimony_attr)
+                    self.import_stats['prayer_attributes_imported'] += 1
         
-        # Always create activity log entry
-        activity_log = PrayerActivityLog(
-            prayer_id=prayer.id,
-            user_id=user.display_name,
-            action=action,
-            old_value=None,
-            new_value='true',
-            text_file_path=prayer.text_file_path,
-            created_at=activity_time
-        )
-        session.add(activity_log)
-        self.import_stats['activity_logs_imported'] += 1
+        # Check for existing activity log to avoid duplicates
+        existing_activity_log = session.exec(
+            select(PrayerActivityLog).where(
+                PrayerActivityLog.prayer_id == prayer.id,
+                PrayerActivityLog.user_id == user.display_name,
+                PrayerActivityLog.action == action,
+                PrayerActivityLog.created_at == activity_time
+            )
+        ).first()
+        
+        if not existing_activity_log:
+            # Create activity log entry
+            activity_log = PrayerActivityLog(
+                prayer_id=prayer.id,
+                user_id=user.display_name,
+                action=action,
+                old_value=None,
+                new_value='true',
+                text_file_path=prayer.text_file_path,
+                created_at=activity_time
+            )
+            session.add(activity_log)
+            self.import_stats['activity_logs_imported'] += 1
         
         session.commit()
     
