@@ -16,14 +16,14 @@ class TestFeedCounts:
         user = UserFactory.create()
         
         # Create active and archived prayers
-        active_prayer = PrayerFactory.create(author_id=user.id)
-        archived_prayer = PrayerFactory.create(author_id=user.id)
+        active_prayer = PrayerFactory.create(author_username=user.display_name)
+        archived_prayer = PrayerFactory.create(author_username=user.display_name)
         
         test_session.add_all([user, active_prayer, archived_prayer])
         test_session.commit()
         
         # Archive one prayer
-        archived_prayer.set_attribute('archived', 'true', user.id, test_session)
+        archived_prayer.set_attribute('archived', 'true', user.display_name, test_session)
         test_session.commit()
         
         # Count active prayers (should exclude archived)
@@ -45,14 +45,14 @@ class TestFeedCounts:
         user = UserFactory.create()
         
         # Create regular and answered prayers
-        regular_prayer = PrayerFactory.create(author_id=user.id)
-        answered_prayer = PrayerFactory.create(author_id=user.id)
+        regular_prayer = PrayerFactory.create(author_username=user.display_name)
+        answered_prayer = PrayerFactory.create(author_username=user.display_name)
         
         test_session.add_all([user, regular_prayer, answered_prayer])
         test_session.commit()
         
         # Mark one as answered
-        answered_prayer.set_attribute('answered', 'true', user.id, test_session)
+        answered_prayer.set_attribute('answered', 'true', user.display_name, test_session)
         test_session.commit()
         
         # Count answered prayers
@@ -72,15 +72,15 @@ class TestFeedCounts:
         user2 = UserFactory.create(display_name="User 2")
         
         # Create prayers for both users
-        user1_prayer = PrayerFactory.create(author_id=user1.id)
-        user2_prayer = PrayerFactory.create(author_id=user2.id)
+        user1_prayer = PrayerFactory.create(author_username=user1.display_name)
+        user2_prayer = PrayerFactory.create(author_username=user2.display_name)
         
         test_session.add_all([user1, user2, user1_prayer, user2_prayer])
         test_session.commit()
         
         # Archive both prayers
-        user1_prayer.set_attribute('archived', 'true', user1.id, test_session)
-        user2_prayer.set_attribute('archived', 'true', user2.id, test_session)
+        user1_prayer.set_attribute('archived', 'true', user1.display_name, test_session)
+        user2_prayer.set_attribute('archived', 'true', user2.display_name, test_session)
         test_session.commit()
         
         # Count archived prayers for user1 only
@@ -89,7 +89,7 @@ class TestFeedCounts:
             .select_from(Prayer)
             .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
             .where(Prayer.flagged == False)
-            .where(Prayer.author_id == user1.id)
+            .where(Prayer.author_username == user1.display_name)
             .where(PrayerAttribute.attribute_name == 'archived')
         ).first()
         
@@ -105,16 +105,16 @@ class TestFeedQueries:
         user = UserFactory.create()
         
         # Create mix of prayers
-        active_prayer = PrayerFactory.create(author_id=user.id, text="Active prayer")
-        archived_prayer = PrayerFactory.create(author_id=user.id, text="Archived prayer")
-        answered_prayer = PrayerFactory.create(author_id=user.id, text="Answered prayer")
+        active_prayer = PrayerFactory.create(author_username=user.display_name, text="Active prayer")
+        archived_prayer = PrayerFactory.create(author_username=user.display_name, text="Archived prayer")
+        answered_prayer = PrayerFactory.create(author_username=user.display_name, text="Answered prayer")
         
         test_session.add_all([user, active_prayer, archived_prayer, answered_prayer])
         test_session.commit()
         
         # Set statuses
-        archived_prayer.set_attribute('archived', 'true', user.id, test_session)
-        answered_prayer.set_attribute('answered', 'true', user.id, test_session)
+        archived_prayer.set_attribute('archived', 'true', user.display_name, test_session)
+        answered_prayer.set_attribute('answered', 'true', user.display_name, test_session)
         test_session.commit()
         
         # Query 'all' feed (exclude archived)
@@ -141,17 +141,17 @@ class TestFeedQueries:
         user = UserFactory.create()
         
         # Create mix of prayers
-        active_prayer = PrayerFactory.create(author_id=user.id, text="Active prayer")
-        answered_prayer = PrayerFactory.create(author_id=user.id, text="Answered prayer")
-        answered_archived_prayer = PrayerFactory.create(author_id=user.id, text="Answered and archived")
+        active_prayer = PrayerFactory.create(author_username=user.display_name, text="Active prayer")
+        answered_prayer = PrayerFactory.create(author_username=user.display_name, text="Answered prayer")
+        answered_archived_prayer = PrayerFactory.create(author_username=user.display_name, text="Answered and archived")
         
         test_session.add_all([user, active_prayer, answered_prayer, answered_archived_prayer])
         test_session.commit()
         
         # Set statuses
-        answered_prayer.set_attribute('answered', 'true', user.id, test_session)
-        answered_archived_prayer.set_attribute('answered', 'true', user.id, test_session)
-        answered_archived_prayer.set_attribute('archived', 'true', user.id, test_session)
+        answered_prayer.set_attribute('answered', 'true', user.display_name, test_session)
+        answered_archived_prayer.set_attribute('answered', 'true', user.display_name, test_session)
+        answered_archived_prayer.set_attribute('archived', 'true', user.display_name, test_session)
         test_session.commit()
         
         # Query answered feed
@@ -175,15 +175,15 @@ class TestFeedQueries:
         user2 = UserFactory.create(display_name="User 2")
         
         # Create prayers for both users
-        user1_archived = PrayerFactory.create(author_id=user1.id, text="User 1 archived")
-        user2_archived = PrayerFactory.create(author_id=user2.id, text="User 2 archived")
+        user1_archived = PrayerFactory.create(author_username=user1.display_name, text="User 1 archived")
+        user2_archived = PrayerFactory.create(author_username=user2.display_name, text="User 2 archived")
         
         test_session.add_all([user1, user2, user1_archived, user2_archived])
         test_session.commit()
         
         # Archive both prayers
-        user1_archived.set_attribute('archived', 'true', user1.id, test_session)
-        user2_archived.set_attribute('archived', 'true', user2.id, test_session)
+        user1_archived.set_attribute('archived', 'true', user1.display_name, test_session)
+        user2_archived.set_attribute('archived', 'true', user2.display_name, test_session)
         test_session.commit()
         
         # Query archived feed for user1
@@ -191,7 +191,7 @@ class TestFeedQueries:
             select(Prayer)
             .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
             .where(Prayer.flagged == False)
-            .where(Prayer.author_id == user1.id)
+            .where(Prayer.author_username == user1.display_name)
             .where(PrayerAttribute.attribute_name == 'archived')
             .order_by(Prayer.created_at.desc())
         ).all()
@@ -206,14 +206,14 @@ class TestFeedQueries:
         user = UserFactory.create()
         
         # Create prayers without prayer marks
-        new_prayer = PrayerFactory.create(author_id=user.id, text="New prayer")
-        archived_unprayed = PrayerFactory.create(author_id=user.id, text="Archived unprayed")
+        new_prayer = PrayerFactory.create(author_username=user.display_name, text="New prayer")
+        archived_unprayed = PrayerFactory.create(author_username=user.display_name, text="Archived unprayed")
         
         test_session.add_all([user, new_prayer, archived_unprayed])
         test_session.commit()
         
         # Archive one prayer
-        archived_unprayed.set_attribute('archived', 'true', user.id, test_session)
+        archived_unprayed.set_attribute('archived', 'true', user.display_name, test_session)
         test_session.commit()
         
         # Query new/unprayed feed
@@ -247,23 +247,23 @@ class TestFeedPermissions:
         user = UserFactory.create()
         
         # Create prayers with different statuses
-        active_prayer = PrayerFactory.create(author_id=user.id, text="Active")
-        archived_prayer = PrayerFactory.create(author_id=user.id, text="Archived") 
-        answered_prayer = PrayerFactory.create(author_id=user.id, text="Answered")
+        active_prayer = PrayerFactory.create(author_username=user.display_name, text="Active")
+        archived_prayer = PrayerFactory.create(author_username=user.display_name, text="Archived") 
+        answered_prayer = PrayerFactory.create(author_username=user.display_name, text="Answered")
         
         test_session.add_all([user, active_prayer, archived_prayer, answered_prayer])
         test_session.commit()
         
         # Set statuses
-        archived_prayer.set_attribute('archived', 'true', user.id, test_session)
-        answered_prayer.set_attribute('answered', 'true', user.id, test_session)
+        archived_prayer.set_attribute('archived', 'true', user.display_name, test_session)
+        answered_prayer.set_attribute('answered', 'true', user.display_name, test_session)
         test_session.commit()
         
         # Query user's requests (should include all)
         user_prayers = test_session.exec(
             select(Prayer)
             .where(Prayer.flagged == False)
-            .where(Prayer.author_id == user.id)
+            .where(Prayer.author_username == user.display_name)
             .order_by(Prayer.created_at.desc())
         ).all()
         
@@ -280,15 +280,15 @@ class TestFeedPermissions:
         author = UserFactory.create(display_name="Author")
         
         # Create prayers by author
-        active_prayer = PrayerFactory.create(author_id=author.id, text="Active")
-        archived_prayer = PrayerFactory.create(author_id=author.id, text="Archived")
+        active_prayer = PrayerFactory.create(author_username=author.id, text="Active")
+        archived_prayer = PrayerFactory.create(author_username=author.id, text="Archived")
         
         test_session.add_all([user, author, active_prayer, archived_prayer])
         test_session.commit()
         
         # User marks both prayers
-        mark1 = PrayerMarkFactory.create(user_id=user.id, prayer_id=active_prayer.id)
-        mark2 = PrayerMarkFactory.create(user_id=user.id, prayer_id=archived_prayer.id)
+        mark1 = PrayerMarkFactory.create(username=user.display_name, prayer_id=active_prayer.id)
+        mark2 = PrayerMarkFactory.create(username=user.display_name, prayer_id=archived_prayer.id)
         test_session.add_all([mark1, mark2])
         test_session.commit()
         
@@ -301,7 +301,7 @@ class TestFeedPermissions:
             select(Prayer)
             .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
             .where(Prayer.flagged == False)
-            .where(PrayerMark.user_id == user.id)
+            .where(PrayerMark.username == user.display_name)
             .group_by(Prayer.id)
             .order_by(func.max(PrayerMark.created_at).desc())
         ).all()
@@ -322,17 +322,17 @@ class TestNewFeedTypes:
         user = UserFactory.create()
         
         # Create answered prayers with and without testimonies
-        answered_with_testimony = PrayerFactory.create(author_id=user.id, text="With testimony")
-        answered_without_testimony = PrayerFactory.create(author_id=user.id, text="Without testimony")
+        answered_with_testimony = PrayerFactory.create(author_username=user.display_name, text="With testimony")
+        answered_without_testimony = PrayerFactory.create(author_username=user.display_name, text="Without testimony")
         
         test_session.add_all([user, answered_with_testimony, answered_without_testimony])
         test_session.commit()
         
         # Mark both as answered
-        answered_with_testimony.set_attribute('answered', 'true', user.id, test_session)
-        answered_with_testimony.set_attribute('answer_testimony', 'God is faithful!', user.id, test_session)
+        answered_with_testimony.set_attribute('answered', 'true', user.display_name, test_session)
+        answered_with_testimony.set_attribute('answer_testimony', 'God is faithful!', user.display_name, test_session)
         
-        answered_without_testimony.set_attribute('answered', 'true', user.id, test_session)
+        answered_without_testimony.set_attribute('answered', 'true', user.display_name, test_session)
         test_session.commit()
         
         # Query answered feed
@@ -359,15 +359,15 @@ class TestNewFeedTypes:
         user2 = UserFactory.create(display_name="User 2")
         
         # Create archived prayers for both users
-        user1_prayer = PrayerFactory.create(author_id=user1.id, text="User 1 prayer")
-        user2_prayer = PrayerFactory.create(author_id=user2.id, text="User 2 prayer")
+        user1_prayer = PrayerFactory.create(author_username=user1.display_name, text="User 1 prayer")
+        user2_prayer = PrayerFactory.create(author_username=user2.display_name, text="User 2 prayer")
         
         test_session.add_all([user1, user2, user1_prayer, user2_prayer])
         test_session.commit()
         
         # Archive both
-        user1_prayer.set_attribute('archived', 'true', user1.id, test_session)
-        user2_prayer.set_attribute('archived', 'true', user2.id, test_session)
+        user1_prayer.set_attribute('archived', 'true', user1.display_name, test_session)
+        user2_prayer.set_attribute('archived', 'true', user2.display_name, test_session)
         test_session.commit()
         
         # User1's archived feed should only show their prayers
@@ -375,7 +375,7 @@ class TestNewFeedTypes:
             select(Prayer)
             .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
             .where(Prayer.flagged == False)
-            .where(Prayer.author_id == user1.id)  # This enforces privacy
+            .where(Prayer.author_username == user1.display_name)  # This enforces privacy
             .where(PrayerAttribute.attribute_name == 'archived')
         ).all()
         
@@ -389,12 +389,12 @@ class TestNewFeedTypes:
         # Create prayers with specific timestamps
         now = datetime.utcnow()
         old_prayer = PrayerFactory.create(
-            author_id=user.id, 
+            author_username=user.display_name, 
             text="Old prayer",
             created_at=now - timedelta(hours=2)
         )
         new_prayer = PrayerFactory.create(
-            author_id=user.id,
+            author_username=user.display_name,
             text="New prayer", 
             created_at=now
         )
@@ -403,8 +403,8 @@ class TestNewFeedTypes:
         test_session.commit()
         
         # Mark both as answered
-        old_prayer.set_attribute('answered', 'true', user.id, test_session)
-        new_prayer.set_attribute('answered', 'true', user.id, test_session)
+        old_prayer.set_attribute('answered', 'true', user.display_name, test_session)
+        new_prayer.set_attribute('answered', 'true', user.display_name, test_session)
         test_session.commit()
         
         # Query answered feed (should be ordered by creation date desc)

@@ -23,7 +23,7 @@ class TestPrayerSubmission:
         # Test normal length text
         normal_text = "Please pray for my healing"
         prayer = PrayerFactory.create(
-            author_id=user.id,
+            author_username=user.display_name,
             text=normal_text
         )
         test_session.add(prayer)
@@ -34,7 +34,7 @@ class TestPrayerSubmission:
         # Test maximum length text (500 chars)
         max_text = "x" * 500
         prayer_max = PrayerFactory.create(
-            author_id=user.id,
+            author_username=user.display_name,
             text=max_text
         )
         test_session.add(prayer_max)
@@ -47,7 +47,7 @@ class TestPrayerSubmission:
         truncated_text = long_text[:500]  # App logic truncates at 500
         
         prayer_long = PrayerFactory.create(
-            author_id=user.id,
+            author_username=user.display_name,
             text=truncated_text
         )
         test_session.add(prayer_long)
@@ -65,7 +65,7 @@ class TestPrayerSubmission:
         generated_text = "Divine Creator, we lift up our friend. Amen."
         
         prayer = PrayerFactory.create(
-            author_id=user.id,
+            author_username=user.display_name,
             text=original_text,
             generated_prayer=generated_text
         )
@@ -74,7 +74,7 @@ class TestPrayerSubmission:
         
         assert prayer.text == original_text
         assert prayer.generated_prayer == generated_text
-        assert prayer.author_id == user.id
+        assert prayer.author_id == user.display_name
         assert prayer.flagged is False
     
     def test_prayer_submission_with_project_tag(self, test_session):
@@ -85,14 +85,14 @@ class TestPrayerSubmission:
         
         # Prayer with tag
         prayer_with_tag = PrayerFactory.create(
-            author_id=user.id,
+            author_username=user.display_name,
             text="Prayer with tag",
             project_tag="health"
         )
         
         # Prayer without tag
         prayer_without_tag = PrayerFactory.create(
-            author_id=user.id,
+            author_username=user.display_name,
             text="Prayer without tag",
             project_tag=None
         )
@@ -129,7 +129,7 @@ class TestPrayerSubmission:
         
         before_creation = datetime.utcnow()
         
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add(prayer)
         test_session.commit()
         
@@ -151,7 +151,7 @@ class TestPrayerSubmission:
         
         # Create a new prayer (simulating prayer submission)
         prayer = PrayerFactory.create(
-            author_id=user1.id,
+            author_username=user1.display_name,
             text="Please pray for my family",
             target_audience="christian"
         )
@@ -163,7 +163,7 @@ class TestPrayerSubmission:
         assert final_marks_count == 0
         
         # Verify prayer was created correctly
-        assert prayer.author_id == user1.id
+        assert prayer.author_username == user1.display_name
         assert prayer.text == "Please pray for my family"
         
         # Verify no marks exist for this prayer
@@ -180,37 +180,37 @@ class TestPrayerMarking:
     def test_prayer_mark_creation(self, test_session):
         """Test creating a prayer mark"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Create prayer mark
         mark = PrayerMarkFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             prayer_id=prayer.id
         )
         test_session.add(mark)
         test_session.commit()
         
-        assert mark.user_id == user.id
+        assert mark.user_id == user.display_name
         assert mark.prayer_id == prayer.id
         assert isinstance(mark.created_at, datetime)
     
     def test_multiple_marks_same_prayer(self, test_session):
         """Test user can mark same prayer multiple times"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Create multiple marks for same prayer by same user
         mark1 = PrayerMarkFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             prayer_id=prayer.id,
             created_at=datetime.utcnow() - timedelta(hours=1)
         )
         mark2 = PrayerMarkFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             prayer_id=prayer.id,
             created_at=datetime.utcnow()
         )
@@ -221,7 +221,7 @@ class TestPrayerMarking:
         # Count marks for this prayer by this user
         stmt = select(func.count(PrayerMark.id)).where(
             PrayerMark.prayer_id == prayer.id,
-            PrayerMark.user_id == user.id
+            PrayerMark.username == user.display_name
         )
         mark_count = test_session.exec(stmt).first()
         
@@ -229,19 +229,19 @@ class TestPrayerMarking:
     
     def test_prayer_mark_statistics(self, test_session):
         """Test prayer mark statistics calculation"""
-        user1 = UserFactory.create(id="user1")
-        user2 = UserFactory.create(id="user2")
-        prayer = PrayerFactory.create(id="prayer1", author_id="user1")
+        user1 = UserFactory.create(display_name="user1")
+        user2 = UserFactory.create(display_name="user2")
+        prayer = PrayerFactory.create(id="prayer1", author_username="user1")
         
         test_session.add_all([user1, user2, prayer])
         test_session.commit()
         
         # User1 marks prayer twice
-        mark1 = PrayerMarkFactory.create(user_id="user1", prayer_id="prayer1")
-        mark2 = PrayerMarkFactory.create(user_id="user1", prayer_id="prayer1")
+        mark1 = PrayerMarkFactory.create(username="user1", prayer_id="prayer1")
+        mark2 = PrayerMarkFactory.create(username="user1", prayer_id="prayer1")
         
         # User2 marks prayer once  
-        mark3 = PrayerMarkFactory.create(user_id="user2", prayer_id="prayer1")
+        mark3 = PrayerMarkFactory.create(username="user2", prayer_id="prayer1")
         
         test_session.add_all([mark1, mark2, mark3])
         test_session.commit()
@@ -254,7 +254,7 @@ class TestPrayerMarking:
         
         # Distinct users count
         distinct_users = test_session.exec(
-            select(func.count(func.distinct(PrayerMark.user_id))).where(PrayerMark.prayer_id == "prayer1")
+            select(func.count(func.distinct(PrayerMark.username))).where(PrayerMark.prayer_id == "prayer1")
         ).first()
         assert distinct_users == 2
         
@@ -262,7 +262,7 @@ class TestPrayerMarking:
         user1_marks = test_session.exec(
             select(func.count(PrayerMark.id)).where(
                 PrayerMark.prayer_id == "prayer1",
-                PrayerMark.user_id == "user1"
+                PrayerMark.username == "user1"
             )
         ).first()
         assert user1_marks == 2
@@ -298,7 +298,7 @@ class TestPrayerFlagging:
     def test_prayer_flagging_toggle(self, test_session):
         """Test prayer flagging toggles flag status"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id, flagged=False)
+        prayer = PrayerFactory.create(author_username=user.display_name, flagged=False)
         test_session.add_all([user, prayer])
         test_session.commit()
         
@@ -320,9 +320,9 @@ class TestPrayerFlagging:
     
     def test_flagging_permissions_admin(self, test_session):
         """Test that admin can flag and unflag prayers"""
-        admin_user = UserFactory.create(id="admin")
+        admin_user = UserFactory.create(display_name="admin")
         regular_user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=regular_user.id, flagged=False)
+        prayer = PrayerFactory.create(author_username=regular_user.display_name, flagged=False)
         
         test_session.add_all([admin_user, regular_user, prayer])
         test_session.commit()
@@ -347,7 +347,7 @@ class TestPrayerFlagging:
     def test_unflagging_permissions_regular_user(self, test_session):
         """Test that regular users cannot unflag prayers"""
         regular_user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=regular_user.id, flagged=True)
+        prayer = PrayerFactory.create(author_username=regular_user.display_name, flagged=True)
         
         test_session.add_all([regular_user, prayer])
         test_session.commit()
@@ -369,7 +369,7 @@ class TestPrayerFlagging:
     def test_flagging_any_user(self, test_session):
         """Test that any user can flag prayers (but not unflag)"""
         regular_user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=regular_user.id, flagged=False)
+        prayer = PrayerFactory.create(author_username=regular_user.display_name, flagged=False)
         
         test_session.add_all([regular_user, prayer])
         test_session.commit()
@@ -387,8 +387,8 @@ class TestPrayerFlagging:
     def test_flagged_prayers_excluded_from_feeds(self, test_session):
         """Test that flagged prayers are excluded from main feeds"""
         user = UserFactory.create()
-        normal_prayer = PrayerFactory.create(author_id=user.id, flagged=False)
-        flagged_prayer = PrayerFactory.create(author_id=user.id, flagged=True)
+        normal_prayer = PrayerFactory.create(author_username=user.display_name, flagged=False)
+        flagged_prayer = PrayerFactory.create(author_username=user.display_name, flagged=True)
         
         test_session.add_all([user, normal_prayer, flagged_prayer])
         test_session.commit()
@@ -414,9 +414,9 @@ class TestFeedFiltering:
         """Test 'all' feed returns all unflagged prayers"""
         user = UserFactory.create()
         
-        prayer1 = PrayerFactory.create(author_id=user.id, flagged=False, text="Prayer 1")
-        prayer2 = PrayerFactory.create(author_id=user.id, flagged=False, text="Prayer 2") 
-        flagged_prayer = PrayerFactory.create(author_id=user.id, flagged=True, text="Flagged")
+        prayer1 = PrayerFactory.create(author_username=user.display_name, flagged=False, text="Prayer 1")
+        prayer2 = PrayerFactory.create(author_username=user.display_name, flagged=False, text="Prayer 2") 
+        flagged_prayer = PrayerFactory.create(author_username=user.display_name, flagged=True, text="Flagged")
         
         test_session.add_all([user, prayer1, prayer2, flagged_prayer])
         test_session.commit()
@@ -424,7 +424,7 @@ class TestFeedFiltering:
         # Simulate 'all' feed query from app.py
         stmt = (
             select(Prayer, User.display_name)
-            .join(User, Prayer.author_id == User.id)
+            .join(User, Prayer.author_username == User.id)
             .where(Prayer.flagged == False)
             .order_by(Prayer.created_at.desc())
         )
@@ -439,16 +439,16 @@ class TestFeedFiltering:
     
     def test_new_unprayed_feed(self, test_session):
         """Test 'new_unprayed' feed returns prayers with no marks"""
-        user1 = UserFactory.create(id="user1")
-        user2 = UserFactory.create(id="user2")
+        user1 = UserFactory.create(display_name="user1")
+        user2 = UserFactory.create(display_name="user2")
         
-        prayer1 = PrayerFactory.create(id="prayer1", author_id="user1", flagged=False)
-        prayer2 = PrayerFactory.create(id="prayer2", author_id="user1", flagged=False)
-        prayer3 = PrayerFactory.create(id="prayer3", author_id="user1", flagged=False)
+        prayer1 = PrayerFactory.create(id="prayer1", author_username="user1", flagged=False)
+        prayer2 = PrayerFactory.create(id="prayer2", author_username="user1", flagged=False)
+        prayer3 = PrayerFactory.create(id="prayer3", author_username="user1", flagged=False)
         
         # Mark prayer1 and prayer2
-        mark1 = PrayerMarkFactory.create(user_id="user2", prayer_id="prayer1")
-        mark2 = PrayerMarkFactory.create(user_id="user2", prayer_id="prayer2")
+        mark1 = PrayerMarkFactory.create(username="user2", prayer_id="prayer1")
+        mark2 = PrayerMarkFactory.create(username="user2", prayer_id="prayer2")
         
         test_session.add_all([user1, user2, prayer1, prayer2, prayer3, mark1, mark2])
         test_session.commit()
@@ -456,7 +456,7 @@ class TestFeedFiltering:
         # Simulate 'new_unprayed' query logic from app.py
         stmt = (
             select(Prayer, User.display_name)
-            .join(User, Prayer.author_id == User.id)
+            .join(User, Prayer.author_username == User.id)
             .outerjoin(PrayerMark, Prayer.id == PrayerMark.prayer_id)
             .where(Prayer.flagged == False)
             .group_by(Prayer.id)
@@ -471,20 +471,20 @@ class TestFeedFiltering:
     
     def test_most_prayed_feed(self, test_session):
         """Test 'most_prayed' feed returns prayers with marks ordered by count"""
-        user1 = UserFactory.create(id="user1")
-        user2 = UserFactory.create(id="user2")
+        user1 = UserFactory.create(display_name="user1")
+        user2 = UserFactory.create(display_name="user2")
         
-        prayer1 = PrayerFactory.create(id="prayer1", author_id="user1", flagged=False)
-        prayer2 = PrayerFactory.create(id="prayer2", author_id="user1", flagged=False)
-        prayer3 = PrayerFactory.create(id="prayer3", author_id="user1", flagged=False)  # No marks
+        prayer1 = PrayerFactory.create(id="prayer1", author_username="user1", flagged=False)
+        prayer2 = PrayerFactory.create(id="prayer2", author_username="user1", flagged=False)
+        prayer3 = PrayerFactory.create(id="prayer3", author_username="user1", flagged=False)  # No marks
         
         # Prayer1: 3 marks
-        mark1a = PrayerMarkFactory.create(user_id="user1", prayer_id="prayer1")
-        mark1b = PrayerMarkFactory.create(user_id="user2", prayer_id="prayer1")
-        mark1c = PrayerMarkFactory.create(user_id="user1", prayer_id="prayer1")
+        mark1a = PrayerMarkFactory.create(username="user1", prayer_id="prayer1")
+        mark1b = PrayerMarkFactory.create(username="user2", prayer_id="prayer1")
+        mark1c = PrayerMarkFactory.create(username="user1", prayer_id="prayer1")
         
         # Prayer2: 1 mark
-        mark2a = PrayerMarkFactory.create(user_id="user2", prayer_id="prayer2")
+        mark2a = PrayerMarkFactory.create(username="user2", prayer_id="prayer2")
         
         test_session.add_all([
             user1, user2, prayer1, prayer2, prayer3,
@@ -495,7 +495,7 @@ class TestFeedFiltering:
         # Simulate 'most_prayed' query from app.py
         stmt = (
             select(Prayer, User.display_name, func.count(PrayerMark.id).label('mark_count'))
-            .join(User, Prayer.author_id == User.id)
+            .join(User, Prayer.author_username == User.id)
             .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
             .where(Prayer.flagged == False)
             .group_by(Prayer.id)
@@ -513,17 +513,17 @@ class TestFeedFiltering:
     
     def test_my_prayers_feed(self, test_session):
         """Test 'my_prayers' feed returns prayers user has marked"""
-        user1 = UserFactory.create(id="user1") 
-        user2 = UserFactory.create(id="user2")
+        user1 = UserFactory.create(display_name="user1") 
+        user2 = UserFactory.create(display_name="user2")
         
-        prayer1 = PrayerFactory.create(id="prayer1", author_id="user2", flagged=False)
-        prayer2 = PrayerFactory.create(id="prayer2", author_id="user2", flagged=False)
-        prayer3 = PrayerFactory.create(id="prayer3", author_id="user2", flagged=False)
+        prayer1 = PrayerFactory.create(id="prayer1", author_username="user2", flagged=False)
+        prayer2 = PrayerFactory.create(id="prayer2", author_username="user2", flagged=False)
+        prayer3 = PrayerFactory.create(id="prayer3", author_username="user2", flagged=False)
         
         # User1 marks prayer1 and prayer2 (but not prayer3)
-        mark1 = PrayerMarkFactory.create(user_id="user1", prayer_id="prayer1")
-        mark2 = PrayerMarkFactory.create(user_id="user1", prayer_id="prayer2")
-        mark3 = PrayerMarkFactory.create(user_id="user2", prayer_id="prayer3")  # Different user
+        mark1 = PrayerMarkFactory.create(username="user1", prayer_id="prayer1")
+        mark2 = PrayerMarkFactory.create(username="user1", prayer_id="prayer2")
+        mark3 = PrayerMarkFactory.create(username="user2", prayer_id="prayer3")  # Different user
         
         test_session.add_all([user1, user2, prayer1, prayer2, prayer3, mark1, mark2, mark3])
         test_session.commit()
@@ -531,10 +531,10 @@ class TestFeedFiltering:
         # Simulate 'my_prayers' query for user1
         stmt = (
             select(Prayer, User.display_name)
-            .join(User, Prayer.author_id == User.id)
+            .join(User, Prayer.author_username == User.id)
             .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
             .where(Prayer.flagged == False)
-            .where(PrayerMark.user_id == "user1")
+            .where(PrayerMark.username == "user1")
             .group_by(Prayer.id)
             .order_by(func.max(PrayerMark.created_at).desc())
         )
@@ -549,15 +549,15 @@ class TestFeedFiltering:
     
     def test_my_requests_feed(self, test_session):
         """Test 'my_requests' feed returns prayers authored by user"""
-        user1 = UserFactory.create(id="user1")
-        user2 = UserFactory.create(id="user2")
+        user1 = UserFactory.create(display_name="user1")
+        user2 = UserFactory.create(display_name="user2")
         
         # User1's prayers
-        prayer1 = PrayerFactory.create(id="prayer1", author_id="user1", flagged=False)
-        prayer2 = PrayerFactory.create(id="prayer2", author_id="user1", flagged=False)
+        prayer1 = PrayerFactory.create(id="prayer1", author_username="user1", flagged=False)
+        prayer2 = PrayerFactory.create(id="prayer2", author_username="user1", flagged=False)
         
         # User2's prayer
-        prayer3 = PrayerFactory.create(id="prayer3", author_id="user2", flagged=False)
+        prayer3 = PrayerFactory.create(id="prayer3", author_username="user2", flagged=False)
         
         test_session.add_all([user1, user2, prayer1, prayer2, prayer3])
         test_session.commit()
@@ -565,9 +565,9 @@ class TestFeedFiltering:
         # Simulate 'my_requests' query for user1
         stmt = (
             select(Prayer, User.display_name)
-            .join(User, Prayer.author_id == User.id)
+            .join(User, Prayer.author_username == User.id)
             .where(Prayer.flagged == False)
-            .where(Prayer.author_id == "user1")
+            .where(Prayer.author_username == "user1")
             .order_by(Prayer.created_at.desc())
         )
         results = test_session.exec(stmt).all()

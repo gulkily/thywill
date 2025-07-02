@@ -107,7 +107,7 @@ class TestFeedCounts:
         with patch('app_helpers.services.prayer_helpers.Session') as mock_session_class:
             mock_session_class.return_value.__enter__.return_value = test_session
             
-            counts = get_feed_counts("test_user_id")
+            counts = get_feed_counts("testuser")
             
             assert counts['all'] == 0
             assert counts['new_unprayed'] == 0
@@ -119,13 +119,13 @@ class TestFeedCounts:
     def test_get_feed_counts_with_prayers(self, test_session):
         """Test feed counts with various prayers"""
         # Create users
-        user1 = UserFactory.create(id="user1")
-        user2 = UserFactory.create(id="user2")
+        user1 = UserFactory.create(display_name="user1")
+        user2 = UserFactory.create(display_name="user2")
         
         # Create prayers
-        prayer1 = PrayerFactory.create(id="prayer1", author_id="user1", flagged=False)
-        prayer2 = PrayerFactory.create(id="prayer2", author_id="user2", flagged=False)
-        prayer3 = PrayerFactory.create(id="prayer3", author_id="user1", flagged=True)  # Flagged
+        prayer1 = PrayerFactory.create(id="prayer1", author_username="user1", flagged=False)
+        prayer2 = PrayerFactory.create(id="prayer2", author_username="user2", flagged=False)
+        prayer3 = PrayerFactory.create(id="prayer3", author_username="user1", flagged=True)  # Flagged
         
         test_session.add_all([user1, user2, prayer1, prayer2, prayer3])
         test_session.commit()
@@ -142,18 +142,18 @@ class TestFeedCounts:
     def test_get_feed_counts_with_prayer_marks(self, test_session):
         """Test feed counts with prayer marks"""
         # Create users
-        user1 = UserFactory.create(id="user1")
-        user2 = UserFactory.create(id="user2")
+        user1 = UserFactory.create(display_name="user1")
+        user2 = UserFactory.create(display_name="user2")
         
         # Create prayers
-        prayer1 = PrayerFactory.create(id="prayer1", author_id="user1", flagged=False)
-        prayer2 = PrayerFactory.create(id="prayer2", author_id="user2", flagged=False)
-        prayer3 = PrayerFactory.create(id="prayer3", author_id="user2", flagged=False)
+        prayer1 = PrayerFactory.create(id="prayer1", author_username="user1", flagged=False)
+        prayer2 = PrayerFactory.create(id="prayer2", author_username="user2", flagged=False)
+        prayer3 = PrayerFactory.create(id="prayer3", author_username="user2", flagged=False)
         
         # Create prayer marks
-        mark1 = PrayerMarkFactory.create(user_id="user1", prayer_id="prayer1")
-        mark2 = PrayerMarkFactory.create(user_id="user1", prayer_id="prayer2")
-        mark3 = PrayerMarkFactory.create(user_id="user2", prayer_id="prayer1")
+        mark1 = PrayerMarkFactory.create(username="user1", prayer_id="prayer1")
+        mark2 = PrayerMarkFactory.create(username="user1", prayer_id="prayer2")
+        mark3 = PrayerMarkFactory.create(username="user2", prayer_id="prayer1")
         
         test_session.add_all([user1, user2, prayer1, prayer2, prayer3, mark1, mark2, mark3])
         test_session.commit()
@@ -171,14 +171,14 @@ class TestFeedCounts:
     
     def test_get_feed_counts_recent_activity(self, test_session):
         """Test recent activity counting (last 7 days)"""
-        user1 = UserFactory.create(id="user1")
-        prayer1 = PrayerFactory.create(id="prayer1", author_id="user1", flagged=False)
-        prayer2 = PrayerFactory.create(id="prayer2", author_id="user1", flagged=False)
+        user1 = UserFactory.create(display_name="user1")
+        prayer1 = PrayerFactory.create(id="prayer1", author_username="user1", flagged=False)
+        prayer2 = PrayerFactory.create(id="prayer2", author_username="user1", flagged=False)
         
         # Recent mark (within 7 days)
         recent_time = datetime.utcnow() - timedelta(days=3)
         recent_mark = PrayerMarkFactory.create(
-            user_id="user1", 
+            username="user1", 
             prayer_id="prayer1", 
             created_at=recent_time
         )
@@ -186,7 +186,7 @@ class TestFeedCounts:
         # Old mark (more than 7 days ago)
         old_time = datetime.utcnow() - timedelta(days=10)
         old_mark = PrayerMarkFactory.create(
-            user_id="user1", 
+            username="user1", 
             prayer_id="prayer2", 
             created_at=old_time
         )
@@ -204,25 +204,25 @@ class TestFeedCounts:
     
     def test_get_feed_counts_excludes_flagged_prayers(self, test_session):
         """Test that flagged prayers are excluded from all counts"""
-        user1 = UserFactory.create(id="user1")
+        user1 = UserFactory.create(display_name="user1")
         
         # Normal prayer
         normal_prayer = PrayerFactory.create(
             id="normal", 
-            author_id="user1", 
+            author_username="user1", 
             flagged=False
         )
         
         # Flagged prayer
         flagged_prayer = PrayerFactory.create(
             id="flagged", 
-            author_id="user1", 
+            author_username="user1", 
             flagged=True
         )
         
         # Marks on both prayers
-        normal_mark = PrayerMarkFactory.create(user_id="user1", prayer_id="normal")
-        flagged_mark = PrayerMarkFactory.create(user_id="user1", prayer_id="flagged")
+        normal_mark = PrayerMarkFactory.create(username="user1", prayer_id="normal")
+        flagged_mark = PrayerMarkFactory.create(username="user1", prayer_id="flagged")
         
         test_session.add_all([user1, normal_prayer, flagged_prayer, normal_mark, flagged_mark])
         test_session.commit()
