@@ -11,33 +11,30 @@ class UserFactory:
     
     @staticmethod
     def create(
-        id: Optional[str] = None,
-        display_name: str = "Test User",
+        display_name: Optional[str] = None,
         created_at: Optional[datetime] = None,
         religious_preference: str = "unspecified",
         prayer_style: Optional[str] = None,
-        invited_by_user_id: Optional[str] = None,
+        invited_by_username: Optional[str] = None,
         invite_token_used: Optional[str] = None
     ) -> User:
         return User(
-            id=id or uuid.uuid4().hex,
-            display_name=display_name,
+            display_name=display_name or f"TestUser{uuid.uuid4().hex[:8]}",
             created_at=created_at or datetime.utcnow(),
             religious_preference=religious_preference,
             prayer_style=prayer_style,
-            invited_by_user_id=invited_by_user_id,
+            invited_by_username=invited_by_username,
             invite_token_used=invite_token_used
         )
     
     @staticmethod
     def create_admin() -> User:
         return User(
-            id="admin",
-            display_name="Admin User",
+            display_name="admin",
             created_at=datetime.utcnow(),
             religious_preference="unspecified",
             prayer_style=None,
-            invited_by_user_id=None,
+            invited_by_username=None,
             invite_token_used=None
         )
 
@@ -48,14 +45,13 @@ class PrayerFactory:
     @staticmethod
     def create(
         id: Optional[str] = None,
-        author_id: str = "test_user_id", 
+        author_username: str = "testuser", 
         text: str = "Please pray for my test",
         generated_prayer: Optional[str] = "DEFAULT_PRAYER",
         project_tag: Optional[str] = None,
         created_at: Optional[datetime] = None,
         flagged: bool = False,
-        target_audience: str = "all",
-        prayer_context: Optional[str] = None
+        target_audience: str = "all"
     ) -> Prayer:
         # Use a special value to distinguish between None and default
         prayer_text = None if generated_prayer is None else (
@@ -64,14 +60,13 @@ class PrayerFactory:
         
         return Prayer(
             id=id or uuid.uuid4().hex,
-            author_id=author_id,
+            author_username=author_username,
             text=text,
             generated_prayer=prayer_text,
             project_tag=project_tag,
             created_at=created_at or datetime.utcnow(),
             flagged=flagged,
-            target_audience=target_audience,
-            prayer_context=prayer_context
+            target_audience=target_audience
         )
 
 
@@ -81,7 +76,7 @@ class SessionFactory:
     @staticmethod
     def create(
         id: Optional[str] = None,
-        user_id: str = "test_user_id",
+        username: str = "testuser",
         created_at: Optional[datetime] = None,
         expires_at: Optional[datetime] = None,
         auth_request_id: Optional[str] = None,
@@ -92,7 +87,7 @@ class SessionFactory:
         now = created_at or datetime.utcnow()
         return SessionModel(
             id=id or uuid.uuid4().hex,
-            user_id=user_id,
+            username=username,
             created_at=now,
             expires_at=expires_at or (now + timedelta(days=14)),
             auth_request_id=auth_request_id,
@@ -128,13 +123,13 @@ class PrayerMarkFactory:
     @staticmethod
     def create(
         id: Optional[str] = None,
-        user_id: str = "test_user_id",
+        username: str = "testuser",
         prayer_id: str = "test_prayer_id",
         created_at: Optional[datetime] = None
     ) -> PrayerMark:
         return PrayerMark(
             id=id or uuid.uuid4().hex,
-            user_id=user_id,
+            username=username,
             prayer_id=prayer_id,
             created_at=created_at or datetime.utcnow()
         )
@@ -146,7 +141,7 @@ class PrayerSkipFactory:
     @staticmethod
     def create(
         id: Optional[str] = None,
-        user_id: str = "test_user_id",
+        user_id: str = "testuser",
         prayer_id: str = "test_prayer_id",
         created_at: Optional[datetime] = None
     ) -> PrayerSkip:
@@ -164,7 +159,7 @@ class AuthenticationRequestFactory:
     @staticmethod
     def create(
         id: Optional[str] = None,
-        user_id: str = "test_user_id",
+        user_id: str = "testuser",
         device_info: Optional[str] = None,
         ip_address: Optional[str] = None,
         created_at: Optional[datetime] = None,
@@ -194,7 +189,7 @@ class AuthApprovalFactory:
     def create(
         id: Optional[str] = None,
         auth_request_id: str = "test_auth_request_id",
-        approver_user_id: str = "test_approver_id",
+        approver_user_id: str = "testuser",
         created_at: Optional[datetime] = None
     ) -> AuthApproval:
         return AuthApproval(
@@ -272,7 +267,7 @@ class PrayerActivityLogFactory:
     def create(
         id: Optional[str] = None,
         prayer_id: str = "test_prayer_id",
-        user_id: str = "test_user_id",
+        user_id: str = "testuser",
         action: str = "set_archived",
         old_value: Optional[str] = None,
         new_value: str = "true",
