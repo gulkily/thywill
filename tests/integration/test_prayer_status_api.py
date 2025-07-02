@@ -17,7 +17,7 @@ class TestArchiveEndpoints:
     def test_archive_prayer_success(self, client, test_session, mock_authenticated_user):
         """Test successful prayer archiving"""
         user, session = mock_authenticated_user
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add(prayer)
         test_session.commit()
         
@@ -37,7 +37,7 @@ class TestArchiveEndpoints:
     def test_archive_prayer_htmx_response(self, client, test_session, mock_authenticated_user):
         """Test HTMX response for prayer archiving"""
         user, session = mock_authenticated_user
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add(prayer)
         test_session.commit()
         
@@ -56,7 +56,7 @@ class TestArchiveEndpoints:
     def test_archive_prayer_unauthorized(self, client, test_session):
         """Test archiving prayer without authentication"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
@@ -69,7 +69,7 @@ class TestArchiveEndpoints:
         """Test archiving prayer by non-author"""
         user, session = mock_authenticated_user
         author = UserFactory.create(display_name="Author")
-        prayer = PrayerFactory.create(author_id=author.id)
+        prayer = PrayerFactory.create(author_username=author.id)
         test_session.add_all([author, prayer])
         test_session.commit()
         
@@ -84,12 +84,12 @@ class TestArchiveEndpoints:
     def test_restore_prayer_success(self, client, test_session, mock_authenticated_user):
         """Test successful prayer restoration"""
         user, session = mock_authenticated_user
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add(prayer)
         test_session.commit()
         
         # Archive prayer first
-        prayer.set_attribute('archived', 'true', user.id, test_session)
+        prayer.set_attribute('archived', 'true', user.display_name, test_session)
         test_session.commit()
         
         # Store prayer ID before API call to avoid detached instance issues
@@ -108,12 +108,12 @@ class TestArchiveEndpoints:
     def test_restore_prayer_htmx_response(self, client, test_session, mock_authenticated_user):
         """Test HTMX response for prayer restoration"""
         user, session = mock_authenticated_user
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add(prayer)
         test_session.commit()
         
         # Archive prayer first
-        prayer.set_attribute('archived', 'true', user.id, test_session)
+        prayer.set_attribute('archived', 'true', user.display_name, test_session)
         test_session.commit()
         
         # Store prayer ID before API call to avoid detached instance issues
@@ -144,7 +144,7 @@ class TestAnsweredEndpoints:
     def test_mark_prayer_answered_basic(self, client, test_session, mock_authenticated_user):
         """Test marking prayer as answered without testimony"""
         user, session = mock_authenticated_user
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add(prayer)
         test_session.commit()
         
@@ -165,7 +165,7 @@ class TestAnsweredEndpoints:
     def test_mark_prayer_answered_with_testimony(self, client, test_session, mock_authenticated_user):
         """Test marking prayer as answered with testimony"""
         user, session = mock_authenticated_user
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add(prayer)
         test_session.commit()
         
@@ -191,7 +191,7 @@ class TestAnsweredEndpoints:
     def test_mark_prayer_answered_htmx_response(self, client, test_session, mock_authenticated_user):
         """Test HTMX response for marking prayer as answered"""
         user, session = mock_authenticated_user
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add(prayer)
         test_session.commit()
         
@@ -213,7 +213,7 @@ class TestAnsweredEndpoints:
         """Test marking prayer as answered by non-author"""
         user, session = mock_authenticated_user
         author = UserFactory.create(display_name="Author")
-        prayer = PrayerFactory.create(author_id=author.id)
+        prayer = PrayerFactory.create(author_username=author.id)
         test_session.add_all([author, prayer])
         test_session.commit()
         
@@ -230,12 +230,12 @@ class TestAnsweredEndpoints:
         user, session = mock_authenticated_user
         
         # Create answered prayer
-        prayer = PrayerFactory.create(author_id=user.id, text="Test prayer")
+        prayer = PrayerFactory.create(author_username=user.display_name, text="Test prayer")
         test_session.add(prayer)
         test_session.commit()
         
-        prayer.set_attribute('answered', 'true', user.id, test_session)
-        prayer.set_attribute('answer_testimony', 'God is faithful!', user.id, test_session)
+        prayer.set_attribute('answered', 'true', user.display_name, test_session)
+        prayer.set_attribute('answer_testimony', 'God is faithful!', user.display_name, test_session)
         test_session.commit()
         
         # Access celebration page - no need to set cookies since current_user is mocked
@@ -255,7 +255,7 @@ class TestPermissionChecks:
     def test_pending_authentication_user_cannot_manage_prayers(self, client, test_session, mock_half_authenticated_user):
         """Test that users with pending authentication cannot manage prayer status"""
         user, session = mock_half_authenticated_user
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add(prayer)
         test_session.commit()
         
@@ -274,7 +274,7 @@ class TestPermissionChecks:
         """Test that admin users can manage any prayer"""
         admin, session = mock_admin_user
         author = UserFactory.create(display_name="Regular User")
-        prayer = PrayerFactory.create(author_id=author.id)
+        prayer = PrayerFactory.create(author_username=author.id)
         
         test_session.add_all([author, prayer])
         test_session.commit()
@@ -294,7 +294,7 @@ class TestPermissionChecks:
     def test_session_expiry_blocks_access(self, client, test_session):
         """Test that expired sessions cannot manage prayers"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
@@ -313,7 +313,7 @@ class TestHTMXResponses:
     def test_htmx_headers_detected(self, client, test_session, mock_authenticated_user):
         """Test that HTMX headers are properly detected"""
         user, session = mock_authenticated_user
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add(prayer)
         test_session.commit()
         
@@ -328,7 +328,7 @@ class TestHTMXResponses:
         
         # Test without HTMX header - restore prayer first
         updated_prayer = test_session.get(Prayer, prayer_id)
-        updated_prayer.remove_attribute('archived', test_session, user.id)
+        updated_prayer.remove_attribute('archived', test_session, user.display_name)
         test_session.commit()
         
         response_normal = client.post(f"/prayer/{prayer_id}/archive", follow_redirects=False)
@@ -343,7 +343,7 @@ class TestHTMXResponses:
     def test_htmx_response_content_format(self, client, test_session, mock_authenticated_user):
         """Test HTMX response content formatting"""
         user, session = mock_authenticated_user
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add(prayer)
         test_session.commit()
         
@@ -366,7 +366,7 @@ class TestHTMXResponses:
         
         # Test answered HTMX response - restore prayer first
         updated_prayer = test_session.get(Prayer, prayer_id)
-        updated_prayer.remove_attribute('archived', test_session, user.id)
+        updated_prayer.remove_attribute('archived', test_session, user.display_name)
         test_session.commit()
         
         response = client.post(
@@ -390,7 +390,7 @@ class TestActivityLogging:
     def test_archive_creates_activity_log(self, client, test_session, mock_authenticated_user):
         """Test that archiving creates activity log"""
         user, session = mock_authenticated_user
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add(prayer)
         test_session.commit()
         
@@ -399,7 +399,7 @@ class TestActivityLogging:
         
         # Store prayer ID before API call to avoid detached instance issues
         prayer_id = prayer.id
-        user_id = user.id
+        user_id = user.display_name
         
         # Archive prayer
         response = client.post(f"/prayer/{prayer_id}/archive", follow_redirects=False)
@@ -419,7 +419,7 @@ class TestActivityLogging:
     def test_answered_creates_multiple_logs(self, client, test_session, mock_authenticated_user):
         """Test that marking as answered creates multiple activity logs"""
         user, session = mock_authenticated_user
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add(prayer)
         test_session.commit()
         

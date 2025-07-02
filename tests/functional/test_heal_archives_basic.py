@@ -48,7 +48,7 @@ class TestHealArchivesBasic:
         
         activity = PrayerActivityLog(
             prayer_id=prayer.id,
-            user_id=user.display_name,
+            username=user.display_name,
             action="answered",
             old_value=None,
             new_value="true",
@@ -97,12 +97,12 @@ class TestHealArchivesBasic:
         
         activity1 = PrayerActivityLog(
             prayer_id=prayer1.id,
-            user_id=user.display_name,
+            username=user.display_name,
             action="answered"
         )
         activity2 = PrayerActivityLog(
             prayer_id=prayer1.id,
-            user_id=user.display_name,
+            username=user.display_name,
             action="archived"
         )
         

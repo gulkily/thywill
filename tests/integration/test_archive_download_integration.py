@@ -150,7 +150,7 @@ June 17 2024
         # Create prayers
         prayer1 = Prayer(
             id=prayer1_id,
-            author_id=user1_id,
+            author_username=user1_id,
             text="Please pray for my recovery from illness and strength for my family.",
             generated_prayer="Heavenly Father, we lift up IntegrationUser who is facing illness...",
             project_tag="healing",
@@ -160,7 +160,7 @@ June 17 2024
         
         prayer2 = Prayer(
             id=prayer2_id,
-            author_id=user2_id,
+            author_username=user2_id,
             text="Please pray for wisdom in a difficult family situation.",
             generated_prayer="Lord, we ask for your wisdom and guidance for TestUser2...",
             project_tag="family",
@@ -170,28 +170,28 @@ June 17 2024
         
         # Create prayer marks
         mark1 = PrayerMark(
-            user_id=user2_id,
+            username=user2_id,
             prayer_id=prayer1_id,
             created_at=datetime(2024, 6, 15, 14, 30),
             text_file_path=f"{test_archive_environment}/prayers/2024/06/2024_06_15_prayer_at_1030.txt"
         )
         
         mark2 = PrayerMark(
-            user_id=user3_id,
+            username=user3_id,
             prayer_id=prayer1_id,
             created_at=datetime(2024, 6, 16, 9, 15),
             text_file_path=f"{test_archive_environment}/prayers/2024/06/2024_06_15_prayer_at_1030.txt"
         )
         
         mark3 = PrayerMark(
-            user_id=user1_id,
+            username=user1_id,
             prayer_id=prayer2_id,
             created_at=datetime(2024, 6, 16, 16, 30),
             text_file_path=f"{test_archive_environment}/prayers/2024/06/2024_06_16_prayer_at_1400.txt"
         )
         
         mark4 = PrayerMark(
-            user_id=user3_id,
+            username=user3_id,
             prayer_id=prayer2_id,
             created_at=datetime(2024, 6, 17, 8, 45),
             text_file_path=f"{test_archive_environment}/prayers/2024/06/2024_06_16_prayer_at_1400.txt"
@@ -221,14 +221,14 @@ June 17 2024
             service = ArchiveDownloadService(data["archive_dir"])
             
             # Get metadata first
-            metadata = service.get_user_archive_metadata(user1.id)
+            metadata = service.get_user_archive_metadata(user1.display_name)
             
             assert metadata["user"]["display_name"] == "IntegrationUser"
             assert metadata["archive_statistics"]["total_prayers"] == 1  # User1 authored 1 prayer
             assert metadata["archive_statistics"]["total_activities"] == 1  # User1 prayed for 1 prayer
             
             # Create personal archive
-            zip_path = service.create_user_archive_zip(user1.id, include_community=False)
+            zip_path = service.create_user_archive_zip(user1.display_name, include_community=False)
         
         assert os.path.exists(zip_path)
         
@@ -329,7 +329,7 @@ June 17 2024
         
         # Mock authentication
         mock_user = Mock()
-        mock_user.id = user1.id
+        mock_user.display_name = user1.display_name
         mock_user.display_name = user1.display_name
         
         mock_session = Mock()
@@ -352,7 +352,7 @@ June 17 2024
                     
                     try:
                         # Test metadata endpoint
-                        response = client.get(f"/api/archive/user/{user1.id}/metadata")
+                        response = client.get(f"/api/archive/user/{user1.display_name}/metadata")
                         assert response.status_code == 200
                         
                         metadata = response.json()
@@ -376,7 +376,7 @@ June 17 2024
                         assert "IntegrationUser" in content
                         
                         # Test user archive download
-                        response = client.get(f"/api/archive/user/{user1.id}/download")
+                        response = client.get(f"/api/archive/user/{user1.display_name}/download")
                         assert response.status_code == 200
                         assert response.headers["content-type"] == "application/zip"
                         
@@ -480,7 +480,7 @@ June {17+i} 2024 at 15:00 - TestUser{(i+1)%3 + 1} prayed this prayer
             service = ArchiveDownloadService(data["archive_dir"])
             
             # Create user archive
-            zip_path = service.create_user_archive_zip(user1.id, include_community=True)
+            zip_path = service.create_user_archive_zip(user1.display_name, include_community=True)
             
             # Extract and validate contents
             extract_dir = Path(zip_path).parent / "extracted"

@@ -109,7 +109,7 @@ def sample_data(session):
     # Activity logs
     activity1 = PrayerActivityLog(
         prayer_id=prayer1.id,
-        user_id=user1.display_name,
+        username=user1.display_name,
         action="answered",
         old_value=None,
         new_value="true",
@@ -117,7 +117,7 @@ def sample_data(session):
     )
     activity2 = PrayerActivityLog(
         prayer_id=prayer2.id,
-        user_id=user2.display_name,
+        username=user2.display_name,
         action="archived",
         old_value=None,
         new_value="true",
