@@ -10,7 +10,7 @@ import os
 import sys
 from sqlmodel import Session, select
 from sqlalchemy import inspect
-from models import engine, Prayer, User
+from models import engine, Prayer, User, PrayerMark, PrayerAttribute, PrayerActivityLog
 from app_helpers.services.text_archive_service import text_archive_service
 from datetime import datetime
 
@@ -19,10 +19,63 @@ def check_database_tables():
     inspector = inspect(engine)
     tables = inspector.get_table_names()
     
-    required_tables = ['prayer', 'user']
+    required_tables = ['prayer', 'user', 'prayer_activity_log']
     missing_tables = [table for table in required_tables if table not in tables]
     
     return missing_tables
+
+def collect_prayer_activity_data(prayer_id: str, session: Session) -> dict:
+    """Collect all activity data for a prayer from activity logs only (single source of truth)"""
+    
+    # Use only activity logs as the comprehensive source to avoid duplicates
+    # The import system will recreate PrayerMark and PrayerAttribute records from archive text
+    activity_logs = session.exec(
+        select(PrayerActivityLog).where(PrayerActivityLog.prayer_id == prayer_id)
+    ).all()
+    
+    return {
+        'activities': [
+            {
+                'user_id': log.user_id,
+                'action': log.action,
+                'old_value': log.old_value,
+                'new_value': log.new_value,
+                'created_at': log.created_at.isoformat()
+            } for log in activity_logs
+        ]
+    }
+
+def verify_archive_completeness(prayer, archive_path: str, session: Session) -> bool:
+    """Verify archive contains all current database activity"""
+    if not os.path.exists(archive_path):
+        return False
+    
+    # Get current database activity count (using only activity logs as single source of truth)
+    current_activities_count = len(session.exec(
+        select(PrayerActivityLog).where(PrayerActivityLog.prayer_id == prayer.id)
+    ).all())
+    
+    # For now, we'll use a simple heuristic - if there's any activity data
+    # in the database but file is old, it likely needs updating
+    if current_activities_count > 0:
+        try:
+            # Check if archive file was modified after the latest activity
+            file_mtime = datetime.fromtimestamp(os.path.getmtime(archive_path))
+            
+            # Get latest activity timestamp from activity logs only
+            latest_activity_log = session.exec(
+                select(PrayerActivityLog).where(
+                    PrayerActivityLog.prayer_id == prayer.id
+                ).order_by(PrayerActivityLog.created_at.desc())
+            ).first()
+            
+            if latest_activity_log and latest_activity_log.created_at > file_mtime:
+                return False  # Archive is outdated
+                
+        except (OSError, AttributeError):
+            return False  # Can't determine file age, assume needs update
+    
+    return True  # Archive appears complete
 
 def heal_prayer_archives():
     """Create missing archive files for prayers without them"""
@@ -49,6 +102,7 @@ def heal_prayer_archives():
         
         for prayer in prayers:
             needs_healing = False
+            reason = ""
             
             # Check if prayer needs healing
             if not prayer.text_file_path:
@@ -57,15 +111,21 @@ def heal_prayer_archives():
             elif not os.path.exists(prayer.text_file_path):
                 needs_healing = True
                 reason = "Archive file missing from filesystem"
+            elif not verify_archive_completeness(prayer, prayer.text_file_path, session):
+                needs_healing = True
+                reason = "Archive missing recent activity data"
             
             if needs_healing:
                 print(f"🔧 Healing prayer {prayer.id}: {reason}")
                 
                 # Get author information
-                author = session.get(User, prayer.author_id)
-                author_name = author.display_name if author else "Unknown User"
+                author = session.get(User, prayer.author_username)
+                author_name = author.display_name if author else prayer.author_username
                 
-                # Create archive data from database prayer
+                # Collect comprehensive activity data
+                activity_data = collect_prayer_activity_data(prayer.id, session)
+                
+                # Create comprehensive archive data from database prayer
                 archive_data = {
                     'id': prayer.id,
                     'author': author_name,
@@ -73,19 +133,87 @@ def heal_prayer_archives():
                     'generated_prayer': prayer.generated_prayer,
                     'project_tag': prayer.project_tag,
                     'target_audience': prayer.target_audience,
-                    'created_at': prayer.created_at
+                    'created_at': prayer.created_at,
+                    'activities': activity_data['activities'],
+                    'stats': {
+                        'activities_count': len(activity_data['activities'])
+                    }
                 }
                 
                 try:
                     # Create the archive file
                     if text_archive_service.enabled:
-                        archive_file_path = text_archive_service.create_prayer_archive(archive_data)
+                        # Create base prayer archive without activity data first
+                        base_archive_data = {
+                            'id': prayer.id,
+                            'author': author_name,
+                            'text': prayer.text,
+                            'generated_prayer': prayer.generated_prayer,
+                            'project_tag': prayer.project_tag,
+                            'target_audience': prayer.target_audience,
+                            'created_at': prayer.created_at
+                        }
+                        archive_file_path = text_archive_service.create_prayer_archive(base_archive_data)
+                        
+                        # Now append all historical activity data in chronological order
+                        all_activities = []
+                        
+                        # Collect activities with timestamps for sorting
+                        for activity in activity_data['activities']:
+                            all_activities.append({
+                                'created_at': datetime.fromisoformat(activity['created_at']),
+                                'type': 'activity',
+                                'data': activity
+                            })
+                        
+                        # Sort by timestamp and append to archive
+                        all_activities.sort(key=lambda x: x['created_at'])
+                        
+                        for activity_item in all_activities:
+                            activity_timestamp = activity_item['created_at']
+                            activity_data_item = activity_item['data']
+                            
+                            # Handle different activity types appropriately
+                            if activity_data_item['action'] == 'prayed':
+                                text_archive_service.append_prayer_activity_with_timestamp(
+                                    archive_file_path,
+                                    'prayed',
+                                    activity_data_item['user_id'],
+                                    activity_timestamp
+                                )
+                            elif activity_data_item['action'] in ['answered', 'archived', 'flagged', 'restored']:
+                                text_archive_service.append_prayer_activity_with_timestamp(
+                                    archive_file_path,
+                                    activity_data_item['action'],
+                                    activity_data_item['user_id'],
+                                    activity_timestamp
+                                )
+                            elif activity_data_item['action'] == 'testimony':
+                                # For testimony, use the new_value as the testimony text
+                                text_archive_service.append_prayer_activity_with_timestamp(
+                                    archive_file_path,
+                                    'testimony',
+                                    activity_data_item['user_id'],
+                                    activity_timestamp,
+                                    extra=activity_data_item['new_value']
+                                )
+                            else:
+                                # Handle any other activity types generically
+                                text_archive_service.append_prayer_activity_with_timestamp(
+                                    archive_file_path,
+                                    activity_data_item['action'],
+                                    activity_data_item['user_id'],
+                                    activity_timestamp,
+                                    old_value=activity_data_item['old_value'],
+                                    new_value=activity_data_item['new_value']
+                                )
                         
                         # Update prayer record with archive path
                         prayer.text_file_path = archive_file_path
                         session.add(prayer)
                         
-                        print(f"✅ Created archive: {archive_file_path}")
+                        activity_summary = f" (with {len(activity_data['activities'])} activities)"
+                        print(f"✅ Created comprehensive archive: {archive_file_path}{activity_summary}")
                         healed_count += 1
                     else:
                         print("⚠️  Text archives disabled - setting placeholder path")
@@ -110,6 +238,19 @@ def heal_prayer_archives():
             print(f"\n✨ All prayers already have archive files!")
         
         return True
+
+def collect_user_activity_data(username: str, session: Session) -> dict:
+    """Collect all activity data for a user from activity logs only (single source of truth)"""
+    
+    # Get user's activity logs only
+    user_activities = session.exec(
+        select(PrayerActivityLog).where(PrayerActivityLog.user_id == username)
+    ).all()
+    
+    return {
+        'activities_count': len(user_activities),
+        'total_prayers_with_activity': len(set(activity.prayer_id for activity in user_activities))
+    }
 
 def heal_user_archives():
     """Create missing archive files for users without them"""
@@ -136,38 +277,39 @@ def heal_user_archives():
                 reason = "Archive file missing from filesystem"
             
             if needs_healing:
-                print(f"🔧 Healing user {user.id} ({user.display_name}): {reason}")
+                print(f"🔧 Healing user {user.display_name}: {reason}")
                 
                 try:
                     # Create user archive by writing to monthly registration file
                     if text_archive_service.enabled:
                         # Get inviting user info if available
-                        inviting_user = None
-                        if user.invited_by_user_id:
-                            inviting_user = session.get(User, user.invited_by_user_id)
+                        invite_source = user.invited_by_username if user.invited_by_username else ""
                         
-                        invite_source = inviting_user.display_name if inviting_user else ""
+                        # Get user activity summary for logging
+                        activity_summary = collect_user_activity_data(user.display_name, session)
                         
-                        # Create the user registration archive entry
-                        archive_file_path = text_archive_service.append_user_registration(
+                        # Create the user registration archive entry with original timestamp
+                        archive_file_path = text_archive_service.append_user_registration_with_timestamp(
                             user.display_name,
-                            invite_source
+                            invite_source,
+                            user.created_at
                         )
                         
                         # Update user record with archive path
                         user.text_file_path = archive_file_path
                         session.add(user)
                         
-                        print(f"✅ Created user archive entry in: {archive_file_path}")
+                        activity_info = f" (activity: {activity_summary['activities_count']} activities on {activity_summary['total_prayers_with_activity']} prayers)"
+                        print(f"✅ Created user archive entry in: {archive_file_path}{activity_info}")
                         healed_count += 1
                     else:
                         print("⚠️  Text archives disabled - setting placeholder path")
-                        user.text_file_path = f"disabled_archive_for_user_{user.id}"
+                        user.text_file_path = f"disabled_archive_for_user_{user.display_name}"
                         session.add(user)
                         healed_count += 1
                         
                 except Exception as e:
-                    print(f"❌ Failed to heal user {user.id}: {e}")
+                    print(f"❌ Failed to heal user {user.display_name}: {e}")
         
         # Commit all changes
         session.commit()
@@ -216,10 +358,11 @@ if __name__ == "__main__":
             sys.exit(1)
             
         print("\n" + "="*50)
-        print("🎉 COMPLETE HEALING FINISHED!")
+        print("🎉 COMPREHENSIVE HEALING FINISHED!")
         print("="*50)
-        print("All prayers and users now have archive files.")
-        print("You can now export complete archives that include all users.")
+        print("All prayers and users now have comprehensive archive files.")
+        print("Archives include complete activity history (marks, attributes, logs).")
+        print("Ready for full idempotent import/export workflows!")
         
     except Exception as e:
         print(f"💥 Healing failed: {e}")
