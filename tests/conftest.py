@@ -111,19 +111,18 @@ def mock_authenticated_user(test_session):
     
     # Create simple mock objects to avoid any database interaction
     user = Mock()
-    user.id = "test_user_id"
-    user.display_name = "Test User"
+    user.display_name = "testuser"
     user.created_at = datetime.utcnow()
     user.religious_preference = "unspecified"
     user.prayer_style = None
-    user.invited_by_user_id = None
+    user.invited_by_username = None
     user.invite_token_used = None
     # Mock has_role method to return False (not admin)
     user.has_role.return_value = False
     
     session = Mock()
     session.id = "test_session_id"
-    session.user_id = "test_user_id"
+    session.username = "testuser"
     session.created_at = datetime.utcnow()
     session.expires_at = datetime.utcnow() + timedelta(days=14)
     session.auth_request_id = None
@@ -132,8 +131,8 @@ def mock_authenticated_user(test_session):
     session.is_fully_authenticated = True
     
     # Create real objects in test database for operations that need them
-    real_user = UserFactory.create(id="test_user_id", display_name="Test User")
-    real_session = SessionFactory.create(id="test_session_id", user_id="test_user_id", is_fully_authenticated=True)
+    real_user = UserFactory.create(display_name="testuser")
+    real_session = SessionFactory.create(id="test_session_id", username="testuser", is_fully_authenticated=True)
     test_session.add_all([real_user, real_session])
     test_session.commit()
     
@@ -158,19 +157,18 @@ def mock_half_authenticated_user(test_session):
     
     # Create simple mock objects to avoid any database interaction
     user = Mock()
-    user.id = "test_half_auth_user_id"
-    user.display_name = "Pending Auth User"
+    user.display_name = "pending_auth_user"
     user.created_at = datetime.utcnow()
     user.religious_preference = "unspecified"
     user.prayer_style = None
-    user.invited_by_user_id = None
+    user.invited_by_username = None
     user.invite_token_used = None
     # Mock has_role method to return False (not admin)
     user.has_role.return_value = False
     
     session = Mock()
     session.id = "test_half_auth_session_id"
-    session.user_id = "test_half_auth_user_id"
+    session.username = "pending_auth_user"
     session.created_at = datetime.utcnow()
     session.expires_at = datetime.utcnow() + timedelta(days=14)
     session.auth_request_id = None
@@ -179,8 +177,8 @@ def mock_half_authenticated_user(test_session):
     session.is_fully_authenticated = False  # Half-authenticated
     
     # Create real objects in test database for operations that need them
-    real_user = UserFactory.create(id="test_half_auth_user_id", display_name="Pending Auth User")
-    real_session = SessionFactory.create(id="test_half_auth_session_id", user_id="test_half_auth_user_id", is_fully_authenticated=False)
+    real_user = UserFactory.create(display_name="pending_auth_user")
+    real_session = SessionFactory.create(id="test_half_auth_session_id", username="pending_auth_user", is_fully_authenticated=False)
     test_session.add_all([real_user, real_session])
     test_session.commit()
     
@@ -205,17 +203,16 @@ def mock_admin_user(test_session):
     
     # Create simple mock objects to avoid any database interaction
     user = Mock()
-    user.id = "admin"  # Admin users have id="admin"
-    user.display_name = "Admin User"
+    user.display_name = "admin"  # Admin users have display_name="admin"
     user.created_at = datetime.utcnow()
     user.religious_preference = "unspecified"
     user.prayer_style = None
-    user.invited_by_user_id = None
+    user.invited_by_username = None
     user.invite_token_used = None
     
     session = Mock()
     session.id = "test_admin_session_id"
-    session.user_id = "admin"
+    session.username = "admin"
     session.created_at = datetime.utcnow()
     session.expires_at = datetime.utcnow() + timedelta(days=14)
     session.auth_request_id = None
@@ -224,8 +221,8 @@ def mock_admin_user(test_session):
     session.is_fully_authenticated = True
     
     # Create real objects in test database for operations that need them
-    real_user = UserFactory.create_admin()  # Creates user with id="admin"
-    real_session = SessionFactory.create(id="test_admin_session_id", user_id="admin", is_fully_authenticated=True)
+    real_user = UserFactory.create_admin()  # Creates user with display_name="admin"
+    real_session = SessionFactory.create(id="test_admin_session_id", username="admin", is_fully_authenticated=True)
     test_session.add_all([real_user, real_session])
     test_session.commit()
     
