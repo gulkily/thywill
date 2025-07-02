@@ -43,7 +43,7 @@ Remove the religious preference system (Christian/Other) from ThyWill to simplif
    - Simplify feed queries to show all prayers to all users
    - Update feed count calculations
 
-5. **Prayer CRUD** (`app_helpers/routes/prayer/prayer_crud.py`)
+5. **Prayer CRUD** (`app_helpers/routes/prayer/prayer_operations.py`)
    - Remove `target_audience` parameter from prayer creation
    - Simplify prayer partner assignment (random or sequential)
    - Remove preference-based preview filtering
@@ -97,7 +97,7 @@ Remove the religious preference system (Christian/Other) from ThyWill to simplif
 - [ ] Run rollback migration
 - [ ] Update prayer_helpers.py (remove filtering)
 - [ ] Update feed_operations.py (simplify feeds)
-- [ ] Update prayer_crud.py (simplify creation)
+- [ ] Update prayer_operations.py (simplify creation)
 
 ### Step 3: Routes & API (Medium Risk)
 - [ ] Remove preference routes from user_routes.py
