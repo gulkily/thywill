@@ -263,7 +263,7 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             user, _ = create_user_with_text_archive(archive_user_data, uid)
             
             inv.used = True
-            inv.used_by_user_id = uid
+            inv.used_by_user_id = user.display_name
             s.add(inv)
             
             # Archive the invite token usage
@@ -271,7 +271,7 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
                 from app_helpers.services.archive_writers import system_archive_writer
                 system_archive_writer.log_invite_usage(
                     token=token,
-                    used_by=uid,
+                    used_by=user.display_name,
                     created_by=inv.created_by_user
                 )
             except Exception as e:
@@ -280,11 +280,11 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
                 logger.warning(f"Failed to archive invite token usage: {e}")
             
             # Grant admin role if this is a system-generated token
-            grant_admin_role_for_system_token(uid, token, s)
+            grant_admin_role_for_system_token(user.display_name, token, s)
             
             s.commit()
 
-            sid = create_session(uid)
+            sid = create_session(user.display_name)
             resp = RedirectResponse("/", 303)
             resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
             return resp
