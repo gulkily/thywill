@@ -302,7 +302,7 @@ class TestInviteTreeLogic:
     def test_build_user_tree_node(self, test_session):
         """Test building individual tree node"""
         admin = UserFactory.create_admin()
-        user1 = UserFactory.create(id="user1", invited_by_user_id="admin")
+        user1 = UserFactory.create(display_name="user1", invited_by_user_id="admin")
         test_session.add_all([admin, user1])
         
         # Add invite token
@@ -341,9 +341,9 @@ class TestInviteTreeLogic:
         """Test max depth calculation with user hierarchy"""
         # Create chain of depth 3: admin -> user1 -> user2 -> user3
         admin = UserFactory.create_admin()
-        user1 = UserFactory.create(id="user1", invited_by_user_id="admin")
-        user2 = UserFactory.create(id="user2", invited_by_user_id="user1")
-        user3 = UserFactory.create(id="user3", invited_by_user_id="user2")
+        user1 = UserFactory.create(display_name="user1", invited_by_user_id="admin")
+        user2 = UserFactory.create(display_name="user2", invited_by_user_id="user1")
+        user3 = UserFactory.create(display_name="user3", invited_by_user_id="user2")
         test_session.add_all([admin, user1, user2, user3])
         test_session.commit()
         
