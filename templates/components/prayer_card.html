@@ -28,14 +28,6 @@
     <div id="original-request-{{ p.id }}" class="hidden">
       <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ p.text }}</p>
       
-      <!-- Project tag indicator -->
-      {% if p.project_tag %}
-      <div class="flex flex-wrap gap-2 mt-2">
-        <span class="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full border border-purple-200 dark:border-purple-700">
-          {{ p.project_tag }}
-        </span>
-      </div>
-      {% endif %}
     </div>
   </div>
   
