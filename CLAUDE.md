@@ -103,5 +103,9 @@ VENMO_HANDLE=
 **All .md plans/docs → `docs/plans/`**
 **Naming**: lowercase_with_underscores, include type (`*_plan.md`, `*_design.md`)
 
+## Production
+Whenever you see vmi2648361 in a command log, that means it was run on production.
+You don't have access to the production server, so please act accordingly.
+
 ---
 Faith-focused prayer platform emphasizing reverence, community moderation, secure access.
