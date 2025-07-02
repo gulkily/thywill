@@ -179,7 +179,6 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 'project_tag': prayer.project_tag,
                 'created_at': prayer.created_at,
                 'flagged': prayer.flagged,
-                'target_audience': prayer.target_audience,
                 'author_name': author_name,
                 'marked_by_user': user_mark_counts.get(prayer.id, 0),
                 'mark_count': mark_counts.get(prayer.id, 0),
