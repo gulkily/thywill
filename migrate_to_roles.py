@@ -31,7 +31,7 @@ def create_tables():
                 created_at TEXT NOT NULL,
                 created_by TEXT,
                 is_system_role BOOLEAN NOT NULL DEFAULT 0,
-                FOREIGN KEY(created_by) REFERENCES user(id)
+                FOREIGN KEY(created_by) REFERENCES user(display_name)
             )
         """))
         
@@ -44,9 +44,9 @@ def create_tables():
                 granted_by TEXT,
                 granted_at TEXT NOT NULL,
                 expires_at TEXT,
-                FOREIGN KEY(user_id) REFERENCES user(id),
+                FOREIGN KEY(user_id) REFERENCES user(display_name),
                 FOREIGN KEY(role_id) REFERENCES role(id),
-                FOREIGN KEY(granted_by) REFERENCES user(id)
+                FOREIGN KEY(granted_by) REFERENCES user(display_name)
             )
         """))
         
@@ -124,12 +124,12 @@ def migrate_existing_admin(dry_run=False):
     print("Migrating existing admin user...")
     
     with Session(engine) as session:
-        # Find current admin user (user with id = "admin")
-        stmt = select(User).where(User.id == "admin")
+        # Find current admin user (user with display_name = "admin")
+        stmt = select(User).where(User.display_name == "admin")
         admin_user = session.exec(stmt).first()
         
         if not admin_user:
-            print("   No existing admin user found (ID = 'admin')")
+            print("   No existing admin user found (display_name = 'admin')")
             return None
         
         print(f"   Found admin user: {admin_user.display_name}")
@@ -230,11 +230,11 @@ def verify_migration():
         print(f"   User-role assignments: {len(user_roles)}")
         
         # Check for admin users
-        stmt = select(User).join(UserRole, User.id == UserRole.user_id).join(Role, UserRole.role_id == Role.id).where(Role.name == "admin")
+        stmt = select(User).join(UserRole, User.display_name == UserRole.user_id).join(Role, UserRole.role_id == Role.id).where(Role.name == "admin")
         admin_users = session.exec(stmt).all()
         print(f"   Admin users: {len(admin_users)}")
         for admin in admin_users:
-            print(f"     - {admin.display_name} (ID: {admin.id})")
+            print(f"     - {admin.display_name}")
         
         print("✅ Migration verification complete")
 
