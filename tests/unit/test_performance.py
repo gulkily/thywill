@@ -22,7 +22,7 @@ class TestAttributeQueryPerformance:
         # Create 1000 prayers with various statuses
         prayers = []
         for i in range(1000):
-            prayer = PrayerFactory.create(author_id=users[i % 10].id)
+            prayer = PrayerFactory.create(author_username=users[i % 10].id)
             prayers.append(prayer)
         
         test_session.add_all(prayers)
@@ -155,7 +155,7 @@ class TestAttributeQueryPerformance:
             select(Prayer)
             .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
             .where(Prayer.flagged == False)
-            .where(Prayer.author_id == user.id)
+            .where(Prayer.author_username == user.display_name)
             .where(PrayerAttribute.attribute_name == 'archived')
             .order_by(Prayer.created_at.desc())
         ).all()
@@ -167,7 +167,7 @@ class TestAttributeQueryPerformance:
         
         # Verify all belong to user and are archived
         for prayer in archived_prayers:
-            assert prayer.author_id == user.id
+            assert prayer.author_id == user.display_name
             assert prayer.is_archived(test_session)
 
 
@@ -178,7 +178,7 @@ class TestAttributeOperationPerformance:
     def test_bulk_attribute_setting_performance(self, test_session):
         """Test performance of setting attributes on many prayers"""
         user = UserFactory.create()
-        prayers = [PrayerFactory.create(author_id=user.id) for _ in range(100)]
+        prayers = [PrayerFactory.create(author_username=user.display_name) for _ in range(100)]
         test_session.add_all([user] + prayers)
         test_session.commit()
         
@@ -186,7 +186,7 @@ class TestAttributeOperationPerformance:
         
         # Set archived status on all prayers
         for prayer in prayers:
-            prayer.set_attribute('archived', 'true', user.id, test_session)
+            prayer.set_attribute('archived', 'true', user.display_name, test_session)
         
         test_session.commit()
         
@@ -202,14 +202,14 @@ class TestAttributeOperationPerformance:
     def test_attribute_lookup_performance(self, test_session):
         """Test performance of attribute lookups"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Set multiple attributes
-        prayer.set_attribute('archived', 'true', user.id, test_session)
-        prayer.set_attribute('answered', 'true', user.id, test_session)
-        prayer.set_attribute('answer_testimony', 'Long testimony text here...', user.id, test_session)
+        prayer.set_attribute('archived', 'true', user.display_name, test_session)
+        prayer.set_attribute('answered', 'true', user.display_name, test_session)
+        prayer.set_attribute('answer_testimony', 'Long testimony text here...', user.display_name, test_session)
         test_session.commit()
         
         start_time = time.time()
@@ -234,13 +234,13 @@ class TestDatabaseIndexEfficiency:
         """Test that queries use indexes efficiently"""
         # Create test data
         user = UserFactory.create()
-        prayers = [PrayerFactory.create(author_id=user.id) for _ in range(100)]
+        prayers = [PrayerFactory.create(author_username=user.display_name) for _ in range(100)]
         test_session.add_all([user] + prayers)
         test_session.commit()
         
         # Add attributes to half the prayers
         for i, prayer in enumerate(prayers[:50]):
-            prayer.set_attribute('archived', 'true', user.id, test_session)
+            prayer.set_attribute('archived', 'true', user.display_name, test_session)
         test_session.commit()
         
         # This query should use the composite index on (prayer_id, attribute_name)
@@ -260,13 +260,13 @@ class TestDatabaseIndexEfficiency:
     def test_prayer_filtering_index_usage(self, test_session):
         """Test that prayer filtering queries use indexes"""
         user = UserFactory.create()
-        prayers = [PrayerFactory.create(author_id=user.id) for _ in range(200)]
+        prayers = [PrayerFactory.create(author_username=user.display_name) for _ in range(200)]
         test_session.add_all([user] + prayers)
         test_session.commit()
         
         # Archive some prayers
         for prayer in prayers[::5]:  # Every 5th prayer
-            prayer.set_attribute('archived', 'true', user.id, test_session)
+            prayer.set_attribute('archived', 'true', user.display_name, test_session)
         test_session.commit()
         
         start_time = time.time()
@@ -275,7 +275,7 @@ class TestDatabaseIndexEfficiency:
         active_prayers = test_session.exec(
             select(Prayer)
             .where(Prayer.flagged == False)
-            .where(Prayer.author_id == user.id)
+            .where(Prayer.author_username == user.display_name)
             .where(
                 ~Prayer.id.in_(
                     select(PrayerAttribute.prayer_id)
@@ -294,14 +294,14 @@ class TestDatabaseIndexEfficiency:
     def test_join_performance(self, test_session):
         """Test performance of prayer-attribute joins"""
         user = UserFactory.create()
-        prayers = [PrayerFactory.create(author_id=user.id) for _ in range(100)]
+        prayers = [PrayerFactory.create(author_username=user.display_name) for _ in range(100)]
         test_session.add_all([user] + prayers)
         test_session.commit()
         
         # Add answered status to prayers
         for prayer in prayers[::3]:  # Every 3rd prayer
-            prayer.set_attribute('answered', 'true', user.id, test_session)
-            prayer.set_attribute('answer_testimony', f'Testimony for prayer {prayer.id}', user.id, test_session)
+            prayer.set_attribute('answered', 'true', user.display_name, test_session)
+            prayer.set_attribute('answer_testimony', f'Testimony for prayer {prayer.id}', user.display_name, test_session)
         test_session.commit()
         
         start_time = time.time()
@@ -346,14 +346,14 @@ class TestMemoryUsage:
         
         prayers = []
         for i in range(1000):
-            prayer = PrayerFactory.create(author_id=user.id)
+            prayer = PrayerFactory.create(author_username=user.display_name)
             prayers.append(prayer)
             
             # Add attributes to some prayers
             if i % 5 == 0:
-                prayer.set_attribute('archived', 'true', user.id, test_session)
+                prayer.set_attribute('archived', 'true', user.display_name, test_session)
             if i % 7 == 0:
-                prayer.set_attribute('answered', 'true', user.id, test_session)
+                prayer.set_attribute('answered', 'true', user.display_name, test_session)
         
         test_session.add_all(prayers)
         test_session.commit()
@@ -370,14 +370,14 @@ class TestMemoryUsage:
     def test_attribute_query_memory_efficiency(self, test_session):
         """Test that attribute queries don't load excessive data"""
         user = UserFactory.create()
-        prayers = [PrayerFactory.create(author_id=user.id) for _ in range(500)]
+        prayers = [PrayerFactory.create(author_username=user.display_name) for _ in range(500)]
         test_session.add_all([user] + prayers)
         test_session.commit()
         
         # Add many attributes
         for prayer in prayers:
-            prayer.set_attribute('archived', 'true', user.id, test_session)
-            prayer.set_attribute('answer_testimony', 'Long testimony text ' * 50, user.id, test_session)
+            prayer.set_attribute('archived', 'true', user.display_name, test_session)
+            prayer.set_attribute('answer_testimony', 'Long testimony text ' * 50, user.display_name, test_session)
         test_session.commit()
         
         # Query that should only load prayer IDs, not full objects

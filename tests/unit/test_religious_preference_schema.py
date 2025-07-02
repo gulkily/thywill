@@ -33,7 +33,7 @@ class TestReligiousPreferenceSchema:
             test_session.add(user)
             test_session.commit()
             
-            retrieved_user = test_session.get(User, user.id)
+            retrieved_user = test_session.get(User, user.display_name)
             assert retrieved_user.religious_preference == preference
     
     def test_user_prayer_style_for_christians(self, test_session):
@@ -46,13 +46,13 @@ class TestReligiousPreferenceSchema:
         test_session.add(user)
         test_session.commit()
         
-        retrieved_user = test_session.get(User, user.id)
+        retrieved_user = test_session.get(User, user.display_name)
         assert retrieved_user.prayer_style == "in_jesus_name"
     
     def test_prayer_model_has_target_audience_fields(self, test_session):
         """Test that Prayer model has target audience fields with correct defaults"""
         prayer = Prayer(
-            author_id="test_user",
+            author_username="test_user",
             text="Test prayer"
         )
         test_session.add(prayer)
@@ -68,7 +68,7 @@ class TestReligiousPreferenceSchema:
         
         for audience in valid_audiences:
             prayer = Prayer(
-                author_id="test_user",
+                author_username="test_user",
                 text=f"Prayer for {audience}",
                 target_audience=audience
             )
@@ -82,13 +82,13 @@ class TestReligiousPreferenceSchema:
         """Test that migration preserves existing user and prayer data"""
         # Create user without religious preference (simulating pre-migration data)
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Verify existing data is preserved
-        retrieved_user = test_session.get(User, user.id)
+        retrieved_user = test_session.get(User, user.display_name)
         retrieved_prayer = test_session.get(Prayer, prayer.id)
         
         assert retrieved_user.display_name == user.display_name
