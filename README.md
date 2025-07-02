@@ -45,24 +45,24 @@ A community-driven prayer platform that creates a safe, faith-based environment 
 
 4. **Set up environment variables**
    
-   Create a `.env` file in the project root:
+   Copy the example environment file:
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Edit `.env` and add your Anthropic API key:
    ```env
    ANTHROPIC_API_KEY=your_anthropic_api_key_here
-   
-   # Payment configuration for donations
-   PAYPAL_USERNAME=your_paypal_username
-   VENMO_HANDLE=your_venmo_handle
-   
-   # Optional configuration
-   MULTI_DEVICE_AUTH_ENABLED=true
-   REQUIRE_APPROVAL_FOR_EXISTING_USERS=true
-   PEER_APPROVAL_COUNT=2
-   REQUIRE_VERIFICATION_CODE=false
-   
-   # Text Archive Settings
-   TEXT_ARCHIVE_ENABLED=true
-   TEXT_ARCHIVE_BASE_DIR=./text_archives
    ```
+   
+   **Optional**: Configure payment settings for donations:
+   ```env
+   # Leave empty to disable donations
+   PAYPAL_USERNAME=
+   VENMO_HANDLE=
+   ```
+   
+   All other settings have sensible defaults. See `.env.example` for the complete configuration options.
 
 5. **Initialize database**
    ```bash
