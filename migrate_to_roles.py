@@ -148,7 +148,7 @@ def migrate_existing_admin(dry_run=False):
         
         # Check if user already has admin role
         stmt = select(UserRole).where(
-            UserRole.user_id == admin_user.id,
+            UserRole.user_id == admin_user.display_name,
             UserRole.role_id == admin_role.id
         )
         existing_user_role = session.exec(stmt).first()
@@ -158,7 +158,7 @@ def migrate_existing_admin(dry_run=False):
         else:
             # Grant admin role to user
             user_role = UserRole(
-                user_id=admin_user.id,
+                user_id=admin_user.display_name,
                 role_id=admin_role.id,
                 granted_by=None,  # System migration
                 granted_at=datetime.utcnow()
@@ -189,7 +189,7 @@ def assign_default_roles_to_users(dry_run=False):
         users_granted = 0
         for user in all_users:
             # Check if user has any roles
-            stmt = select(UserRole).where(UserRole.user_id == user.id)
+            stmt = select(UserRole).where(UserRole.user_id == user.display_name)
             existing_roles = session.exec(stmt).all()
             
             if not existing_roles:
@@ -199,7 +199,7 @@ def assign_default_roles_to_users(dry_run=False):
                 else:
                     # Grant default user role
                     user_role_assignment = UserRole(
-                        user_id=user.id,
+                        user_id=user.display_name,
                         role_id=user_role.id,
                         granted_by=None,  # System migration
                         granted_at=datetime.utcnow()
