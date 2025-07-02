@@ -226,11 +226,37 @@ def test_importer_service():
         assert malformed_results['success'] == True
         print("✅ Malformed file handling works")
         
+        # Step 9: Test idempotency - repeated imports should not create duplicates
+        print("\\n9. Testing import idempotency...")
+        
+        # Run import again and verify no new records are created
+        second_import_results = importer_service.import_from_archive_directory(temp_dir, dry_run=False)
+        
+        assert second_import_results['success'] == True
+        
+        # All counts should be 0 for the second import since everything already exists
+        print(f"✅ Second import completed:")
+        print(f"  - Users imported: {second_import_results['stats']['users_imported']} (should be 0)")
+        print(f"  - Prayers imported: {second_import_results['stats']['prayers_imported']} (should be 0)")
+        print(f"  - Prayer marks imported: {second_import_results['stats']['prayer_marks_imported']} (should be 0)")
+        print(f"  - Prayer attributes imported: {second_import_results['stats']['prayer_attributes_imported']} (should be 0)")
+        print(f"  - Activity logs imported: {second_import_results['stats']['activity_logs_imported']} (should be 0)")
+        
+        # Verify idempotency
+        assert second_import_results['stats']['users_imported'] == 0, "Users should not be duplicated"
+        assert second_import_results['stats']['prayers_imported'] == 0, "Prayers should not be duplicated" 
+        assert second_import_results['stats']['prayer_marks_imported'] == 0, "Prayer marks should not be duplicated"
+        assert second_import_results['stats']['prayer_attributes_imported'] == 0, "Prayer attributes should not be duplicated"
+        assert second_import_results['stats']['activity_logs_imported'] == 0, "Activity logs should not be duplicated"
+        
+        print("✅ Import idempotency verified - no duplicates created on repeated import")
+
         print("\\n🎉 Importer service test passed successfully!")
         print("✅ Archive creation and parsing working")
         print("✅ Dry run and actual import working")
         print("✅ Data consistency validation working")
         print("✅ Error handling robust")
+        print("✅ Import idempotency verified")
         print("✅ Complete round-trip data integrity verified")
         
     except Exception as e:

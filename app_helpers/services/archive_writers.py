@@ -27,7 +27,7 @@ try:
 except (ImportError, Exception):
     # Fallback for testing or when app.py can't be imported
     import os
-    TEXT_ARCHIVE_ENABLED = os.getenv('TEXT_ARCHIVE_ENABLED', 'false').lower() == 'true'
+    TEXT_ARCHIVE_ENABLED = os.getenv('TEXT_ARCHIVE_ENABLED', 'true').lower() == 'true'
     TEXT_ARCHIVE_BASE_DIR = os.getenv('TEXT_ARCHIVE_BASE_DIR', '/tmp/test_archives_fallback')
 
 
