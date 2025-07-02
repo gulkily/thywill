@@ -65,8 +65,9 @@ class User(SQLModel, table=True):
             with Session(engine) as session:
                 return self.has_role("admin", session)
         except Exception:
-            # Fallback to old system if role tables don't exist yet
-            return self.display_name == "admin"
+            # Fallback: return False for non-admin usernames
+            # This property is mainly for templates, actual auth should use is_admin() function
+            return False
 
 class Role(SQLModel, table=True):
     """Roles define different permission levels in the system"""
