@@ -90,8 +90,8 @@ def validate_existing_user_invite_update(user: User, invite_token: str, session:
 
 def get_admin_user_id(session: Session) -> str:
     """Get the admin user ID for fallback invite relationships"""
-    # First try to find user with ID 'admin'
-    admin_user = session.exec(select(User).where(User.id == "admin")).first()
+    # First try to find user with display_name 'admin'
+    admin_user = session.exec(select(User).where(User.display_name == "admin")).first()
     if admin_user:
         return admin_user.display_name
     
