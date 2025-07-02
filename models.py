@@ -51,6 +51,22 @@ class User(SQLModel, table=True):
             (UserRole.expires_at.is_(None)) | (UserRole.expires_at > datetime.utcnow())
         )
         return list(session.exec(stmt).all())
+    
+    @property
+    def is_admin(self) -> bool:
+        """Check if user has admin privileges - template-friendly property"""
+        # For backward compatibility during migration, check both systems
+        if self.display_name == "admin":
+            return True
+        
+        # Check role-based system
+        try:
+            # Use the global engine variable from this module
+            with Session(engine) as session:
+                return self.has_role("admin", session)
+        except Exception:
+            # Fallback to old system if role tables don't exist yet
+            return self.display_name == "admin"
 
 class Role(SQLModel, table=True):
     """Roles define different permission levels in the system"""
