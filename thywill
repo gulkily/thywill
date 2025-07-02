@@ -12,9 +12,9 @@ set -euo pipefail
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_DIR="/home/thywill/thywill"
+APP_DIR="$SCRIPT_DIR"
 DEPLOYMENT_DIR="$APP_DIR/deployment"
-BACKUP_DIR="/home/thywill/backups"
+BACKUP_DIR="$APP_DIR/backups"
 
 # Colors for output
 RED='\033[0;31m'
@@ -207,6 +207,51 @@ cmd_start() {
         pip install -r requirements.txt
     else
         ensure_venv
+    fi
+    
+    # Check if .env file exists and create if needed
+    if [ ! -f ".env" ]; then
+        log "Creating .env file with default configuration..."
+        if [ -f ".env.example" ]; then
+            cp .env.example .env
+            log "Copied .env.example to .env"
+        else
+            # Create minimal .env if .env.example doesn't exist
+            cat > .env << 'EOF'
+# ThyWill Environment Configuration
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+PRODUCTION_MODE=1
+JWT_SECRET=changeme
+MULTI_DEVICE_AUTH_ENABLED=true
+REQUIRE_APPROVAL_FOR_EXISTING_USERS=true
+PEER_APPROVAL_COUNT=2
+REQUIRE_VERIFICATION_CODE=false
+INVITE_TOKEN_EXPIRATION_HOURS=12
+REQUIRE_INVITE_LOGIN_VERIFICATION=false
+SESSION_DAYS=90
+TEXT_ARCHIVE_ENABLED=true
+TEXT_ARCHIVE_BASE_DIR=./text_archives
+TEXT_ARCHIVE_COMPRESSION_AFTER_DAYS=365
+PRAYER_MODE_ENABLED=true
+PAYPAL_USERNAME=
+VENMO_HANDLE=
+EXPORT_RATE_LIMIT_MINUTES=2
+EXPORT_CACHE_TTL_MINUTES=15
+ENVIRONMENT=development
+BASE_URL=http://127.0.0.1:8000
+INIT_DATABASE=false
+FORCE_YES=false
+EOF
+            log "Created minimal .env file"
+        fi
+        echo ""
+        warning "IMPORTANT: You must edit .env to add your Anthropic API key!"
+        echo "  1. Get your API key from: https://console.anthropic.com/"
+        echo "  2. Edit .env file: nano .env"
+        echo "  3. Replace 'your_anthropic_api_key_here' with your actual key"
+        echo ""
+        read -p "Press Enter to continue or Ctrl+C to exit and edit .env now..."
+        echo ""
     fi
     
     # Check if uvicorn is installed
@@ -1092,6 +1137,49 @@ cmd_db_init() {
         exit 1
     fi
     
+    # Create .env file if it doesn't exist
+    if [ ! -f ".env" ]; then
+        log "Creating .env file with default configuration..."
+        if [ -f ".env.example" ]; then
+            cp .env.example .env
+            log "Copied .env.example to .env"
+        else
+            # Create minimal .env if .env.example doesn't exist
+            cat > .env << 'EOF'
+# ThyWill Environment Configuration
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+PRODUCTION_MODE=1
+JWT_SECRET=changeme
+MULTI_DEVICE_AUTH_ENABLED=true
+REQUIRE_APPROVAL_FOR_EXISTING_USERS=true
+PEER_APPROVAL_COUNT=2
+REQUIRE_VERIFICATION_CODE=false
+INVITE_TOKEN_EXPIRATION_HOURS=12
+REQUIRE_INVITE_LOGIN_VERIFICATION=false
+SESSION_DAYS=90
+TEXT_ARCHIVE_ENABLED=true
+TEXT_ARCHIVE_BASE_DIR=./text_archives
+TEXT_ARCHIVE_COMPRESSION_AFTER_DAYS=365
+PRAYER_MODE_ENABLED=true
+PAYPAL_USERNAME=
+VENMO_HANDLE=
+EXPORT_RATE_LIMIT_MINUTES=2
+EXPORT_CACHE_TTL_MINUTES=15
+ENVIRONMENT=development
+BASE_URL=http://127.0.0.1:8000
+INIT_DATABASE=false
+FORCE_YES=false
+EOF
+            log "Created minimal .env file"
+        fi
+        echo ""
+        warning "IMPORTANT: You must edit .env to add your Anthropic API key!"
+        echo "  1. Get your API key from: https://console.anthropic.com/"
+        echo "  2. Edit .env file: nano .env"
+        echo "  3. Replace 'your_anthropic_api_key_here' with your actual key"
+        echo ""
+    fi
+    
     log "Running database initialization script..."
     echo ""
     
@@ -1103,8 +1191,9 @@ cmd_db_init() {
         success "Database initialization completed!"
         echo ""
         echo "Next steps:"
-        echo "  thywill start          # Start development server"
-        echo "  thywill admin token    # Create first admin account"
+        echo "  1. Edit .env file to add your Anthropic API key"
+        echo "  2. thywill start          # Start development server"
+        echo "  3. thywill admin token    # Create first admin account"
     else
         echo ""
         error "Database initialization failed"
@@ -1230,6 +1319,58 @@ cmd_setup() {
     source venv/bin/activate
     pip install --upgrade pip
     pip install -r requirements.txt
+    
+    # Step 4.5: Create .env file with defaults
+    header "Step 4.5: Creating environment configuration"
+    if [ ! -f ".env" ]; then
+        log "Creating .env file with default configuration..."
+        if [ -f ".env.example" ]; then
+            cp .env.example .env
+            log "Copied .env.example to .env"
+            echo ""
+            warning "IMPORTANT: You must edit .env to add your Anthropic API key!"
+            echo "  1. Get your API key from: https://console.anthropic.com/"
+            echo "  2. Edit .env file: nano .env"
+            echo "  3. Replace 'your_anthropic_api_key_here' with your actual key"
+            echo ""
+        else
+            # Create minimal .env if .env.example doesn't exist
+            cat > .env << 'EOF'
+# ThyWill Environment Configuration
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+PRODUCTION_MODE=1
+JWT_SECRET=changeme
+MULTI_DEVICE_AUTH_ENABLED=true
+REQUIRE_APPROVAL_FOR_EXISTING_USERS=true
+PEER_APPROVAL_COUNT=2
+REQUIRE_VERIFICATION_CODE=false
+INVITE_TOKEN_EXPIRATION_HOURS=12
+REQUIRE_INVITE_LOGIN_VERIFICATION=false
+SESSION_DAYS=90
+TEXT_ARCHIVE_ENABLED=true
+TEXT_ARCHIVE_BASE_DIR=./text_archives
+TEXT_ARCHIVE_COMPRESSION_AFTER_DAYS=365
+PRAYER_MODE_ENABLED=true
+PAYPAL_USERNAME=
+VENMO_HANDLE=
+EXPORT_RATE_LIMIT_MINUTES=2
+EXPORT_CACHE_TTL_MINUTES=15
+ENVIRONMENT=development
+BASE_URL=http://127.0.0.1:8000
+INIT_DATABASE=false
+FORCE_YES=false
+EOF
+            log "Created minimal .env file"
+            echo ""
+            warning "IMPORTANT: You must edit .env to add your Anthropic API key!"
+            echo "  1. Get your API key from: https://console.anthropic.com/"
+            echo "  2. Edit .env file: nano .env"
+            echo "  3. Replace 'your_anthropic_api_key_here' with your actual key"
+            echo ""
+        fi
+    else
+        log ".env file already exists"
+    fi
     
     # Step 5: Initialize database
     header "Step 5: Setting up database"
