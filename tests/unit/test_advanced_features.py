@@ -15,28 +15,28 @@ class TestAdvancedFeedFiltering:
     
     def test_recent_activity_feed_time_filtering(self, test_session):
         """Test recent activity feed respects 7-day time window"""
-        user1 = UserFactory.create(id="user1")
-        user2 = UserFactory.create(id="user2")
+        user1 = UserFactory.create(display_name="user1")
+        user2 = UserFactory.create(display_name="user2")
         
-        prayer1 = PrayerFactory.create(id="prayer1", author_id="user1", flagged=False)
-        prayer2 = PrayerFactory.create(id="prayer2", author_id="user1", flagged=False)
-        prayer3 = PrayerFactory.create(id="prayer3", author_id="user1", flagged=False)
+        prayer1 = PrayerFactory.create(id="prayer1", author_username="user1", flagged=False)
+        prayer2 = PrayerFactory.create(id="prayer2", author_username="user1", flagged=False)
+        prayer3 = PrayerFactory.create(id="prayer3", author_username="user1", flagged=False)
         
         # Recent marks (within 7 days)
         recent_mark1 = PrayerMarkFactory.create(
-            user_id="user2", 
+            username="user2", 
             prayer_id="prayer1",
             created_at=datetime.utcnow() - timedelta(days=3)
         )
         recent_mark2 = PrayerMarkFactory.create(
-            user_id="user2", 
+            username="user2", 
             prayer_id="prayer2",
             created_at=datetime.utcnow() - timedelta(days=6)
         )
         
         # Old mark (more than 7 days)
         old_mark = PrayerMarkFactory.create(
-            user_id="user2", 
+            username="user2", 
             prayer_id="prayer3",
             created_at=datetime.utcnow() - timedelta(days=8)
         )
@@ -51,7 +51,7 @@ class TestAdvancedFeedFiltering:
         week_ago = datetime.utcnow() - timedelta(days=7)
         stmt = (
             select(Prayer, User.display_name)
-            .join(User, Prayer.author_id == User.id)
+            .join(User, Prayer.author_username == User.display_name)
             .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
             .where(Prayer.flagged == False)
             .where(PrayerMark.created_at >= week_ago)
@@ -74,14 +74,14 @@ class TestAdvancedFeedFiltering:
     
     def test_feed_filtering_with_complex_scenarios(self, test_session):
         """Test feed filtering with complex user interactions"""
-        user1 = UserFactory.create(id="user1")
-        user2 = UserFactory.create(id="user2")
-        user3 = UserFactory.create(id="user3")
+        user1 = UserFactory.create(display_name="user1")
+        user2 = UserFactory.create(display_name="user2")
+        user3 = UserFactory.create(display_name="user3")
         
         # Prayer with marks from multiple users
         popular_prayer = PrayerFactory.create(
             id="popular", 
-            author_id="user1", 
+            author_username="user1", 
             flagged=False,
             text="Popular prayer"
         )
@@ -89,7 +89,7 @@ class TestAdvancedFeedFiltering:
         # Prayer with single mark
         simple_prayer = PrayerFactory.create(
             id="simple", 
-            author_id="user2", 
+            author_username="user2", 
             flagged=False,
             text="Simple prayer"
         )
@@ -97,18 +97,18 @@ class TestAdvancedFeedFiltering:
         # Prayer with no marks
         unprayed_prayer = PrayerFactory.create(
             id="unprayed", 
-            author_id="user3", 
+            author_username="user3", 
             flagged=False,
             text="Unprayed prayer"
         )
         
         # Multiple marks on popular prayer
         marks = [
-            PrayerMarkFactory.create(user_id="user1", prayer_id="popular"),
-            PrayerMarkFactory.create(user_id="user2", prayer_id="popular"),
-            PrayerMarkFactory.create(user_id="user3", prayer_id="popular"),
-            PrayerMarkFactory.create(user_id="user1", prayer_id="popular"),  # User1 marks twice
-            PrayerMarkFactory.create(user_id="user2", prayer_id="simple")
+            PrayerMarkFactory.create(username="user1", prayer_id="popular"),
+            PrayerMarkFactory.create(username="user2", prayer_id="popular"),
+            PrayerMarkFactory.create(username="user3", prayer_id="popular"),
+            PrayerMarkFactory.create(username="user1", prayer_id="popular"),  # User1 marks twice
+            PrayerMarkFactory.create(username="user2", prayer_id="simple")
         ]
         
         test_session.add_all([
@@ -119,7 +119,7 @@ class TestAdvancedFeedFiltering:
         # Test "most_prayed" feed with mark counts
         most_prayed_stmt = (
             select(Prayer, User.display_name, func.count(PrayerMark.id).label('mark_count'))
-            .join(User, Prayer.author_id == User.id)
+            .join(User, Prayer.author_username == User.display_name)
             .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
             .where(Prayer.flagged == False)
             .group_by(Prayer.id)
@@ -135,7 +135,7 @@ class TestAdvancedFeedFiltering:
         
         # Test distinct user count
         distinct_users_stmt = (
-            select(Prayer.id, func.count(func.distinct(PrayerMark.user_id)).label('user_count'))
+            select(Prayer.id, func.count(func.distinct(PrayerMark.username)).label('user_count'))
             .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
             .where(Prayer.id == "popular")
             .group_by(Prayer.id)
@@ -146,27 +146,27 @@ class TestAdvancedFeedFiltering:
     def test_my_prayers_feed_ordering(self, test_session):
         """Test my_prayers feed ordering by most recent mark"""
         user = UserFactory.create()
-        user2 = UserFactory.create(id="user2")
-        user3 = UserFactory.create(id="user3")
-        user4 = UserFactory.create(id="user4")
+        user2 = UserFactory.create(display_name="user2")
+        user3 = UserFactory.create(display_name="user3")
+        user4 = UserFactory.create(display_name="user4")
         
-        prayer1 = PrayerFactory.create(id="prayer1", author_id="user2", flagged=False)
-        prayer2 = PrayerFactory.create(id="prayer2", author_id="user3", flagged=False)
-        prayer3 = PrayerFactory.create(id="prayer3", author_id="user4", flagged=False)
+        prayer1 = PrayerFactory.create(id="prayer1", author_username="user2", flagged=False)
+        prayer2 = PrayerFactory.create(id="prayer2", author_username="user3", flagged=False)
+        prayer3 = PrayerFactory.create(id="prayer3", author_username="user4", flagged=False)
         
         # User marks prayers at different times
         mark1 = PrayerMarkFactory.create(
-            user_id=user.id, 
+            username=user.display_name, 
             prayer_id="prayer1",
             created_at=datetime.utcnow() - timedelta(hours=3)
         )
         mark2 = PrayerMarkFactory.create(
-            user_id=user.id, 
+            username=user.display_name, 
             prayer_id="prayer2",
             created_at=datetime.utcnow() - timedelta(hours=1)  # Most recent
         )
         mark3 = PrayerMarkFactory.create(
-            user_id=user.id, 
+            username=user.display_name, 
             prayer_id="prayer3",
             created_at=datetime.utcnow() - timedelta(hours=2)
         )
@@ -177,10 +177,10 @@ class TestAdvancedFeedFiltering:
         # Test my_prayers query with ordering
         my_prayers_stmt = (
             select(Prayer, User.display_name)
-            .join(User, Prayer.author_id == User.id)
+            .join(User, Prayer.author_username == User.display_name)
             .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
             .where(Prayer.flagged == False)
-            .where(PrayerMark.user_id == user.id)
+            .where(PrayerMark.username == user.display_name)
             .group_by(Prayer.id)
             .order_by(func.max(PrayerMark.created_at).desc())
         )
@@ -204,19 +204,19 @@ class TestAdminPanelFunctionality:
         
         # Normal prayers (should not appear in admin panel)
         normal_prayer = PrayerFactory.create(
-            author_id=user1.id, 
+            author_username=user1.display_name, 
             flagged=False,
             text="Normal prayer"
         )
         
         # Flagged prayers (should appear in admin panel)
         flagged1 = PrayerFactory.create(
-            author_id=user1.id, 
+            author_username=user1.display_name, 
             flagged=True,
             text="Flagged prayer 1"
         )
         flagged2 = PrayerFactory.create(
-            author_id=user2.id, 
+            author_username=user2.display_name, 
             flagged=True,
             text="Flagged prayer 2"
         )
@@ -227,7 +227,7 @@ class TestAdminPanelFunctionality:
         # Simulate admin panel query from app.py
         stmt = (
             select(Prayer, User.display_name)
-            .join(User, Prayer.author_id == User.id)
+            .join(User, Prayer.author_username == User.display_name)
             .where(Prayer.flagged == True)
         )
         flagged_results = test_session.exec(stmt).all()
@@ -245,18 +245,18 @@ class TestAdminPanelFunctionality:
         user2 = UserFactory.create(display_name="Requester Two")
         approver1 = UserFactory.create(display_name="Approver One")
         approver2 = UserFactory.create(display_name="Approver Two")
-        admin = UserFactory.create(id="admin", display_name="Admin User")
+        admin = UserFactory.create(display_name="admin")
         
         # Auth request with multiple approvals
         auth_req1 = AuthenticationRequestFactory.create(
-            user_id=user1.id,
+            username=user1.display_name,
             status="pending",
             expires_at=datetime.utcnow() + timedelta(days=1)
         )
         
         # Auth request with admin approval
         auth_req2 = AuthenticationRequestFactory.create(
-            user_id=user2.id,
+            username=user2.display_name,
             status="approved",
             approved_by_user_id=admin.id,
             expires_at=datetime.utcnow() + timedelta(days=1)
@@ -304,9 +304,9 @@ class TestAdminPanelFunctionality:
     
     def test_admin_permissions_checking(self, test_session):
         """Test admin permission checking functionality"""
-        admin_user = UserFactory.create(id="admin")
-        regular_user = UserFactory.create(id="regular_123")
-        fake_admin = UserFactory.create(id="not_admin", display_name="admin")
+        admin_user = UserFactory.create(display_name="admin")
+        regular_user = UserFactory.create(display_name="regular_123")
+        fake_admin = UserFactory.create(display_name="not_admin")
         
         test_session.add_all([admin_user, regular_user, fake_admin])
         test_session.commit()
@@ -341,39 +341,39 @@ class TestBulkOperations:
     
     def test_bulk_approve_authentication_requests(self, test_session):
         """Test bulk approval of multiple authentication requests"""
-        admin = UserFactory.create(id="admin")
+        admin = UserFactory.create(display_name="admin")
         
         # Create multiple pending requests
-        user1 = UserFactory.create(id="user1")
-        user2 = UserFactory.create(id="user2")
-        user3 = UserFactory.create(id="user3")
+        user1 = UserFactory.create(display_name="user1")
+        user2 = UserFactory.create(display_name="user2")
+        user3 = UserFactory.create(display_name="user3")
         
         pending_req1 = AuthenticationRequestFactory.create(
-            user_id="user1",
+            username="user1",
             status="pending",
             expires_at=datetime.utcnow() + timedelta(days=1)
         )
         pending_req2 = AuthenticationRequestFactory.create(
-            user_id="user2",
+            username="user2",
             status="pending",
             expires_at=datetime.utcnow() + timedelta(days=1)
         )
         pending_req3 = AuthenticationRequestFactory.create(
-            user_id="user3",
+            username="user3",
             status="pending",
             expires_at=datetime.utcnow() + timedelta(days=1)
         )
         
         # Expired request (should not be approved)
         expired_req = AuthenticationRequestFactory.create(
-            user_id="user1",
+            username="user1",
             status="pending",
             expires_at=datetime.utcnow() - timedelta(hours=1)
         )
         
         # Already approved request (should not be changed)
         approved_req = AuthenticationRequestFactory.create(
-            user_id="user2",
+            username="user2",
             status="approved",
             expires_at=datetime.utcnow() + timedelta(days=1)
         )
@@ -417,21 +417,21 @@ class TestBulkOperations:
         
         # Expired pending request (should be marked expired)
         expired_pending = AuthenticationRequestFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             status="pending",
             expires_at=datetime.utcnow() - timedelta(hours=1)
         )
         
         # Expired approved request (should not be touched)
         expired_approved = AuthenticationRequestFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             status="approved",
             expires_at=datetime.utcnow() - timedelta(hours=1)
         )
         
         # Valid pending request (should not be touched)
         valid_pending = AuthenticationRequestFactory.create(
-            user_id=user.id,
+            username=user.display_name,
             status="pending",
             expires_at=datetime.utcnow() + timedelta(days=1)
         )
@@ -458,15 +458,15 @@ class TestBulkOperations:
     
     def test_bulk_prayer_moderation(self, test_session):
         """Test bulk prayer moderation operations"""
-        admin = UserFactory.create(id="admin")
+        admin = UserFactory.create(display_name="admin")
         user1 = UserFactory.create()
         user2 = UserFactory.create()
         
         # Create various prayers
-        normal_prayer1 = PrayerFactory.create(author_id=user1.id, flagged=False)
-        normal_prayer2 = PrayerFactory.create(author_id=user2.id, flagged=False)
-        flagged_prayer1 = PrayerFactory.create(author_id=user1.id, flagged=True)
-        flagged_prayer2 = PrayerFactory.create(author_id=user2.id, flagged=True)
+        normal_prayer1 = PrayerFactory.create(author_username=user1.display_name, flagged=False)
+        normal_prayer2 = PrayerFactory.create(author_username=user2.display_name, flagged=False)
+        flagged_prayer1 = PrayerFactory.create(author_username=user1.display_name, flagged=True)
+        flagged_prayer2 = PrayerFactory.create(author_username=user2.display_name, flagged=True)
         
         test_session.add_all([admin, user1, user2, normal_prayer1, normal_prayer2, flagged_prayer1, flagged_prayer2])
         test_session.commit()
@@ -500,21 +500,21 @@ class TestBulkOperations:
         
         # Expired sessions
         expired_session1 = SessionFactory.create(
-            user_id=user1.id,
+            username=user1.display_name,
             expires_at=datetime.utcnow() - timedelta(hours=1)
         )
         expired_session2 = SessionFactory.create(
-            user_id=user2.id,
+            username=user2.display_name,
             expires_at=datetime.utcnow() - timedelta(days=1)
         )
         
         # Valid sessions
         valid_session1 = SessionFactory.create(
-            user_id=user1.id,
+            username=user1.display_name,
             expires_at=datetime.utcnow() + timedelta(days=1)
         )
         valid_session2 = SessionFactory.create(
-            user_id=user2.id,
+            username=user2.display_name,
             expires_at=datetime.utcnow() + timedelta(days=14)
         )
         

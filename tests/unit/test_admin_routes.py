@@ -41,7 +41,7 @@ class TestAdminDashboardRoutes:
         
         # Create flagged prayer
         flagged_prayer = PrayerFactory.create(
-            author_id="test_user_id",
+            author_username="test_user_id",
             text="Test flagged prayer",
             flagged=True
         )
@@ -59,7 +59,7 @@ class TestAdminDashboardRoutes:
         
         # Create pending auth request
         auth_request = AuthenticationRequestFactory.create(
-            user_id="test_user_id",
+            username="test_user_id",
             status="pending"
         )
         test_session.add(auth_request)
@@ -97,20 +97,20 @@ class TestAdminAuthenticationRoutes:
         user, session = mock_admin_user
         
         # Create users first
-        user1 = UserFactory.create(id="user1", display_name="User 1")
-        user2 = UserFactory.create(id="user2", display_name="User 2")
+        user1 = UserFactory.create(display_name="user1")
+        user2 = UserFactory.create(display_name="user2")
         test_session.add_all([user1, user2])
         test_session.commit()
         
         # Create pending auth requests
         auth_request1 = AuthenticationRequestFactory.create(
             id="req1",
-            user_id="user1",
+            username="user1",
             status="pending"
         )
         auth_request2 = AuthenticationRequestFactory.create(
             id="req2", 
-            user_id="user2",
+            username="user2",
             status="pending"
         )
         test_session.add_all([auth_request1, auth_request2])
@@ -156,7 +156,7 @@ class TestAdminPrayerModerationRoutes:
         # Create test prayer
         prayer = PrayerFactory.create(
             id="test_prayer_id",
-            author_id="test_user_id",
+            author_username="test_user_id",
             text="Test prayer to flag",
             flagged=False
         )
@@ -175,7 +175,7 @@ class TestAdminPrayerModerationRoutes:
         # Create flagged prayer
         prayer = PrayerFactory.create(
             id="test_prayer_id",
-            author_id="test_user_id", 
+            author_username="test_user_id", 
             text="Test flagged prayer",
             flagged=True
         )
@@ -248,8 +248,8 @@ class TestAdminAPIRoutes:
         user, session = mock_admin_user
         
         # Create test users
-        user1 = UserFactory.create(id="user1", display_name="User 1")
-        user2 = UserFactory.create(id="user2", display_name="User 2")
+        user1 = UserFactory.create(display_name="user1")
+        user2 = UserFactory.create(display_name="user2")
         test_session.add_all([user1, user2])
         test_session.commit()
         
@@ -277,10 +277,10 @@ class TestAdminUtilityFunctions:
         regular_user, regular_session = mock_authenticated_user
         
         # Admin user should have admin privileges
-        assert admin_user.id == "admin"
+        assert admin_user.display_name == "admin"
         
         # Regular user should not have admin privileges
-        assert regular_user.id != "admin"
+        assert regular_user.display_name != "admin"
     
     def test_expired_auth_request_cleanup(self, client, mock_admin_user, test_session, clean_db):
         """Test cleanup of expired authentication requests"""

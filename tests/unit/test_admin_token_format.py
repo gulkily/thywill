@@ -95,7 +95,7 @@ class TestAdminTokenFormat:
             
             # Mock current time
             mock_now = datetime(2025, 6, 25, 12, 0, 0)
-            mock_datetime.utcnow.return_value = mock_now
+            mock_datetime.now.return_value = mock_now
             mock_datetime.timedelta = timedelta  # Use real timedelta
             
             mock_session_instance = MagicMock()
