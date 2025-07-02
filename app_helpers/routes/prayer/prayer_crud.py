@@ -31,14 +31,12 @@ router = APIRouter()
 
 @router.post("/prayers/preview")
 def preview_prayer(text: str = Form(...),
-                   tag: Optional[str] = Form(None),
                    user_session: tuple = Depends(current_user)):
     """
     Generate prayer preview without saving to database.
     
     Args:
         text: The prayer request text (max 500 chars)
-        tag: Optional project tag for categorization
         user_session: Current authenticated user session
     
     Returns:
@@ -59,14 +57,12 @@ def preview_prayer(text: str = Form(...),
         "original_text": text,
         "generated_prayer": prayer_result['prayer'],
         "service_status": prayer_result['service_status'],
-        "tag": tag,
         "preview_token": preview_token
     }
 
 
 @router.post("/prayers")
 def submit_prayer(text: str = Form(...),
-                  tag: Optional[str] = Form(None),
                   generated_prayer: Optional[str] = Form(None),
                   user_session: tuple = Depends(current_user)):
     """
@@ -74,7 +70,6 @@ def submit_prayer(text: str = Form(...),
     
     Args:
         text: The prayer request text (max 500 chars)
-        tag: Optional project tag for categorization
         generated_prayer: Pre-generated prayer from preview (optional)
         user_session: Current authenticated user session
     
@@ -96,7 +91,6 @@ def submit_prayer(text: str = Form(...),
     prayer = submit_prayer_archive_first(
         text=text,
         author=user,
-        tag=tag,
         generated_prayer=final_prayer
     )
     

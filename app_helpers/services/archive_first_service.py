@@ -392,7 +392,7 @@ def validate_archive_database_consistency(prayer_id: str) -> Dict:
 
 
 # Convenience function for backward compatibility
-def submit_prayer_archive_first(text: str, author: User, tag: str = None, 
+def submit_prayer_archive_first(text: str, author: User,
                                generated_prayer: str = None) -> Prayer:
     """
     Submit prayer using archive-first approach - convenience wrapper.
@@ -400,7 +400,6 @@ def submit_prayer_archive_first(text: str, author: User, tag: str = None,
     Args:
         text: Prayer request text
         author: User submitting the prayer
-        tag: Optional project tag
         generated_prayer: Pre-generated prayer text
     
     Returns:
@@ -410,8 +409,7 @@ def submit_prayer_archive_first(text: str, author: User, tag: str = None,
         'author_username': author.display_name,
         'author_display_name': author.display_name,
         'text': text,
-        'generated_prayer': generated_prayer,
-        'project_tag': tag
+        'generated_prayer': generated_prayer
     }
     
     prayer, _ = create_prayer_with_text_archive(prayer_data)
