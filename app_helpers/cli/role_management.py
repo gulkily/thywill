@@ -134,11 +134,15 @@ def list_admin_users() -> List[User]:
     try:
         with Session(engine) as session:
             # Get users with admin role (new system)
-            stmt = select(User).join(UserRole).join(Role).where(Role.name == 'admin')
+            # Need to specify explicit join conditions due to multiple foreign keys
+            stmt = (select(User)
+                   .join(UserRole, User.display_name == UserRole.user_id)
+                   .join(Role, UserRole.role_id == Role.id)
+                   .where(Role.name == 'admin'))
             role_based_admins = list(session.exec(stmt))
             
             # Get legacy admin user (old system)
-            legacy_admin_stmt = select(User).where(User.id == 'admin')
+            legacy_admin_stmt = select(User).where(User.display_name == 'admin')
             legacy_admin = session.exec(legacy_admin_stmt).first()
             
             all_admins = role_based_admins
@@ -169,13 +173,13 @@ def print_admin_list():
     print()
     
     for admin in admins:
-        system_type = "(legacy)" if admin.id == 'admin' else "(role-based)"
+        system_type = "(legacy)" if admin.display_name == 'admin' else "(role-based)"
         print(f'• "{admin.display_name}" {system_type}')
-        print(f'  ID: {admin.id[:8]}...')
+        print(f'  ID: {admin.display_name[:8]}...')
         print(f'  Created: {admin.created_at}')
         print()
     
-    if any(admin.id == 'admin' for admin in admins):
+    if any(admin.display_name == 'admin' for admin in admins):
         print('💡 Note: Legacy admin users should be migrated to role-based system')
         print('   Run: python migrate_to_roles.py')
 
