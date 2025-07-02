@@ -27,13 +27,13 @@ class TestUserProfileRoutes:
         user, session = mock_authenticated_user
         
         # Create test data
-        prayer1 = PrayerFactory.create(author_id=user.id, text="Test prayer 1")
-        prayer2 = PrayerFactory.create(author_id=user.id, text="Test prayer 2")
-        mark1 = PrayerMarkFactory.create(user_id=user.id, prayer_id=prayer1.id)
+        prayer1 = PrayerFactory.create(author_username=user.display_name, text="Test prayer 1")
+        prayer2 = PrayerFactory.create(author_username=user.display_name, text="Test prayer 2")
+        mark1 = PrayerMarkFactory.create(username=user.display_name, prayer_id=prayer1.id)
         test_session.add_all([prayer1, prayer2, mark1])
         test_session.commit()
         
-        response = client.get(f"/user/{user.id}")
+        response = client.get(f"/user/{user.display_name}")
         
         assert response.status_code in [200, 404]  # May return 404 if route doesn't exist
         # Verify it's an HTML response if successful
@@ -45,12 +45,12 @@ class TestUserProfileRoutes:
         user, session = mock_authenticated_user
         
         # Create another user
-        other_user = UserFactory.create(id="other_user_id", display_name="Other User")
-        prayer = PrayerFactory.create(author_id=other_user.id, text="Other user's prayer")
+        other_user = UserFactory.create(display_name="other_user_id")
+        prayer = PrayerFactory.create(author_username=other_user.display_name, text="Other user's prayer")
         test_session.add_all([other_user, prayer])
         test_session.commit()
         
-        response = client.get(f"/user/{other_user.id}")
+        response = client.get(f"/user/{other_user.display_name}")
         
         assert response.status_code == 200
         assert "text/html" in response.headers.get("content-type", "")
@@ -68,17 +68,16 @@ class TestUserProfileRoutes:
         user, session = mock_authenticated_user
         
         # Create inviter user
-        inviter = UserFactory.create(id="inviter_id", display_name="Inviter User")
+        inviter = UserFactory.create(display_name="inviter_id")
         # Create target user with inviter
         target_user = UserFactory.create(
-            id="target_user_id", 
-            display_name="Target User",
-            invited_by_user_id=inviter.id
+            display_name="target_user_id",
+            invited_by_username=inviter.display_name
         )
         test_session.add_all([inviter, target_user])
         test_session.commit()
         
-        response = client.get(f"/user/{target_user.id}")
+        response = client.get(f"/user/{target_user.display_name}")
         
         assert response.status_code == 200
 
@@ -163,7 +162,7 @@ class TestUserDataPrivacy:
         test_session.add(target_user)
         test_session.commit()
         
-        response = client.get(f"/user/{target_user.id}")
+        response = client.get(f"/user/{target_user.display_name}")
         
         assert response.status_code == 200
         # Response should not contain sensitive information in HTML
@@ -174,17 +173,17 @@ class TestUserDataPrivacy:
         user, session = mock_authenticated_user
         
         # Refresh the user object from the database to avoid DetachedInstanceError
-        db_user = test_session.get(User, user.id)
+        db_user = test_session.get(User, user.display_name)
         if db_user:
             test_session.refresh(db_user)
         
-        other_user = UserFactory.create(id="other_user_id", display_name="Other User")
-        other_user_id = other_user.id  # Store ID before adding to session
+        other_user = UserFactory.create(display_name="other_user_id")
+        other_user_id = other_user.display_name  # Store ID before adding to session
         test_session.add(other_user)
         test_session.commit()
         
         # Get own profile
-        own_response = client.get(f"/user/{user.id}")
+        own_response = client.get(f"/user/{user.display_name}")
         
         # Get other user's profile using stored ID
         other_response = client.get(f"/user/{other_user_id}")
@@ -208,15 +207,15 @@ class TestUserStatsAndActivity:
         user, session = mock_authenticated_user
         
         # Create test prayers and marks
-        prayer1 = PrayerFactory.create(author_id=user.id)
-        prayer2 = PrayerFactory.create(author_id=user.id)
-        mark1 = PrayerMarkFactory.create(user_id=user.id, prayer_id=prayer1.id)
-        mark2 = PrayerMarkFactory.create(user_id=user.id, prayer_id=prayer2.id)
+        prayer1 = PrayerFactory.create(author_username=user.display_name)
+        prayer2 = PrayerFactory.create(author_username=user.display_name)
+        mark1 = PrayerMarkFactory.create(username=user.display_name, prayer_id=prayer1.id)
+        mark2 = PrayerMarkFactory.create(username=user.display_name, prayer_id=prayer2.id)
         
         test_session.add_all([prayer1, prayer2, mark1, mark2])
         test_session.commit()
         
-        response = client.get(f"/user/{user.id}")
+        response = client.get(f"/user/{user.display_name}")
         
         assert response.status_code in [200, 404]  # May return 404 if route doesn't exist
         # Statistics should be computed and displayed
@@ -227,13 +226,13 @@ class TestUserStatsAndActivity:
         user, session = mock_authenticated_user
         
         # Create activity data
-        prayer = PrayerFactory.create(author_id=user.id)
-        mark = PrayerMarkFactory.create(user_id=user.id, prayer_id=prayer.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
+        mark = PrayerMarkFactory.create(username=user.display_name, prayer_id=prayer.id)
         
         test_session.add_all([prayer, mark])
         test_session.commit()
         
-        response = client.get(f"/user/{user.id}")
+        response = client.get(f"/user/{user.display_name}")
         
         assert response.status_code in [200, 404]  # May return 404 if route doesn't exist
         # Should include activity timeline in some form
