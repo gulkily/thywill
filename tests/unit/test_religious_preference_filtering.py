@@ -73,7 +73,7 @@ class TestReligiousPreferenceFiltering:
         
         assert compatible_user is not None
         assert compatible_user.religious_preference == "christian"
-        assert compatible_user.id == christian_user.id
+        assert compatible_user.display_name == christian_user.display_name
     
     def test_all_prayer_assigned_to_any_user(self, test_session):
         """'All' audience prayers can be assigned to any user regardless of preference"""
@@ -88,7 +88,7 @@ class TestReligiousPreferenceFiltering:
         compatible_user = find_compatible_prayer_partner(all_prayer, test_session)
         
         assert compatible_user is not None
-        assert compatible_user.id in [christian_user.id, unspecified_user.id]
+        assert compatible_user.display_name in [christian_user.display_name, unspecified_user.display_name]
     
     def test_all_audience_prayer_matches_any_user_type(self, test_session):
         """'All' audience prayers can be assigned to any user type"""
@@ -103,7 +103,7 @@ class TestReligiousPreferenceFiltering:
         compatible_user = find_compatible_prayer_partner(all_prayer, test_session)
         
         assert compatible_user is not None
-        assert compatible_user.id in [christian_user.id, unspecified_user.id]
+        assert compatible_user.display_name in [christian_user.display_name, unspecified_user.display_name]
     
     def test_excludes_users_who_already_have_prayer(self, test_session):
         """Prayer partner matching should exclude users who already have the prayer"""
@@ -113,7 +113,7 @@ class TestReligiousPreferenceFiltering:
         christian_prayer = PrayerFactory.create(target_audience="christians_only")
         
         # User1 already has this prayer
-        existing_mark = PrayerMark(user_id=christian_user1.id, prayer_id=christian_prayer.id)
+        existing_mark = PrayerMark(username=christian_user1.display_name, prayer_id=christian_prayer.id)
         
         test_session.add_all([christian_user1, christian_user2, christian_prayer, existing_mark])
         test_session.commit()
@@ -121,7 +121,7 @@ class TestReligiousPreferenceFiltering:
         compatible_user = find_compatible_prayer_partner(christian_prayer, test_session)
         
         assert compatible_user is not None
-        assert compatible_user.id == christian_user2.id
+        assert compatible_user.display_name == christian_user2.display_name
     
     def test_filtering_respects_archived_prayers(self, test_session):
         """Religious filtering should still respect archived prayer exclusion"""
@@ -134,7 +134,7 @@ class TestReligiousPreferenceFiltering:
         test_session.commit()
         
         # Archive one prayer
-        archived_prayer.set_attribute('archived', 'true', christian_user.id, test_session)
+        archived_prayer.set_attribute('archived', 'true', christian_user.display_name, test_session)
         test_session.commit()
         
         # Should only see active prayer, not archived
@@ -162,7 +162,7 @@ class TestReligiousPreferenceFiltering:
         test_session.commit()
         
         # Mark one prayer as answered
-        answered_prayer.set_attribute('answered', 'true', christian_user.id, test_session)
+        answered_prayer.set_attribute('answered', 'true', christian_user.display_name, test_session)
         test_session.commit()
         
         # Should only see active prayer, not answered

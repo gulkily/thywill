@@ -14,14 +14,14 @@ class TestAttributeEdgeCases:
     def test_setting_attribute_on_nonexistent_prayer(self, test_session):
         """Test setting attribute on prayer that doesn't exist in session"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         # Don't add prayer to session
         
         test_session.add(user)
         test_session.commit()
         
         # Should handle gracefully by creating attribute with prayer ID
-        prayer.set_attribute('archived', 'true', user.id, test_session)
+        prayer.set_attribute('archived', 'true', user.display_name, test_session)
         
         # Verify attribute was created
         from models import PrayerAttribute
@@ -36,13 +36,13 @@ class TestAttributeEdgeCases:
     def test_very_long_attribute_values(self, test_session):
         """Test handling of very long attribute values"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Very long testimony
         long_testimony = "A" * 10000  # 10k characters
-        prayer.set_attribute('answer_testimony', long_testimony, user.id, test_session)
+        prayer.set_attribute('answer_testimony', long_testimony, user.display_name, test_session)
         test_session.commit()
         
         # Should store and retrieve correctly
@@ -51,13 +51,13 @@ class TestAttributeEdgeCases:
     def test_special_characters_in_attribute_values(self, test_session):
         """Test handling of special characters in attribute values"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Special characters and unicode
         special_testimony = "God's love is amazing! 🙏✝️ \"Blessed are the meek\" & more..."
-        prayer.set_attribute('answer_testimony', special_testimony, user.id, test_session)
+        prayer.set_attribute('answer_testimony', special_testimony, user.display_name, test_session)
         test_session.commit()
         
         assert prayer.answer_testimony(test_session) == special_testimony
@@ -65,13 +65,13 @@ class TestAttributeEdgeCases:
     def test_concurrent_attribute_modifications(self, test_session):
         """Test handling of concurrent attribute modifications"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Simulate concurrent updates to same attribute
-        prayer.set_attribute('answer_testimony', 'First testimony', user.id, test_session)
-        prayer.set_attribute('answer_testimony', 'Updated testimony', user.id, test_session)
+        prayer.set_attribute('answer_testimony', 'First testimony', user.display_name, test_session)
+        prayer.set_attribute('answer_testimony', 'Updated testimony', user.display_name, test_session)
         test_session.commit()
         
         # Latest value should win
@@ -93,12 +93,12 @@ class TestAttributeEdgeCases:
     def test_removing_nonexistent_attribute(self, test_session):
         """Test removing attribute that doesn't exist"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Try to remove attribute that was never set
-        prayer.remove_attribute('nonexistent', test_session, user.id)
+        prayer.remove_attribute('nonexistent', test_session, user.display_name)
         test_session.commit()
         
         # Should handle gracefully (no error, no activity log)
@@ -112,17 +112,17 @@ class TestAttributeEdgeCases:
     def test_setting_empty_attribute_values(self, test_session):
         """Test setting empty or None attribute values"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Empty string
-        prayer.set_attribute('answer_testimony', '', user.id, test_session)
+        prayer.set_attribute('answer_testimony', '', user.display_name, test_session)
         test_session.commit()
         assert prayer.answer_testimony(test_session) == ''
         
         # None should be handled appropriately (either None or empty string)
-        prayer.set_attribute('answer_testimony', None, user.id, test_session)
+        prayer.set_attribute('answer_testimony', None, user.display_name, test_session)
         test_session.commit()
         # None values are stored as None, which is reasonable behavior
         assert prayer.answer_testimony(test_session) is None
@@ -130,20 +130,20 @@ class TestAttributeEdgeCases:
     def test_invalid_attribute_names(self, test_session):
         """Test handling of invalid attribute names"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Very long attribute name
         long_name = "a" * 1000
-        prayer.set_attribute(long_name, 'value', user.id, test_session)
+        prayer.set_attribute(long_name, 'value', user.display_name, test_session)
         test_session.commit()
         
         assert prayer.get_attribute(long_name, test_session) == 'value'
         
         # Special characters in name
         special_name = "test-attribute_with.special/chars"
-        prayer.set_attribute(special_name, 'value2', user.id, test_session)
+        prayer.set_attribute(special_name, 'value2', user.display_name, test_session)
         test_session.commit()
         
         assert prayer.get_attribute(special_name, test_session) == 'value2'
@@ -156,7 +156,7 @@ class TestStatusCombinationEdgeCases:
     def test_all_possible_status_combinations(self, test_session):
         """Test all combinations of archived, answered, and flagged"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
@@ -174,17 +174,17 @@ class TestStatusCombinationEdgeCases:
         
         for archived, answered, flagged in combinations:
             # Clear all attributes
-            prayer.remove_attribute('archived', test_session, user.id)
-            prayer.remove_attribute('answered', test_session, user.id)
-            prayer.remove_attribute('flagged', test_session, user.id)
+            prayer.remove_attribute('archived', test_session, user.display_name)
+            prayer.remove_attribute('answered', test_session, user.display_name)
+            prayer.remove_attribute('flagged', test_session, user.display_name)
             
             # Set desired combination
             if archived:
-                prayer.set_attribute('archived', 'true', user.id, test_session)
+                prayer.set_attribute('archived', 'true', user.display_name, test_session)
             if answered:
-                prayer.set_attribute('answered', 'true', user.id, test_session)
+                prayer.set_attribute('answered', 'true', user.display_name, test_session)
             if flagged:
-                prayer.set_attribute('flagged', 'true', user.id, test_session)
+                prayer.set_attribute('flagged', 'true', user.display_name, test_session)
             
             test_session.commit()
             
@@ -196,7 +196,7 @@ class TestStatusCombinationEdgeCases:
     def test_transitioning_between_all_states(self, test_session):
         """Test transitioning through all possible states"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
@@ -205,24 +205,24 @@ class TestStatusCombinationEdgeCases:
         assert not prayer.is_answered(test_session)
         
         # Archive it
-        prayer.set_attribute('archived', 'true', user.id, test_session)
+        prayer.set_attribute('archived', 'true', user.display_name, test_session)
         test_session.commit()
         assert prayer.is_archived(test_session)
         
         # Mark as answered while archived
-        prayer.set_attribute('answered', 'true', user.id, test_session)
+        prayer.set_attribute('answered', 'true', user.display_name, test_session)
         test_session.commit()
         assert prayer.is_archived(test_session)
         assert prayer.is_answered(test_session)
         
         # Restore but keep answered
-        prayer.remove_attribute('archived', test_session, user.id)
+        prayer.remove_attribute('archived', test_session, user.display_name)
         test_session.commit()
         assert not prayer.is_archived(test_session)
         assert prayer.is_answered(test_session)
         
         # Archive again
-        prayer.set_attribute('archived', 'true', user.id, test_session)
+        prayer.set_attribute('archived', 'true', user.display_name, test_session)
         test_session.commit()
         assert prayer.is_archived(test_session)
         assert prayer.is_answered(test_session)
@@ -244,13 +244,13 @@ class TestStatusCombinationEdgeCases:
     def test_answered_prayer_with_multiple_testimony_updates(self, test_session):
         """Test answered prayer with multiple testimony updates"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Mark as answered with initial testimony
-        prayer.set_attribute('answered', 'true', user.id, test_session)
-        prayer.set_attribute('answer_testimony', 'Initial testimony', user.id, test_session)
+        prayer.set_attribute('answered', 'true', user.display_name, test_session)
+        prayer.set_attribute('answer_testimony', 'Initial testimony', user.display_name, test_session)
         test_session.commit()
         
         # Update testimony multiple times
@@ -261,7 +261,7 @@ class TestStatusCombinationEdgeCases:
         ]
         
         for testimony in testimonies:
-            prayer.set_attribute('answer_testimony', testimony, user.id, test_session)
+            prayer.set_attribute('answer_testimony', testimony, user.display_name, test_session)
             test_session.commit()
         
         # Should have final testimony
@@ -288,12 +288,12 @@ class TestDatabaseConstraintEdgeCases:
     def test_duplicate_attribute_handling(self, test_session):
         """Test handling of potential duplicate attributes"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Set attribute normally
-        prayer.set_attribute('archived', 'true', user.id, test_session)
+        prayer.set_attribute('archived', 'true', user.display_name, test_session)
         test_session.commit()
         
         # Try to create duplicate manually - this is allowed at database level
@@ -316,7 +316,7 @@ class TestDatabaseConstraintEdgeCases:
         assert len(attrs) == 2  # Both the original and duplicate exist
         
         # set_attribute should update the first one found
-        prayer.set_attribute('archived', 'updated_value', user.id, test_session)
+        prayer.set_attribute('archived', 'updated_value', user.display_name, test_session)
         test_session.commit()
         
         # get_attribute returns the first one found
@@ -325,13 +325,13 @@ class TestDatabaseConstraintEdgeCases:
     def test_prayer_deletion_with_attributes(self, test_session):
         """Test what happens when prayer with attributes is deleted"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Add some attributes
-        prayer.set_attribute('archived', 'true', user.id, test_session)
-        prayer.set_attribute('answered', 'true', user.id, test_session)
+        prayer.set_attribute('archived', 'true', user.display_name, test_session)
+        prayer.set_attribute('answered', 'true', user.display_name, test_session)
         test_session.commit()
         
         prayer_id = prayer.id
@@ -361,21 +361,21 @@ class TestDatabaseConstraintEdgeCases:
     def test_user_deletion_with_activity_logs(self, test_session):
         """Test what happens when user who created activity logs is deleted"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Create some activity
-        prayer.set_attribute('archived', 'true', user.id, test_session)
+        prayer.set_attribute('archived', 'true', user.display_name, test_session)
         test_session.commit()
         
         # Verify activity log exists
         logs_before = test_session.exec(
-            select(PrayerActivityLog).where(PrayerActivityLog.user_id == user.id)
+            select(PrayerActivityLog).where(PrayerActivityLog.user_id == user.display_name)
         ).all()
         assert len(logs_before) == 1
         
-        user_id = user.id
+        user_id = user.display_name
         
         # Delete user
         test_session.delete(user)
@@ -397,13 +397,13 @@ class TestBoundaryConditions:
     def test_maximum_attributes_per_prayer(self, test_session):
         """Test setting many attributes on single prayer"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Set many different attributes
         for i in range(100):
-            prayer.set_attribute(f'custom_attr_{i}', f'value_{i}', user.id, test_session)
+            prayer.set_attribute(f'custom_attr_{i}', f'value_{i}', user.display_name, test_session)
         
         test_session.commit()
         
@@ -414,7 +414,7 @@ class TestBoundaryConditions:
     def test_attribute_creation_timestamps(self, test_session):
         """Test that attribute timestamps are accurate and ordered"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
@@ -423,15 +423,15 @@ class TestBoundaryConditions:
         # Set attributes with small delays
         import time
         
-        prayer.set_attribute('first', 'value1', user.id, test_session)
+        prayer.set_attribute('first', 'value1', user.display_name, test_session)
         test_session.commit()
         time.sleep(0.01)  # 10ms delay
         
-        prayer.set_attribute('second', 'value2', user.id, test_session)
+        prayer.set_attribute('second', 'value2', user.display_name, test_session)
         test_session.commit()
         time.sleep(0.01)
         
-        prayer.set_attribute('third', 'value3', user.id, test_session)
+        prayer.set_attribute('third', 'value3', user.display_name, test_session)
         test_session.commit()
         
         end_time = datetime.utcnow()
@@ -455,7 +455,7 @@ class TestBoundaryConditions:
     def test_activity_log_chronological_ordering(self, test_session):
         """Test that activity logs maintain strict chronological order"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
@@ -471,9 +471,9 @@ class TestBoundaryConditions:
         
         for op_type, attr_name, value in operations:
             if op_type == 'set':
-                prayer.set_attribute(attr_name, value, user.id, test_session)
+                prayer.set_attribute(attr_name, value, user.display_name, test_session)
             else:
-                prayer.remove_attribute(attr_name, test_session, user.id)
+                prayer.remove_attribute(attr_name, test_session, user.display_name)
             test_session.commit()
         
         # Get all activity logs in chronological order
