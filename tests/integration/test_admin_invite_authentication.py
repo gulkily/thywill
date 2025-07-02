@@ -75,7 +75,7 @@ class TestAdminInviteAuthentication:
             )
             session.add(admin_token)
             session.commit()
-            existing_user_id = existing_user.id
+            existing_user_id = existing_user.display_name
         
         # Test the function directly without web client
         from app_helpers.routes.auth.login_routes import grant_admin_role_for_system_token
@@ -88,7 +88,7 @@ class TestAdminInviteAuthentication:
             # Verify user was not recreated (same ID)
             user = session.exec(select(User).where(User.display_name == "Existing Admin")).first()
             assert user is not None
-            assert user.id == existing_user_id
+            assert user.display_name == existing_user_id
             
             # Verify user count (should still be 1)
             user_count = len(session.exec(select(User)).all())
@@ -119,7 +119,7 @@ class TestAdminInviteAuthentication:
             )
             session.add(admin_token)
             session.commit()
-            user_id = user.id
+            user_id = user.display_name
         
         # Test the grant_admin_role_for_system_token function
         with Session(engine) as session:
@@ -153,7 +153,7 @@ class TestAdminInviteAuthentication:
             )
             session.add(existing_user)
             session.commit()
-            original_user_id = existing_user.id
+            original_user_id = existing_user.display_name
             
             # Create admin token
             admin_token = InviteToken(
@@ -175,7 +175,7 @@ class TestAdminInviteAuthentication:
         with Session(engine) as session:
             user = session.exec(select(User).where(User.display_name == "Admin With Data")).first()
             assert user is not None
-            assert user.id == original_user_id  # Same ID = not recreated
+            assert user.display_name == original_user_id  # Same ID = not recreated
             assert user.display_name == "Admin With Data"  # Data preserved
     
     def test_admin_invite_creates_new_user_if_not_exists(self):

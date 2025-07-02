@@ -22,7 +22,7 @@ class TestInviteTreeRoute:
         """Test invite tree route with authenticated user"""
         # Create admin user and session
         admin = UserFactory.create_admin()
-        session = SessionFactory.create(user_id="admin")
+        session = SessionFactory.create(username="admin")
         test_session.add_all([admin, session])
         test_session.commit()
         
@@ -39,7 +39,7 @@ class TestInviteTreeRoute:
         """Test invite tree with empty database shows appropriate empty state"""
         # Create admin user and session
         admin = UserFactory.create_admin()
-        session = SessionFactory.create(user_id="admin")
+        session = SessionFactory.create(username="admin")
         test_session.add_all([admin, session])
         test_session.commit()
         
@@ -59,14 +59,14 @@ class TestInviteTreeRoute:
         user1 = UserFactory.create(
             id="user1",
             display_name="Alice", 
-            invited_by_user_id="admin"
+            invited_by_username="admin"
         )
         user2 = UserFactory.create(
             id="user2",
             display_name="Bob",
-            invited_by_user_id="user1"
+            invited_by_username="user1"
         )
-        session = SessionFactory.create(user_id="admin")
+        session = SessionFactory.create(username="admin")
         test_session.add_all([admin, user1, user2, session])
         test_session.commit()
         
@@ -87,14 +87,14 @@ class TestInviteTreeRoute:
         user1 = UserFactory.create(
             id="user1",
             display_name="Alice",
-            invited_by_user_id="admin"
+            invited_by_username="admin"
         )
         user2 = UserFactory.create(
             id="user2", 
             display_name="Bob",
-            invited_by_user_id="user1"
+            invited_by_username="user1"
         )
-        session = SessionFactory.create(user_id="user2")
+        session = SessionFactory.create(username="user2")
         test_session.add_all([admin, user1, user2, session])
         test_session.commit()
         
@@ -113,7 +113,7 @@ class TestInviteTreeRoute:
         admin = UserFactory.create_admin()
         user1 = UserFactory.create(
             id="user1",
-            invited_by_user_id="admin",
+            invited_by_username="admin",
             invite_token_used="token1"
         )
         
@@ -121,7 +121,7 @@ class TestInviteTreeRoute:
             token="token1",
             created_by_user="admin",
             used=True,
-            used_by_user_id="user1"
+            used_by_username="user1"
         )
         token2 = InviteTokenFactory.create(
             token="token2",
@@ -129,7 +129,7 @@ class TestInviteTreeRoute:
             used=False
         )
         
-        session = SessionFactory.create(user_id="admin")
+        session = SessionFactory.create(username="admin")
         test_session.add_all([admin, user1, token1, token2, session])
         test_session.commit()
         
@@ -150,7 +150,7 @@ class TestInviteTreeNavigation:
     def test_invite_tree_accessible_from_menu(self, client: TestClient, test_session):
         """Test invite tree is accessible from main menu"""
         admin = UserFactory.create_admin()
-        session = SessionFactory.create(user_id="admin") 
+        session = SessionFactory.create(username="admin") 
         test_session.add_all([admin, session])
         test_session.commit()
         
@@ -164,7 +164,7 @@ class TestInviteTreeNavigation:
     def test_invite_tree_accessible_from_admin(self, client: TestClient, test_session):
         """Test invite tree is accessible from admin panel"""
         admin = UserFactory.create_admin()
-        session = SessionFactory.create(user_id="admin")
+        session = SessionFactory.create(username="admin")
         test_session.add_all([admin, session])
         test_session.commit()
         
@@ -187,14 +187,14 @@ class TestInviteTreeUIInteraction:
         user1 = UserFactory.create(
             id="user1",
             display_name="Alice",
-            invited_by_user_id="admin"
+            invited_by_username="admin"
         )
         user2 = UserFactory.create(
             id="user2",
             display_name="Bob", 
-            invited_by_user_id="user1"
+            invited_by_username="user1"
         )
-        session = SessionFactory.create(user_id="admin")
+        session = SessionFactory.create(username="admin")
         test_session.add_all([admin, user1, user2, session])
         test_session.commit()
         
@@ -210,7 +210,7 @@ class TestInviteTreeUIInteraction:
     def test_invite_tree_responsive_design(self, client: TestClient, test_session):
         """Test invite tree has responsive design elements"""
         admin = UserFactory.create_admin()
-        session = SessionFactory.create(user_id="admin")
+        session = SessionFactory.create(username="admin")
         test_session.add_all([admin, session])
         test_session.commit()
         
@@ -226,7 +226,7 @@ class TestInviteTreeUIInteraction:
     def test_invite_tree_has_proper_styling(self, client: TestClient, test_session):
         """Test invite tree includes proper CSS styling"""
         admin = UserFactory.create_admin()
-        session = SessionFactory.create(user_id="admin")
+        session = SessionFactory.create(username="admin")
         test_session.add_all([admin, session])
         test_session.commit()
         
