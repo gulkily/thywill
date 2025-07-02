@@ -421,7 +421,7 @@ class TextImporterService:
                     PrayerAttribute.prayer_id == prayer.id,
                     PrayerAttribute.attribute_name == action,
                     PrayerAttribute.attribute_value == 'true',
-                    PrayerAttribute.set_by_user_id == user.display_name,
+                    PrayerAttribute.created_by == user.display_name,
                     PrayerAttribute.created_at == activity_time
                 )
             ).first()
@@ -432,7 +432,7 @@ class TextImporterService:
                     prayer_id=prayer.id,
                     attribute_name=action,
                     attribute_value='true',
-                    set_by_user_id=user.display_name,
+                    created_by=user.display_name,
                     created_at=activity_time
                 )
                 session.add(prayer_attr)
@@ -446,7 +446,7 @@ class TextImporterService:
                         PrayerAttribute.prayer_id == prayer.id,
                         PrayerAttribute.attribute_name == 'answer_date',
                         PrayerAttribute.attribute_value == activity_time.isoformat(),
-                        PrayerAttribute.set_by_user_id == user.display_name,
+                        PrayerAttribute.created_by == user.display_name,
                         PrayerAttribute.created_at == activity_time
                     )
                 ).first()
@@ -456,7 +456,7 @@ class TextImporterService:
                         prayer_id=prayer.id,
                         attribute_name='answer_date',
                         attribute_value=activity_time.isoformat(),
-                        set_by_user_id=user.display_name,
+                        created_by=user.display_name,
                         created_at=activity_time
                     )
                     session.add(answer_date_attr)
@@ -472,7 +472,7 @@ class TextImporterService:
                         PrayerAttribute.prayer_id == prayer.id,
                         PrayerAttribute.attribute_name == 'answer_testimony',
                         PrayerAttribute.attribute_value == testimony_text[1],
-                        PrayerAttribute.set_by_user_id == user.display_name,
+                        PrayerAttribute.created_by == user.display_name,
                         PrayerAttribute.created_at == activity_time
                     )
                 ).first()
@@ -482,7 +482,7 @@ class TextImporterService:
                         prayer_id=prayer.id,
                         attribute_name='answer_testimony',
                         attribute_value=testimony_text[1],
-                        set_by_user_id=user.display_name,
+                        created_by=user.display_name,
                         created_at=activity_time
                     )
                     session.add(testimony_attr)
