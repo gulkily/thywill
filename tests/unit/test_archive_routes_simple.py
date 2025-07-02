@@ -74,7 +74,7 @@ June 15 2024 at 14:30 - AnotherUser prayed this prayer
         
         prayer = Prayer(
             id="prayer_123",
-            author_id=test_user_id,
+            author_username=test_user_id,
             text="Test prayer content",
             generated_prayer="Test generated prayer",
             created_at=datetime(2024, 6, 15, 10, 30),

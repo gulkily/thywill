@@ -61,7 +61,7 @@ class TestArchiveRoutes:
         
         # Mock session and auth
         mock_user = Mock()
-        mock_user.id = user_id
+        mock_user.display_name = user_id
         mock_user.display_name = "AuthUser"
         
         mock_session = Mock()
@@ -83,7 +83,7 @@ class TestArchiveRoutes:
         test_session.commit()
         
         mock_user = Mock()
-        mock_user.id = user_id
+        mock_user.display_name = user_id
         mock_user.display_name = "admin"
         
         mock_session = Mock()
@@ -99,7 +99,7 @@ class TestArchiveRoutes:
         
         prayer = Prayer(
             id=prayer_id,
-            author_id=user_mock.id,
+            author_username=user_mock.id,
             text="Test prayer request",
             generated_prayer="Test generated prayer",
             created_at=datetime.now(),
@@ -376,7 +376,7 @@ class TestArchiveRoutes:
         # Create prayer using test_session instead of production Session
         prayer = Prayer(
             id="no_archive_prayer",
-            author_id=user_mock.id,
+            author_username=user_mock.id,
             text="Prayer without archive",
             created_at=datetime.now(),
             text_file_path=None  # No archive file

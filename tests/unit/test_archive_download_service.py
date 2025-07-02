@@ -104,7 +104,7 @@ June 15 2024
         # Create test prayer
         prayer1 = Prayer(
             id=prayer1_id,
-            author_id=user1_id,
+            author_username=user1_id,
             text="Please pray for my health recovery.",
             generated_prayer="Heavenly Father, we lift up TestUser and ask for your healing touch...",
             project_tag="healing",
@@ -114,7 +114,7 @@ June 15 2024
         
         # Create prayer mark
         mark1 = PrayerMark(
-            user_id=user2_id,
+            username=user2_id,
             prayer_id=prayer1_id,
             created_at=datetime(2024, 6, 15, 14, 30),
             text_file_path=str(Path(temp_archive_dir) / "prayers" / "2024" / "06" / "2024_06_15_prayer_at_1030.txt")
@@ -336,7 +336,7 @@ June 15 2024
         user = test_data["user1"]
         
         # Get prayer marks for user2 (who marked user1's prayer)
-        user2_marks = test_session.query(PrayerMark).filter_by(user_id=test_data["user2_id"]).all()
+        user2_marks = test_session.query(PrayerMark).filter_by(username=test_data["user2_id"]).all()
         
         summary = archive_service._create_user_activity_summary(test_data["user2"], user2_marks)
         
