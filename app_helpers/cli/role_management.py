@@ -44,14 +44,14 @@ def grant_admin_role(user_identifier: str) -> bool:
                 return True
             
             # Check for backward compatibility (old system)
-            if user.id == 'admin':
+            if user.display_name == 'admin':
                 print(f'ℹ️  User "{user.display_name}" already has admin rights (old system)')
                 print('   Run migration to convert to role-based system: python migrate_to_roles.py')
                 return True
             
             # Grant admin role
             user_role = UserRole(
-                user_id=user.id,
+                user_id=user.display_name,
                 role_id=admin_role.id,
                 granted_by=None,  # CLI granted
                 granted_at=datetime.utcnow()
@@ -60,7 +60,7 @@ def grant_admin_role(user_identifier: str) -> bool:
             session.commit()
             
             print(f'✅ Admin role granted to: "{user.display_name}"')
-            print(f'   User ID: {user.id[:8]}...')
+            print(f'   Username: {user.display_name}')
             print('   ✨ Using new role-based permission system')
             return True
             
@@ -102,7 +102,7 @@ def revoke_admin_role(user_identifier: str) -> bool:
             
             # Remove admin role
             stmt = select(UserRole).where(
-                UserRole.user_id == user.id,
+                UserRole.user_id == user.display_name,
                 UserRole.role_id == admin_role.id
             )
             user_roles = session.exec(stmt).all()
@@ -113,7 +113,7 @@ def revoke_admin_role(user_identifier: str) -> bool:
             session.commit()
             
             print(f'✅ Admin role revoked from: "{user.display_name}"')
-            print(f'   User ID: {user.id[:8]}...')
+            print(f'   Username: {user.display_name}')
             print('   ✨ Using new role-based permission system')
             return True
             

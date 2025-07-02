@@ -23,38 +23,27 @@ def find_user_by_identifier(session: Session, identifier: str) -> Optional[User]
     Returns:
         User object if found, None otherwise
     """
-    # First try exact ID match
-    stmt = select(User).where(User.id == identifier)
+    # First try exact display_name match
+    stmt = select(User).where(User.display_name == identifier)
     user = session.exec(stmt).first()
     
     if not user:
-        # Try exact display_name match
-        stmt = select(User).where(User.display_name == identifier)
-        user = session.exec(stmt).first()
+        # Try partial display_name match for convenience
+        stmt = select(User).where(User.display_name.contains(identifier))
+        partial_users = list(session.exec(stmt))
+        if len(partial_users) == 1:
+            user = partial_users[0]
     
     if not user:
-        # Try partial display_name match
-        stmt = select(User).where(User.display_name.contains(identifier))
-        users = list(session.exec(stmt))
-        
-        if not users:
-            print(f'❌ No user found matching: {identifier}')
-            print('   Available users:')
-            # Show first 10 users as examples
-            all_users = list(session.exec(select(User).limit(10)))
-            for u in all_users:
-                print(f'   - "{u.display_name}" (ID: {u.id[:8]}...)')
-            if len(all_users) == 10:
-                print('   ... (showing first 10 users)')
-            return None
-        elif len(users) > 1:
-            print(f'❌ Multiple users found matching: {identifier}')
-            print('   Be more specific. Found:')
-            for u in users:
-                print(f'   - "{u.display_name}" (ID: {u.id[:8]}...)')
-            return None
-        else:
-            return users[0]
+        print(f'❌ No user found matching: {identifier}')
+        print('   Available users:')
+        # Show first 10 users as examples
+        all_users = list(session.exec(select(User).limit(10)))
+        for u in all_users:
+            print(f'   - "{u.display_name}"')
+        if len(all_users) == 10:
+            print('   ... (showing first 10 users)')
+        return None
     
     return user
 
@@ -92,8 +81,7 @@ def main():
             
             if user:
                 print(f'✅ Found user: "{user.display_name}"')
-                print(f'   ID: {user.id}')
-                print(f'   Religious Preference: {user.religious_preference or "unspecified"}')
+                print(f'   Username: {user.display_name}')
                 print(f'   Admin: {"Yes" if user.is_admin else "No"}')
                 print(f'   Created: {user.created_at}')
             else:
