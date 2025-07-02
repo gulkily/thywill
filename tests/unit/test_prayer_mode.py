@@ -33,28 +33,28 @@ def test_prayers(test_session, test_user):
     
     # Create prayers with different ages and content
     prayers.append(PrayerFactory.create(
-        author_id=test_user.id,
+        author_username=test_user.display_name,
         text="Short prayer request",
         generated_prayer="Short generated prayer text",
         created_at=datetime.utcnow() - timedelta(days=1)
     ))
     
     prayers.append(PrayerFactory.create(
-        author_id=test_user.id,
+        author_username=test_user.display_name,
         text="Medium length prayer request with more detailed content",
         generated_prayer="Medium length generated prayer with more detailed content and several sentences",
         created_at=datetime.utcnow() - timedelta(days=3)
     ))
     
     prayers.append(PrayerFactory.create(
-        author_id=test_user.id,
+        author_username=test_user.display_name,
         text="Very long prayer request with extensive detailed content that goes on for quite a while and includes many specific details and requests",
         generated_prayer="Very long generated prayer with extensive detailed content that goes on for quite a while and includes many specific details and requests for divine intervention and guidance",
         created_at=datetime.utcnow() - timedelta(days=7)
     ))
     
     prayers.append(PrayerFactory.create(
-        author_id=test_user.id,
+        author_username=test_user.display_name,
         text="Old prayer request",
         generated_prayer="Old generated prayer",
         created_at=datetime.utcnow() - timedelta(days=30)
@@ -78,7 +78,7 @@ class TestPrayerSkipModel:
         prayer = test_prayers[0]
         
         skip = PrayerSkip(
-            user_id=test_user.id,
+            username=test_user.display_name,
             prayer_id=prayer.id
         )
         
@@ -87,7 +87,7 @@ class TestPrayerSkipModel:
         test_session.refresh(skip)
         
         assert skip.id is not None
-        assert skip.user_id == test_user.id
+        assert skip.user_id == test_user.display_name
         assert skip.prayer_id == prayer.id
         assert skip.created_at is not None
     
@@ -96,20 +96,20 @@ class TestPrayerSkipModel:
         prayer = test_prayers[0]
         
         # Create skip record
-        skip = PrayerSkip(user_id=test_user.id, prayer_id=prayer.id)
+        skip = PrayerSkip(user_id=test_user.display_name, prayer_id=prayer.id)
         test_session.add(skip)
         test_session.commit()
         
         # Retrieve skip records
         skips = test_session.exec(
             select(PrayerSkip).where(
-                PrayerSkip.user_id == test_user.id,
+                PrayerSkip.user_id == test_user.display_name,
                 PrayerSkip.prayer_id == prayer.id
             )
         ).all()
         
         assert len(skips) == 1
-        assert skips[0].user_id == test_user.id
+        assert skips[0].user_id == test_user.display_name
         assert skips[0].prayer_id == prayer.id
 
 
@@ -133,7 +133,7 @@ class TestSmartSorting:
         """Test that unprayed prayers are prioritized"""
         # Mark one prayer as prayed
         prayed_prayer = test_prayers[0]
-        mark = PrayerMark(user_id=test_user.id, prayer_id=prayed_prayer.id)
+        mark = PrayerMark(username=test_user.display_name, prayer_id=prayed_prayer.id)
         test_session.add(mark)
         test_session.commit()
         
@@ -180,7 +180,7 @@ class TestSmartSorting:
         """Test that recently skipped prayers are demoted"""
         # Skip one prayer
         skipped_prayer = test_prayers[0]
-        skip = PrayerSkip(user_id=test_user.id, prayer_id=skipped_prayer.id)
+        skip = PrayerSkip(user_id=test_user.display_name, prayer_id=skipped_prayer.id)
         test_session.add(skip)
         test_session.commit()
         
@@ -295,7 +295,7 @@ class TestPrayerModeRoutes:
         prayer = test_prayers[0]
         
         # Extract IDs before mocking to avoid session binding issues
-        user_id = str(test_user.id)
+        user_id = str(test_user.display_name)
         prayer_id = str(prayer.id)
         
         # Mock Session to use test_session 
@@ -331,14 +331,14 @@ class TestPrayerModeIntegration:
         first_prayer_id = initial_queue[0]
         
         # 2. Mark first prayer as prayed
-        mark = PrayerMark(user_id=test_user.id, prayer_id=first_prayer_id)
+        mark = PrayerMark(username=test_user.display_name, prayer_id=first_prayer_id)
         test_session.add(mark)
         test_session.commit()
         
         # 3. Skip second prayer
         if len(initial_queue) > 1:
             second_prayer_id = initial_queue[1]
-            skip = PrayerSkip(user_id=test_user.id, prayer_id=second_prayer_id)
+            skip = PrayerSkip(user_id=test_user.display_name, prayer_id=second_prayer_id)
             test_session.add(skip)
             test_session.commit()
         
@@ -364,11 +364,11 @@ class TestPrayerModeIntegration:
         
         # Create prayers with different target audiences
         christian_prayer = PrayerFactory.create(
-            author_id=christian_user.id,
+            author_username=christian_user.display_name,
             target_audience="christians_only"
         )
         all_prayer = PrayerFactory.create(
-            author_id=christian_user.id,
+            author_username=christian_user.display_name,
             target_audience="all"
         )
         test_session.add(christian_prayer)
@@ -394,7 +394,7 @@ class TestPrayerModeIntegration:
         """Test that prayer mode excludes archived prayers"""
         # Archive one prayer
         prayer_to_archive = test_prayers[0]
-        prayer_to_archive.set_attribute("archived", "true", test_user.id, test_session)
+        prayer_to_archive.set_attribute("archived", "true", test_user.display_name, test_session)
         test_session.commit()
         
         # Get prayer queue

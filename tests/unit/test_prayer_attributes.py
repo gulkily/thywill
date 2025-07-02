@@ -14,7 +14,7 @@ class TestPrayerAttributeModel:
     def test_prayer_attribute_creation(self, test_session):
         """Test creating a prayer attribute"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
@@ -22,7 +22,7 @@ class TestPrayerAttributeModel:
             prayer_id=prayer.id,
             attribute_name="archived",
             attribute_value="true",
-            created_by=user.id
+            created_by=user.display_name
         )
         test_session.add(attribute)
         test_session.commit()
@@ -33,12 +33,12 @@ class TestPrayerAttributeModel:
         assert saved_attr.prayer_id == prayer.id
         assert saved_attr.attribute_name == "archived"
         assert saved_attr.attribute_value == "true"
-        assert saved_attr.created_by == user.id
+        assert saved_attr.created_by == user.display_name
     
     def test_prayer_attribute_uniqueness(self, test_session):
         """Test that prayer + attribute_name combinations are unique"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
@@ -76,7 +76,7 @@ class TestPrayerAttributeOperations:
     def test_prayer_has_attribute(self, test_session):
         """Test checking if prayer has an attribute"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
@@ -84,7 +84,7 @@ class TestPrayerAttributeOperations:
         assert prayer.has_attribute('archived', test_session) == False
         
         # Add archived attribute
-        prayer.set_attribute('archived', 'true', user.id, test_session)
+        prayer.set_attribute('archived', 'true', user.display_name, test_session)
         test_session.commit()
         
         # Now it should have the attribute
@@ -94,7 +94,7 @@ class TestPrayerAttributeOperations:
     def test_prayer_get_attribute(self, test_session):
         """Test getting attribute values"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
@@ -102,8 +102,8 @@ class TestPrayerAttributeOperations:
         assert prayer.get_attribute('archived', test_session) is None
         
         # Set attribute and retrieve it
-        prayer.set_attribute('archived', 'true', user.id, test_session)
-        prayer.set_attribute('answer_testimony', 'God provided healing!', user.id, test_session)
+        prayer.set_attribute('archived', 'true', user.display_name, test_session)
+        prayer.set_attribute('answer_testimony', 'God provided healing!', user.display_name, test_session)
         test_session.commit()
         
         assert prayer.get_attribute('archived', test_session) == 'true'
@@ -112,19 +112,19 @@ class TestPrayerAttributeOperations:
     def test_prayer_set_attribute(self, test_session):
         """Test setting prayer attributes"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Set new attribute
-        prayer.set_attribute('archived', 'true', user.id, test_session)
+        prayer.set_attribute('archived', 'true', user.display_name, test_session)
         test_session.commit()
         
         # Verify it was set
         assert prayer.get_attribute('archived', test_session) == 'true'
         
         # Update existing attribute
-        prayer.set_attribute('archived', 'false', user.id, test_session)
+        prayer.set_attribute('archived', 'false', user.display_name, test_session)
         test_session.commit()
         
         # Verify it was updated
@@ -133,17 +133,17 @@ class TestPrayerAttributeOperations:
     def test_prayer_remove_attribute(self, test_session):
         """Test removing prayer attributes"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Set attribute first
-        prayer.set_attribute('archived', 'true', user.id, test_session)
+        prayer.set_attribute('archived', 'true', user.display_name, test_session)
         test_session.commit()
         assert prayer.has_attribute('archived', test_session) == True
         
         # Remove attribute
-        prayer.remove_attribute('archived', test_session, user.id)
+        prayer.remove_attribute('archived', test_session, user.display_name)
         test_session.commit()
         
         # Verify it was removed
@@ -158,14 +158,14 @@ class TestMultipleStatusSupport:
     def test_multiple_attributes_simultaneously(self, test_session):
         """Test prayer can have multiple attributes at once"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Set multiple attributes
-        prayer.set_attribute('archived', 'true', user.id, test_session)
-        prayer.set_attribute('answered', 'true', user.id, test_session)
-        prayer.set_attribute('answer_date', datetime.utcnow().isoformat(), user.id, test_session)
+        prayer.set_attribute('archived', 'true', user.display_name, test_session)
+        prayer.set_attribute('answered', 'true', user.display_name, test_session)
+        prayer.set_attribute('answer_date', datetime.utcnow().isoformat(), user.display_name, test_session)
         test_session.commit()
         
         # Verify all attributes exist
@@ -174,7 +174,7 @@ class TestMultipleStatusSupport:
         assert prayer.answer_date(test_session) is not None
         
         # Should still be able to add more
-        prayer.set_attribute('answer_testimony', 'Praise God!', user.id, test_session)
+        prayer.set_attribute('answer_testimony', 'Praise God!', user.display_name, test_session)
         test_session.commit()
         
         assert prayer.answer_testimony(test_session) == 'Praise God!'
@@ -182,7 +182,7 @@ class TestMultipleStatusSupport:
     def test_convenience_properties(self, test_session):
         """Test prayer convenience property methods"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
@@ -193,9 +193,9 @@ class TestMultipleStatusSupport:
         assert prayer.answer_testimony(test_session) is None
         
         # Set answered with testimony
-        prayer.set_attribute('answered', 'true', user.id, test_session)
-        prayer.set_attribute('answer_date', '2024-01-01T12:00:00', user.id, test_session)
-        prayer.set_attribute('answer_testimony', 'God is good!', user.id, test_session)
+        prayer.set_attribute('answered', 'true', user.display_name, test_session)
+        prayer.set_attribute('answer_date', '2024-01-01T12:00:00', user.display_name, test_session)
+        prayer.set_attribute('answer_testimony', 'God is good!', user.display_name, test_session)
         test_session.commit()
         
         # Verify convenience properties work
@@ -211,18 +211,18 @@ class TestAttributePermissions:
     def test_session_required_for_operations(self, test_session):
         """Test that session is required for attribute operations"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
         # Should raise error without session
         with pytest.raises(ValueError, match="Session is required"):
-            prayer.set_attribute('archived', 'true', user.id, None)
+            prayer.set_attribute('archived', 'true', user.display_name, None)
     
     def test_activity_logging_with_user_id(self, test_session):
         """Test that activity is logged when user_id is provided"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
@@ -230,7 +230,7 @@ class TestAttributePermissions:
         initial_count = len(test_session.exec(select(PrayerActivityLog)).all())
         
         # Set attribute with user_id
-        prayer.set_attribute('archived', 'true', user.id, test_session)
+        prayer.set_attribute('archived', 'true', user.display_name, test_session)
         test_session.commit()
         
         # Should have created activity log
@@ -243,14 +243,14 @@ class TestAttributePermissions:
             .where(PrayerActivityLog.prayer_id == prayer.id)
         ).first()
         assert log is not None
-        assert log.user_id == user.id
+        assert log.user_id == user.display_name
         assert log.action == 'set_archived'
         assert log.new_value == 'true'
     
     def test_activity_logging_without_user_id(self, test_session):
         """Test that no activity is logged without user_id"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
