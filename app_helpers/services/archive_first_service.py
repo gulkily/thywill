@@ -275,9 +275,7 @@ def create_user_with_text_archive(user_data: Dict, user_id: str = None) -> Tuple
             'created_at': datetime.now()
         }
         
-        # Add specific ID if provided
-        if user_id:
-            user_kwargs['id'] = user_id
+        # Note: User model uses display_name as primary key, not separate id field
             
         # Check for existing user with same display_name
         from sqlmodel import select
