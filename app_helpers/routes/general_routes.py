@@ -43,8 +43,8 @@ def donate(request: Request, user_session: tuple = Depends(current_user)):
     user, session = user_session
     
     # Get payment configuration from environment
-    paypal_username = os.getenv("PAYPAL_USERNAME", "YourPayPalUsername")
-    venmo_handle = os.getenv("VENMO_HANDLE", "YourVenmoHandle")
+    paypal_username = os.getenv("PAYPAL_USERNAME", "")
+    venmo_handle = os.getenv("VENMO_HANDLE", "")
     
     return templates.TemplateResponse(
         "donate.html",
