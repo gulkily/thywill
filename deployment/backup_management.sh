@@ -192,7 +192,9 @@ migration_safe_restore() {
         
         # Verify service started successfully
         sleep 3
-        if curl -f -s http://127.0.0.1:8000/health > /dev/null 2>&1; then
+        # Load PORT from environment, default to 8000
+        PORT=${PORT:-8000}
+        if curl -f -s http://127.0.0.1:${PORT}/health > /dev/null 2>&1; then
             success "Service health check passed after restore"
         else
             warning "Service health check failed - check application logs"

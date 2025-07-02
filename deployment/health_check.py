@@ -44,4 +44,6 @@ if __name__ == '__main__':
     # Standalone health check for testing
     app = Flask(__name__)
     add_health_check_to_app(app)
-    app.run(host='127.0.0.1', port=8001, debug=False)
+    # Use PORT+1 for health check to avoid conflicts, default to 8001
+    port = int(os.getenv('PORT', '8000')) + 1
+    app.run(host='127.0.0.1', port=port, debug=False)

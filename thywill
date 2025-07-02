@@ -187,7 +187,14 @@ show_version() {
 
 # Development commands
 cmd_start() {
-    local port="${1:-8000}"
+    # Load .env file if it exists
+    if [ -f ".env" ]; then
+        set -a
+        source .env
+        set +a
+    fi
+    
+    local port="${1:-${PORT:-8000}}"
     local host="${2:-127.0.0.1}"
     
     header "Starting Development Server"
@@ -238,6 +245,7 @@ VENMO_HANDLE=
 EXPORT_RATE_LIMIT_MINUTES=2
 EXPORT_CACHE_TTL_MINUTES=15
 ENVIRONMENT=development
+PORT=8000
 BASE_URL=http://127.0.0.1:8000
 INIT_DATABASE=false
 FORCE_YES=false
@@ -1166,6 +1174,7 @@ VENMO_HANDLE=
 EXPORT_RATE_LIMIT_MINUTES=2
 EXPORT_CACHE_TTL_MINUTES=15
 ENVIRONMENT=development
+PORT=8000
 BASE_URL=http://127.0.0.1:8000
 INIT_DATABASE=false
 FORCE_YES=false
@@ -1356,6 +1365,7 @@ VENMO_HANDLE=
 EXPORT_RATE_LIMIT_MINUTES=2
 EXPORT_CACHE_TTL_MINUTES=15
 ENVIRONMENT=development
+PORT=8000
 BASE_URL=http://127.0.0.1:8000
 INIT_DATABASE=false
 FORCE_YES=false
@@ -1537,6 +1547,7 @@ VENMO_HANDLE=
 EXPORT_RATE_LIMIT_MINUTES=2
 EXPORT_CACHE_TTL_MINUTES=15
 ENVIRONMENT=development
+PORT=8000
 BASE_URL=http://127.0.0.1:8000
 INIT_DATABASE=false
 FORCE_YES=false

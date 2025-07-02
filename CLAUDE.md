@@ -41,6 +41,9 @@ pytest                 # Run tests
 # Required
 ANTHROPIC_API_KEY=your_claude_api_key
 
+# Server Configuration
+PORT=8000                          # Server port (default: 8000)
+
 # Optional Auth
 MULTI_DEVICE_AUTH_ENABLED=true
 PEER_APPROVAL_COUNT=2
