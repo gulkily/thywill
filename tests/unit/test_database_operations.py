@@ -18,10 +18,10 @@ class TestUserCRUD:
         test_session.commit()
         
         # Verify user was created
-        retrieved_user = test_session.get(User, user.id)
+        retrieved_user = test_session.get(User, user.display_name)
         assert retrieved_user is not None
         assert retrieved_user.display_name == "John Doe"
-        assert retrieved_user.id == user.id
+        assert retrieved_user.display_name == user.display_name
     
     def test_read_user(self, test_session):
         """Test reading a user from the database"""
@@ -30,13 +30,13 @@ class TestUserCRUD:
         test_session.commit()
         
         # Read by ID
-        retrieved_user = test_session.get(User, user.id)
+        retrieved_user = test_session.get(User, user.display_name)
         assert retrieved_user.display_name == "Jane Smith"
         
         # Read by query
         stmt = select(User).where(User.display_name == "Jane Smith")
         queried_user = test_session.exec(stmt).first()
-        assert queried_user.id == user.id
+        assert queried_user.display_name == user.display_name
     
     def test_update_user(self, test_session):
         """Test updating a user in the database"""
@@ -50,7 +50,7 @@ class TestUserCRUD:
         test_session.commit()
         
         # Verify update
-        updated_user = test_session.get(User, user.id)
+        updated_user = test_session.get(User, user.display_name)
         assert updated_user.display_name == "Updated Name"
     
     def test_delete_user(self, test_session):
@@ -59,7 +59,7 @@ class TestUserCRUD:
         test_session.add(user)
         test_session.commit()
         
-        user_id = user.id
+        user_id = user.display_name
         
         # Delete the user
         test_session.delete(user)
@@ -98,7 +98,7 @@ class TestPrayerCRUD:
         test_session.commit()
         
         prayer = PrayerFactory.create(
-            author_id=user.id,
+            author_username=user.display_name,
             text="Please pray for healing",
             project_tag="health"
         )
@@ -110,7 +110,7 @@ class TestPrayerCRUD:
         assert retrieved_prayer is not None
         assert retrieved_prayer.text == "Please pray for healing"
         assert retrieved_prayer.project_tag == "health"
-        assert retrieved_prayer.author_id == user.id
+        assert retrieved_prayer.author_id == user.display_name
     
     def test_read_prayers_by_author(self, test_session):
         """Test reading prayers by author"""
@@ -118,13 +118,13 @@ class TestPrayerCRUD:
         test_session.add(user)
         test_session.commit()
         
-        prayer1 = PrayerFactory.create(author_id=user.id, text="Prayer 1")
-        prayer2 = PrayerFactory.create(author_id=user.id, text="Prayer 2")
+        prayer1 = PrayerFactory.create(author_username=user.display_name, text="Prayer 1")
+        prayer2 = PrayerFactory.create(author_username=user.display_name, text="Prayer 2")
         test_session.add_all([prayer1, prayer2])
         test_session.commit()
         
         # Read prayers by author
-        stmt = select(Prayer).where(Prayer.author_id == user.id)
+        stmt = select(Prayer).where(Prayer.author_username == user.display_name)
         author_prayers = test_session.exec(stmt).all()
         
         assert len(author_prayers) == 2
@@ -135,7 +135,7 @@ class TestPrayerCRUD:
     def test_update_prayer_flag_status(self, test_session):
         """Test updating prayer flag status"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id, flagged=False)
+        prayer = PrayerFactory.create(author_username=user.display_name, flagged=False)
         test_session.add_all([user, prayer])
         test_session.commit()
         
@@ -151,7 +151,7 @@ class TestPrayerCRUD:
     def test_delete_prayer(self, test_session):
         """Test deleting a prayer"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
         test_session.add_all([user, prayer])
         test_session.commit()
         
@@ -168,8 +168,8 @@ class TestPrayerCRUD:
     def test_filter_unflagged_prayers(self, test_session):
         """Test filtering unflagged prayers"""
         user = UserFactory.create()
-        prayer1 = PrayerFactory.create(author_id=user.id, flagged=False, text="Normal prayer")
-        prayer2 = PrayerFactory.create(author_id=user.id, flagged=True, text="Flagged prayer")
+        prayer1 = PrayerFactory.create(author_username=user.display_name, flagged=False, text="Normal prayer")
+        prayer2 = PrayerFactory.create(author_username=user.display_name, flagged=True, text="Flagged prayer")
         test_session.add_all([user, prayer1, prayer2])
         test_session.commit()
         
@@ -188,36 +188,36 @@ class TestSessionCRUD:
     def test_create_session(self, test_session):
         """Test creating a session in the database"""
         user = UserFactory.create()
-        session = SessionFactory.create(user_id=user.id)
+        session = SessionFactory.create(username=user.display_name)
         test_session.add_all([user, session])
         test_session.commit()
         
         # Verify session was created
         retrieved_session = test_session.get(SessionModel, session.id)
         assert retrieved_session is not None
-        assert retrieved_session.user_id == user.id
+        assert retrieved_session.username == user.display_name
         assert retrieved_session.is_fully_authenticated is True
     
     def test_read_sessions_by_user(self, test_session):
         """Test reading sessions by user"""
         user = UserFactory.create()
-        session1 = SessionFactory.create(user_id=user.id)
-        session2 = SessionFactory.create(user_id=user.id)
+        session1 = SessionFactory.create(username=user.display_name)
+        session2 = SessionFactory.create(username=user.display_name)
         test_session.add_all([user, session1, session2])
         test_session.commit()
         
         # Read sessions by user
-        stmt = select(SessionModel).where(SessionModel.user_id == user.id)
+        stmt = select(SessionModel).where(SessionModel.username == user.display_name)
         user_sessions = test_session.exec(stmt).all()
         
         assert len(user_sessions) == 2
         for session in user_sessions:
-            assert session.user_id == user.id
+            assert session.username == user.display_name
     
     def test_update_session_authentication_status(self, test_session):
         """Test updating session authentication status"""
         user = UserFactory.create()
-        session = SessionFactory.create(user_id=user.id, is_fully_authenticated=False)
+        session = SessionFactory.create(username=user.display_name, is_fully_authenticated=False)
         test_session.add_all([user, session])
         test_session.commit()
         
@@ -236,8 +236,8 @@ class TestSessionCRUD:
         past_time = datetime.utcnow() - timedelta(days=1)
         future_time = datetime.utcnow() + timedelta(days=1)
         
-        expired_session = SessionFactory.create(user_id=user.id, expires_at=past_time)
-        valid_session = SessionFactory.create(user_id=user.id, expires_at=future_time)
+        expired_session = SessionFactory.create(username=user.display_name, expires_at=past_time)
+        valid_session = SessionFactory.create(username=user.display_name, expires_at=future_time)
         test_session.add_all([user, expired_session, valid_session])
         test_session.commit()
         
@@ -321,26 +321,26 @@ class TestPrayerMarkCRUD:
     def test_create_prayer_mark(self, test_session):
         """Test creating a prayer mark"""
         user = UserFactory.create()
-        prayer = PrayerFactory.create(author_id=user.id)
-        mark = PrayerMarkFactory.create(user_id=user.id, prayer_id=prayer.id)
+        prayer = PrayerFactory.create(author_username=user.display_name)
+        mark = PrayerMarkFactory.create(username=user.display_name, prayer_id=prayer.id)
         test_session.add_all([user, prayer, mark])
         test_session.commit()
         
         # Verify mark was created
         retrieved_mark = test_session.get(PrayerMark, mark.id)
         assert retrieved_mark is not None
-        assert retrieved_mark.user_id == user.id
+        assert retrieved_mark.username == user.display_name
         assert retrieved_mark.prayer_id == prayer.id
     
     def test_count_marks_per_prayer(self, test_session):
         """Test counting marks per prayer"""
         user1 = UserFactory.create(display_name="User 1")
         user2 = UserFactory.create(display_name="User 2")
-        prayer = PrayerFactory.create(author_id=user1.id)
+        prayer = PrayerFactory.create(author_username=user1.display_name)
         
-        mark1 = PrayerMarkFactory.create(user_id=user1.id, prayer_id=prayer.id)
-        mark2 = PrayerMarkFactory.create(user_id=user2.id, prayer_id=prayer.id)
-        mark3 = PrayerMarkFactory.create(user_id=user1.id, prayer_id=prayer.id)  # Same user can mark multiple times
+        mark1 = PrayerMarkFactory.create(username=user1.display_name, prayer_id=prayer.id)
+        mark2 = PrayerMarkFactory.create(username=user2.display_name, prayer_id=prayer.id)
+        mark3 = PrayerMarkFactory.create(username=user1.display_name, prayer_id=prayer.id)  # Same user can mark multiple times
         
         test_session.add_all([user1, user2, prayer, mark1, mark2, mark3])
         test_session.commit()
@@ -353,7 +353,7 @@ class TestPrayerMarkCRUD:
         assert total_marks == 3
         
         # Count distinct users who marked
-        stmt = select(func.count(func.distinct(PrayerMark.user_id))).where(PrayerMark.prayer_id == prayer.id)
+        stmt = select(func.count(func.distinct(PrayerMark.username))).where(PrayerMark.prayer_id == prayer.id)
         distinct_users = test_session.exec(stmt).first()
         
         assert distinct_users == 2
@@ -361,17 +361,17 @@ class TestPrayerMarkCRUD:
     def test_get_marks_by_user(self, test_session):
         """Test getting marks by user"""
         user = UserFactory.create()
-        prayer1 = PrayerFactory.create(author_id=user.id, text="Prayer 1")
-        prayer2 = PrayerFactory.create(author_id=user.id, text="Prayer 2")
+        prayer1 = PrayerFactory.create(author_username=user.display_name, text="Prayer 1")
+        prayer2 = PrayerFactory.create(author_username=user.display_name, text="Prayer 2")
         
-        mark1 = PrayerMarkFactory.create(user_id=user.id, prayer_id=prayer1.id)
-        mark2 = PrayerMarkFactory.create(user_id=user.id, prayer_id=prayer2.id)
+        mark1 = PrayerMarkFactory.create(username=user.display_name, prayer_id=prayer1.id)
+        mark2 = PrayerMarkFactory.create(username=user.display_name, prayer_id=prayer2.id)
         
         test_session.add_all([user, prayer1, prayer2, mark1, mark2])
         test_session.commit()
         
         # Get all marks by user
-        stmt = select(PrayerMark).where(PrayerMark.user_id == user.id)
+        stmt = select(PrayerMark).where(PrayerMark.username == user.display_name)
         user_marks = test_session.exec(stmt).all()
         
         assert len(user_marks) == 2

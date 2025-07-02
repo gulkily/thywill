@@ -18,24 +18,22 @@ class TestUserModel:
         test_session.add(user)
         test_session.commit()
         
-        assert user.id is not None
-        assert len(user.id) == 32  # UUID hex length
-        assert user.display_name == "Test User"
+        assert user.display_name is not None
+        assert len(user.display_name) > 0
+        assert user.display_name.startswith("TestUser")
         assert isinstance(user.created_at, datetime)
     
     def test_user_creation_with_custom_values(self, test_session):
         """Test creating user with custom values"""
         custom_time = datetime(2024, 1, 1, 12, 0, 0)
         user = UserFactory.create(
-            id="custom_id",
-            display_name="Custom User", 
+            display_name="custom_user", 
             created_at=custom_time
         )
         test_session.add(user)
         test_session.commit()
         
-        assert user.id == "custom_id"
-        assert user.display_name == "Custom User"
+        assert user.display_name == "custom_user"
         assert user.created_at == custom_time
     
     def test_admin_user_creation(self, test_session):
@@ -44,8 +42,7 @@ class TestUserModel:
         test_session.add(admin)
         test_session.commit()
         
-        assert admin.id == "admin"
-        assert admin.display_name == "Admin User"
+        assert admin.display_name == "admin"
     
     def test_user_display_name_length_validation(self, test_session):
         """Test display name length constraints"""
@@ -71,7 +68,7 @@ class TestPrayerModel:
         
         assert prayer.id is not None
         assert len(prayer.id) == 32
-        assert prayer.author_id == "test_user_id"
+        assert prayer.author_username == "testuser"
         assert prayer.text == "Please pray for my test"
         assert prayer.generated_prayer == "Divine Creator, we lift up our friend. Amen."
         assert prayer.project_tag is None
@@ -83,7 +80,7 @@ class TestPrayerModel:
         custom_time = datetime(2024, 1, 1, 12, 0, 0)
         prayer = PrayerFactory.create(
             id="custom_prayer_id",
-            author_id="custom_author",
+            author_username="custom_author",
             text="Custom prayer text",
             generated_prayer="Custom generated prayer",
             project_tag="test_project",
@@ -94,7 +91,7 @@ class TestPrayerModel:
         test_session.commit()
         
         assert prayer.id == "custom_prayer_id"
-        assert prayer.author_id == "custom_author"
+        assert prayer.author_username == "custom_author"
         assert prayer.text == "Custom prayer text"
         assert prayer.generated_prayer == "Custom generated prayer"
         assert prayer.project_tag == "test_project"
@@ -122,7 +119,7 @@ class TestSessionModel:
         
         assert session.id is not None
         assert len(session.id) == 32
-        assert session.user_id == "test_user_id"
+        assert session.username == "testuser"
         assert isinstance(session.created_at, datetime)
         assert isinstance(session.expires_at, datetime)
         assert session.expires_at > session.created_at
@@ -221,7 +218,7 @@ class TestPrayerMarkModel:
         
         assert mark.id is not None
         assert len(mark.id) == 32
-        assert mark.user_id == "test_user_id"
+        assert mark.username == "testuser"
         assert mark.prayer_id == "test_prayer_id"
         assert isinstance(mark.created_at, datetime)
     
@@ -230,7 +227,7 @@ class TestPrayerMarkModel:
         custom_time = datetime(2024, 1, 1, 12, 0, 0)
         mark = PrayerMarkFactory.create(
             id="custom_mark_id",
-            user_id="custom_user",
+            username="custom_user",
             prayer_id="custom_prayer",
             created_at=custom_time
         )
@@ -238,7 +235,7 @@ class TestPrayerMarkModel:
         test_session.commit()
         
         assert mark.id == "custom_mark_id"
-        assert mark.user_id == "custom_user"
+        assert mark.username == "custom_user"
         assert mark.prayer_id == "custom_prayer"
         assert mark.created_at == custom_time
 
@@ -255,7 +252,7 @@ class TestAuthenticationRequestModel:
         
         assert auth_req.id is not None
         assert len(auth_req.id) == 32
-        assert auth_req.user_id == "test_user_id"
+        assert auth_req.user_id == "testuser"
         assert auth_req.device_info == "Test Browser"
         assert auth_req.ip_address == "127.0.0.1"
         assert isinstance(auth_req.created_at, datetime)
@@ -302,7 +299,7 @@ class TestAuthApprovalModel:
         assert approval.id is not None
         assert len(approval.id) == 32
         assert approval.auth_request_id == "test_auth_request_id"
-        assert approval.approver_user_id == "test_approver_id"
+        assert approval.approver_user_id == "testuser"
         assert isinstance(approval.created_at, datetime)
     
     def test_auth_approval_creation_with_custom_values(self, test_session):
