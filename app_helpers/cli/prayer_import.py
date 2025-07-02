@@ -45,9 +45,7 @@ def find_or_create_user(session: Session, prayer_data: Dict[str, Any]) -> User:
     # Create new user if not found
     if not author:
         author = User(
-            id=uuid.uuid4().hex,
-            display_name=author_name,
-            religious_preference=prayer_data.get('religious_preference', 'unspecified')
+            display_name=author_name
         )
         session.add(author)
         session.flush()  # Get the ID
@@ -126,7 +124,6 @@ def import_prayers_from_json(file_path: str) -> Dict[str, int]:
                     text=prayer_data['text'],
                     generated_prayer=prayer_data.get('generated_prayer'),
                     project_tag=prayer_data.get('project_tag'),
-                    target_audience='all',  # All prayers use target_audience='all'
                     created_at=created_at
                 )
                 

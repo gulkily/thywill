@@ -45,7 +45,6 @@ class PrayerFactory:
         project_tag: Optional[str] = None,
         created_at: Optional[datetime] = None,
         flagged: bool = False,
-        target_audience: str = "all"
     ) -> Prayer:
         # Use a special value to distinguish between None and default
         prayer_text = None if generated_prayer is None else (
@@ -59,8 +58,7 @@ class PrayerFactory:
             generated_prayer=prayer_text,
             project_tag=project_tag,
             created_at=created_at or datetime.utcnow(),
-            flagged=flagged,
-            target_audience=target_audience
+            flagged=flagged
         )
 
 

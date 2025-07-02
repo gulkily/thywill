@@ -155,7 +155,6 @@ function setupPreviewActions() {
                 const formData = new FormData();
                 formData.append('text', currentPreviewData.original_text);
                 formData.append('tag', currentPreviewData.tag || '');
-                formData.append('target_audience', 'all');  // All prayers use target_audience='all'
                 formData.append('generated_prayer', currentPreviewData.generated_prayer);
                 
                 const response = await fetch('/prayers', {
@@ -190,7 +189,6 @@ function setupPreviewActions() {
                 const formData = new FormData();
                 formData.append('text', currentPreviewData.original_text);
                 formData.append('tag', currentPreviewData.tag || '');
-                formData.append('target_audience', 'all');  // All prayers use target_audience='all'
                 
                 const response = await fetch('/prayers/preview', {
                     method: 'POST',
@@ -245,7 +243,6 @@ function setupPreviewActions() {
             if (currentPreviewData) {
                 document.getElementById('text').value = currentPreviewData.original_text;
                 document.getElementById('tag').value = currentPreviewData.tag || '';
-                document.getElementById('target_audience').value = 'all';  // All prayers use target_audience='all'
             }
         });
     }
