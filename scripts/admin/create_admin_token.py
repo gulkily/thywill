@@ -17,6 +17,7 @@ from sqlmodel import Session
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 from models import engine, InviteToken
 from app_helpers.services.token_service import create_system_token
+from app_helpers.utils.time_formatting import format_hours_intelligently
 
 # Load environment variables
 load_dotenv()
@@ -32,7 +33,7 @@ def create_admin_token(hours=12):
         print("✅ Admin invite token created successfully!")
         print(f"Token: {invite_token['token']}")
         print(f"Expires: {invite_token['expires_at'].strftime('%Y-%m-%d %H:%M:%S')} UTC")
-        print(f"Valid for: {hours} hours")
+        print(f"Valid for: {format_hours_intelligently(hours)}")
         print()
         print("🔗 Claim URL:")
         base_url = os.getenv("BASE_URL", "http://127.0.0.1:8000")

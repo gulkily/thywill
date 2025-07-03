@@ -112,7 +112,7 @@ show_help() {
     echo "    admin grant <name>      Grant admin role to user (by display name or ID)"
     echo "    admin revoke <name>     Revoke admin role from user"
     echo "    admin list              List all admin users"
-    echo "    admin token [hours]     Create admin invite token"
+    echo "    admin token [hours]     Create admin invite token (default: 12h, example: 720h = 30 days)"
     echo "    role list               List all available roles"
     echo "    role grant <user> <role> Grant specific role to user"
     echo "    role revoke <user> <role> Revoke specific role from user"
