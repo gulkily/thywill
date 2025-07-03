@@ -23,7 +23,7 @@ import sqlite3
 
 # ───────── Config ─────────
 SESSION_DAYS = 14
-TOKEN_EXP_H = int(os.getenv("INVITE_TOKEN_EXPIRATION_HOURS", "12"))  # invite links expiration hours
+# TOKEN_EXP_H moved to app_helpers/services/token_service.py for centralization
 MAX_AUTH_REQUESTS_PER_HOUR = 3  # Rate limit for auth requests
 MAX_FAILED_ATTEMPTS = 5   # Max failed login attempts before temporary block
 BLOCK_DURATION_MINUTES = 15  # How long to block after max failed attempts
@@ -284,16 +284,12 @@ def startup():
         print(f"❌ Duplicate user migration failed: {e}")
         # Continue startup - this is not critical for basic functionality
     
-    # Then seed invite
+    # Then seed invite using centralized token service
     with Session(engine) as s:
         if not s.exec(select(InviteToken)).first():
-            token = uuid.uuid4().hex
-            s.add(InviteToken(
-                token=token,
-                created_by_user="system",
-                expires_at=datetime.utcnow() + timedelta(hours=TOKEN_EXP_H)))
-            s.commit()
-            print("\n==== First-run invite token (admin):", token, "====\n")
+            from app_helpers.services.token_service import create_system_token
+            token_info = create_system_token()
+            print("\n==== First-run invite token (admin):", token_info['token'], "====\n")
 
 
 # Invite routes moved to app_helpers/routes/invite_routes.py
