@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-6xl mx-auto mt-8 space-y-6">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+    <div class="flex items-center mb-6">
+      <div class="w-8 h-8 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mr-3">
+        <svg class="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Environment Debug</h1>
+    </div>
+
+    <!-- Environment Configuration -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">File System</h2>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">Current Directory:</span>
+            <span class="font-mono text-gray-900 dark:text-gray-100">{{ debug_info.current_directory }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">.env File Exists:</span>
+            <span class="font-mono {% if debug_info.env_file_exists %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+              {{ "YES" if debug_info.env_file_exists else "NO" }}
+            </span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">.env File Path:</span>
+            <span class="font-mono text-gray-900 dark:text-gray-100 break-all">{{ debug_info.env_file_path }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Time Information</h2>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">Server UTC Time:</span>
+            <span class="font-mono text-gray-900 dark:text-gray-100">{{ debug_info.current_utc_time.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">Server Local Time:</span>
+            <span class="font-mono text-gray-900 dark:text-gray-100">{{ debug_info.server_local_time.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Token Expiration Configuration -->
+    <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-6 mb-8">
+      <h2 class="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-4">
+        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Invite Token Expiration Configuration
+      </h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="text-center">
+          <div class="text-2xl font-bold {% if debug_info.invite_token_expiration_hours_env %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+            {{ debug_info.invite_token_expiration_hours_env or "NOT SET" }}
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Environment Variable</div>
+        </div>
+        
+        <div class="text-center">
+          <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ debug_info.token_exp_h_calculated }}</div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Calculated TOKEN_EXP_H</div>
+        </div>
+        
+        <div class="text-center">
+          <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ debug_info.test_token_hours_valid }}</div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Hours Valid</div>
+        </div>
+        
+        <div class="text-center">
+          <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ "%.1f"|format(debug_info.test_token_days_valid) }}</div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Days Valid</div>
+        </div>
+      </div>
+
+      <div class="mt-4 p-4 bg-white dark:bg-gray-800 rounded border">
+        <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Test Token Calculation</h3>
+        <div class="text-sm space-y-1">
+          <div>If a token were created now: <span class="font-mono">{{ debug_info.test_token_creation.strftime('%Y-%m-%d %H:%M:%S') }}</span></div>
+          <div>It would expire at: <span class="font-mono">{{ debug_info.test_token_expiration.strftime('%Y-%m-%d %H:%M:%S') }}</span></div>
+          <div>Duration: <span class="font-mono">{{ debug_info.test_token_hours_valid }} hours ({{ "%.1f"|format(debug_info.test_token_days_valid) }} days)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Tokens -->
+    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 mb-8">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Invite Tokens</h2>
+      
+      {% if debug_info.token_query_error %}
+      <div class="text-red-600 dark:text-red-400 text-sm">
+        Error querying tokens: {{ debug_info.token_query_error }}
+      </div>
+      {% elif debug_info.recent_tokens %}
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-100 dark:bg-gray-600">
+            <tr>
+              <th class="px-3 py-2 text-left text-gray-900 dark:text-gray-100">Token</th>
+              <th class="px-3 py-2 text-left text-gray-900 dark:text-gray-100">Created By</th>
+              <th class="px-3 py-2 text-left text-gray-900 dark:text-gray-100">Expires At</th>
+              <th class="px-3 py-2 text-left text-gray-900 dark:text-gray-100">Used</th>
+              <th class="px-3 py-2 text-left text-gray-900 dark:text-gray-100">Hours Until Expiry</th>
+              <th class="px-3 py-2 text-left text-gray-900 dark:text-gray-100">Implied Creation</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-600">
+            {% for token in debug_info.recent_tokens %}
+            <tr class="{% if token.used %}bg-gray-100 dark:bg-gray-600{% endif %}">
+              <td class="px-3 py-2 font-mono text-gray-900 dark:text-gray-100">{{ token.token_preview }}</td>
+              <td class="px-3 py-2 text-gray-900 dark:text-gray-100">{{ token.created_by }}</td>
+              <td class="px-3 py-2 font-mono text-gray-900 dark:text-gray-100">{{ token.expires_at.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td class="px-3 py-2">
+                <span class="{% if token.used %}text-red-600 dark:text-red-400{% else %}text-green-600 dark:text-green-400{% endif %}">
+                  {{ "Yes" if token.used else "No" }}
+                </span>
+              </td>
+              <td class="px-3 py-2 font-mono {% if token.hours_until_expiry < 0 %}text-red-600 dark:text-red-400{% elif token.hours_until_expiry < 24 %}text-orange-600 dark:text-orange-400{% else %}text-green-600 dark:text-green-400{% endif %}">
+                {{ "%.1f"|format(token.hours_until_expiry) }}
+              </td>
+              <td class="px-3 py-2 font-mono text-gray-600 dark:text-gray-400 text-xs">{{ token.implied_creation_time.strftime('%Y-%m-%d %H:%M') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-gray-600 dark:text-gray-400 text-sm">No recent tokens found.</div>
+      {% endif %}
+    </div>
+
+    <!-- All Environment Variables -->
+    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Relevant Environment Variables</h2>
+      
+      <div class="space-y-2">
+        {% for key, value in debug_info.relevant_env_vars.items() %}
+        <div class="flex justify-between items-center p-2 bg-white dark:bg-gray-800 rounded border">
+          <span class="font-mono text-sm text-gray-900 dark:text-gray-100">{{ key }}</span>
+          <span class="font-mono text-sm text-gray-600 dark:text-gray-400 break-all">
+            {% if 'API_KEY' in key or 'SECRET' in key or 'PASSWORD' in key %}
+              {% if value %}[HIDDEN - {{ value|length }} chars]{% else %}[NOT SET]{% endif %}
+            {% else %}
+              {{ value or "[NOT SET]" }}
+            {% endif %}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if not debug_info.relevant_env_vars %}
+      <div class="text-gray-600 dark:text-gray-400 text-sm">No relevant environment variables found.</div>
+      {% endif %}
+    </div>
+
+    <!-- Additional Checks -->
+    <div class="mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+      <h3 class="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">Diagnostic Summary</h3>
+      <div class="text-sm text-yellow-800 dark:text-yellow-200 space-y-1">
+        {% if not debug_info.env_file_exists %}
+        <div>⚠️ .env file not found in current directory</div>
+        {% endif %}
+        
+        {% if not debug_info.invite_token_expiration_hours_env %}
+        <div>⚠️ INVITE_TOKEN_EXPIRATION_HOURS environment variable not set</div>
+        {% endif %}
+        
+        {% if debug_info.token_exp_h_calculated == 12 and debug_info.invite_token_expiration_hours_env and debug_info.invite_token_expiration_hours_env != "12" %}
+        <div>❌ Environment variable is set but not being used (still defaulting to 12)</div>
+        {% endif %}
+        
+        {% if debug_info.env_file_exists and debug_info.invite_token_expiration_hours_env and debug_info.token_exp_h_calculated|string == debug_info.invite_token_expiration_hours_env %}
+        <div>✅ Environment configuration appears correct</div>
+        {% endif %}
+        
+        {% if not debug_info.anthropic_api_key_set %}
+        <div>⚠️ ANTHROPIC_API_KEY not set</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="mt-6 text-center">
+      <a href="/admin" class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        Back to Admin
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

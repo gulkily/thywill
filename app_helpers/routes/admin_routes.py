@@ -20,6 +20,7 @@ from .admin.auth_management import *
 from .admin.analytics import *
 from .admin.user_management import *
 from .admin.moderation import *
+from .admin.debug_routes import *
 
 # Create main router and include all sub-module routers
 router = APIRouter()
@@ -30,6 +31,7 @@ from .admin.auth_management import router as auth_mgmt_router
 from .admin.analytics import router as analytics_router
 from .admin.user_management import router as user_mgmt_router
 from .admin.moderation import router as moderation_router
+from .admin.debug_routes import router as debug_router
 
 # Include all sub-module routes
 router.include_router(dashboard_router)
@@ -37,3 +39,4 @@ router.include_router(auth_mgmt_router)
 router.include_router(analytics_router)
 router.include_router(user_mgmt_router)
 router.include_router(moderation_router)
+router.include_router(debug_router)
