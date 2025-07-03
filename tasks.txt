@@ -52,3 +52,5 @@ Available Backups
 Stop invite expiration
 
 Remove the half-login feature (or make it less insulting)
+
+Let users see their own timezone timestamps
