@@ -15,7 +15,8 @@ from app_helpers.services.auth_helpers import current_user
 from app_helpers.services.invite_helpers import get_invite_tree, get_invite_stats, get_user_invite_path
 
 # Configuration from app.py
-TOKEN_EXP_H = 12  # invite links valid 12 h
+import os
+TOKEN_EXP_H = int(os.getenv("INVITE_TOKEN_EXPIRATION_HOURS", "12"))  # invite links expiration hours
 
 # Use shared templates instance with filters registered
 from app_helpers.shared_templates import templates
