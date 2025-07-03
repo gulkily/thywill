@@ -100,9 +100,8 @@ class InviteTokenFactory:
         expires_at: Optional[datetime] = None,
         used_by_user_id: Optional[str] = None
     ) -> InviteToken:
-        # Use the same configuration as the app
-        import os
-        TOKEN_EXP_H = int(os.getenv("INVITE_TOKEN_EXPIRATION_HOURS", "12"))
+        # Use centralized token configuration
+        from app_helpers.services.token_service import TOKEN_EXP_H
         
         return InviteToken(
             token=token or uuid.uuid4().hex,
