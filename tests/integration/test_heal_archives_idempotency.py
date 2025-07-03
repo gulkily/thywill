@@ -13,6 +13,7 @@ import os
 import tempfile
 import shutil
 from datetime import datetime, timedelta
+from app_helpers.services.token_service import TOKEN_EXP_H
 from sqlmodel import Session, select
 from pathlib import Path
 
@@ -95,7 +96,7 @@ def sample_data(session):
         attribute_name="answer_testimony",
         attribute_value="God answered in amazing ways!",
         created_by=user1.display_name,
-        created_at=datetime.now() - timedelta(hours=12)
+        created_at=datetime.now() - timedelta(hours=TOKEN_EXP_H)
     )
     attr3 = PrayerAttribute(
         prayer_id=prayer2.id,

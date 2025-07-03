@@ -12,6 +12,7 @@ import os
 import sys
 from unittest.mock import patch, MagicMock
 from datetime import datetime, timedelta
+from app_helpers.services.token_service import TOKEN_EXP_H
 from sqlmodel import Session
 
 from models import engine, InviteToken
@@ -134,7 +135,7 @@ class TestAdminTokenFormat:
             mock_session_instance = MagicMock()
             mock_session.return_value.__enter__.return_value = mock_session_instance
             
-            create_admin_token(hours=12)
+            create_admin_token(hours=TOKEN_EXP_H)
             
             # Verify InviteToken properties
             call_args = mock_session_instance.add.call_args[0][0]
