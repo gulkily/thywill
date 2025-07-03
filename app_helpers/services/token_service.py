@@ -46,7 +46,7 @@ def create_invite_token(
     custom_token: Optional[str] = None,
     custom_expiration_hours: Optional[int] = None,
     db_session: Optional[Session] = None
-) -> InviteToken:
+) -> dict:
     """
     Create and save an invite token to the database.
     
@@ -57,7 +57,7 @@ def create_invite_token(
         db_session: Optional existing database session to use
         
     Returns:
-        InviteToken: The created token object
+        dict: Token information (token, expires_at, created_by_user, used)
     """
     token_str = custom_token or generate_invite_token()
     expires_at = calculate_expiration_time(custom_expiration_hours)
@@ -79,9 +79,15 @@ def create_invite_token(
             session.add(invite_token)
             session.commit()
     
-    return invite_token
+    # Return a dictionary to avoid session detachment issues
+    return {
+        'token': invite_token.token,
+        'expires_at': invite_token.expires_at,
+        'created_by_user': invite_token.created_by_user,
+        'used': invite_token.used
+    }
 
-def create_system_token(custom_expiration_hours: Optional[int] = None) -> InviteToken:
+def create_system_token(custom_expiration_hours: Optional[int] = None) -> dict:
     """
     Create a system-generated invite token (for admin use).
     
@@ -89,7 +95,7 @@ def create_system_token(custom_expiration_hours: Optional[int] = None) -> Invite
         custom_expiration_hours: Optional custom expiration time in hours
         
     Returns:
-        InviteToken: The created system token
+        dict: Token information (token, expires_at, created_by_user, used)
     """
     return create_invite_token(
         created_by_user="system",
