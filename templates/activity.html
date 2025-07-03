@@ -38,7 +38,7 @@
                   <span class="text-sm text-gray-600 dark:text-gray-300">a prayer by <a href="/user/{{ item.prayer.author_id }}" class="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 hover:underline">{{ item.author_name }}</a></span>
                 {% endif %}
               {% endif %}
-              <span class="text-xs text-gray-400 dark:text-gray-500 ml-2">{{ item.mark.created_at.strftime('%m/%d %H:%M') }}</span>
+              <span class="text-xs text-gray-400 dark:text-gray-500 ml-2">{{ item.mark.created_at|timezone_format(user_timezone) }}</span>
             </div>
 
             <!-- Prayer snippet -->
