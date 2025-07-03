@@ -8,12 +8,15 @@ Usage: python create_admin_token.py [--hours HOURS]
 
 import argparse
 import os
-import secrets
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from sqlmodel import Session
+
+# Add path for imports
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 from models import engine, InviteToken
+from app_helpers.services.token_service import create_system_token
 
 # Load environment variables
 load_dotenv()
@@ -22,37 +25,25 @@ load_dotenv()
 def create_admin_token(hours=12):
     """Create a new admin invite token."""
     try:
-        # Generate token using same format as regular invites (16-char hex)
-        token = secrets.token_hex(8)
-        expires_at = datetime.now(timezone.utc) + timedelta(hours=hours)
+        # Use centralized token service
+        invite_token = create_system_token(custom_expiration_hours=hours)
         
-        # Save to database
-        with Session(engine) as session:
-            invite_token = InviteToken(
-                token=token,
-                created_by_user="system",  # System generated
-                expires_at=expires_at,
-                used=False
-            )
-            session.add(invite_token)
-            session.commit()
-            
         # Success output
         print("✅ Admin invite token created successfully!")
-        print(f"Token: {token}")
-        print(f"Expires: {expires_at.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+        print(f"Token: {invite_token.token}")
+        print(f"Expires: {invite_token.expires_at.strftime('%Y-%m-%d %H:%M:%S')} UTC")
         print(f"Valid for: {hours} hours")
         print()
         print("🔗 Claim URL:")
         base_url = os.getenv("BASE_URL", "http://127.0.0.1:8000")
-        print(f"   {base_url}/claim/{token}")
+        print(f"   {base_url}/claim/{invite_token.token}")
         print()
         print("💡 Next steps:")
         print("   1. Visit the claim URL above")
         print("   2. Create your admin account")
         print("   3. Use the admin panel to generate invite links for other users")
         
-        return token
+        return invite_token.token
         
     except Exception as e:
         print(f"❌ Error creating admin token: {e}", file=sys.stderr)

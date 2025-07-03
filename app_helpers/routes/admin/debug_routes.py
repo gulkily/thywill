@@ -29,8 +29,8 @@ def debug_environment(request: Request, user_session: tuple = Depends(current_us
     if not is_admin(user):
         raise HTTPException(403, "Admin access required")
     
-    # Import TOKEN_EXP_H from app to get the actual value being used
-    from app import TOKEN_EXP_H
+    # Import token configuration from centralized service
+    from app_helpers.services.token_service import get_token_expiration_config, TOKEN_EXP_H
     
     # Gather environment debug information
     debug_info = {

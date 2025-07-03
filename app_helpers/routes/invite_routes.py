@@ -1,9 +1,7 @@
 # invite_routes.py - Invite system routes
 import uuid
-import secrets
 import base64
 import io
-from datetime import datetime, timedelta
 import qrcode
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse
@@ -13,24 +11,14 @@ from sqlmodel import Session
 from models import engine, InviteToken
 from app_helpers.services.auth_helpers import current_user
 from app_helpers.services.invite_helpers import get_invite_tree, get_invite_stats, get_user_invite_path
-
-# Configuration from app.py
-import os
-TOKEN_EXP_H = int(os.getenv("INVITE_TOKEN_EXPIRATION_HOURS", "12"))  # invite links expiration hours
+from app_helpers.services.token_service import create_invite_token
 
 # Use shared templates instance with filters registered
 from app_helpers.shared_templates import templates
 
 router = APIRouter()
 
-def generate_short_token() -> str:
-    """Generate a shorter hex token with 16 characters (64 bits of entropy).
-    
-    Uses 8 random bytes converted to hexadecimal, resulting in a 16-character
-    token using only 0-9a-f characters. This provides good security while
-    being significantly shorter than UUIDs.
-    """
-    return secrets.token_hex(8)
+# Token generation moved to token_service.py
 
 def generate_qr_code_data_url(text: str) -> str:
     """Generate a QR code as a base64-encoded data URL.
@@ -66,21 +54,20 @@ def new_invite(request: Request, user_session: tuple = Depends(current_user)):
     user, session = user_session
     if not session.is_fully_authenticated:
         raise HTTPException(403, "Full authentication required to create invites")
-    token = generate_short_token()
+    
+    # Use centralized token service
     with Session(engine) as db:
-        invite_token = InviteToken(
-            token=token,
+        invite_token = create_invite_token(
             created_by_user=user.display_name,
-            expires_at=datetime.utcnow() + timedelta(hours=TOKEN_EXP_H)
+            db_session=db
         )
-        db.add(invite_token)
         db.commit()
         
         # Archive the invite token creation
         try:
             from app_helpers.services.archive_writers import system_archive_writer
             system_archive_writer.log_invite_usage(
-                token=token,
+                token=invite_token.token,
                 used_by='',  # Not used yet
                 created_by=user.display_name
             )
@@ -88,6 +75,8 @@ def new_invite(request: Request, user_session: tuple = Depends(current_user)):
             import logging
             logger = logging.getLogger(__name__)
             logger.warning(f"Failed to archive invite token creation: {e}")
+    
+    token = invite_token.token
 
     url = request.url_for("claim_get", token=token)  # absolute link
     qr_code_data_url = generate_qr_code_data_url(str(url))
