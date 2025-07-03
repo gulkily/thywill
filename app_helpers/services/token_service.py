@@ -74,18 +74,26 @@ def create_invite_token(
     if db_session:
         db_session.add(invite_token)
         db_session.flush()  # Don't commit, let caller handle it
+        # Capture values while session is active
+        result = {
+            'token': invite_token.token,
+            'expires_at': invite_token.expires_at,
+            'created_by_user': invite_token.created_by_user,
+            'used': invite_token.used
+        }
     else:
         with Session(engine) as session:
             session.add(invite_token)
             session.commit()
+            # Capture values while session is still active
+            result = {
+                'token': invite_token.token,
+                'expires_at': invite_token.expires_at,
+                'created_by_user': invite_token.created_by_user,
+                'used': invite_token.used
+            }
     
-    # Return a dictionary to avoid session detachment issues
-    return {
-        'token': invite_token.token,
-        'expires_at': invite_token.expires_at,
-        'created_by_user': invite_token.created_by_user,
-        'used': invite_token.used
-    }
+    return result
 
 def create_system_token(custom_expiration_hours: Optional[int] = None) -> dict:
     """
