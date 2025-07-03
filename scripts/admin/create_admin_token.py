@@ -30,20 +30,20 @@ def create_admin_token(hours=12):
         
         # Success output
         print("✅ Admin invite token created successfully!")
-        print(f"Token: {invite_token.token}")
-        print(f"Expires: {invite_token.expires_at.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+        print(f"Token: {invite_token['token']}")
+        print(f"Expires: {invite_token['expires_at'].strftime('%Y-%m-%d %H:%M:%S')} UTC")
         print(f"Valid for: {hours} hours")
         print()
         print("🔗 Claim URL:")
         base_url = os.getenv("BASE_URL", "http://127.0.0.1:8000")
-        print(f"   {base_url}/claim/{invite_token.token}")
+        print(f"   {base_url}/claim/{invite_token['token']}")
         print()
         print("💡 Next steps:")
         print("   1. Visit the claim URL above")
         print("   2. Create your admin account")
         print("   3. Use the admin panel to generate invite links for other users")
         
-        return invite_token.token
+        return invite_token['token']
         
     except Exception as e:
         print(f"❌ Error creating admin token: {e}", file=sys.stderr)

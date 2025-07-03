@@ -67,7 +67,7 @@ def new_invite(request: Request, user_session: tuple = Depends(current_user)):
         try:
             from app_helpers.services.archive_writers import system_archive_writer
             system_archive_writer.log_invite_usage(
-                token=invite_token.token,
+                token=invite_token['token'],
                 used_by='',  # Not used yet
                 created_by=user.display_name
             )
@@ -76,7 +76,7 @@ def new_invite(request: Request, user_session: tuple = Depends(current_user)):
             logger = logging.getLogger(__name__)
             logger.warning(f"Failed to archive invite token creation: {e}")
     
-    token = invite_token.token
+    token = invite_token['token']
 
     url = request.url_for("claim_get", token=token)  # absolute link
     qr_code_data_url = generate_qr_code_data_url(str(url))
