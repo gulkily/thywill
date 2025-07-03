@@ -71,13 +71,13 @@
         </div>
         
         <div class="text-center">
-          <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ debug_info.test_token_hours_valid }}</div>
-          <div class="text-xs text-gray-600 dark:text-gray-400">Hours Valid</div>
+          <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ debug_info.test_token_hours_valid|format_hours }}</div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Token Duration</div>
         </div>
         
         <div class="text-center">
           <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ "%.1f"|format(debug_info.test_token_days_valid) }}</div>
-          <div class="text-xs text-gray-600 dark:text-gray-400">Days Valid</div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Days (Exact)</div>
         </div>
       </div>
 
@@ -86,7 +86,7 @@
         <div class="text-sm space-y-1">
           <div>If a token were created now: <span class="font-mono">{{ debug_info.test_token_creation.strftime('%Y-%m-%d %H:%M:%S') }}</span></div>
           <div>It would expire at: <span class="font-mono">{{ debug_info.test_token_expiration.strftime('%Y-%m-%d %H:%M:%S') }}</span></div>
-          <div>Duration: <span class="font-mono">{{ debug_info.test_token_hours_valid }} hours ({{ "%.1f"|format(debug_info.test_token_days_valid) }} days)</span></div>
+          <div>Duration: <span class="font-mono">{{ debug_info.test_token_hours_valid|format_hours }} ({{ debug_info.test_token_hours_valid }} hours)</span></div>
         </div>
       </div>
     </div>

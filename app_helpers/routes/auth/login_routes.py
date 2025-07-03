@@ -32,6 +32,7 @@ from app_helpers.utils.invite_tree_validation import (
     validate_user_operation
 )
 from app_helpers.services.token_service import TOKEN_EXP_H
+from app_helpers.utils.time_formatting import format_validity_message
 from app_helpers.utils.user_management import is_user_deactivated
 from app_helpers.services.archive_first_service import create_user_with_text_archive
 from app_helpers.utils.username_helpers import (
@@ -128,7 +129,7 @@ def claim_get(token: str, request: Request):
             return templates.TemplateResponse("claim.html", {
                 "request": request, 
                 "token": token,
-                "error": f"This invite link has expired. Invite links are valid for {TOKEN_EXP_H} hours. Please request a new invite link."
+                "error": f"This invite link has expired. Invite links are {format_validity_message(TOKEN_EXP_H)}. Please request a new invite link."
             })
     
     # Token is valid, show the normal claim form
