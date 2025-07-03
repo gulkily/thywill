@@ -49,7 +49,7 @@ log "Starting deployment process..."
 
 # Step 1: Pre-deployment backup
 log "Step 1: Creating pre-deployment backup..."
-if ! ./pre_deploy_backup.sh; then
+if ! ../scripts/backup/pre_deploy_backup.sh; then
     error "Pre-deployment backup failed! Aborting deployment."
     exit 1
 fi

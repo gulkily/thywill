@@ -22,7 +22,7 @@ def get_deactivated_role_id(session: Session) -> str:
     stmt = select(Role).where(Role.name == "deactivated")
     role = session.exec(stmt).first()
     if not role:
-        raise UserManagementError("Deactivated role not found. Run add_deactivated_role.py first.")
+        raise UserManagementError("Deactivated role not found. Run scripts/admin/add_deactivated_role.py first.")
     return role.id
 
 

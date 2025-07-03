@@ -510,7 +510,7 @@ cmd_admin_token() {
     fi
     
     # Call the standalone Python script to create admin token
-    if ! run_python create_admin_token.py --hours "$hours"; then
+    if ! run_python scripts/admin/create_admin_token.py --hours "$hours"; then
         error "Failed to create admin token"
         exit 1
     fi
@@ -657,8 +657,8 @@ cmd_import_text_archives() {
     fi
     
     # Check if import script exists
-    if [ ! -f "import_text_archives.py" ]; then
-        error "Text archives import script not found: import_text_archives.py"
+    if [ ! -f "scripts/utils/import_text_archives.py" ]; then
+        error "Text archives import script not found: scripts/utils/import_text_archives.py"
         echo "Please ensure the import script is in the project directory"
         exit 1
     fi
@@ -683,7 +683,7 @@ cmd_import_text_archives() {
     fi
     
     # Execute Python import script with all arguments
-    run_python import_text_archives.py "$@"
+    run_python scripts/utils/import_text_archives.py "$@"
 }
 
 # Archive validation and recovery commands
@@ -965,7 +965,7 @@ cmd_reconstruct_from_archives() {
     log "This tool fixes orphaned prayers and prayer marks using archive data as source of truth"
     
     # Execute reconstruction script with arguments passed through
-    PRODUCTION_MODE=1 python3 reconstruct_from_archives.py "$@"
+    PRODUCTION_MODE=1 python3 scripts/utils/reconstruct_from_archives.py "$@"
 }
 
 cmd_validate_consistency() {
@@ -982,7 +982,7 @@ cmd_validate_consistency() {
     log "This provides a comprehensive report on data integrity"
     
     # Execute validation script with arguments passed through
-    PRODUCTION_MODE=1 python3 validate_archive_consistency.py "$@"
+    PRODUCTION_MODE=1 python3 scripts/utils/validate_archive_consistency.py "$@"
 }
 
 # Database commands
@@ -1139,8 +1139,8 @@ cmd_db_init() {
     fi
     
     # Check if create_database.py exists
-    if [ ! -f "create_database.py" ]; then
-        error "create_database.py script not found"
+    if [ ! -f "scripts/utils/create_database.py" ]; then
+        error "scripts/utils/create_database.py script not found"
         echo "Please ensure the database creation script is in the project directory"
         exit 1
     fi
@@ -1193,7 +1193,7 @@ EOF
     echo ""
     
     # Execute the standalone database creation script
-    run_python create_database.py
+    run_python scripts/utils/create_database.py
     
     if [ $? -eq 0 ]; then
         echo ""
