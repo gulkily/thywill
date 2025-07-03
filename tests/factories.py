@@ -100,11 +100,15 @@ class InviteTokenFactory:
         expires_at: Optional[datetime] = None,
         used_by_user_id: Optional[str] = None
     ) -> InviteToken:
+        # Use the same configuration as the app
+        import os
+        TOKEN_EXP_H = int(os.getenv("INVITE_TOKEN_EXPIRATION_HOURS", "12"))
+        
         return InviteToken(
             token=token or uuid.uuid4().hex,
             created_by_user=created_by_user,
             used=used,
-            expires_at=expires_at or (datetime.utcnow() + timedelta(hours=12)),
+            expires_at=expires_at or (datetime.utcnow() + timedelta(hours=TOKEN_EXP_H)),
             used_by_user_id=used_by_user_id
         )
 
