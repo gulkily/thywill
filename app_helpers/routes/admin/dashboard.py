@@ -16,6 +16,7 @@ from models import (
     engine, User, Prayer, AuthenticationRequest, AuthApproval, 
     AuthAuditLog, PrayerMark
 )
+from app_helpers.timezone_utils import get_user_timezone_from_request
 
 # Import helper functions
 from app_helpers.services.auth_helpers import (
@@ -99,11 +100,13 @@ def admin(request: Request, user_session: tuple = Depends(current_user)):
                 'approval_count': approval_count
             })
     
+    user_timezone = get_user_timezone_from_request(request)
     return templates.TemplateResponse("admin.html", {
         "request": request,
         "user": user,
         "flagged_prayers": flagged_prayers,
-        "auth_requests": auth_requests
+        "auth_requests": auth_requests,
+        "user_timezone": user_timezone
     })
 
 
@@ -169,8 +172,10 @@ def auth_audit_log(request: Request, user_session: tuple = Depends(current_user)
                 'details': details
             })
     
+    user_timezone = get_user_timezone_from_request(request)
     return templates.TemplateResponse("auth_audit.html", {
         "request": request,
         "user": user,
-        "audit_events": audit_events
+        "audit_events": audit_events,
+        "user_timezone": user_timezone
     })

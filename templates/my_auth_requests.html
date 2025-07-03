@@ -50,13 +50,13 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <p class="text-sm text-gray-500 dark:text-gray-400">Requested</p>
-              <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ item.request.created_at.strftime('%b %d, %Y at %I:%M %p') }}</p>
+              <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ item.request.created_at|timezone_format(user_timezone) }}</p>
             </div>
             
             {% if item.request.status == "pending" %}
             <div>
               <p class="text-sm text-gray-500 dark:text-gray-400">Expires</p>
-              <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ item.request.expires_at.strftime('%b %d, %Y at %I:%M %p') }}</p>
+              <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ item.request.expires_at|timezone_format(user_timezone) }}</p>
             </div>
             {% endif %}
             

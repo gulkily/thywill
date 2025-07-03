@@ -19,6 +19,7 @@ from sqlmodel import Session, select
 from models import (
     engine, User, AuthenticationRequest, AuthApproval, Session as SessionModel
 )
+from app_helpers.timezone_utils import get_user_timezone_from_request
 
 # Import helper functions
 from app_helpers.services.auth_helpers import (
@@ -164,6 +165,7 @@ def pending_requests(request: Request, user_session: tuple = Depends(current_use
         raise HTTPException(403, "Full authentication required")
     
     pending_requests = get_pending_requests_for_approval(user.display_name)
+    user_timezone = get_user_timezone_from_request(request)
     
     return templates.TemplateResponse(
         "auth_requests.html",
@@ -173,7 +175,8 @@ def pending_requests(request: Request, user_session: tuple = Depends(current_use
             "me": user, 
             "session": session,
             "peer_approval_count": PEER_APPROVAL_COUNT,
-            "is_admin": is_admin(user)
+            "is_admin": is_admin(user),
+            "user_timezone": user_timezone
         }
     )
 
@@ -331,6 +334,7 @@ def my_auth_requests(request: Request, user_session: tuple = Depends(current_use
                 'approval_count': len(approval_info)
             })
     
+    user_timezone = get_user_timezone_from_request(request)
     return templates.TemplateResponse(
         "my_auth_requests.html",
         {
@@ -338,6 +342,7 @@ def my_auth_requests(request: Request, user_session: tuple = Depends(current_use
             "user": user,
             "session": session,
             "requests": requests_with_approvals,
-            "peer_approval_count": PEER_APPROVAL_COUNT
+            "peer_approval_count": PEER_APPROVAL_COUNT,
+            "user_timezone": user_timezone
         }
     )

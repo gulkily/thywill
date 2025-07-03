@@ -16,6 +16,7 @@ from sqlmodel import Session, select, func
 from models import (
     engine, User, Prayer, PrayerMark, PrayerAttribute
 )
+from app_helpers.timezone_utils import get_user_timezone_from_request
 
 # Import helper functions
 from app_helpers.services.auth_helpers import current_user
@@ -142,10 +143,12 @@ def prayer_marks(prayer_id: str, request: Request, user_session: tuple = Depends
         total_marks = len(marks_with_users)
         distinct_users = len(set(mark['user_name'] for mark in marks_with_users))
     
+    user_timezone = get_user_timezone_from_request(request)
     return templates.TemplateResponse(
         "prayer_marks.html",
         {"request": request, "prayer": prayer, "marks": marks_with_users, "me": user, 
-         "session": session, "total_marks": total_marks, "distinct_users": distinct_users}
+         "session": session, "total_marks": total_marks, "distinct_users": distinct_users, 
+         "user_timezone": user_timezone}
     )
 
 
@@ -306,7 +309,9 @@ def recent_activity(request: Request, user_session: tuple = Depends(current_user
                 'is_my_prayer': prayer.author_username == user.display_name
             })
     
+    user_timezone = get_user_timezone_from_request(request)
     return templates.TemplateResponse(
         "activity.html",
-        {"request": request, "activity_items": activity_items, "me": user, "session": session}
+        {"request": request, "activity_items": activity_items, "me": user, "session": session, 
+         "user_timezone": user_timezone}
     )
