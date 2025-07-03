@@ -8,8 +8,8 @@ from datetime import datetime, timedelta
 from sqlmodel import Session, select, func
 from models import User, InviteToken, engine
 
-# Constants (these should match app.py)
-TOKEN_EXP_H = int(os.getenv("INVITE_TOKEN_EXPIRATION_HOURS", "12"))  # invite links expiration hours
+# Use centralized token configuration
+from .token_service import TOKEN_EXP_H
 
 
 def get_invite_tree() -> dict:

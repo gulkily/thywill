@@ -7,6 +7,7 @@ instead of recreating accounts, and proper admin role assignment.
 
 import pytest
 from datetime import datetime, timedelta
+from app_helpers.services.token_service import TOKEN_EXP_H
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
@@ -70,7 +71,7 @@ class TestAdminInviteAuthentication:
             admin_token = InviteToken(
                 token="admin123456789abc",
                 created_by_user="system",
-                expires_at=datetime.utcnow() + timedelta(hours=12),
+                expires_at=datetime.utcnow() + timedelta(hours=TOKEN_EXP_H),
                 used=False
             )
             session.add(admin_token)
@@ -114,7 +115,7 @@ class TestAdminInviteAuthentication:
             admin_token = InviteToken(
                 token="admin123456789abc",
                 created_by_user="system",
-                expires_at=datetime.utcnow() + timedelta(hours=12),
+                expires_at=datetime.utcnow() + timedelta(hours=TOKEN_EXP_H),
                 used=False
             )
             session.add(admin_token)
@@ -159,7 +160,7 @@ class TestAdminInviteAuthentication:
             admin_token = InviteToken(
                 token="admin987654321def",
                 created_by_user="system",
-                expires_at=datetime.utcnow() + timedelta(hours=12),
+                expires_at=datetime.utcnow() + timedelta(hours=TOKEN_EXP_H),
                 used=False
             )
             session.add(admin_token)
@@ -185,7 +186,7 @@ class TestAdminInviteAuthentication:
             admin_token = InviteToken(
                 token="admin111222333444",
                 created_by_user="system",
-                expires_at=datetime.utcnow() + timedelta(hours=12),
+                expires_at=datetime.utcnow() + timedelta(hours=TOKEN_EXP_H),
                 used=False
             )
             session.add(admin_token)
@@ -208,7 +209,7 @@ class TestAdminInviteAuthentication:
             admin_token = InviteToken(
                 token="admin555666777888",
                 created_by_user="system",
-                expires_at=datetime.utcnow() + timedelta(hours=12),
+                expires_at=datetime.utcnow() + timedelta(hours=TOKEN_EXP_H),
                 used=False
             )
             session.add(admin_token)
@@ -230,7 +231,7 @@ class TestAdminInviteAuthentication:
             admin_token = InviteToken(
                 token="admin999888777666",
                 created_by_user="system",
-                expires_at=datetime.utcnow() + timedelta(hours=12),
+                expires_at=datetime.utcnow() + timedelta(hours=TOKEN_EXP_H),
                 used=False
             )
             session.add(admin_token)
