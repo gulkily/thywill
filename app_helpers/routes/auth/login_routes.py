@@ -17,7 +17,7 @@ from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 
 from models import (
-    engine, User, InviteToken, Session as SessionModel,
+    engine, User, InviteToken, InviteTokenUsage, Session as SessionModel,
     AuthenticationRequest, Role, UserRole
 )
 
@@ -118,11 +118,12 @@ def claim_get(token: str, request: Request):
                 "error": "This invite link is not valid. Please check the link or request a new invite."
             })
         
-        if inv.used:
+        # Check if token has reached usage limit
+        if inv.max_uses is not None and inv.usage_count >= inv.max_uses:
             return templates.TemplateResponse("claim.html", {
                 "request": request, 
                 "token": token,
-                "error": "This invite link has already been used. Each invite link can only be used once."
+                "error": f"This invite link has reached its usage limit ({inv.max_uses} uses). Please request a new invite."
             })
         
         if inv.expires_at < datetime.utcnow():
@@ -158,11 +159,19 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
     """
     with Session(engine) as s:
         inv = s.get(InviteToken, token)
-        if not inv or inv.used or inv.expires_at < datetime.utcnow():
+        if not inv or inv.expires_at < datetime.utcnow():
             return templates.TemplateResponse("claim.html", {
                 "request": request, 
                 "token": token,
-                "error": "This invite link has expired or has already been used. Please request a new invite link."
+                "error": "This invite link has expired or is not valid. Please request a new invite link."
+            })
+        
+        # Check if token has reached usage limit
+        if inv.max_uses is not None and inv.usage_count >= inv.max_uses:
+            return templates.TemplateResponse("claim.html", {
+                "request": request, 
+                "token": token,
+                "error": f"This invite link has reached its usage limit ({inv.max_uses} uses). Please request a new invite."
             })
 
         # Validate and normalize the display name
@@ -187,8 +196,20 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             # while preserving verification requirement for users without invites
             
             # Allow immediate login for existing users with valid invites
-            # Mark invite as used and create full session
-            inv.used = True
+            # Record usage and update usage count
+            ip_address = request.client.host if request else None
+            
+            # Create usage record
+            usage_record = InviteTokenUsage(
+                invite_token_id=token,
+                user_id=existing_user.display_name,
+                claimed_at=datetime.utcnow(),
+                ip_address=ip_address
+            )
+            s.add(usage_record)
+            
+            # Update token usage count and latest user
+            inv.usage_count += 1
             inv.used_by_user_id = existing_user.display_name
             
             # Archive the invite token usage
@@ -265,7 +286,20 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             # Use archive-first approach: text archive FIRST, then database
             user, _ = create_user_with_text_archive(archive_user_data, uid)
             
-            inv.used = True
+            # Record usage and update usage count
+            ip_address = request.client.host if request else None
+            
+            # Create usage record
+            usage_record = InviteTokenUsage(
+                invite_token_id=token,
+                user_id=user.display_name,
+                claimed_at=datetime.utcnow(),
+                ip_address=ip_address
+            )
+            s.add(usage_record)
+            
+            # Update token usage count and latest user
+            inv.usage_count += 1
             inv.used_by_user_id = user.display_name
             s.add(inv)
             

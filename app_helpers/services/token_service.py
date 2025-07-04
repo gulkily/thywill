@@ -14,6 +14,8 @@ from models import InviteToken, engine
 
 # Single source of truth for token expiration configuration
 TOKEN_EXP_H = int(os.getenv("INVITE_TOKEN_EXPIRATION_HOURS", "12"))
+# Default max uses for invite tokens
+DEFAULT_INVITE_MAX_USES = int(os.getenv("DEFAULT_INVITE_MAX_USES", "1"))
 
 def generate_invite_token() -> str:
     """
@@ -45,6 +47,7 @@ def create_invite_token(
     created_by_user: str,
     custom_token: Optional[str] = None,
     custom_expiration_hours: Optional[int] = None,
+    max_uses: Optional[int] = None,
     db_session: Optional[Session] = None
 ) -> dict:
     """
@@ -54,19 +57,22 @@ def create_invite_token(
         created_by_user: Username of the user creating the token
         custom_token: Optional custom token string (if None, generates one)
         custom_expiration_hours: Optional custom expiration time in hours
+        max_uses: Optional maximum number of uses (if None, uses DEFAULT_INVITE_MAX_USES)
         db_session: Optional existing database session to use
         
     Returns:
-        dict: Token information (token, expires_at, created_by_user, used)
+        dict: Token information (token, expires_at, created_by_user, usage_count, max_uses)
     """
     token_str = custom_token or generate_invite_token()
     expires_at = calculate_expiration_time(custom_expiration_hours)
+    token_max_uses = max_uses if max_uses is not None else DEFAULT_INVITE_MAX_USES
     
     invite_token = InviteToken(
         token=token_str,
         created_by_user=created_by_user,
         expires_at=expires_at,
-        used=False,
+        usage_count=0,
+        max_uses=token_max_uses,
         used_by_user_id=None
     )
     
@@ -79,7 +85,9 @@ def create_invite_token(
             'token': invite_token.token,
             'expires_at': invite_token.expires_at,
             'created_by_user': invite_token.created_by_user,
-            'used': invite_token.used
+            'usage_count': invite_token.usage_count,
+            'max_uses': invite_token.max_uses,
+            'used': invite_token.used  # Backward compatibility property
         }
     else:
         with Session(engine) as session:
@@ -90,24 +98,28 @@ def create_invite_token(
                 'token': invite_token.token,
                 'expires_at': invite_token.expires_at,
                 'created_by_user': invite_token.created_by_user,
-                'used': invite_token.used
+                'usage_count': invite_token.usage_count,
+                'max_uses': invite_token.max_uses,
+                'used': invite_token.used  # Backward compatibility property
             }
     
     return result
 
-def create_system_token(custom_expiration_hours: Optional[int] = None) -> dict:
+def create_system_token(custom_expiration_hours: Optional[int] = None, max_uses: Optional[int] = None) -> dict:
     """
     Create a system-generated invite token (for admin use).
     
     Args:
         custom_expiration_hours: Optional custom expiration time in hours
+        max_uses: Optional maximum number of uses
         
     Returns:
-        dict: Token information (token, expires_at, created_by_user, used)
+        dict: Token information (token, expires_at, created_by_user, usage_count, max_uses)
     """
     return create_invite_token(
         created_by_user="system",
-        custom_expiration_hours=custom_expiration_hours
+        custom_expiration_hours=custom_expiration_hours,
+        max_uses=max_uses
     )
 
 def get_token_expiration_config() -> dict:

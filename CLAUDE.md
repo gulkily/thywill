@@ -49,6 +49,10 @@ MULTI_DEVICE_AUTH_ENABLED=true
 PEER_APPROVAL_COUNT=2
 JWT_SECRET=changeme
 
+# Migration Settings
+AUTO_MIGRATE_ON_STARTUP=true      # Auto-run migrations on app startup (production only)
+DEFAULT_INVITE_MAX_USES=1          # Default max uses for new invite tokens
+
 # Optional  
 TEXT_ARCHIVE_ENABLED=true
 PAYPAL_USERNAME=

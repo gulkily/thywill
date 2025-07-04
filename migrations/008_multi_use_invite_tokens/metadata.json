@@ -1,0 +1,9 @@
+{
+    "migration_id": "008_multi_use_invite_tokens",
+    "description": "Convert single-use invite tokens to multi-use system with usage tracking",
+    "depends_on": ["007_remove_religious_preferences"],
+    "estimated_duration_seconds": 5,
+    "requires_maintenance_mode": false,
+    "data_size_threshold_mb": 10,
+    "affected_tables": ["invitetoken", "invite_token_usage"]
+}

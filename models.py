@@ -293,9 +293,27 @@ class PrayerActivityLog(SQLModel, table=True):
 class InviteToken(SQLModel, table=True):
     token: str = Field(primary_key=True)
     created_by_user: str
-    used: bool = Field(default=False)
+    usage_count: int = Field(default=0)  # Number of times this token has been used
+    max_uses: int | None = Field(default=None)  # Maximum uses allowed (null = unlimited)
     expires_at: datetime
-    used_by_user_id: str | None = Field(default=None)     # ID of user who claimed this invite
+    used_by_user_id: str | None = Field(default=None)     # ID of user who most recently claimed this invite
+    
+    # Backward compatibility property
+    @property
+    def used(self) -> bool:
+        """Backward compatibility: token is 'used' if it has reached max_uses"""
+        if self.max_uses is None:
+            return False  # Unlimited use tokens are never "used"
+        return self.usage_count >= self.max_uses
+
+class InviteTokenUsage(SQLModel, table=True):
+    __tablename__ = 'invite_token_usage'
+    
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
+    invite_token_id: str = Field(foreign_key="invitetoken.token")
+    user_id: str = Field(foreign_key="user.display_name")
+    claimed_at: datetime = Field(default_factory=datetime.utcnow)
+    ip_address: str | None = None  # Security tracking
 
 class ChangelogEntry(SQLModel, table=True):
     commit_id: str = Field(primary_key=True, max_length=40)
