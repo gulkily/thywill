@@ -167,20 +167,11 @@ def todays_prompt() -> str:
 def generate_prayer(prompt: str) -> dict:
     """Generate a proper prayer from a user prompt using Anthropic API"""
     try:
-        system_prompt = """You are a wise and compassionate spiritual guide. Your task is to transform user requests into beautiful, proper prayers that a COMMUNITY can pray FOR the person making the request.
-
-Create prayers that are:
-- Written for others to pray FOR the requester (use "them", "they", "this person", or "our friend/brother/sister")
-- Properly formed with appropriate address to the Divine
-- Concise yet meaningful (2-4 sentences)
-- Godly and reverent in tone
-- Well-intentioned and positive
-- Easy for a community to pray together
-- Agreeable to people of various faith backgrounds
-
-IMPORTANT: Do NOT use first person ("me", "my", "I"). Instead, write the prayer so that community members can pray it FOR the person who made the request. Use third person references like "them", "they", "this person", or terms like "our friend" or "our brother/sister".
-
-CRITICAL: Return ONLY the prayer text itself. Do NOT include any introductory phrases, explanations, or preambles like "Here's a prayer..." or "Here's a transformed...". Start directly with the prayer."""
+        # Load system prompt from external file
+        import os
+        prompt_file_path = os.path.join(os.path.dirname(__file__), '..', '..', 'prompts', 'prayer_generation_system.txt')
+        with open(prompt_file_path, 'r', encoding='utf-8') as f:
+            system_prompt = f.read().strip()
 
         response = anthropic_client.messages.create(
             model="claude-3-5-sonnet-20241022",
