@@ -34,6 +34,9 @@ REQUIRE_APPROVAL_FOR_EXISTING_USERS = os.getenv("REQUIRE_APPROVAL_FOR_EXISTING_U
 REQUIRE_INVITE_LOGIN_VERIFICATION = os.getenv("REQUIRE_INVITE_LOGIN_VERIFICATION", "false").lower() == "true"
 PEER_APPROVAL_COUNT = int(os.getenv("PEER_APPROVAL_COUNT", "2"))
 
+# Auto-migration settings
+AUTO_MIGRATE_ON_STARTUP = os.getenv("AUTO_MIGRATE_ON_STARTUP", "false").lower() == "true"
+
 # Text Archive Settings
 TEXT_ARCHIVE_ENABLED = os.getenv("TEXT_ARCHIVE_ENABLED", "true").lower() == "true"
 TEXT_ARCHIVE_BASE_DIR = os.getenv("TEXT_ARCHIVE_BASE_DIR", "./text_archives")
@@ -236,45 +239,87 @@ async def forbidden_exception_handler(request: Request, exc: HTTPException):
 # ───────── Startup: seed first invite ─────────
 @app.on_event("startup")
 def startup():
-    # Run enhanced migrations first, with fallback to legacy migrations
-    try:
-        migration_manager = MigrationManager()
-        
-        # Check for migration lock from previous failed attempt
-        if migration_manager.is_migration_locked():
-            print("⚠️  Migration lock detected - checking for partial migrations...")
-            migration_manager.handle_partial_migration_recovery()
-        
-        # Resolve dependencies and check pending migrations
-        pending = migration_manager.get_pending_migrations()  # Returns in dependency order
-        if pending:
-            print(f"🔄 Applying {len(pending)} pending migrations...")
+    # Auto-migration on startup (if enabled)
+    if AUTO_MIGRATE_ON_STARTUP and os.environ.get('PRODUCTION_MODE') == '1':
+        print("🔄 Auto-migration enabled - checking for pending migrations...")
+        try:
+            migration_manager = MigrationManager()
             
-            # Check if any migration requires maintenance mode
-            for migration in pending:
-                if migration_manager.should_enable_maintenance_mode(migration):
-                    print(f"⚠️  Migration {migration['id']} requires maintenance mode - manual deployment needed")
-                    print("   Falling back to legacy migrations...")
-                    migrate_database()
-                    break
-            else:
-                # Apply migrations with locking
-                applied = migration_manager.auto_migrate_on_startup()
+            # Check for migration lock from previous failed attempt
+            if migration_manager.is_migration_locked():
+                print("⚠️  Migration lock detected - checking for partial migrations...")
+                migration_manager.handle_partial_migration_recovery()
+            
+            # Check for pending migrations
+            pending = migration_manager.get_pending_migrations()
+            if pending:
+                print(f"🔄 Auto-applying {len(pending)} pending migrations...")
                 
-                # Validate final schema state
-                migration_manager.validate_schema_integrity()
-                if applied:
-                    print(f"✅ Enhanced migrations completed: {', '.join(applied)}")
+                # Check if any migration requires maintenance mode
+                requires_maintenance = any(
+                    migration_manager.should_enable_maintenance_mode(migration)
+                    for migration in pending
+                )
+                
+                if requires_maintenance:
+                    print("⚠️  Some migrations require maintenance mode - skipping auto-migration")
+                    print("   Please run migrations manually: ./thywill migrate new")
                 else:
-                    print("✅ No migrations needed - database is up to date")
-        else:
-            print("✅ Database schema is up to date")
+                    # Apply migrations automatically
+                    applied = migration_manager.auto_migrate_on_startup()
+                    migration_manager.validate_schema_integrity()
+                    
+                    if applied:
+                        print(f"✅ Auto-migration completed: {', '.join(applied)}")
+                    else:
+                        print("✅ No migrations applied")
+            else:
+                print("✅ Database schema is up to date")
+                
+        except Exception as e:
+            print(f"❌ Auto-migration failed: {e}")
+            print("   Application will continue - please run migrations manually")
+    
+    # Run enhanced migrations on manual startup or fallback
+    elif not AUTO_MIGRATE_ON_STARTUP:
+        try:
+            migration_manager = MigrationManager()
             
-    except Exception as e:
-        print(f"❌ Enhanced migration failed: {e}")
-        print("   Falling back to legacy migrations...")
-        # Fallback to legacy migration system
-        migrate_database()
+            # Check for migration lock from previous failed attempt
+            if migration_manager.is_migration_locked():
+                print("⚠️  Migration lock detected - checking for partial migrations...")
+                migration_manager.handle_partial_migration_recovery()
+            
+            # Resolve dependencies and check pending migrations
+            pending = migration_manager.get_pending_migrations()  # Returns in dependency order
+            if pending:
+                print(f"🔄 Applying {len(pending)} pending migrations...")
+                
+                # Check if any migration requires maintenance mode
+                for migration in pending:
+                    if migration_manager.should_enable_maintenance_mode(migration):
+                        print(f"⚠️  Migration {migration['id']} requires maintenance mode - manual deployment needed")
+                        print("   Falling back to legacy migrations...")
+                        migrate_database()
+                        break
+                else:
+                    # Apply migrations with locking
+                    applied = migration_manager.auto_migrate_on_startup()
+                    
+                    # Validate final schema state
+                    migration_manager.validate_schema_integrity()
+                    if applied:
+                        print(f"✅ Enhanced migrations completed: {', '.join(applied)}")
+                    else:
+                        print("✅ No migrations needed - database is up to date")
+            else:
+                print("✅ Database schema is up to date")
+                
+        except Exception as e:
+            print(f"❌ Enhanced migration failed: {e}")
+            print("   Falling back to legacy migrations...")
+            # Fallback to legacy migration system
+            migrate_database()
     
     # Run duplicate user migration
     try:
