@@ -1,0 +1,12 @@
+Convert this technical git commit message into a friendly, user-facing description that explains what changed for users of a prayer platform web application. Keep it concise (1-2 sentences) and focus on user benefits.
+
+Technical commit: {commit_message}
+
+Guidelines:
+- Focus on user-facing changes and benefits
+- Avoid technical jargon
+- Use friendly, accessible language
+- If it's a technical change with no direct user impact, describe it briefly but positively
+- Start with an action word when possible (Added, Improved, Fixed, etc.)
+
+Friendly description:

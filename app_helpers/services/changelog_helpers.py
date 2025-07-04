@@ -129,18 +129,14 @@ def generate_friendly_description(commit_message: str) -> str:
     try:
         client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
         
-        prompt = f"""Convert this technical git commit message into a friendly, user-facing description that explains what changed for users of a prayer platform web application. Keep it concise (1-2 sentences) and focus on user benefits.
-
-Technical commit: {commit_message}
-
-Guidelines:
-- Focus on user-facing changes and benefits
-- Avoid technical jargon
-- Use friendly, accessible language
-- If it's a technical change with no direct user impact, describe it briefly but positively
-- Start with an action word when possible (Added, Improved, Fixed, etc.)
-
-Friendly description:"""
+        # Load prompt template from external file
+        import os
+        prompt_file_path = os.path.join(os.path.dirname(__file__), '..', '..', 'prompts', 'changelog_generation.txt')
+        with open(prompt_file_path, 'r', encoding='utf-8') as f:
+            prompt_template = f.read().strip()
+        
+        # Replace placeholder with actual commit message
+        prompt = prompt_template.format(commit_message=commit_message)
 
         response = client.messages.create(
             model="claude-3-haiku-20240307",
