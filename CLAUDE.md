@@ -16,6 +16,10 @@ pip install -r requirements.txt && chmod +x thywill
 ./thywill status       # Database status
 pytest                 # Run tests
 
+# Template Validation
+./validate_templates.py  # Comprehensive template field validation
+./check_templates.sh     # Quick static analysis for common issues
+
 # Database
 ./thywill backup
 ./thywill restore <file>
