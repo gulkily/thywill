@@ -13,8 +13,9 @@ import shutil
 import os
 from pathlib import Path
 
-# Add current directory to path for imports
-sys.path.append('.')
+# Add the project root to Python path
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 
 from app_helpers.services.text_archive_service import TextArchiveService
 from app_helpers.services.text_importer_service import TextImporterService
