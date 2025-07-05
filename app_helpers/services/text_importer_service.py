@@ -121,7 +121,7 @@ class TextImporterService:
     def _import_user_registration_file(self, user_file: Path, dry_run: bool):
         """Import users from a single registration file"""
         content = user_file.read_text(encoding='utf-8')
-        lines = content.split('\\n')
+        lines = content.split('\n')
         
         for line in lines:
             line = line.strip()
@@ -150,8 +150,8 @@ class TextImporterService:
             # Parse action
             if " joined on invitation from " in action_str:
                 parts = action_str.split(" joined on invitation from ")
-                display_name = parts[0]
-                invited_by = parts[1]
+                display_name = parts[0].strip()  # Remove extra whitespace
+                invited_by = parts[1].strip()     # Remove extra whitespace
                 
                 return {
                     'display_name': display_name,
@@ -161,7 +161,7 @@ class TextImporterService:
                 }
                 
             elif " joined directly" in action_str:
-                display_name = action_str.replace(" joined directly", "")
+                display_name = action_str.replace(" joined directly", "").strip()  # Remove extra whitespace
                 
                 return {
                     'display_name': display_name,
@@ -171,7 +171,8 @@ class TextImporterService:
                 }
                 
         except Exception as e:
-            logger.warning(f"Failed to parse user registration line: {action_str}: {e}")
+            logger.warning(f"Failed to parse user registration line: '{action_str}': {e}")
+            return None
             
         return None
     
@@ -195,9 +196,11 @@ class TextImporterService:
                     s.add(existing_user)
                     s.commit()
                     logger.info(f"Updated existing user archive reference: {user_data['display_name']}")
+                else:
+                    logger.debug(f"User '{user_data['display_name']}' already exists with archive reference, skipping")
                 return
             
-            # Find invited_by_username if applicable
+            # Find invited_by_username if applicable, but don't fail if inviter doesn't exist
             invited_by_username = None
             if user_data.get('invited_by_display_name'):
                 inviter = s.exec(
@@ -205,15 +208,9 @@ class TextImporterService:
                 ).first()
                 if inviter:
                     invited_by_username = inviter.display_name
-            
-            # Check for existing user with same display_name
-            existing_user = s.exec(
-                select(User).where(User.display_name == user_data['display_name'])
-            ).first()
-            
-            if existing_user:
-                logger.info(f"User '{user_data['display_name']}' already exists, skipping import")
-                return
+                else:
+                    logger.warning(f"Inviter '{user_data['invited_by_display_name']}' not found for user '{user_data['display_name']}', importing anyway")
+                    # Don't set invited_by_username, but still create the user
             
             # Create new user
             try:
@@ -221,8 +218,7 @@ class TextImporterService:
                     display_name=user_data['display_name'],
                     created_at=user_data['created_at'],
                     invited_by_username=invited_by_username,
-                    text_file_path=source_file,
-                    religious_preference='unspecified'  # Default value
+                    text_file_path=source_file
                 )
                 
                 s.add(user)
