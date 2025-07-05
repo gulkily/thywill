@@ -1,0 +1,17 @@
+People try to scan, don't read a lot of text
+
+Use cards like tinder-style
+
+Example: Slack
+
+People are looking for visual, not textual cues.
+
+Put interactive elements in thumb space.
+
+Card design: uniform text size. use web-standard text sizing.
+	Carbon from IBM
+
+Exit/entry points are important for branding
+	Everything else, it's just screen real estate
+
+
