@@ -134,8 +134,10 @@ try:
     
     if os.path.exists('scripts/utils/heal_prayer_archives.py'):
         print('📁 Running archive healing script...')
+        env = os.environ.copy()
+        env['PYTHONPATH'] = '.'
         heal_result = subprocess.run([sys.executable, 'scripts/utils/heal_prayer_archives.py'], 
-                                   check=True, capture_output=True, text=True)
+                                   check=True, capture_output=True, text=True, env=env)
         print(heal_result.stdout)
         if heal_result.stderr:
             print(heal_result.stderr)
