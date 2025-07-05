@@ -37,9 +37,11 @@ def check_duplicates() -> Dict[str, Any]:
     
     # Call the migration script with check-only flag
     try:
+        env = os.environ.copy()
+        env['PYTHONPATH'] = '.'
         result = subprocess.run([
             sys.executable, "migrations/duplicate_user_migration.py", "--check-only"
-        ], capture_output=True, text=True, check=True)
+        ], capture_output=True, text=True, check=True, env=env)
         
         return {
             'success': True,
@@ -70,9 +72,11 @@ def merge_duplicates() -> Dict[str, Any]:
     
     # Call the migration script with interactive flag
     try:
+        env = os.environ.copy()
+        env['PYTHONPATH'] = '.'
         result = subprocess.run([
             sys.executable, "migrations/duplicate_user_migration.py", "--interactive"
-        ], check=True)
+        ], check=True, env=env)
         
         return {
             'success': True,

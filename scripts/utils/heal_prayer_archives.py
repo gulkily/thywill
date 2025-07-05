@@ -132,7 +132,6 @@ def heal_prayer_archives():
                     'text': prayer.text,
                     'generated_prayer': prayer.generated_prayer,
                     'project_tag': prayer.project_tag,
-                    'target_audience': prayer.target_audience,
                     'created_at': prayer.created_at,
                     'activities': activity_data['activities'],
                     'stats': {
@@ -150,7 +149,6 @@ def heal_prayer_archives():
                             'text': prayer.text,
                             'generated_prayer': prayer.generated_prayer,
                             'project_tag': prayer.project_tag,
-                            'target_audience': prayer.target_audience,
                             'created_at': prayer.created_at
                         }
                         archive_file_path = text_archive_service.create_prayer_archive(base_archive_data)
@@ -336,12 +334,13 @@ if __name__ == "__main__":
         print("This script will still update database records with placeholder paths")
         print("")
     
-    # Ask for confirmation
-    print("This script will heal both prayers and users missing archive files.")
-    response = input("Do you want to create missing archive files for all prayers and users? (y/N): ")
-    if response.lower() != 'y':
-        print("❌ Healing cancelled")
-        sys.exit(0)
+    # Ask for confirmation unless --force is provided
+    if '--force' not in sys.argv:
+        print("This script will heal both prayers and users missing archive files.")
+        response = input("Do you want to create missing archive files for all prayers and users? (y/N): ")
+        if response.lower() != 'y':
+            print("❌ Healing cancelled")
+            sys.exit(0)
     
     try:
         print("\n" + "="*50)
