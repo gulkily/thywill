@@ -38,7 +38,7 @@ def heal_archives() -> bool:
         # Execute the healing script with proper production mode handling
         env = os.environ.copy()
         env['PYTHONPATH'] = '.'
-        result = subprocess.run([sys.executable, "scripts/utils/heal_prayer_archives.py"], 
+        result = subprocess.run([sys.executable, "scripts/utils/heal_prayer_archives.py", "--force"], 
                               check=True, env=env)
         return result.returncode == 0
     except subprocess.CalledProcessError as e:

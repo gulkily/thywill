@@ -133,8 +133,10 @@ def run_legacy_migrations() -> bool:
             print(f'🔄 Running: {script}')
             
             try:
+                env = os.environ.copy()
+                env['PYTHONPATH'] = '.'
                 result = subprocess.run([sys.executable, script], 
-                                      check=True, capture_output=True, text=True)
+                                      check=True, capture_output=True, text=True, env=env)
                 print(f'✅ {script} completed successfully')
                 if result.stdout:
                     print(result.stdout)
