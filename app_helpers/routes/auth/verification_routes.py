@@ -64,13 +64,16 @@ def auth_status(request: Request, user_session: tuple = Depends(current_user)):
         
         # Get approval count and approvers
         approvals = db.exec(
-            select(AuthApproval, User.display_name)
-            .join(User, AuthApproval.approver_user_id == User.display_name)
+            select(AuthApproval)
             .where(AuthApproval.auth_request_id == auth_req.id)
         ).all()
         
         approval_info = []
-        for approval, approver_name in approvals:
+        for approval in approvals:
+            # Get the approver's display name
+            approver = db.get(User, approval.approver_user_id)
+            approver_name = approver.display_name if approver else approval.approver_user_id
+            
             approval_info.append({
                 'approver_name': approver_name,
                 'approved_at': approval.created_at,
@@ -171,13 +174,16 @@ def auth_status_check(request: Request, user_session: tuple = Depends(current_us
         
         # Get approval info (same as main route)
         approvals = db.exec(
-            select(AuthApproval, User.display_name)
-            .join(User, AuthApproval.approver_user_id == User.display_name)
+            select(AuthApproval)
             .where(AuthApproval.auth_request_id == auth_req.id)
         ).all()
         
         approval_info = []
-        for approval, approver_name in approvals:
+        for approval in approvals:
+            # Get the approver's display name
+            approver = db.get(User, approval.approver_user_id)
+            approver_name = approver.display_name if approver else approval.approver_user_id
+            
             approval_info.append({
                 'approver_name': approver_name,
                 'approved_at': approval.created_at,
