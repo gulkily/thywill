@@ -27,8 +27,8 @@ def heal_archives() -> bool:
     print("🔧 Archive Healing (Prayers & Users)")
     print("=" * 40)
     
-    if not os.path.exists("heal_prayer_archives.py"):
-        print("❌ heal_prayer_archives.py not found in current directory")
+    if not os.path.exists("scripts/utils/heal_prayer_archives.py"):
+        print("❌ scripts/utils/heal_prayer_archives.py not found in current directory")
         print("Please run this command from your ThyWill project directory")
         return False
     
@@ -36,7 +36,7 @@ def heal_archives() -> bool:
     
     try:
         # Execute the healing script with proper production mode handling
-        result = subprocess.run([sys.executable, "heal_prayer_archives.py"], check=True)
+        result = subprocess.run([sys.executable, "scripts/utils/heal_prayer_archives.py"], check=True)
         return result.returncode == 0
     except subprocess.CalledProcessError as e:
         print(f"❌ Archive healing failed: {e}")
