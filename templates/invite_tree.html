@@ -7,7 +7,7 @@
 <div class="tree-node" data-level="{{ level }}">
   <div class="flex items-center p-2 text-gray-900 dark:text-gray-100" style="margin-left: {{ level * 20 }}px;">
     <span class="mr-2">
-      {% if node.user.id == 'admin' or node.user.is_admin %}
+      {% if node.user.display_name == 'admin' or node.user.is_admin %}
         👑
       {% elif node.children|length > 0 %}
         📱
@@ -15,10 +15,10 @@
         🙏
       {% endif %}
     </span>
-    <a href="/user/{{ node.user.id }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline">
+    <a href="/user/{{ node.user.display_name }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline">
       {{ node.user.display_name }}
     </a>
-    {% if node.user.id == me.display_name %}
+    {% if node.user.display_name == me.display_name %}
       <span class="ml-2 text-gray-600 dark:text-gray-400">(You)</span>
     {% endif %}
   </div>
@@ -113,7 +113,7 @@
     </h3>
     <div class="space-y-3">
       {% for inviter in stats.top_inviters[:5] %}
-        <a href="/user/{{ inviter.id }}" class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+        <a href="/user/{{ inviter.display_name }}" class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
           <div class="flex items-center">
             <div class="flex-shrink-0 mr-3">
               {% if loop.index == 1 %}
@@ -144,7 +144,7 @@
     <div class="flex items-center space-x-2 overflow-x-auto pb-2">
       {% for step in user_path %}
         <div class="flex-shrink-0 flex items-center">
-          <a href="/user/{{ step.user.id }}" class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <a href="/user/{{ step.user.display_name }}" class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             <div class="text-center">
               {% if step.user.is_admin %}
                 <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-1">
@@ -156,7 +156,7 @@
                 </div>
               {% endif %}
               <p class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 truncate max-w-20">{{ step.user.display_name }}</p>
-              {% if step.user.id == me.display_name %}
+              {% if step.user.display_name == me.display_name %}
                 <p class="text-xs text-gray-600 dark:text-gray-400 font-bold">You</p>
               {% endif %}
             </div>
