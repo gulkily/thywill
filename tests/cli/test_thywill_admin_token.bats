@@ -58,19 +58,19 @@ teardown() {
     # Test that CLI calls the standalone script instead of embedded code
     
     # Mock the standalone script to verify it's called
-    mv create_admin_token.py create_admin_token.py.bak
-    cat > create_admin_token.py << 'EOF'
+    mv scripts/admin/create_admin_token.py scripts/admin/create_admin_token.py.bak
+    cat > scripts/admin/create_admin_token.py << 'EOF'
 #!/usr/bin/env python3
 import sys
 print("STANDALONE_SCRIPT_CALLED")
 print("Args:", sys.argv)
 EOF
-    chmod +x create_admin_token.py
+    chmod +x scripts/admin/create_admin_token.py
     
     run ./thywill admin-token --hours 6
     
     # Restore original script
-    mv create_admin_token.py.bak create_admin_token.py
+    mv scripts/admin/create_admin_token.py.bak scripts/admin/create_admin_token.py
     
     [ "$status" -eq 0 ]
     [[ "$output" == *"STANDALONE_SCRIPT_CALLED"* ]]
@@ -80,18 +80,18 @@ EOF
 
 @test "admin-token command passes through all arguments" {
     # Mock script to capture arguments
-    mv create_admin_token.py create_admin_token.py.bak
-    cat > create_admin_token.py << 'EOF'
+    mv scripts/admin/create_admin_token.py scripts/admin/create_admin_token.py.bak
+    cat > scripts/admin/create_admin_token.py << 'EOF'
 #!/usr/bin/env python3
 import sys
 print("Script called with args:", " ".join(sys.argv[1:]))
 EOF
-    chmod +x create_admin_token.py
+    chmod +x scripts/admin/create_admin_token.py
     
     run ./thywill admin-token --hours 48
     
     # Restore original script
-    mv create_admin_token.py.bak create_admin_token.py
+    mv scripts/admin/create_admin_token.py.bak scripts/admin/create_admin_token.py
     
     [ "$status" -eq 0 ]
     [[ "$output" == *"--hours 48"* ]]
@@ -99,19 +99,19 @@ EOF
 
 @test "admin-token command handles script errors" {
     # Mock script that exits with error
-    mv create_admin_token.py create_admin_token.py.bak
-    cat > create_admin_token.py << 'EOF'
+    mv scripts/admin/create_admin_token.py scripts/admin/create_admin_token.py.bak
+    cat > scripts/admin/create_admin_token.py << 'EOF'
 #!/usr/bin/env python3
 import sys
 print("Error creating admin token", file=sys.stderr)
 sys.exit(1)
 EOF
-    chmod +x create_admin_token.py
+    chmod +x scripts/admin/create_admin_token.py
     
     run ./thywill admin-token
     
     # Restore original script
-    mv create_admin_token.py.bak create_admin_token.py
+    mv scripts/admin/create_admin_token.py.bak scripts/admin/create_admin_token.py
     
     [ "$status" -eq 1 ]
     [[ "$output" == *"Error creating admin token"* ]]

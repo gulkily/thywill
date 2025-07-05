@@ -48,7 +48,7 @@ If you change the port, you must also update:
 chmod +x deployment/deploy.sh
 chmod +x deployment/backup_management.sh
 chmod +x backup_database.sh
-chmod +x pre_deploy_backup.sh
+chmod +x scripts/backup/pre_deploy_backup.sh
 
 # Create required directories
 sudo mkdir -p /home/thywill/backups/{hourly,daily,weekly}
@@ -108,7 +108,7 @@ The deployment script will:
 
 ```bash
 # 1. Create backup
-./pre_deploy_backup.sh
+./scripts/backup/pre_deploy_backup.sh
 
 # 2. Stop service
 sudo systemctl stop thywill

@@ -111,7 +111,7 @@ def run_legacy_migrations() -> bool:
     try:
         # Check if legacy migration scripts exist
         legacy_scripts = [
-            'migrate_to_roles.py',
+            'scripts/migration/migrate_to_roles.py',
             'migrations/duplicate_user_migration.py'
         ]
         

@@ -132,9 +132,9 @@ try:
     import subprocess
     import os
     
-    if os.path.exists('heal_prayer_archives.py'):
+    if os.path.exists('scripts/utils/heal_prayer_archives.py'):
         print('📁 Running archive healing script...')
-        heal_result = subprocess.run([sys.executable, 'heal_prayer_archives.py'], 
+        heal_result = subprocess.run([sys.executable, 'scripts/utils/heal_prayer_archives.py'], 
                                    check=True, capture_output=True, text=True)
         print(heal_result.stdout)
         if heal_result.stderr:

@@ -35,7 +35,7 @@ def grant_admin_role(user_identifier: str) -> bool:
             admin_role = session.exec(stmt).first()
             
             if not admin_role:
-                print('❌ Admin role not found. Run migration first: python migrate_to_roles.py')
+                print('❌ Admin role not found. Run migration first: python scripts/migration/migrate_to_roles.py')
                 return False
             
             # Check if user already has admin role
@@ -46,7 +46,7 @@ def grant_admin_role(user_identifier: str) -> bool:
             # Check for backward compatibility (old system)
             if user.display_name == 'admin':
                 print(f'ℹ️  User "{user.display_name}" already has admin rights (old system)')
-                print('   Run migration to convert to role-based system: python migrate_to_roles.py')
+                print('   Run migration to convert to role-based system: python scripts/migration/migrate_to_roles.py')
                 return True
             
             # Grant admin role
@@ -92,7 +92,7 @@ def revoke_admin_role(user_identifier: str) -> bool:
             admin_role = session.exec(stmt).first()
             
             if not admin_role:
-                print('❌ Admin role not found. Run migration first: python migrate_to_roles.py')
+                print('❌ Admin role not found. Run migration first: python scripts/migration/migrate_to_roles.py')
                 return False
             
             # Check if user has admin role
@@ -181,7 +181,7 @@ def print_admin_list():
     
     if any(admin.display_name == 'admin' for admin in admins):
         print('💡 Note: Legacy admin users should be migrated to role-based system')
-        print('   Run: python migrate_to_roles.py')
+        print('   Run: python scripts/migration/migrate_to_roles.py')
 
 
 def grant_role(user_identifier: str, role_name: str) -> bool:
