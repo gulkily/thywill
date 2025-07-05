@@ -39,7 +39,7 @@ class TestUserRegistrationWorkflow:
         test_session.add(new_user)
         
         # Step 4: Mark token as used
-        retrieved_token.used = True
+        retrieved_token.usage_count = retrieved_token.max_uses or 1
         test_session.add(retrieved_token)
         test_session.commit()
         

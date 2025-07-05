@@ -236,7 +236,7 @@ class SystemArchiveService:
                 now = datetime.now(timezone.utc)
                 active_tokens = session.exec(
                     select(InviteToken).where(
-                        InviteToken.used_at.is_(None),
+                        ((InviteToken.max_uses.is_(None)) | (InviteToken.usage_count < InviteToken.max_uses)),
                         InviteToken.expires_at > now
                     )
                 ).all()

@@ -110,7 +110,7 @@ class TestPrayerCRUD:
         assert retrieved_prayer is not None
         assert retrieved_prayer.text == "Please pray for healing"
         assert retrieved_prayer.project_tag == "health"
-        assert retrieved_prayer.author_id == user.display_name
+        assert retrieved_prayer.author_username == user.display_name
     
     def test_read_prayers_by_author(self, test_session):
         """Test reading prayers by author"""
@@ -272,8 +272,8 @@ class TestInviteTokenCRUD:
         test_session.add(token)
         test_session.commit()
         
-        # Mark as used
-        token.used = True
+        # Mark as used by setting usage_count to max_uses
+        token.usage_count = token.max_uses or 1
         test_session.add(token)
         test_session.commit()
         
@@ -289,7 +289,9 @@ class TestInviteTokenCRUD:
         test_session.commit()
         
         # Get only unused tokens
-        stmt = select(InviteToken).where(InviteToken.used == False)
+        stmt = select(InviteToken).where(
+            ((InviteToken.max_uses.is_(None)) | (InviteToken.usage_count < InviteToken.max_uses))
+        )
         unused_tokens = test_session.exec(stmt).all()
         
         assert len(unused_tokens) == 1

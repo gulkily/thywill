@@ -262,9 +262,11 @@ def get_invite_stats() -> dict:
         # Total invite tokens created
         total_invites_sent = s.exec(select(func.count(InviteToken.token))).first() or 0
         
-        # Used invite tokens
+        # Used invite tokens (tokens that have reached their usage limit)
         used_invites = s.exec(
-            select(func.count(InviteToken.token)).where(InviteToken.used == True)
+            select(func.count(InviteToken.token)).where(
+                (InviteToken.max_uses.isnot(None)) & (InviteToken.usage_count >= InviteToken.max_uses)
+            )
         ).first() or 0
         
         # Users with invite relationships (exclude admin/system users)

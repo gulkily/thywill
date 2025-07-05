@@ -98,15 +98,27 @@ class InviteTokenFactory:
         created_by_user: str = "admin",
         used: bool = False,
         expires_at: Optional[datetime] = None,
-        used_by_user_id: Optional[str] = None
+        used_by_user_id: Optional[str] = None,
+        usage_count: Optional[int] = None,
+        max_uses: Optional[int] = None
     ) -> InviteToken:
         # Use centralized token configuration
-        from app_helpers.services.token_service import TOKEN_EXP_H
+        from app_helpers.services.token_service import TOKEN_EXP_H, DEFAULT_INVITE_MAX_USES
+        
+        # Handle backward compatibility for 'used' parameter
+        if used and usage_count is None and max_uses is None:
+            # If used=True, set token to be "used" by making usage_count >= max_uses
+            calculated_max_uses = DEFAULT_INVITE_MAX_USES
+            calculated_usage_count = calculated_max_uses
+        else:
+            calculated_max_uses = max_uses if max_uses is not None else DEFAULT_INVITE_MAX_USES
+            calculated_usage_count = usage_count if usage_count is not None else 0
         
         return InviteToken(
             token=token or uuid.uuid4().hex,
             created_by_user=created_by_user,
-            used=used,
+            usage_count=calculated_usage_count,
+            max_uses=calculated_max_uses,
             expires_at=expires_at or (datetime.utcnow() + timedelta(hours=TOKEN_EXP_H)),
             used_by_user_id=used_by_user_id
         )
