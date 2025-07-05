@@ -89,6 +89,37 @@ VENMO_HANDLE=
 **Auth Flows**: Update routes, templates, ensure logging/rate limiting
 **Archives**: Use `ArchiveDownloadService`, link from prayer pages
 
+## Code Consistency Guidelines
+**CRITICAL**: When making structural changes to the codebase, always perform a thorough scan and update ALL references:
+
+**Database Schema Changes**:
+- Update all model imports and references
+- Check all SQL queries and ORM operations
+- Update migration scripts and database helpers
+- Validate template field references
+- Update test fixtures and mock data
+
+**File Moves/Renames**:
+- Update all import statements across the codebase
+- Check static file references in templates
+- Update CLI references and documentation
+- Scan for hardcoded file paths in configuration
+
+**Model/Class Renames**:
+- Search for all class name references
+- Update template variable names
+- Check route parameter names
+- Update function signatures and type hints
+
+**Required Actions**:
+1. Use `grep -r "old_name" .` to find all references
+2. Update imports, function calls, and template variables
+3. Run `./validate_templates.py` after template changes
+4. Run full test suite to catch integration issues
+5. Check CLI functionality if models/routes changed
+
+**Tools**: Use `Task` tool for comprehensive codebase scanning when making structural changes
+
 ## Security
 **Auth**: 3/hour rate limit, IP monitoring, device fingerprinting, audit logging
 **Content**: Invite-only, community moderation, admin oversight, input validation
