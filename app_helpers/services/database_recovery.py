@@ -283,7 +283,7 @@ class CompleteSystemRecovery:
                 admin_role = session.exec(select(Role).where(Role.name == "admin")).first()
                 if admin_role:
                     admin_users = session.exec(
-                        select(User).join(UserRole).where(UserRole.role_id == admin_role.id)
+                        select(User).join(UserRole, User.display_name == UserRole.user_id).where(UserRole.role_id == admin_role.id)
                     ).all()
                     
                     if not admin_users:
