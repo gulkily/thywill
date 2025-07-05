@@ -12,7 +12,7 @@
   </div>
   
   <footer class="mt-4 text-xs text-gray-500 dark:text-gray-400 flex justify-between items-center">
-    <span>by {% if prayer.author_id == user.id %}you{% else %}{{ author_name }}{% endif %} · {{ prayer.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+    <span>by {% if prayer.author_id == user.display_name %}you{% else %}{{ author_name }}{% endif %} · {{ prayer.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
     <div class="flex items-center gap-4">
       <div id="prayer-marks-{{ prayer.id }}" class="flex items-center gap-2">
         {% if prayer_stats %}{{ prayer_stats | safe }}{% endif %}
