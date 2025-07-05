@@ -108,6 +108,15 @@ def restore_sessions_username_based(db_session, sessions):
             continue
         
         try:
+            # Check if session already exists
+            existing_session = db_session.exec(
+                select(UserSession).where(UserSession.id == sess_data['session_id'])
+            ).first()
+            
+            if existing_session:
+                print(f"   ⚠️  Session for {username} already exists - skipping")
+                continue
+            
             # Create session record with username foreign key
             new_session = UserSession(
                 id=sess_data['session_id'],
@@ -151,6 +160,15 @@ def restore_sessions_uuid_based(db_session, sessions):
             continue
         
         try:
+            # Check if session already exists
+            existing_session = db_session.exec(
+                select(UserSession).where(UserSession.id == sess_data['session_id'])
+            ).first()
+            
+            if existing_session:
+                print(f"   ⚠️  Session for {username} already exists - skipping")
+                continue
+            
             # Create session record with user_id foreign key
             new_session = UserSession(
                 id=sess_data['session_id'],
