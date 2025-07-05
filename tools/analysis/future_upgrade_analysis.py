@@ -184,7 +184,9 @@ class FutureUpgradeAnalyzer:
             except Exception:
                 # Fallback: assume no admin users if role system not working
                 admin_users = []
-            active_tokens = session.exec(select(InviteToken).where(InviteToken.used == False)).all()
+            active_tokens = session.exec(select(InviteToken).where(
+                ((InviteToken.max_uses.is_(None)) | (InviteToken.usage_count < InviteToken.max_uses))
+            )).all()
             pending_auth = session.exec(select(AuthenticationRequest).where(AuthenticationRequest.status == 'pending')).all()
             
             if active_sessions:
