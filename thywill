@@ -126,6 +126,8 @@ show_help() {
     echo "    heal-archives          Create missing archive files for existing prayers and users"
     echo "    sync-users             Export/sync users to text archives"
     echo "    export-sessions        Export active user sessions to JSON backup"
+    echo "    export-all             Export ALL database data to text archives (invites, sessions, etc.)"
+    echo "    import-all             Import ALL database data from text archives"
     echo "    sync-archives          Complete archive synchronization (safe post-deploy)"
     echo "    recovery-report        Generate recovery capability report"
     echo "    analyze-orphaned-prayers  Analyze prayers not visible in any feeds"
@@ -167,6 +169,9 @@ show_help() {
     echo "    thywill heal-archives                            # Create missing archive files for prayers and users"
     echo "    thywill sync-users                               # Export/sync users to text archives"
     echo "    thywill export-sessions                          # Export active sessions to JSON"
+    echo "    thywill export-all                               # Export ALL database data to text archives"
+    echo "    thywill import-all                               # Import ALL database data from text archives"
+    echo "    thywill import-all --dry-run                     # Preview import without making changes"
     echo "    thywill sync-archives                            # Complete post-deploy sync"
     echo "    thywill recovery-report                          # Generate recovery report"
     echo "    thywill analyze-orphaned-prayers                 # Analyze orphaned prayers"
@@ -857,6 +862,84 @@ cmd_export_sessions() {
     fi
 }
 
+cmd_export_all() {
+    header "Export ALL Database Data to Text Archives"
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Exporting ALL database data to text archives..."
+    log "This includes invites, sessions, security logs, and everything else in the database"
+    
+    # Use Python CLI module for complete export
+    run_python -m app_helpers.cli.archive_management export-all
+    
+    if [ $? -eq 0 ]; then
+        success "Complete database export completed!"
+        echo "💡 All data exported to text_archives/database_exports/"
+    else
+        error "Database export failed"
+        exit 1
+    fi
+}
+
+cmd_import_all() {
+    local dry_run=""
+    
+    # Check for --dry-run flag
+    for arg in "$@"; do
+        if [[ "$arg" == "--dry-run" ]]; then
+            dry_run="--dry-run"
+            break
+        fi
+    done
+    
+    if [[ -n "$dry_run" ]]; then
+        header "Preview Database Import from Text Archives"
+    else
+        header "Import ALL Database Data from Text Archives"
+    fi
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    if [[ -n "$dry_run" ]]; then
+        log "Previewing import of ALL database data from text archives..."
+        log "This will show what would be imported without making changes"
+    else
+        log "Importing ALL database data from text archives..."
+        log "This includes invites, sessions, security logs, and everything else"
+    fi
+    
+    # Use Python CLI module for complete import
+    if [[ -n "$dry_run" ]]; then
+        run_python -m app_helpers.cli.archive_management import-all --dry-run
+    else
+        run_python -m app_helpers.cli.archive_management import-all
+    fi
+    
+    if [ $? -eq 0 ]; then
+        if [[ -n "$dry_run" ]]; then
+            success "Import preview completed!"
+            echo "💡 Run without --dry-run to perform actual import"
+        else
+            success "Complete database import completed!"
+            echo "💡 All exported data has been restored to the database"
+        fi
+    else
+        error "Database import failed"
+        exit 1
+    fi
+}
+
 cmd_sync_archives() {
     header "Complete Archive Synchronization"
     
@@ -1125,7 +1208,7 @@ cmd_migrate_new() {
     log "Running enhanced migrations..."
     
     # Use Python CLI module for migration management
-    run_python -m app_helpers.cli.migration_runner apply-all
+    run_python -m app_helpers.cli.migration_runner new
     
     if [ $? -eq 0 ]; then
         success "Enhanced migrations completed successfully"
@@ -1801,6 +1884,12 @@ main() {
             ;;
         export-sessions)
             cmd_export_sessions "$@"
+            ;;
+        export-all)
+            cmd_export_all "$@"
+            ;;
+        import-all)
+            cmd_import_all "$@"
             ;;
         sync-archives)
             cmd_sync_archives "$@"

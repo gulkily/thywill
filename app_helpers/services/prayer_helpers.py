@@ -161,7 +161,19 @@ def find_compatible_prayer_partner(prayer: Prayer, db: Session, exclude_user_ids
 
 def todays_prompt() -> str:
     """Get today's prayer prompt"""
-    return "Let us pray 🙏"
+    quotes = [
+        "Be still and know that I am God. - Psalm 46:10",
+        "In everything give thanks, for this is God's will for you. - 1 Thessalonians 5:18",
+        "Cast all your anxiety on Him because He cares for you. - 1 Peter 5:7",
+        "The Lord is close to the brokenhearted. - Psalm 34:18",
+        "Come to me, all you who are weary and burdened. - Matthew 11:28",
+        "Trust in the Lord with all your heart. - Proverbs 3:5",
+        "God is our refuge and strength, an ever-present help in trouble. - Psalm 46:1"
+    ]
+    # Rotate based on day of week
+    import datetime
+    day_index = datetime.datetime.now().weekday()
+    return quotes[day_index % len(quotes)]
 
 
 def generate_prayer(prompt: str) -> dict:

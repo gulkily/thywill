@@ -57,7 +57,7 @@ try:
             migration_id = migration['id']
             print(f'🔄 Running migration: {migration_id}')
             
-            if manager.run_migration(migration_id):
+            if manager.apply_migration(migration):
                 print(f'✅ Migration {migration_id} completed successfully')
                 success_count += 1
             else:

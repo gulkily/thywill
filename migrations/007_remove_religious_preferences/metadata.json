@@ -1,0 +1,16 @@
+{
+  "migration_id": "007_remove_religious_preferences",
+  "description": "Remove religious preference system from ThyWill",
+  "author": "system",
+  "created_at": "2024-12-15T10:00:00Z",
+  "depends_on": ["006_unique_display_name"],
+  "affects_tables": ["user", "prayer"],
+  "is_destructive": true,
+  "backup_required": true,
+  "estimated_duration": "5 seconds",
+  "rollback_notes": "This migration removes religious preference fields. Rollback would require restoring from backup data.",
+  "validation_queries": [
+    "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='user'",
+    "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='prayer'"
+  ]
+}
