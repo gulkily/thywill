@@ -11,6 +11,9 @@ import sys
 import json
 from datetime import datetime
 
+# Set production mode for database access
+os.environ['PRODUCTION_MODE'] = '1'
+
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -110,7 +113,8 @@ def restore_sessions_username_based(db_session, sessions):
                 id=sess_data['session_id'],
                 username=username,  # Use username instead of user_id
                 created_at=datetime.fromisoformat(sess_data['created_at']),
-                last_activity=datetime.fromisoformat(sess_data['last_activity']) if sess_data['last_activity'] else None,
+                expires_at=datetime.fromisoformat(sess_data['expires_at']),
+                auth_request_id=sess_data.get('auth_request_id'),
                 ip_address=sess_data.get('ip_address'),
                 device_info=sess_data.get('device_info'),
                 is_fully_authenticated=sess_data.get('is_fully_authenticated', True)
@@ -152,7 +156,8 @@ def restore_sessions_uuid_based(db_session, sessions):
                 id=sess_data['session_id'],
                 user_id=user_id,  # Use user_id instead of username
                 created_at=datetime.fromisoformat(sess_data['created_at']),
-                last_activity=datetime.fromisoformat(sess_data['last_activity']) if sess_data['last_activity'] else None,
+                expires_at=datetime.fromisoformat(sess_data['expires_at']),
+                auth_request_id=sess_data.get('auth_request_id'),
                 ip_address=sess_data.get('ip_address'),
                 device_info=sess_data.get('device_info'),
                 is_fully_authenticated=sess_data.get('is_fully_authenticated', True)

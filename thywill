@@ -124,6 +124,8 @@ show_help() {
     echo "    full-recovery          Perform complete database reconstruction"
     echo "    repair-archives        Fix archive inconsistencies"
     echo "    heal-archives          Create missing archive files for existing prayers and users"
+    echo "    sync-users             Export/sync users to text archives"
+    echo "    export-sessions        Export active user sessions to JSON backup"
     echo "    sync-archives          Complete archive synchronization (safe post-deploy)"
     echo "    recovery-report        Generate recovery capability report"
     echo "    analyze-orphaned-prayers  Analyze prayers not visible in any feeds"
@@ -163,6 +165,8 @@ show_help() {
     echo "    thywill test-recovery                            # Simulate complete recovery"
     echo "    thywill full-recovery                            # Complete database reconstruction"
     echo "    thywill heal-archives                            # Create missing archive files for prayers and users"
+    echo "    thywill sync-users                               # Export/sync users to text archives"
+    echo "    thywill export-sessions                          # Export active sessions to JSON"
     echo "    thywill sync-archives                            # Complete post-deploy sync"
     echo "    thywill recovery-report                          # Generate recovery report"
     echo "    thywill analyze-orphaned-prayers                 # Analyze orphaned prayers"
@@ -802,6 +806,55 @@ cmd_repair_archives() {
 cmd_heal_archives() {
     # Use Python CLI module for archive management
     run_python -m app_helpers.cli.archive_management heal
+}
+
+cmd_sync_users() {
+    header "Sync Users to Text Archives"
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Syncing users from database to text archives..."
+    
+    # Run only the user healing portion
+    run_python -c "
+import sys
+sys.path.append('.')
+from scripts.utils.heal_prayer_archives import heal_user_archives
+if heal_user_archives():
+    print('✅ User sync completed successfully')
+else:
+    print('❌ User sync failed')
+    sys.exit(1)
+"
+}
+
+cmd_export_sessions() {
+    header "Export Active User Sessions"
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Exporting active user sessions to JSON backup..."
+    
+    # Run the session export tool
+    run_python tools/export_active_sessions.py
+    
+    if [ $? -eq 0 ]; then
+        success "Sessions exported to sessions_backup.json"
+        echo "💡 Use tools/restore_active_sessions.py to restore after database recovery"
+    else
+        error "Session export failed"
+        exit 1
+    fi
 }
 
 cmd_sync_archives() {
@@ -1742,6 +1795,12 @@ main() {
             ;;
         heal-archives)
             cmd_heal_archives "$@"
+            ;;
+        sync-users)
+            cmd_sync_users "$@"
+            ;;
+        export-sessions)
+            cmd_export_sessions "$@"
             ;;
         sync-archives)
             cmd_sync_archives "$@"
