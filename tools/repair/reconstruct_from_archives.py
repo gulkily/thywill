@@ -30,7 +30,7 @@ from sqlmodel import Session, select
 import re
 
 # Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from models import engine, User, Prayer, PrayerMark, PrayerAttribute
 from app_helpers.services.text_archive_service import TextArchiveService

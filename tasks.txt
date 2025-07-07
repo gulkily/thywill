@@ -1,7 +1,5 @@
 Allow admin to admin other users
 
-Allow multiple sessions/devices for one user (low-friction auth)
-
 ✅ Allow export of database for community cloning
 
 Allow users to mark prayers as done and/or answered and/or successful
@@ -23,17 +21,9 @@ Where did ilyag admin on localhost disappear to?
 
 Invite tree is empty? All users should appear on invite tree somehow
 
-Deployment / rollback process
-Run tests on prod
-
-Link in invite dialog should not be clickable, should auto-select on click for copy (and copy automatically?)
-
 ✅ Maintain a text-based dump/backup of data that can be imported back at any time
 
 Generate regular invite tokens from command line
-
-All essential site activity should be written to text files
-	Includes prayers, prayed records
 
 IDEAS
 
@@ -54,3 +44,6 @@ Stop invite expiration
 Remove the half-login feature (or make it less insulting)
 
 Let users see their own timezone timestamps
+
+Make it more difficult to log out accidentally
+

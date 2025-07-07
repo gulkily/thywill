@@ -11,6 +11,14 @@ from fastapi.testclient import TestClient
 from models import User, Prayer, Session as SessionModel, InviteToken, PrayerMark, AuthenticationRequest, AuthApproval, AuthAuditLog, SecurityLog, PrayerAttribute, PrayerActivityLog, Role, UserRole, NotificationState, PrayerSkip, ChangelogEntry
 from tests.factories import UserFactory, SessionFactory
 
+# Additional safety layer: Verify we're using safe database path
+def pytest_configure(config):
+    """Pytest configuration hook to verify database safety"""
+    from models import DATABASE_PATH
+    if DATABASE_PATH != ':memory:':
+        raise RuntimeError(f"SAFETY ERROR: Tests must use in-memory database, got: {DATABASE_PATH}")
+    print(f"Database safety verified: {DATABASE_PATH}")
+
 
 @pytest.fixture(scope="function")
 def test_engine():

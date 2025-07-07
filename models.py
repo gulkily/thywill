@@ -2,6 +2,8 @@ from sqlmodel import Field, SQLModel, create_engine, Session, select
 from datetime import datetime
 import uuid
 import secrets
+import sys
+import os
 
 class User(SQLModel, table=True):
     display_name: str = Field(primary_key=True)
@@ -323,38 +325,44 @@ class ChangelogEntry(SQLModel, table=True):
     commit_date: datetime
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-# Database engine configuration - SAFE BY DEFAULT
-# SAFETY: Use in-memory database by default, require explicit PRODUCTION_MODE for file database
-import os
+# Database engine configuration with intelligent path detection
+def get_database_path():
+    """
+    Multi-layer safety approach for database path selection:
+    1. Test environment detection (highest priority)
+    2. Explicit DATABASE_PATH configuration
+    3. Default production database path
+    """
+    # Safety: Detect test environment - this overrides everything else
+    if ('pytest' in sys.modules or 
+        'PYTEST_CURRENT_TEST' in os.environ or
+        any('pytest' in arg for arg in sys.argv)):
+        return ':memory:'
+    
+    # Explicit configuration
+    if 'DATABASE_PATH' in os.environ:
+        return os.environ['DATABASE_PATH']
+    
+    # Default production
+    return 'thywill.db'
 
-# Check for production database file and warn if PRODUCTION_MODE not set
-if not os.environ.get('PRODUCTION_MODE') and os.path.exists('thywill.db'):
-    print("WARNING: Production database detected but PRODUCTION_MODE not set!")
-    print("Using in-memory database for safety. Set PRODUCTION_MODE=1 for production use.")
+# Get database path and create engine
+DATABASE_PATH = get_database_path()
+print(f"Database path: {DATABASE_PATH}")
 
-if os.environ.get('PRODUCTION_MODE') == '1':
-    # Production database - requires explicit environment variable
-    print("PRODUCTION_MODE detected: Using file database")
-    engine = create_engine(
-        "sqlite:///thywill.db", 
-        echo=False,
-        connect_args={"check_same_thread": False},
-        pool_pre_ping=True
-    )
-else:
-    # Safe default: Use in-memory database (for tests and development)
-    engine = create_engine(
-        "sqlite:///:memory:",
-        echo=False,
-        connect_args={"check_same_thread": False}
-    )
+engine = create_engine(
+    f"sqlite:///{DATABASE_PATH}" if DATABASE_PATH != ':memory:' else "sqlite:///:memory:",
+    echo=False,
+    connect_args={"check_same_thread": False},
+    pool_pre_ping=True if DATABASE_PATH != ':memory:' else False
+)
 
 # Database initialization is now handled by standalone script only
 # No automatic table creation on import to prevent accidental data loss
 
 # Enable performance optimizations and create invite tree integrity constraints
-# SAFETY: Only run optimizations for production database
-if os.environ.get('PRODUCTION_MODE') == '1':
+# Only run optimizations for file-based databases (not in-memory)
+if DATABASE_PATH != ':memory:':
     with engine.connect() as conn:
         # Import text here to avoid top-level SQLAlchemy imports
         from sqlalchemy import text

@@ -10,8 +10,10 @@ import sys
 from sqlmodel import Session, select, text
 from collections import defaultdict, Counter
 
-# Set production mode to access production database
-os.environ['PRODUCTION_MODE'] = '1'
+# Database path is now configured automatically in models.py
+
+# Add project root to path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from models import engine, User, Prayer, PrayerMark, PrayerAttribute
 

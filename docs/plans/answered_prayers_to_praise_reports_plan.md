@@ -8,7 +8,7 @@ These changes only affect user-facing text and don't impact database schema or c
 
 ### Step 1: Template Text Updates
 - [ ] Update `templates/` files to replace "answered prayer" with "praise report"
-- [ ] Update button text from "Mark as Answered" to "Mark as Praise Report"
+- [ ] Update button text from "Mark as Answered" to "Add Praise"
 - [ ] Update feed section headers and labels
 - [ ] Update modal titles and confirmation messages
 
