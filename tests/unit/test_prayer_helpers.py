@@ -170,7 +170,7 @@ class TestFeedCounts:
             assert counts['my_requests'] == 1  # user1 authored prayer1
     
     def test_get_feed_counts_recent_activity(self, test_session):
-        """Test recent activity counting (last 7 days)"""
+        """Test recent activity counting (prayers with any marks)"""
         user1 = UserFactory.create(display_name="user1")
         prayer1 = PrayerFactory.create(id="prayer1", author_username="user1", flagged=False)
         prayer2 = PrayerFactory.create(id="prayer2", author_username="user1", flagged=False)
@@ -199,8 +199,8 @@ class TestFeedCounts:
             
             counts = get_feed_counts("user1")
             
-            # Only recent activity should count
-            assert counts['recent_activity'] == 1  # Only prayer1 has recent marks
+            # All prayers with marks should count (no time restriction)
+            assert counts['recent_activity'] == 2  # Both prayer1 and prayer2 have marks
     
     def test_get_feed_counts_excludes_flagged_prayers(self, test_session):
         """Test that flagged prayers are excluded from all counts"""

@@ -93,8 +93,7 @@ def get_feed_counts(user_id: str) -> dict:
             .where(Prayer.author_username == user_id)
         ).first()
         
-        # Recent activity (prayers with marks in last 7 days)
-        week_ago = datetime.utcnow() - timedelta(days=7)
+        # Recent activity (prayers with any marks, ordered by most recent mark activity)
         counts['recent_activity'] = s.exec(
             select(func.count(func.distinct(Prayer.id)))
             .select_from(Prayer)
@@ -106,7 +105,6 @@ def get_feed_counts(user_id: str) -> dict:
                     .where(PrayerAttribute.attribute_name == 'archived')
                 )
             )
-            .where(PrayerMark.created_at >= week_ago)
         ).first()
         
         # Answered prayers count
