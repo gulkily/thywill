@@ -319,10 +319,9 @@ class TestSecurityWorkflow:
         # Step 4: Verify no admin privileges
         assert is_admin(regular_user) is False
         
-        # Step 5: User with admin name but wrong ID
+        # Step 5: User with admin name but different display_name
         fake_admin = UserFactory.create(
-            id="not_admin",
-            display_name="admin"  # Name is admin but ID is not
+            display_name="fake_admin"  # Different name than admin
         )
         test_session.add(fake_admin)
         test_session.commit()

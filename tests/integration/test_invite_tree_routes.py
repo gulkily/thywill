@@ -57,14 +57,12 @@ class TestInviteTreeRoute:
         # Create user hierarchy
         admin = UserFactory.create_admin()
         user1 = UserFactory.create(
-            id="user1",
             display_name="Alice", 
             invited_by_username="admin"
         )
         user2 = UserFactory.create(
-            id="user2",
             display_name="Bob",
-            invited_by_username="user1"
+            invited_by_username="Alice"
         )
         session = SessionFactory.create(username="admin")
         test_session.add_all([admin, user1, user2, session])
@@ -85,16 +83,14 @@ class TestInviteTreeRoute:
         # Create chain: admin -> user1 -> user2, with user2 as current user
         admin = UserFactory.create_admin()
         user1 = UserFactory.create(
-            id="user1",
             display_name="Alice",
             invited_by_username="admin"
         )
         user2 = UserFactory.create(
-            id="user2", 
             display_name="Bob",
-            invited_by_username="user1"
+            invited_by_username="Alice"
         )
-        session = SessionFactory.create(username="user2")
+        session = SessionFactory.create(username="Bob")
         test_session.add_all([admin, user1, user2, session])
         test_session.commit()
         
@@ -112,7 +108,7 @@ class TestInviteTreeRoute:
         # Create admin, users, and tokens
         admin = UserFactory.create_admin()
         user1 = UserFactory.create(
-            id="user1",
+            display_name="User1",
             invited_by_username="admin",
             invite_token_used="token1"
         )
@@ -121,7 +117,7 @@ class TestInviteTreeRoute:
             token="token1",
             created_by_user="admin",
             used=True,
-            used_by_username="user1"
+            used_by_user_id="User1"
         )
         token2 = InviteTokenFactory.create(
             token="token2",
@@ -185,14 +181,12 @@ class TestInviteTreeUIInteraction:
         # Create hierarchy with multiple levels
         admin = UserFactory.create_admin()
         user1 = UserFactory.create(
-            id="user1",
             display_name="Alice",
             invited_by_username="admin"
         )
         user2 = UserFactory.create(
-            id="user2",
             display_name="Bob", 
-            invited_by_username="user1"
+            invited_by_username="Alice"
         )
         session = SessionFactory.create(username="admin")
         test_session.add_all([admin, user1, user2, session])

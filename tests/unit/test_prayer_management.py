@@ -74,7 +74,7 @@ class TestPrayerSubmission:
         
         assert prayer.text == original_text
         assert prayer.generated_prayer == generated_text
-        assert prayer.author_id == user.display_name
+        assert prayer.author_username == user.display_name
         assert prayer.flagged is False
     
     def test_prayer_submission_with_project_tag(self, test_session):
@@ -152,8 +152,7 @@ class TestPrayerSubmission:
         # Create a new prayer (simulating prayer submission)
         prayer = PrayerFactory.create(
             author_username=user1.display_name,
-            text="Please pray for my family",
-            target_audience="christian"
+            text="Please pray for my family"
         )
         test_session.add(prayer)
         test_session.commit()
@@ -192,7 +191,7 @@ class TestPrayerMarking:
         test_session.add(mark)
         test_session.commit()
         
-        assert mark.user_id == user.display_name
+        assert mark.username == user.display_name
         assert mark.prayer_id == prayer.id
         assert isinstance(mark.created_at, datetime)
     
@@ -424,7 +423,7 @@ class TestFeedFiltering:
         # Simulate 'all' feed query from app.py
         stmt = (
             select(Prayer, User.display_name)
-            .join(User, Prayer.author_username == User.id)
+            .join(User, Prayer.author_username == User.display_name)
             .where(Prayer.flagged == False)
             .order_by(Prayer.created_at.desc())
         )
@@ -456,7 +455,7 @@ class TestFeedFiltering:
         # Simulate 'new_unprayed' query logic from app.py
         stmt = (
             select(Prayer, User.display_name)
-            .join(User, Prayer.author_username == User.id)
+            .join(User, Prayer.author_username == User.display_name)
             .outerjoin(PrayerMark, Prayer.id == PrayerMark.prayer_id)
             .where(Prayer.flagged == False)
             .group_by(Prayer.id)
@@ -495,7 +494,7 @@ class TestFeedFiltering:
         # Simulate 'most_prayed' query from app.py
         stmt = (
             select(Prayer, User.display_name, func.count(PrayerMark.id).label('mark_count'))
-            .join(User, Prayer.author_username == User.id)
+            .join(User, Prayer.author_username == User.display_name)
             .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
             .where(Prayer.flagged == False)
             .group_by(Prayer.id)
@@ -531,7 +530,7 @@ class TestFeedFiltering:
         # Simulate 'my_prayers' query for user1
         stmt = (
             select(Prayer, User.display_name)
-            .join(User, Prayer.author_username == User.id)
+            .join(User, Prayer.author_username == User.display_name)
             .join(PrayerMark, Prayer.id == PrayerMark.prayer_id)
             .where(Prayer.flagged == False)
             .where(PrayerMark.username == "user1")
@@ -565,7 +564,7 @@ class TestFeedFiltering:
         # Simulate 'my_requests' query for user1
         stmt = (
             select(Prayer, User.display_name)
-            .join(User, Prayer.author_username == User.id)
+            .join(User, Prayer.author_username == User.display_name)
             .where(Prayer.flagged == False)
             .where(Prayer.author_username == "user1")
             .order_by(Prayer.created_at.desc())

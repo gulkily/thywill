@@ -69,7 +69,7 @@ class TestArchiveEndpoints:
         """Test archiving prayer by non-author"""
         user, session = mock_authenticated_user
         author = UserFactory.create(display_name="Author")
-        prayer = PrayerFactory.create(author_username=author.id)
+        prayer = PrayerFactory.create(author_username=author.display_name)
         test_session.add_all([author, prayer])
         test_session.commit()
         
@@ -213,7 +213,7 @@ class TestAnsweredEndpoints:
         """Test marking prayer as answered by non-author"""
         user, session = mock_authenticated_user
         author = UserFactory.create(display_name="Author")
-        prayer = PrayerFactory.create(author_username=author.id)
+        prayer = PrayerFactory.create(author_username=author.display_name)
         test_session.add_all([author, prayer])
         test_session.commit()
         
@@ -274,7 +274,7 @@ class TestPermissionChecks:
         """Test that admin users can manage any prayer"""
         admin, session = mock_admin_user
         author = UserFactory.create(display_name="Regular User")
-        prayer = PrayerFactory.create(author_username=author.id)
+        prayer = PrayerFactory.create(author_username=author.display_name)
         
         test_session.add_all([author, prayer])
         test_session.commit()

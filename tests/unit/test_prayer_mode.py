@@ -77,7 +77,7 @@ class TestPrayerSkipModel:
         prayer = test_prayers[0]
         
         skip = PrayerSkip(
-            username=test_user.display_name,
+            user_id=test_user.display_name,
             prayer_id=prayer.id
         )
         
@@ -364,11 +364,9 @@ class TestPrayerModeIntegration:
         # Create prayers with different target audiences (all should be shown)
         prayer1 = PrayerFactory.create(
             author_username=user1.display_name,
-            target_audience="all"
         )
         prayer2 = PrayerFactory.create(
             author_username=user1.display_name,
-            target_audience="all"
         )
         test_session.add(prayer1)
         test_session.add(prayer2)
