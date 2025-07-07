@@ -74,7 +74,7 @@ def get_db_stats():
         
         # Get users active in last 7 days
         cursor.execute("""
-            SELECT COUNT(DISTINCT user_id) FROM session 
+            SELECT COUNT(DISTINCT username) FROM session 
             WHERE created_at > datetime('now', '-7 days')
         """)
         result = cursor.fetchone()
@@ -121,7 +121,6 @@ def generate_overview():
     current_date = datetime.now().strftime("%Y-%m-%d")
     
     # Calculate months since start
-    from datetime import datetime
     start_date = datetime.strptime(git_stats['first_commit'], "%Y-%m-%d")
     months_dev = (datetime.now() - start_date).days // 30 + 1
     
