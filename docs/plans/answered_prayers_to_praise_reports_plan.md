@@ -11,15 +11,18 @@ These changes only affect user-facing text and don't impact database schema or c
 - [ ] Update button text from "Mark as Answered" to "Add Praise"
 - [ ] Update feed section headers and labels
 - [ ] Update modal titles and confirmation messages
+- While performing updates, ensure that no functional strings are changed (such as API call paths)
 
 ### Step 2: JavaScript/HTMX Labels
 - [ ] Update any client-side text in JavaScript files
 - [ ] Update HTMX response messages and notifications
 - [ ] Update any hardcoded strings in frontend code
+- While performing updates, ensure that no functional strings are changed (such as API call paths)
 
 ### Step 3: Help Text and Instructions
 - [ ] Update user-facing help text and tooltips
 - [ ] Update any instructional content about the feature
+- While performing updates, ensure that no functional strings are changed (such as API call paths)
 
 ## Phase 2: Backend Response Messages (Low Risk)
 These changes affect API responses but don't change database structure.
