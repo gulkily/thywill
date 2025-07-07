@@ -191,7 +191,7 @@ def append_prayer_activity_with_archive(prayer_id: str, action: str, user: User,
                 # Create separate testimony activity log
                 testimony_log = PrayerActivityLog(
                     prayer_id=prayer_id,
-                    username=user.display_name,
+                    user_id=user.display_name,
                     action="testimony",
                     old_value=None,
                     new_value=extra,

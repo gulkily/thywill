@@ -92,7 +92,7 @@
     <h2 class="font-semibold mb-2 dark:text-gray-100">Recent Prayer Activity</h2>
     <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayers that have been recently prayed by the community.</p>
   {% elif current_feed == "answered" %}
-    <h2 class="font-semibold mb-2 text-green-700 dark:text-green-300">🎉 Answered Prayers</h2>
+    <h2 class="font-semibold mb-2 text-green-700 dark:text-green-300">🎉 Praise Reports</h2>
     <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Celebrating how God has moved in these situations. Praise the Lord!</p>
   {% elif current_feed == "archived" %}
     <h2 class="font-semibold mb-2 text-amber-700 dark:text-amber-300">📁 Your Archived Prayers</h2>
@@ -121,8 +121,8 @@
         <p class="text-gray-500 dark:text-gray-400 mb-2">No recent prayer activity.</p>
         <p class="text-sm text-gray-400 dark:text-gray-500">Check the <a href="/?feed_type=all" class="text-purple-600 dark:text-purple-400 hover:underline">All Prayers</a> feed to start praying.</p>
       {% elif current_feed == "answered" %}
-        <p class="text-gray-500 dark:text-gray-400 mb-2">No answered prayers yet.</p>
-        <p class="text-sm text-gray-400 dark:text-gray-500">When prayer authors mark their requests as answered, they'll appear here for the community to celebrate!</p>
+        <p class="text-gray-500 dark:text-gray-400 mb-2">No praise reports yet.</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500">When prayer authors add praise reports, they'll appear here for the community to celebrate!</p>
       {% elif current_feed == "archived" %}
         <p class="text-gray-500 dark:text-gray-400 mb-2">No archived prayers.</p>
         <p class="text-sm text-gray-400 dark:text-gray-500">When you archive prayer requests, they'll appear here for personal reference.</p>
@@ -135,14 +135,14 @@
   </ul>
 </section>
 
-<!-- Mark as Answered Modal -->
+<!-- Add Praise Modal -->
 <div id="answered-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
   <div class="flex items-center justify-center min-h-screen p-4">
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
       <div class="p-6">
         <div class="flex items-center gap-2 mb-4">
           <span class="text-2xl">🎉</span>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Prayer Answered!</h3>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Praise Report!</h3>
         </div>
         
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -162,7 +162,7 @@
             </button>
             <button type="submit"
                     class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors">
-              Mark as Answered
+              Add Praise
             </button>
           </div>
         </form>

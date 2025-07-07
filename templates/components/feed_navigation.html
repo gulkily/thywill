@@ -50,9 +50,9 @@
       
       <a href="/?feed_type=answered" 
          class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'answered' %}bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}"
-         title="View answered prayers - click for celebration page!"
+         title="View praise reports - click for celebration page!"
          oncontextmenu="window.location.href='/answered'; return false;">
-        <span>🙏 Answered</span>
+        <span>🙏 Praise Reports</span>
         <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'answered' %}bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-100{% else %}bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} rounded-full">{{ feed_counts.answered or 0 }}</span>
       </a>
       
