@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Answered Prayers - Celebration{% endblock %}
+{% block title %}Praise Reports - Celebration{% endblock %}
 
 {% block content %}
 <!-- Header Section -->
 <section class="mb-8 text-center">
   <div class="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-8 rounded-lg border border-green-200 dark:border-green-700">
     <h1 class="text-3xl font-bold text-green-800 dark:text-green-200 mb-2">
-      🎉 Answered Prayers
+      🎉 Praise Reports
     </h1>
     <p class="text-lg text-green-700 dark:text-green-300 mb-4">
       Celebrating how God has moved in our community
@@ -14,7 +14,7 @@
     <div class="flex justify-center items-center gap-6 text-sm text-green-600 dark:text-green-400">
       <div class="flex items-center gap-1">
         <span class="font-semibold">{{ total_answered }}</span>
-        <span>prayers answered</span>
+        <span>praise reports</span>
       </div>
       <div class="flex items-center gap-1">
         <span class="font-semibold">{{ total_testimonies }}</span>
@@ -22,7 +22,7 @@
       </div>
       <div class="flex items-center gap-1">
         <span class="font-semibold">{{ recent_count }}</span>
-        <span>answered this month</span>
+        <span>praise reports this month</span>
       </div>
     </div>
   </div>
@@ -39,7 +39,7 @@
       </div>
       <div class="text-center">
         <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ answered_percentage }}%</div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Prayer Answer Rate</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400">Praise Report Rate</div>
       </div>
       <div class="text-center">
         <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ avg_prayer_marks }}</div>
@@ -52,9 +52,9 @@
 <!-- Recent Answered Prayers -->
 <section class="mb-8">
   <div class="flex items-center justify-between mb-4">
-    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Recent Answered Prayers</h2>
+    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Recent Praise Reports</h2>
     <a href="/?feed_type=answered" class="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 hover:underline">
-      View all answered prayers →
+      View all praise reports →
     </a>
   </div>
   
@@ -79,7 +79,7 @@
           <span class="text-2xl">🎉</span>
           <div class="flex-1">
             <div class="flex items-center gap-2 mb-2">
-              <span class="text-sm font-semibold text-green-800 dark:text-green-200">Prayer Answered!</span>
+              <span class="text-sm font-semibold text-green-800 dark:text-green-200">Praise Report!</span>
               <span class="text-xs text-green-600 dark:text-green-400">
                 {{ prayer.answer_date[:10] if prayer.answer_date else '' }}
               </span>
@@ -107,8 +107,8 @@
     </div>
     {% else %}
     <div class="text-center py-8">
-      <p class="text-gray-500 dark:text-gray-400 mb-2">No answered prayers yet.</p>
-      <p class="text-sm text-gray-400 dark:text-gray-500">When prayer authors mark their requests as answered, they'll appear here for the community to celebrate!</p>
+      <p class="text-gray-500 dark:text-gray-400 mb-2">No praise reports yet.</p>
+      <p class="text-sm text-gray-400 dark:text-gray-500">When prayer authors add praise reports, they'll appear here for the community to celebrate!</p>
     </div>
     {% endfor %}
   </div>
