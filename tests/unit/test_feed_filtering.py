@@ -280,8 +280,8 @@ class TestFeedPermissions:
         author = UserFactory.create(display_name="Author")
         
         # Create prayers by author
-        active_prayer = PrayerFactory.create(author_username=author.id, text="Active")
-        archived_prayer = PrayerFactory.create(author_username=author.id, text="Archived")
+        active_prayer = PrayerFactory.create(author_username=author.display_name, text="Active")
+        archived_prayer = PrayerFactory.create(author_username=author.display_name, text="Archived")
         
         test_session.add_all([user, author, active_prayer, archived_prayer])
         test_session.commit()
@@ -293,7 +293,7 @@ class TestFeedPermissions:
         test_session.commit()
         
         # Archive one prayer
-        archived_prayer.set_attribute('archived', 'true', author.id, test_session)
+        archived_prayer.set_attribute('archived', 'true', author.display_name, test_session)
         test_session.commit()
         
         # Query prayers user has marked (should include archived ones too)

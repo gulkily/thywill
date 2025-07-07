@@ -22,7 +22,7 @@ class TestHealArchivesBasic:
         """Test the collect_prayer_activity_data function"""
         # Import the function
         import sys
-        sys.path.insert(0, '/home/wsl/thywill')
+        sys.path.insert(0, '/home/wsl/thywill/scripts/utils')
         from heal_prayer_archives import collect_prayer_activity_data
         
         # Create test data

@@ -156,7 +156,6 @@ class TestUserDataPrivacy:
         
         # Create user with potentially sensitive data
         target_user = UserFactory.create(
-            id="target_user_id",
             display_name="Target User"
         )
         test_session.add(target_user)

@@ -22,7 +22,7 @@ class TestAttributeQueryPerformance:
         # Create 1000 prayers with various statuses
         prayers = []
         for i in range(1000):
-            prayer = PrayerFactory.create(author_username=users[i % 10].id)
+            prayer = PrayerFactory.create(author_username=users[i % 10].display_name)
             prayers.append(prayer)
         
         test_session.add_all(prayers)
@@ -35,19 +35,19 @@ class TestAttributeQueryPerformance:
                 attributes.append(PrayerAttributeFactory.create(
                     prayer_id=prayer.id, 
                     attribute_name='archived',
-                    created_by=prayer.author_id
+                    created_by=prayer.author_username
                 ))
             if i % 15 == 0:  # ~6.7% answered
                 attributes.append(PrayerAttributeFactory.create(
                     prayer_id=prayer.id,
                     attribute_name='answered', 
-                    created_by=prayer.author_id
+                    created_by=prayer.author_username
                 ))
             if i % 50 == 0:  # 2% flagged
                 attributes.append(PrayerAttributeFactory.create(
                     prayer_id=prayer.id,
                     attribute_name='flagged',
-                    created_by=prayer.author_id
+                    created_by=prayer.author_username
                 ))
         
         test_session.add_all(attributes)
@@ -167,7 +167,7 @@ class TestAttributeQueryPerformance:
         
         # Verify all belong to user and are archived
         for prayer in archived_prayers:
-            assert prayer.author_id == user.display_name
+            assert prayer.author_username == user.display_name
             assert prayer.is_archived(test_session)
 
 
