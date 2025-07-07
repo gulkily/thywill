@@ -11,8 +11,7 @@ import sys
 from pathlib import Path
 from sqlmodel import Session, select
 
-# Set production mode to access production database
-os.environ['PRODUCTION_MODE'] = '1'
+# Database path is now configured automatically in models.py
 
 from models import engine, User, Prayer, PrayerMark, PrayerAttribute
 

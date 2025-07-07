@@ -14,8 +14,7 @@ from sqlmodel import Session, select, func
 # Load environment variables first
 load_dotenv()
 
-# Set production mode for web application
-os.environ['PRODUCTION_MODE'] = '1'
+# Database path is now configured in models.py via intelligent detection
 
 from models import engine, User, Prayer, InviteToken, Session as SessionModel, PrayerMark, PrayerSkip, AuthenticationRequest, AuthApproval, AuthAuditLog, SecurityLog, PrayerAttribute, PrayerActivityLog
 from sqlmodel import text
@@ -239,8 +238,9 @@ async def forbidden_exception_handler(request: Request, exc: HTTPException):
 # ───────── Startup: seed first invite ─────────
 @app.on_event("startup")
 def startup():
-    # Auto-migration on startup (if enabled)
-    if AUTO_MIGRATE_ON_STARTUP and os.environ.get('PRODUCTION_MODE') == '1':
+    # Auto-migration on startup (if enabled and using file-based database)
+    from models import DATABASE_PATH
+    if AUTO_MIGRATE_ON_STARTUP and DATABASE_PATH != ':memory:':
         print("🔄 Auto-migration enabled - checking for pending migrations...")
         try:
             migration_manager = MigrationManager()

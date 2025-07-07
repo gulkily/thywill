@@ -21,16 +21,28 @@ from sqlmodel import Session, create_engine
 
 def get_engine():
     """Get database engine following ThyWill patterns"""
-    if os.environ.get('PRODUCTION_MODE') == '1':
+    # Use the same database path logic as the main application
+    import sys
+    
+    # Test environment detection
+    if ('pytest' in sys.modules or 
+        'PYTEST_CURRENT_TEST' in os.environ or
+        any('pytest' in arg for arg in sys.argv)):
+        database_path = ':memory:'
+    elif 'DATABASE_PATH' in os.environ:
+        database_path = os.environ['DATABASE_PATH']
+    else:
+        database_path = 'thywill.db'
+    
+    if database_path == ':memory:':
         return create_engine(
-            "sqlite:///thywill.db",
+            "sqlite:///:memory:",
             echo=False,
             connect_args={"check_same_thread": False}
         )
     else:
-        # Test mode - use in-memory database
         return create_engine(
-            "sqlite:///:memory:",
+            f"sqlite:///{database_path}",
             echo=False,
             connect_args={"check_same_thread": False}
         )

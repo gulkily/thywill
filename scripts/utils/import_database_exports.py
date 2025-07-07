@@ -332,9 +332,7 @@ def import_roles_from_text_archive(session: DBSession, archives_dir: str, dry_ru
 
 def import_all_data(dry_run: bool = False):
     """Import all database data from text archives."""
-    if not os.environ.get('PRODUCTION_MODE'):
-        print("❌ PRODUCTION_MODE not set - cannot access database")
-        return False
+    # Database operations will proceed - removed PRODUCTION_MODE check
     
     # Check if database is initialized, and initialize if needed
     from models import engine

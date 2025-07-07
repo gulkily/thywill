@@ -79,7 +79,7 @@ run_python() {
         echo "  pip install -r requirements.txt"
         exit 1
     fi
-    PRODUCTION_MODE=1 python3 "$@"
+    python3 "$@"
 }
 
 # Help functions
@@ -236,7 +236,7 @@ cmd_start() {
             cat > .env << 'EOF'
 # ThyWill Environment Configuration
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
-PRODUCTION_MODE=1
+# DATABASE_PATH=thywill.db  # Optional: specify custom database path
 JWT_SECRET=changeme
 MULTI_DEVICE_AUTH_ENABLED=true
 REQUIRE_APPROVAL_FOR_EXISTING_USERS=true
@@ -1101,7 +1101,7 @@ cmd_reconstruct_from_archives() {
     log "This tool fixes orphaned prayers and prayer marks using archive data as source of truth"
     
     # Execute reconstruction script with arguments passed through
-    PRODUCTION_MODE=1 python3 tools/repair/reconstruct_from_archives.py "$@"
+    python3 tools/repair/reconstruct_from_archives.py "$@"
 }
 
 cmd_validate_consistency() {
@@ -1118,7 +1118,7 @@ cmd_validate_consistency() {
     log "This provides a comprehensive report on data integrity"
     
     # Execute validation script with arguments passed through
-    PRODUCTION_MODE=1 python3 tools/analysis/validate_archive_consistency.py "$@"
+    python3 tools/analysis/validate_archive_consistency.py "$@"
 }
 
 # Database commands
@@ -1292,7 +1292,7 @@ cmd_db_init() {
             cat > .env << 'EOF'
 # ThyWill Environment Configuration
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
-PRODUCTION_MODE=1
+# DATABASE_PATH=thywill.db  # Optional: specify custom database path
 JWT_SECRET=changeme
 MULTI_DEVICE_AUTH_ENABLED=true
 REQUIRE_APPROVAL_FOR_EXISTING_USERS=true
@@ -1483,7 +1483,7 @@ cmd_setup() {
             cat > .env << 'EOF'
 # ThyWill Environment Configuration
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
-PRODUCTION_MODE=1
+# DATABASE_PATH=thywill.db  # Optional: specify custom database path
 JWT_SECRET=changeme
 MULTI_DEVICE_AUTH_ENABLED=true
 REQUIRE_APPROVAL_FOR_EXISTING_USERS=true
@@ -1665,7 +1665,7 @@ cmd_init() {
             cat > .env << 'EOF'
 # ThyWill Environment Configuration
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
-PRODUCTION_MODE=1
+# DATABASE_PATH=thywill.db  # Optional: specify custom database path
 JWT_SECRET=changeme
 MULTI_DEVICE_AUTH_ENABLED=true
 REQUIRE_APPROVAL_FOR_EXISTING_USERS=true

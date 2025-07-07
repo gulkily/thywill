@@ -11,8 +11,7 @@ import sys
 import json
 from datetime import datetime
 
-# Set production mode for database access
-os.environ['PRODUCTION_MODE'] = '1'
+# Database path is now configured automatically in models.py
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
