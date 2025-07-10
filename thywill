@@ -179,6 +179,7 @@ show_help() {
     echo "    thywill reconstruct-from-archives --dry-run     # Preview archive-based reconstruction"
     echo "    thywill reconstruct-from-archives --execute     # Fix orphaned relationships from archives"
     echo "    thywill validate-consistency                     # Check archive-database consistency"
+    echo "    thywill validate-schema                          # Validate database schema compatibility"
     echo "    thywill sqlite                                    # Open SQLite3 CLI with database"
     echo "    thywill deploy                                    # Safe deployment"
     echo "    thywill backup                                    # Create database backup"
@@ -1121,6 +1122,23 @@ cmd_validate_consistency() {
     python3 tools/analysis/validate_archive_consistency.py "$@"
 }
 
+cmd_validate_schema() {
+    header "Database Schema Validation"
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Validating database schema compatibility..."
+    log "This checks schema structure, constraints, and model compatibility"
+    
+    # Use Python CLI module for schema validation
+    run_python -m app_helpers.cli.schema_validation validate
+}
+
 # Database commands
 cmd_db() {
     local subcommand="${1:-}"
@@ -1908,6 +1926,9 @@ main() {
             ;;
         validate-consistency)
             cmd_validate_consistency "$@"
+            ;;
+        validate-schema)
+            cmd_validate_schema "$@"
             ;;
         
         # Database commands
