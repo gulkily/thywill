@@ -235,6 +235,36 @@ async def forbidden_exception_handler(request: Request, exc: HTTPException):
 # ───────── Invite-claim flow routes moved to app_helpers/routes/auth_routes.py ─────────
 
 
+# ───────── Schema validation functions (module level for CLI access) ─────────
+def column_exists(table_name: str, column_name: str) -> bool:
+    """Check if a column exists in a table"""
+    with engine.connect() as conn:
+        from sqlalchemy import text
+        result = conn.execute(text(f"PRAGMA table_info({table_name})"))
+        columns = [row[1] for row in result.fetchall()]
+        return column_name in columns
+
+def validate_schema_compatibility() -> tuple[bool, list[str]]:
+    """Validate that database schema matches model expectations"""
+    required_columns = {
+        'invitetoken': ['token', 'created_by_user', 'usage_count', 'max_uses', 'expires_at', 'used_by_user_id', 'token_type'],
+        'user': ['display_name', 'created_at', 'invited_by_username', 'invite_token_used', 'welcome_message_dismissed', 'text_file_path'],
+        'prayer': ['id', 'author_username', 'text', 'generated_prayer', 'project_tag', 'created_at', 'flagged', 'text_file_path'],
+        'session': ['id', 'username', 'created_at', 'expires_at', 'auth_request_id', 'device_info', 'ip_address', 'is_fully_authenticated'],
+        'prayermark': ['id', 'username', 'prayer_id', 'created_at', 'text_file_path'],
+        'role': ['id', 'name', 'description', 'permissions', 'created_at', 'created_by', 'is_system_role'],
+        'user_roles': ['id', 'user_id', 'role_id', 'granted_by', 'granted_at', 'expires_at']
+    }
+    
+    missing_columns = []
+    for table, columns in required_columns.items():
+        for column in columns:
+            if not column_exists(table, column):
+                missing_columns.append(f"{table}.{column}")
+    
+    is_valid = len(missing_columns) == 0
+    return is_valid, missing_columns
+
 # ───────── Startup: seed first invite ─────────
 @app.on_event("startup")
 def startup():
@@ -329,25 +359,38 @@ def startup():
         print(f"❌ Duplicate user migration failed: {e}")
         # Continue startup - this is not critical for basic functionality
     
-    # Defensive schema fixes for production compatibility
-    def column_exists(table_name: str, column_name: str) -> bool:
-        """Check if a column exists in a table"""
-        with engine.connect() as conn:
-            from sqlalchemy import text
-            result = conn.execute(text(f"PRAGMA table_info({table_name})"))
-            columns = [row[1] for row in result.fetchall()]
-            return column_name in columns
+    # Run schema validation
+    print("🔍 Validating database schema compatibility...")
+    is_valid, missing_columns = validate_schema_compatibility()
+    
+    if not is_valid:
+        print(f"⚠️  Schema validation found {len(missing_columns)} missing columns:")
+        for col in missing_columns:
+            print(f"   - {col}")
+        print("🔧 Attempting defensive schema repairs...")
+    else:
+        print("✅ Schema validation passed - all required columns present")
     
     # Add missing columns if they don't exist
     try:
         with engine.connect() as conn:
             from sqlalchemy import text
+            repairs_made = 0
+            
             # Add token_type column to invitetoken table if missing
             if not column_exists('invitetoken', 'token_type'):
                 print("🔧 Adding missing token_type column to invitetoken table...")
                 conn.execute(text("ALTER TABLE invitetoken ADD COLUMN token_type TEXT DEFAULT 'new_user'"))
                 conn.commit()
                 print("✅ Added token_type column")
+                repairs_made += 1
+            
+            # Add other critical missing columns as needed
+            # (Future defensive repairs can be added here)
+            
+            if repairs_made > 0:
+                print(f"✅ Schema repairs completed: {repairs_made} columns added")
+            
     except Exception as e:
         print(f"⚠️  Schema fix warning: {e}")
         # Continue startup - this is defensive, not critical
