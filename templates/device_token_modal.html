@@ -1,0 +1,81 @@
+<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" 
+     onclick="if(event.target === this) this.remove()">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4" onclick="event.stopPropagation()">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Add New Device</h3>
+      <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="mb-4">
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+        Use this link on your new device to add it to your account:
+      </p>
+      <div class="bg-gray-50 dark:bg-gray-700 rounded p-3 break-all text-sm font-mono">
+        <span id="device-url">{{ device_url }}</span>
+      </div>
+    </div>
+    
+    <div class="mb-4">
+      <button onclick="copyDeviceUrl()" class="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors">
+        📋 Copy Link
+      </button>
+    </div>
+    
+    <div class="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+      <p>⏰ Expires in {{ expires_hours }} hours</p>
+      <p>🔒 This link is for your account only</p>
+      <p>📱 Single-use device token</p>
+    </div>
+    
+    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+      <p class="text-xs text-gray-500 dark:text-gray-400">
+        <strong>How to use:</strong> Open this link on your new device, enter your username "{{ user.display_name }}", and you'll be logged in automatically.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+function copyDeviceUrl() {
+  const url = document.getElementById('device-url').textContent;
+  navigator.clipboard.writeText(url).then(() => {
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = '✅ Copied!';
+    button.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'dark:bg-blue-700', 'dark:hover:bg-blue-600');
+    button.classList.add('bg-green-600', 'dark:bg-green-600');
+    setTimeout(() => {
+      button.textContent = originalText;
+      button.classList.remove('bg-green-600', 'dark:bg-green-600');
+      button.classList.add('bg-blue-600', 'hover:bg-blue-700', 'dark:bg-blue-700', 'dark:hover:bg-blue-600');
+    }, 2000);
+  }).catch(() => {
+    // Fallback for older browsers
+    const range = document.createRange();
+    range.selectNode(document.getElementById('device-url'));
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    document.execCommand('copy');
+    window.getSelection().removeAllRanges();
+    
+    // Show feedback for fallback method
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = '📋 Selected - Press Ctrl+C';
+    setTimeout(() => {
+      button.textContent = originalText;
+    }, 3000);
+  });
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.querySelector('.fixed.inset-0')?.remove();
+  }
+});
+</script>
