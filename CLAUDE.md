@@ -88,6 +88,16 @@ VENMO_HANDLE=
 **Markers**: `@pytest.mark.unit|integration|functional|slow`
 **Safety**: Use `./thywill test` for isolated testing
 
+## Schema Management & Migration Best Practices
+**Validation**: `./thywill validate-schema` - Check database schema compatibility
+**Auto-repair**: App startup includes defensive schema validation and repairs
+**Production Safety**: Missing columns are automatically added with safe defaults
+**Migration Strategy**:
+- **Development**: Run migrations normally with `./thywill migrate`
+- **Production**: Always backup before deployments, auto-repair handles minor drift
+- **Schema Drift**: Use defensive schema checks for critical columns
+- **Pre-deployment**: Always run `./thywill validate-schema` before deployment
+
 ## Development Patterns
 **Prayer Status**: Use `prayer.set_attribute()`, update feeds, add UI controls
 **HTMX**: `hx-target="body"` for modals, fixed positioning, escape handlers
