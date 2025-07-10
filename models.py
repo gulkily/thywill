@@ -299,6 +299,7 @@ class InviteToken(SQLModel, table=True):
     max_uses: int | None = Field(default=None)  # Maximum uses allowed (null = unlimited)
     expires_at: datetime
     used_by_user_id: str | None = Field(default=None)     # ID of user who most recently claimed this invite
+    token_type: str = Field(default="new_user", max_length=20)  # 'new_user' or 'multi_device'
     
     # Backward compatibility property
     @property

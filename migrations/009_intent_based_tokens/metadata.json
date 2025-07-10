@@ -1,0 +1,11 @@
+{
+  "migration_id": "009",
+  "name": "intent_based_tokens",
+  "description": "Add token_type field to invite_tokens table for intent-based authentication",
+  "created_at": "2025-07-10",
+  "requires_manual_migration": false,
+  "affects_tables": ["invitetoken"],
+  "adds_indexes": ["idx_invitetoken_token_type", "idx_invitetoken_type_creator"],
+  "backward_compatible": true,
+  "rollback_safe": true
+}
