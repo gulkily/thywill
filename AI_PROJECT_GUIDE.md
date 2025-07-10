@@ -86,16 +86,16 @@ The prayer system now uses a flexible attributes approach instead of simple bool
 - **Answered Prayers**: Mark prayers as resolved with optional testimony sharing
 - **Status Combinations**: Prayers can have multiple statuses simultaneously
 - **Activity Logging**: Complete audit trail of all status changes
-- **Community Celebration**: Dedicated feeds for celebrating answered prayers
+- **Community Celebration**: Dedicated feeds for celebrating praise reports
 
 ### Prayer Status Management
 - **Archive/Restore**: Prayer authors can archive prayers (hide from public) and restore them
-- **Mark as Answered**: Authors can mark prayers as answered with optional testimony
-- **Testimony Sharing**: Community can see how God moved in answered prayers
+- **Mark as Answered**: Authors can add praise reports with optional testimony
+- **Testimony Sharing**: Community can see how God moved through praise reports
 - **Status Preservation**: Prayer marks and community engagement preserved across status changes
 
 ### Enhanced Community Features
-- **Answered Prayers Feed**: Public celebration of resolved prayer requests
+- **Praise Reports Feed**: Public celebration of resolved prayer requests
 - **Personal Archive**: Private view of author's archived prayers
 - **Prayer Statistics**: Answer rates, community engagement metrics
 - **Testimony Collection**: Stories of how prayers were answered for community encouragement
@@ -118,13 +118,13 @@ The prayer system now uses a flexible attributes approach instead of simple bool
 - **Security monitoring** with rate limiting and audit logging
 
 ### Feed Types
-1. **All**: All unflagged, non-archived prayers (includes answered prayers for celebration)
+1. **All**: All unflagged, non-archived prayers (includes praise reports for celebration)
 2. **New & Unprayed**: Prayers with zero prayer marks (excludes archived)
 3. **Most Prayed**: Sorted by prayer count (excludes archived)
 4. **My Prayers**: Prayers the user has marked as prayed (includes all statuses)
 5. **My Requests**: Prayers submitted by the user (includes all statuses for self-management)
 6. **Recent Activity**: Prayers with marks in last 7 days (excludes archived)
-7. **Answered**: Public celebration feed showing all answered prayers with testimonies
+7. **Praise Reports**: Public celebration feed showing all praise reports with testimonies
 8. **Archived**: Private feed showing user's own archived prayers only
 
 ### Text Archive System
@@ -361,6 +361,35 @@ from app_helpers.services.prayer_helpers import get_feed_counts
 - Database transaction safety
 - Permission checks for sensitive operations
 
+## Documentation Maintenance Protocol
+
+**CRITICAL REQUIREMENT**: After every commit, update documentation immediately:
+
+### Required Updates Per Commit
+1. **CLAUDE.md Updates**:
+   - Add new CLI commands or tools
+   - Update environment variables
+   - Add new features to Features section
+   - Update Recent Changes with commit details
+   
+2. **AI_PROJECT_GUIDE.md Updates**:
+   - Update architecture changes (new files, modules, routes)
+   - Add new API endpoints or route changes
+   - Update feature descriptions for UI/UX changes
+   - Add to Recent Updates section with chronological order
+   
+3. **Commit Message Review Process**:
+   - Read every commit message for documentation-relevant changes
+   - Update terminology changes throughout relevant sections
+   - Document new tools, scripts, or utilities
+   - Track performance improvements and bug fixes
+
+### Documentation Standards
+- Keep Recent Updates in reverse chronological order (newest first)
+- Include month/year for context (e.g., "July 2025")
+- Be specific about what changed and why
+- Link related changes together in bullet points
+
 ## Common Development Tasks
 
 ### Adding New Feed Types
@@ -496,7 +525,12 @@ When making significant code changes, follow the successful patterns used in our
 **📝 Note for AI Assistants**: This guide reflects the complete prayer lifecycle management system with flexible attributes architecture, community-driven moderation, and comprehensive multi-device authentication. The platform balances security with usability through configurable approval workflows while maintaining admin oversight for content moderation, authentication management, and prayer status transitions. The prayer attributes system allows unlimited status combinations and extensibility without breaking changes.
 
 **🔄 Recent Updates**: 
-- **User-Friendly Login System (Latest)**: Direct login form for existing users without requiring invite links
+- **UI Terminology Update (July 2025)**: Changed "Answered Prayers" to "Praise Reports" throughout interface (buttons, headers, feeds, modals)
+- **Header Simplification (July 2025)**: Removed logout button from header to prevent accidental logouts - logout now available only through menu
+- **Enhanced Prayer Generation (July 2025)**: Updated AI prompt system with improved community focus, Scripture references, and reverent tone
+- **Documentation Tools (July 2025)**: Added `generate_app_overview.py` for live stats and `md_to_pdf_simple.py` for PDF conversion
+- **Performance Improvements (July 2025)**: Refactored recent activity counting and standardized user field usage in tests
+- **User-Friendly Login System**: Direct login form for existing users without requiring invite links
 - **Feature-Flag Controlled UI**: Login options conditionally display based on MULTI_DEVICE_AUTH_ENABLED configuration  
 - **Enhanced Access Points**: Login buttons added to unauthorized.html (Access Required page) and logged_out.html
 - **Comprehensive Login Specification**: Complete documentation of existing vs non-existing username handling behavior
@@ -510,7 +544,7 @@ When making significant code changes, follow the successful patterns used in our
 - **Enhanced Test Coverage**: Comprehensive test fixes with proper mocking for modular architecture
 - **Improved Maintainability**: Code organization supports easier development without breaking existing integrations
 - **Prayer Archive & Answered System**: Flexible prayer status management with multi-status support (archived + answered + flagged), activity logging, and celebration features
-- **Enhanced Feed System**: New answered prayers celebration feed and private archived feed with improved filtering and community metrics
+- **Enhanced Feed System**: New praise reports celebration feed and private archived feed with improved filtering and community metrics
 - **Prayer Attributes Architecture**: Flexible attributes table system enabling unlimited status combinations without schema changes
 - **Multi-Device Authentication System**: Comprehensive implementation with half-authenticated states, configurable approval workflows (admin/self/peer), security monitoring, and audit logging
 - **Configurable Security**: Environment variables control authentication requirements and approval counts

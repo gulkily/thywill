@@ -51,6 +51,19 @@ existing user experience.
 - **Archive System**: Prayer marks, attributes, and activities already archived
 - **API Routes**: RESTful endpoints ready for signature verification
 
+### ⚠️ **CRITICAL PREREQUISITE: Intent-Based Authentication**
+**MUST IMPLEMENT FIRST**: The intent-based authentication system from `intent_based_authentication_flows_plan.md` is required before cryptographic authentication because:
+
+1. **Username Conflict Prevention**: Crypto doesn't solve the "Ilya problem" - two people named "Ilya" could still merge accounts even with crypto signatures
+2. **Token Type Foundation**: Crypto system builds on `new_user` vs `multi_device` token types 
+3. **Independent Value**: Intent-based system provides immediate security improvements without crypto complexity
+4. **Reduced Risk**: Simpler implementation first, then enhance with crypto
+
+**Integration Strategy**: Cryptographic authentication enhances but doesn't replace intent-based tokens:
+- `new_user` + crypto = Cryptographically verified new registration (still rejects username conflicts)
+- `multi_device` + crypto = Cryptographically verified device addition (still requires existing user)
+- Backward compatibility maintained for non-crypto flows
+
 ## Cryptographic Architecture
 
 ### Core Components
@@ -158,8 +171,18 @@ CREATE TABLE nonce_store (
 
 ## Implementation Phases
 
+### Phase 0: Intent-Based Authentication (PREREQUISITE)
+**Goal**: Implement username conflict prevention foundation
+**Status**: MUST COMPLETE BEFORE starting crypto implementation
+
+- [ ] **REQUIRED**: Complete `intent_based_authentication_flows_plan.md` implementation
+- [ ] **Token Types**: Ensure `new_user` vs `multi_device` token validation works
+- [ ] **Username Conflicts**: Verify new user registration rejects duplicate usernames
+- [ ] **Multi-Device Flow**: Confirm existing user login with valid tokens works
+- [ ] **Testing**: Full test coverage for intent-based authentication
+
 ### Phase 1: Foundation (Week 1-2)
-**Goal**: Core cryptographic infrastructure
+**Goal**: Core cryptographic infrastructure (builds on intent-based foundation)
 
 #### 1.1 Client-Side Crypto Library
 - [ ] **Package Selection**: Install `@noble/ed25519` (4KB, audit-ready)
@@ -169,9 +192,10 @@ CREATE TABLE nonce_store (
 
 #### 1.2 Database Schema
 - [ ] **Create Tables**: Add UserCryptoKey, ActionSignature, NonceStore
-- [ ] **Migration Script**: Safe schema migration for existing data
+- [ ] **Migration Script**: Safe schema migration for existing data (requires intent-based tokens already working)
 - [ ] **Indexes**: Performance optimization for signature lookups
 - [ ] **Archive Integration**: Extend text archive format
+- [ ] **Token Integration**: Ensure crypto tables work with `token_type` field from intent-based system
 
 #### 1.3 Server-Side Verification
 - [ ] **Python Crypto**: Install `cryptography` library
@@ -226,8 +250,8 @@ async function initializeUserCrypto(userId) {
 - [ ] **Prayer Submission**: `prayer_submit`
 - [ ] **Prayer Marking**: `prayer_mark` (prayed for)
 - [ ] **Prayer Status**: `prayer_archive`, `prayer_answer`, `prayer_flag`
-- [ ] **User Registration**: `user_register`
-- [ ] **Authentication**: `auth_request`, `auth_approve`
+- [ ] **User Registration**: `user_register` (must respect `new_user` token type validation)
+- [ ] **Authentication**: `auth_request`, `auth_approve` (must respect `multi_device` token type validation)
 
 #### 3.2 Signing Implementation
 ```javascript
@@ -488,20 +512,30 @@ Signature Setup → Session Cookie + Crypto Context
 
 ## Conclusion
 
-This cryptographic authentication system will provide ThyWill with industry-leading transparency and auditability while maintaining the existing user experience. The phased implementation approach ensures minimal disruption while building a comprehensive cryptographic foundation.
+This cryptographic authentication system will provide ThyWill with industry-leading transparency and auditability while building on the intent-based authentication foundation to prevent username conflicts. The sequential implementation approach ensures immediate security improvements followed by advanced cryptographic features.
+
+**Implementation Priority Order:**
+1. **Intent-Based Authentication FIRST** (solves urgent username conflict issue)
+2. **Cryptographic Enhancement** (adds unforgeable mathematical proof)
+3. **Full Integration** (complete security stack)
 
 **Key Benefits:**
+- **Username Conflict Prevention**: Intent-based tokens prevent "Ilya problem"
 - **Mathematical Proof**: Every user action cryptographically verified
 - **Complete Transparency**: Full audit trail in text archives
 - **Non-Repudiation**: Users cannot deny their actions
 - **Industry Standards**: Ed25519 signatures with proper key management
 - **Archive Integration**: Seamless integration with existing backup systems
+- **Layered Security**: Community verification + cryptographic proof + intent validation
 
 **Next Steps:**
-1. Review technical implementation details
-2. Approve cryptographic library selections
-3. Begin Phase 1 development
-4. Establish security testing procedures
+1. **FIRST**: Complete intent-based authentication implementation
+2. Review cryptographic technical implementation details
+3. Approve cryptographic library selections
+4. Begin Phase 1 crypto development (only after intent-based is complete)
+5. Establish security testing procedures for integrated system
+
+**Critical Success Factor**: Intent-based authentication provides the foundation that makes cryptographic authentication both more secure and more usable by preventing the core username conflict issue that crypto alone cannot solve.
 
 ---
 
