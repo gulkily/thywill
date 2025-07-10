@@ -1,0 +1,536 @@
+{% extends "base.html" %}
+
+{% block title %}How ThyWill Works{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+  <!-- Header -->
+  <div class="text-center">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">How ThyWill Works</h1>
+    <p class="text-gray-600 dark:text-gray-400 text-lg mt-2">Understanding the heart and technology behind our prayer platform</p>
+  </div>
+
+  <!-- Table of Contents -->
+  <div class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-6">
+    <h2 class="text-xl font-semibold text-blue-900 dark:text-blue-100 mb-4">Table of Contents</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+      <a href="#introduction" class="text-blue-700 dark:text-blue-300 hover:underline">1. Introduction: Prayer in the Digital Age</a>
+      <a href="#core-features" class="text-blue-700 dark:text-blue-300 hover:underline">2. Core Features for Users</a>
+      <a href="#security" class="text-blue-700 dark:text-blue-300 hover:underline">3. Security & Community Trust</a>
+      <a href="#ai-integration" class="text-blue-700 dark:text-blue-300 hover:underline">4. AI Integration</a>
+      <a href="#technical-architecture" class="text-blue-700 dark:text-blue-300 hover:underline">5. Technical Architecture</a>
+      <a href="#database-design" class="text-blue-700 dark:text-blue-300 hover:underline">6. Database Design</a>
+      <a href="#frontend-tech" class="text-blue-700 dark:text-blue-300 hover:underline">7. Frontend Technology</a>
+      <a href="#developer-details" class="text-blue-700 dark:text-blue-300 hover:underline">8. Developer Implementation Details</a>
+    </div>
+  </div>
+
+  <!-- Introduction Section -->
+  <section id="introduction" class="prose dark:prose-invert max-w-none">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Prayer in the Digital Age</h2>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+      <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
+        ThyWill represents a thoughtful approach to bringing prayer into the digital realm while preserving its sacred nature. In an age where technology often isolates us, we've created a platform that fosters genuine spiritual community through carefully designed features that respect both the intimacy of personal prayer and the power of collective intercession.
+      </p>
+      
+      <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
+        Our platform isn't just another social network—it's a purpose-built spiritual tool that addresses real challenges people face in their prayer lives: finding the right words, maintaining consistency, connecting with others who share their faith, and preserving meaningful spiritual moments for reflection.
+      </p>
+      
+      <blockquote class="border-l-4 border-blue-500 pl-4 italic text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/30 p-4 rounded-r-lg">
+        "The intersection of artificial intelligence and authentic faith creates unprecedented opportunities for spiritual growth and community connection."
+      </blockquote>
+    </div>
+  </section>
+
+  <!-- Core Features Section -->
+  <section id="core-features" class="prose dark:prose-invert max-w-none">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Core Features for Users</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">🤖 AI-Powered Prayer Generation</h3>
+        <p class="text-gray-700 dark:text-gray-300 text-sm mb-3">
+          When words fail, technology helps. Our Claude AI integration assists in crafting thoughtful prayers while maintaining the authenticity of your personal spiritual expression.
+        </p>
+        <div class="bg-gray-50 dark:bg-gray-700 rounded p-3 text-xs">
+          <strong>User Experience:</strong> Simply describe your prayer need, and receive beautifully crafted prayers that you can use as-is or customize to your heart's content.
+        </div>
+      </div>
+      
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">🔒 Invite-Only Community</h3>
+        <p class="text-gray-700 dark:text-gray-300 text-sm mb-3">
+          Trust is the foundation of vulnerable prayer sharing. Our invite-only system ensures every member is connected to the community through personal relationships.
+        </p>
+        <div class="bg-gray-50 dark:bg-gray-700 rounded p-3 text-xs">
+          <strong>Community Impact:</strong> Creates a safe space where members feel comfortable sharing deeply personal prayer requests and testimonies.
+        </div>
+      </div>
+      
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">📚 Comprehensive Archives</h3>
+        <p class="text-gray-700 dark:text-gray-300 text-sm mb-3">
+          Every prayer, every answer, every moment of spiritual significance is preserved in human-readable text format for personal reflection and community testimony.
+        </p>
+        <div class="bg-gray-50 dark:bg-gray-700 rounded p-3 text-xs">
+          <strong>Spiritual Value:</strong> Track your prayer journey, witness answered prayers, and build a personal testament of faith over time.
+        </div>
+      </div>
+      
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">🚀 Seamless Experience</h3>
+        <p class="text-gray-700 dark:text-gray-300 text-sm mb-3">
+          Built with HTMX for smooth, interruption-free prayer experiences. No page refreshes, no loading screens—just pure focus on spiritual connection.
+        </p>
+        <div class="bg-gray-50 dark:bg-gray-700 rounded p-3 text-xs">
+          <strong>Technical Benefit:</strong> Maintains prayer focus and flow state through instant, responsive interactions.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Security Section -->
+  <section id="security" class="prose dark:prose-invert max-w-none">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Security & Community Trust</h2>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Multi-Device Authentication System</h3>
+      
+      <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
+        Our innovative peer-approval authentication system transforms security from a technological barrier into a community-building feature. When you want to access ThyWill from a new device, existing community members help verify your identity.
+      </p>
+      
+      <div class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 mb-4">
+        <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-2">How Peer Approval Works:</h4>
+        <ol class="list-decimal list-inside text-sm text-blue-800 dark:text-blue-200 space-y-1">
+          <li>Request access from a new device using your existing credentials</li>
+          <li>System notifies trusted community members about your request</li>
+          <li>Multiple peers confirm your identity based on community knowledge</li>
+          <li>Once approved, you gain full access to your account</li>
+        </ol>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-green-50 dark:bg-green-900/30 rounded p-3">
+          <h5 class="font-semibold text-green-900 dark:text-green-100 text-sm mb-2">Security Benefits</h5>
+          <ul class="text-green-800 dark:text-green-200 text-xs space-y-1">
+            <li>• Prevents unauthorized access even with stolen credentials</li>
+            <li>• Creates accountability within the community</li>
+            <li>• Builds stronger relationships through trust verification</li>
+          </ul>
+        </div>
+        
+        <div class="bg-purple-50 dark:bg-purple-900/30 rounded p-3">
+          <h5 class="font-semibold text-purple-900 dark:text-purple-100 text-sm mb-2">Community Impact</h5>
+          <ul class="text-purple-800 dark:text-purple-200 text-xs space-y-1">
+            <li>• Members actively participate in community security</li>
+            <li>• Fosters deeper connections through mutual trust</li>
+            <li>• Reduces reliance on impersonal security measures</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI Integration Section -->
+  <section id="ai-integration" class="prose dark:prose-invert max-w-none">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">AI Integration: Technology Serving Faith</h2>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+      <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
+        Our integration with Claude AI represents a careful balance between technological assistance and spiritual authenticity. The AI doesn't replace human prayer—it enhances it by helping users find words when they're struggling, providing structure when thoughts are scattered, and offering inspiration when faith feels distant.
+      </p>
+      
+      <div class="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-4 mb-4">
+        <h4 class="font-semibold text-amber-900 dark:text-amber-100 mb-2">Prayer Generation Process:</h4>
+        <div class="text-sm text-amber-800 dark:text-amber-200">
+          <p class="mb-2">1. <strong>User Input:</strong> Describe your prayer need in plain language</p>
+          <p class="mb-2">2. <strong>AI Processing:</strong> Claude analyzes context and spiritual themes</p>
+          <p class="mb-2">3. <strong>Prayer Crafting:</strong> Generates thoughtful, biblically-grounded prayers</p>
+          <p>4. <strong>Human Review:</strong> User customizes and personalizes before sharing</p>
+        </div>
+      </div>
+      
+      <div class="bg-gray-50 dark:bg-gray-700 rounded p-4">
+        <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Maintaining Authenticity:</h4>
+        <ul class="text-gray-700 dark:text-gray-300 text-sm space-y-1">
+          <li>• AI-generated prayers are clearly marked as such</li>
+          <li>• Users can always write entirely personal prayers</li>
+          <li>• AI suggestions can be modified or rejected</li>
+          <li>• The tool enhances rather than replaces human spiritual expression</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Technical Architecture Section -->
+  <section id="technical-architecture" class="prose dark:prose-invert max-w-none">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Technical Architecture</h2>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Modern Python Stack</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-3">Backend Framework</h4>
+          <div class="bg-gray-50 dark:bg-gray-700 rounded p-4 font-mono text-sm">
+            <div class="text-green-600 dark:text-green-400">FastAPI</div>
+            <div class="text-gray-600 dark:text-gray-400 mt-1">• Async/await support for high performance</div>
+            <div class="text-gray-600 dark:text-gray-400">• Automatic API documentation</div>
+            <div class="text-gray-600 dark:text-gray-400">• Type hints for better code quality</div>
+          </div>
+        </div>
+        
+        <div>
+          <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-3">Database Layer</h4>
+          <div class="bg-gray-50 dark:bg-gray-700 rounded p-4 font-mono text-sm">
+            <div class="text-blue-600 dark:text-blue-400">SQLModel + SQLite</div>
+            <div class="text-gray-600 dark:text-gray-400 mt-1">• Pydantic integration for validation</div>
+            <div class="text-gray-600 dark:text-gray-400">• Type-safe database operations</div>
+            <div class="text-gray-600 dark:text-gray-400">• Automatic migrations</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-6">
+        <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-3">Application Structure</h4>
+        <div class="bg-gray-50 dark:bg-gray-700 rounded p-4 font-mono text-sm">
+          <pre class="text-gray-800 dark:text-gray-200">
+thywill/
+├── app.py                    # Main FastAPI application
+├── models.py                 # SQLModel database schemas
+├── app_helpers/
+│   ├── services/            # Business logic services
+│   │   ├── auth_helpers.py  # Authentication & security
+│   │   ├── prayer_helpers.py # Prayer generation & feeds
+│   │   └── invite_helpers.py # Invitation system
+│   ├── routes/              # API route handlers
+│   │   ├── auth_routes.py   # Authentication endpoints
+│   │   ├── prayer_routes.py # Prayer CRUD operations
+│   │   └── admin_routes.py  # Administrative functions
+│   └── utils/               # Utility functions
+├── templates/               # Jinja2 HTML templates
+└── text_archives/          # Human-readable prayer archives
+          </pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Database Design Section -->
+  <section id="database-design" class="prose dark:prose-invert max-w-none">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Database Design</h2>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Core Data Models</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-gray-50 dark:bg-gray-700 rounded p-4">
+          <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">User Model</h4>
+          <div class="font-mono text-xs text-gray-700 dark:text-gray-300">
+            <div class="mb-1">display_name: str (Primary Key)</div>
+            <div class="mb-1">created_at: datetime</div>
+            <div class="mb-1">invited_by_username: str | None</div>
+            <div class="mb-1">invite_token_used: str | None</div>
+            <div class="mb-1">welcome_message_dismissed: bool</div>
+            <div class="mb-1">text_file_path: str | None</div>
+            <div class="text-green-600 dark:text-green-400 text-xs mt-1">• No passwords - uses invite system</div>
+          </div>
+        </div>
+        
+        <div class="bg-gray-50 dark:bg-gray-700 rounded p-4">
+          <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Prayer Model</h4>
+          <div class="font-mono text-xs text-gray-700 dark:text-gray-300">
+            <div class="mb-1">id: str (UUID, Primary Key)</div>
+            <div class="mb-1">author_username: str</div>
+            <div class="mb-1">text: str</div>
+            <div class="mb-1">generated_prayer: str | None</div>
+            <div class="mb-1">project_tag: str | None</div>
+            <div class="mb-1">created_at: datetime</div>
+            <div class="mb-1">text_file_path: str | None</div>
+          </div>
+        </div>
+        
+        <div class="bg-gray-50 dark:bg-gray-700 rounded p-4">
+          <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">AuthenticationRequest</h4>
+          <div class="font-mono text-xs text-gray-700 dark:text-gray-300">
+            <div class="mb-1">id: str (UUID, Primary Key)</div>
+            <div class="mb-1">user_id: str</div>
+            <div class="mb-1">device_info: str | None</div>
+            <div class="mb-1">ip_address: str | None</div>
+            <div class="mb-1">verification_code: str | None</div>
+            <div class="mb-1">status: str ("pending", "approved")</div>
+            <div class="mb-1">expires_at: datetime</div>
+          </div>
+        </div>
+        
+        <div class="bg-gray-50 dark:bg-gray-700 rounded p-4">
+          <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">PrayerMark</h4>
+          <div class="font-mono text-xs text-gray-700 dark:text-gray-300">
+            <div class="mb-1">id: str (UUID, Primary Key)</div>
+            <div class="mb-1">username: str (Foreign Key)</div>
+            <div class="mb-1">prayer_id: str</div>
+            <div class="mb-1">created_at: datetime</div>
+            <div class="mb-1">text_file_path: str | None</div>
+          </div>
+        </div>
+        
+        <div class="bg-gray-50 dark:bg-gray-700 rounded p-4">
+          <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">PrayerAttribute</h4>
+          <div class="font-mono text-xs text-gray-700 dark:text-gray-300">
+            <div class="mb-1">id: str (Primary Key)</div>
+            <div class="mb-1">prayer_id: str (Foreign Key)</div>
+            <div class="mb-1">attribute_name: str</div>
+            <div class="mb-1">attribute_value: str | None</div>
+            <div class="mb-1">created_by: str | None</div>
+            <div class="text-blue-600 dark:text-blue-400 text-xs mt-1">• Flexible prayer metadata system</div>
+          </div>
+        </div>
+        
+        <div class="bg-gray-50 dark:bg-gray-700 rounded p-4">
+          <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Session</h4>
+          <div class="font-mono text-xs text-gray-700 dark:text-gray-300">
+            <div class="mb-1">id: str (Primary Key)</div>
+            <div class="mb-1">username: str</div>
+            <div class="mb-1">expires_at: datetime</div>
+            <div class="mb-1">auth_request_id: str | None</div>
+            <div class="mb-1">device_info: str | None</div>
+            <div class="mb-1">is_fully_authenticated: bool</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-6">
+        <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-3">Key Database Features</h4>
+        <ul class="text-gray-700 dark:text-gray-300 space-y-2">
+          <li><strong>Username-Based Authentication:</strong> No passwords - users identified by unique display names</li>
+          <li><strong>Flexible Prayer Attributes:</strong> Dynamic metadata system for prayer status, answered dates, testimonies</li>
+          <li><strong>Archive-First Design:</strong> Every database action logged to human-readable text files</li>
+          <li><strong>Multi-Device Security:</strong> Comprehensive audit trail for authentication requests and approvals</li>
+          <li><strong>Invite Tree Tracking:</strong> Complete genealogy of community invitations and relationships</li>
+          <li><strong>Role-Based Access Control:</strong> Flexible permission system with admin/user roles</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Frontend Technology Section -->
+  <section id="frontend-tech" class="prose dark:prose-invert max-w-none">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Frontend Technology</h2>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">HTMX: Hypermedia-Driven Applications</h3>
+      
+      <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
+        We've chosen HTMX as our frontend technology to create a seamless, app-like experience without the complexity of modern JavaScript frameworks. This approach prioritizes spiritual focus over technical complexity.
+      </p>
+      
+      <div class="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-4 mb-4">
+        <h4 class="font-semibold text-indigo-900 dark:text-indigo-100 mb-2">HTMX Benefits for Prayer Platform:</h4>
+        <ul class="text-indigo-800 dark:text-indigo-200 text-sm space-y-1">
+          <li>• <strong>No Page Refreshes:</strong> Maintain prayer focus and flow state</li>
+          <li>• <strong>Instant Interactions:</strong> Mark prayers, share requests without interruption</li>
+          <li>• <strong>Minimal JavaScript:</strong> Reduces complexity and load times</li>
+          <li>• <strong>Progressive Enhancement:</strong> Works even with limited connectivity</li>
+        </ul>
+      </div>
+      
+      <div class="bg-gray-50 dark:bg-gray-700 rounded p-4 mb-4">
+        <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Example HTMX Implementation:</h4>
+        <pre class="text-sm text-gray-800 dark:text-gray-200 overflow-x-auto"><code>&lt;!-- Prayer marking with HTMX --&gt;
+&lt;button hx-post="/mark/{% raw %}{{ prayer.id }}{% endraw %}" 
+        hx-target="#prayer-{% raw %}{{ prayer.id }}{% endraw %}"
+        hx-swap="outerHTML"
+        class="prayer-mark-btn"&gt;
+  🙏 Mark as Prayed
+&lt;/button&gt;
+
+&lt;!-- Modal prayer generation --&gt;
+&lt;div hx-get="/generate-prayer-modal"
+     hx-trigger="click"
+     hx-target="body"
+     hx-swap="beforeend"&gt;
+  Generate Prayer with AI
+&lt;/div&gt;</code></pre>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-green-50 dark:bg-green-900/30 rounded p-3">
+          <h5 class="font-semibold text-green-900 dark:text-green-100 text-sm mb-2">Tailwind CSS</h5>
+          <p class="text-green-800 dark:text-green-200 text-xs">
+            Utility-first CSS framework for rapid, consistent styling with built-in dark mode support.
+          </p>
+        </div>
+        
+        <div class="bg-purple-50 dark:bg-purple-900/30 rounded p-3">
+          <h5 class="font-semibold text-purple-900 dark:text-purple-100 text-sm mb-2">Jinja2 Templates</h5>
+          <p class="text-purple-800 dark:text-purple-200 text-xs">
+            Server-side templating with template inheritance and context-aware rendering.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Developer Details Section -->
+  <section id="developer-details" class="prose dark:prose-invert max-w-none">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Developer Implementation Details</h2>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Authentication System Implementation</h3>
+      
+      <div class="bg-gray-50 dark:bg-gray-700 rounded p-4 mb-4">
+        <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Multi-Device Auth Flow</h4>
+        <pre class="text-sm text-gray-800 dark:text-gray-200 overflow-x-auto"><code>async def create_auth_request(user_id: int, device_info: str, ip_address: str):
+    """Create authentication request for multi-device approval"""
+    with Session(engine) as session:
+        # Check rate limiting
+        if not check_rate_limit(session, user_id, ip_address):
+            raise HTTPException(429, "Too many requests")
+        
+        # Create request
+        auth_request = AuthenticationRequest(
+            user_id=user_id,
+            device_info=device_info,
+            ip_address=ip_address,
+            status="pending",
+            expires_at=datetime.now() + timedelta(hours=24)
+        )
+        
+        session.add(auth_request)
+        session.commit()
+        
+        # Log security event
+        log_security_event(session, user_id, "auth_request_created", 
+                          {"device": device_info, "ip": ip_address})
+        
+        return auth_request</code></pre>
+      </div>
+      
+      <div class="bg-gray-50 dark:bg-gray-700 rounded p-4 mb-4">
+        <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Prayer Generation Service</h4>
+        <pre class="text-sm text-gray-800 dark:text-gray-200 overflow-x-auto"><code>async def generate_prayer(prayer_request: str, user_context: dict):
+    """Generate AI-assisted prayer using Claude API"""
+    
+    # Prepare context-aware prompt
+    prompt = f"""
+    Generate a thoughtful, biblically-grounded prayer for this request:
+    "{prayer_request}"
+    
+    User context: {user_context.get('religious_tradition', 'Christian')}
+    
+    Guidelines:
+    - Be respectful and reverent
+    - Include biblical themes where appropriate
+    - Keep length moderate (2-4 sentences)
+    - Avoid denominational specifics
+    """
+    
+    try:
+        response = anthropic_client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=300,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            "prayer_text": response.content[0].text,
+            "is_ai_generated": True,
+            "generated_at": datetime.now()
+        }
+        
+    except Exception as e:
+        log_error(f"Prayer generation failed: {str(e)}")
+        raise HTTPException(500, "Prayer generation service unavailable")</code></pre>
+      </div>
+      
+      <div class="bg-gray-50 dark:bg-gray-700 rounded p-4 mb-4">
+        <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Archive System</h4>
+        <pre class="text-sm text-gray-800 dark:text-gray-200 overflow-x-auto"><code>class ArchiveService:
+    """Human-readable text archive system"""
+    
+    def archive_prayer(self, prayer: Prayer, user: User):
+        """Archive prayer to text file with metadata"""
+        
+        archive_dir = f"{TEXT_ARCHIVE_BASE_DIR}/{user.id}"
+        os.makedirs(archive_dir, exist_ok=True)
+        
+        # Create date-based filename
+        date_str = prayer.created_at.strftime("%Y-%m-%d")
+        filename = f"{archive_dir}/{date_str}_prayers.txt"
+        
+        # Format prayer entry
+        entry = f"""
+[{prayer.created_at.strftime('%Y-%m-%d %H:%M:%S')}]
+Type: {'Request' if prayer.is_request else 'Prayer'}
+Author: {user.name}
+{'AI-Generated: Yes' if prayer.is_ai_generated else ''}
+
+{prayer.content}
+
+{'---' * 20}
+"""
+        
+        # Append to daily file
+        with open(filename, 'a', encoding='utf-8') as f:
+            f.write(entry)
+            
+        # Update archive index
+        self.update_archive_index(user.id, prayer.id, filename)</code></pre>
+      </div>
+      
+      <div class="bg-blue-50 dark:bg-blue-900/30 rounded p-4">
+        <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-2">Development Setup</h4>
+        <div class="text-sm text-blue-800 dark:text-blue-200">
+          <p class="mb-2"><strong>Environment Setup:</strong></p>
+          <pre class="bg-blue-100 dark:bg-blue-800 rounded p-2 text-xs">
+python -m venv venv
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+pip install -r requirements.txt
+chmod +x thywill
+./thywill init
+./thywill start</pre>
+          
+          <p class="mb-2 mt-3"><strong>Key Environment Variables:</strong></p>
+          <ul class="text-xs space-y-1">
+            <li>• <code>ANTHROPIC_API_KEY</code> - Claude AI integration</li>
+            <li>• <code>MULTI_DEVICE_AUTH_ENABLED</code> - Enable peer approval</li>
+            <li>• <code>PEER_APPROVAL_COUNT</code> - Required approvals (default: 2)</li>
+            <li>• <code>TEXT_ARCHIVE_ENABLED</code> - Enable text archiving</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Conclusion -->
+  <section class="prose dark:prose-invert max-w-none">
+    <div class="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-6">
+      <h2 class="text-xl font-bold text-purple-900 dark:text-purple-100 mb-4">Building Faith-Centered Technology</h2>
+      
+      <p class="text-purple-800 dark:text-purple-200 leading-relaxed mb-4">
+        ThyWill represents more than just another web application—it's a carefully crafted intersection of cutting-edge technology and timeless spiritual practices. Every technical decision has been made with reverence for the sacred nature of prayer and the importance of authentic community.
+      </p>
+      
+      <p class="text-purple-800 dark:text-purple-200 leading-relaxed">
+        For developers interested in contributing or building similar faith-focused applications, ThyWill demonstrates how modern development practices can serve spiritual purposes while maintaining technical excellence and security standards.
+      </p>
+      
+      <div class="mt-4 text-center">
+        <p class="text-purple-700 dark:text-purple-300 text-sm italic">
+          "Technology in service of faith, community in service of prayer."
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Back to Menu -->
+  <div class="text-center">
+    <a href="/menu" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-purple-600 dark:bg-purple-800 hover:bg-purple-700 dark:hover:bg-purple-900 transition-colors">
+      ← Back to Menu
+    </a>
+  </div>
+</div>
+{% endblock %}
