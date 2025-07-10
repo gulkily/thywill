@@ -376,17 +376,18 @@ def create_invite_token(created_by_user: str, token_type: str = "new_user", max_
         max_uses: Maximum number of uses (default 1)
         
     Returns:
-        str: The created token
+        str: The created token (16-character format)
         
     Raises:
         ValueError: If token_type is invalid
     """
-    import uuid
+    import secrets
     
     if token_type not in ["new_user", "multi_device"]:
         raise ValueError("token_type must be 'new_user' or 'multi_device'")
     
-    token = uuid.uuid4().hex
+    # Use same 16-character format as admin tokens (8 bytes = 16 hex chars)
+    token = secrets.token_hex(8)
     expires_at = datetime.utcnow() + timedelta(hours=TOKEN_EXP_H)
     
     invite = InviteToken(
@@ -428,11 +429,12 @@ def create_device_token(user_id: str, expiry_hours: int = 24) -> str:
         expiry_hours: Hours until token expires (default 24, shorter than regular invites)
         
     Returns:
-        str: The device token
+        str: The device token (16-character format, same as admin tokens)
     """
-    import uuid
+    import secrets
     
-    token = uuid.uuid4().hex
+    # Use same 16-character format as admin tokens (8 bytes = 16 hex chars)
+    token = secrets.token_hex(8)
     expires_at = datetime.utcnow() + timedelta(hours=expiry_hours)
     
     invite = InviteToken(
