@@ -187,6 +187,35 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
         existing_users = find_users_with_equivalent_usernames(s, normalized_display_name)
         existing_user = existing_users[0] if existing_users else None
         
+        # TOKEN TYPE VALIDATION - This is the key change for preventing username conflicts
+        if inv.token_type == "new_user":
+            # NEW USER REGISTRATION: Reject if username exists
+            if existing_user:
+                return templates.TemplateResponse("claim.html", {
+                    "request": request,
+                    "token": token,
+                    "error": f"Username '{display_name}' already exists. Please choose a different name like {display_name}_2024, {display_name}_Smith, etc."
+                })
+            # Continue to new user creation logic below
+            
+        elif inv.token_type == "multi_device":
+            # MULTI-DEVICE LOGIN: Require existing username
+            if not existing_user:
+                return templates.TemplateResponse("claim.html", {
+                    "request": request,
+                    "token": token,
+                    "error": f"This device link is for an existing account. Username '{display_name}' not found. Please enter the exact username for the account you want to access."
+                })
+            # Continue to existing user login logic below
+            
+        else:
+            # Invalid token type (shouldn't happen with default values, but defensive)
+            return templates.TemplateResponse("claim.html", {
+                "request": request,
+                "token": token,
+                "error": "Invalid invite link type. Please request a new invite."
+            })
+        
         # Check if this is an admin token for special role handling
         is_admin_token = (inv.created_by_user == "system")
             
