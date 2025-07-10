@@ -43,19 +43,35 @@
     <form method="post" action="/claim/{{ token }}" class="space-y-4" aria-label="Complete invitation">
       <div>
         <label for="display_name" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-          Choose Your Display Name
+          {% if is_device_token %}
+            Enter Your Existing Username
+          {% else %}
+            Choose Your Display Name
+          {% endif %}
         </label>
         <input id="display_name" name="display_name" maxlength="40" required
+               {% if is_device_token %}
+               placeholder="Enter your exact username"
+               {% else %}
                placeholder="e.g., Sarah, John M., PrayerWarrior"
+               {% endif %}
                class="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          No email required • Visible to community members
+          {% if is_device_token %}
+            This device link is for accessing an existing account
+          {% else %}
+            No email required • Visible to community members
+          {% endif %}
         </p>
       </div>
 
       <button type="submit"
               class="w-full bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white font-semibold py-4 text-lg rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-        Join ThyWill Community
+        {% if is_device_token %}
+          Access My Account
+        {% else %}
+          Join ThyWill Community
+        {% endif %}
       </button>
     </form>
     {% else %}

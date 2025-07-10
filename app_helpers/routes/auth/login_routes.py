@@ -133,8 +133,14 @@ def claim_get(token: str, request: Request):
                 "error": f"This invite link has expired. Invite links are {format_validity_message(TOKEN_EXP_H)}. Please request a new invite link."
             })
     
-    # Token is valid, show the normal claim form
-    return templates.TemplateResponse("claim.html", {"request": request, "token": token, "token_exp_hours": TOKEN_EXP_H})
+    # Token is valid, show the normal claim form with token type context
+    return templates.TemplateResponse("claim.html", {
+        "request": request, 
+        "token": token, 
+        "token_exp_hours": TOKEN_EXP_H,
+        "token_type": inv.token_type,
+        "is_device_token": inv.token_type == "multi_device"
+    })
 
 
 @router.post("/claim/{token}")
