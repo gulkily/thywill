@@ -73,6 +73,20 @@ async def dismiss_welcome(user_session: tuple = Depends(current_user)):
     
     return JSONResponse({"success": True})
 
+@router.get("/how-it-works", response_class=HTMLResponse)
+def how_it_works(request: Request, user_session: tuple = Depends(current_user)):
+    """How ThyWill Works - Technical explanation and architecture details"""
+    user, session = user_session
+    
+    return templates.TemplateResponse(
+        "how_it_works.html",
+        {
+            "request": request, 
+            "me": user, 
+            "session": session
+        }
+    )
+
 @router.get("/export", response_class=HTMLResponse)
 def export_page(request: Request, user_session: tuple = Depends(current_user)):
     """Community export information and download page - Text Archives."""
@@ -121,3 +135,32 @@ async def export_text_archive(user_session: tuple = Depends(current_user)):
             status_code=500,
             detail=f"Text archive export failed: {str(e)}"
         )
+
+
+@router.post("/create-device-token")
+def create_device_token_route(request: Request, user_session: tuple = Depends(current_user)):
+    """Create a device token for current user."""
+    from app_helpers.services.auth_helpers import require_full_auth
+    from app_helpers.services.invite_helpers import create_device_token
+    from app_helpers.services.token_service import TOKEN_EXP_H
+    
+    user, session = user_session
+    
+    # Check if user is fully authenticated
+    if not session.is_fully_authenticated:
+        raise HTTPException(401, "Full authentication required to create device tokens")
+    
+    try:
+        # Create device token with shorter expiry (24 hours vs regular invite expiry)
+        token = create_device_token(user.display_name, expiry_hours=24)
+        device_url = f"{request.base_url}claim/{token}"
+        
+        return templates.TemplateResponse("device_token_modal.html", {
+            "request": request,
+            "token": token,
+            "device_url": device_url,
+            "expires_hours": 24,  # Device tokens expire faster
+            "user": user
+        })
+    except Exception as e:
+        raise HTTPException(500, f"Failed to create device token: {str(e)}")

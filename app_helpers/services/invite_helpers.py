@@ -362,3 +362,127 @@ def _calculate_max_depth(db: Session) -> int:
     ).first() or 0
     
     return max(depth, 1 if orphaned_count > 0 else 0)
+
+
+# Intent-Based Authentication Functions
+
+def create_invite_token(created_by_user: str, token_type: str = "new_user", max_uses: int = 1) -> str:
+    """
+    Create invite token with specified type.
+    
+    Args:
+        created_by_user: User creating the invite
+        token_type: 'new_user' for registration, 'multi_device' for device addition
+        max_uses: Maximum number of uses (default 1)
+        
+    Returns:
+        str: The created token
+        
+    Raises:
+        ValueError: If token_type is invalid
+    """
+    import uuid
+    
+    if token_type not in ["new_user", "multi_device"]:
+        raise ValueError("token_type must be 'new_user' or 'multi_device'")
+    
+    token = uuid.uuid4().hex
+    expires_at = datetime.utcnow() + timedelta(hours=TOKEN_EXP_H)
+    
+    invite = InviteToken(
+        token=token,
+        created_by_user=created_by_user,
+        token_type=token_type,
+        max_uses=max_uses,
+        expires_at=expires_at
+    )
+    
+    # Save to database and archive
+    with Session(engine) as session:
+        session.add(invite)
+        session.commit()
+        
+        # Archive the token creation
+        try:
+            from app_helpers.services.archive_writers import system_archive_writer
+            system_archive_writer.log_invite_creation(
+                token=token,
+                created_by=created_by_user,
+                token_type=token_type,
+                max_uses=max_uses
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to archive invite token creation: {e}")
+        
+    return token
+
+
+def create_device_token(user_id: str, expiry_hours: int = 24) -> str:
+    """
+    Create a multi-device token for adding new devices.
+    
+    Args:
+        user_id: ID of the user creating the device token
+        expiry_hours: Hours until token expires (default 24, shorter than regular invites)
+        
+    Returns:
+        str: The device token
+    """
+    import uuid
+    
+    token = uuid.uuid4().hex
+    expires_at = datetime.utcnow() + timedelta(hours=expiry_hours)
+    
+    invite = InviteToken(
+        token=token,
+        created_by_user=user_id,
+        token_type="multi_device",
+        max_uses=1,  # Device tokens are single-use
+        expires_at=expires_at
+    )
+    
+    # Save to database
+    with Session(engine) as session:
+        session.add(invite)
+        session.commit()
+        
+        # Archive the device token creation
+        try:
+            from app_helpers.services.archive_writers import system_archive_writer
+            system_archive_writer.log_invite_creation(
+                token=token,
+                created_by=user_id,
+                token_type="multi_device",
+                max_uses=1
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to archive device token creation: {e}")
+    
+    return token
+
+
+def get_user_device_tokens(user_id: str, include_expired: bool = False) -> list[InviteToken]:
+    """
+    Get all device tokens created by a user.
+    
+    Args:
+        user_id: ID of the user
+        include_expired: Whether to include expired tokens
+        
+    Returns:
+        list[InviteToken]: List of device tokens
+    """
+    with Session(engine) as session:
+        stmt = select(InviteToken).where(
+            InviteToken.created_by_user == user_id,
+            InviteToken.token_type == "multi_device"
+        )
+        
+        if not include_expired:
+            stmt = stmt.where(InviteToken.expires_at > datetime.utcnow())
+            
+        return session.exec(stmt.order_by(InviteToken.expires_at.desc())).all()
