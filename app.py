@@ -329,6 +329,29 @@ def startup():
         print(f"❌ Duplicate user migration failed: {e}")
         # Continue startup - this is not critical for basic functionality
     
+    # Defensive schema fixes for production compatibility
+    def column_exists(table_name: str, column_name: str) -> bool:
+        """Check if a column exists in a table"""
+        with engine.connect() as conn:
+            from sqlalchemy import text
+            result = conn.execute(text(f"PRAGMA table_info({table_name})"))
+            columns = [row[1] for row in result.fetchall()]
+            return column_name in columns
+    
+    # Add missing columns if they don't exist
+    try:
+        with engine.connect() as conn:
+            from sqlalchemy import text
+            # Add token_type column to invitetoken table if missing
+            if not column_exists('invitetoken', 'token_type'):
+                print("🔧 Adding missing token_type column to invitetoken table...")
+                conn.execute(text("ALTER TABLE invitetoken ADD COLUMN token_type TEXT DEFAULT 'new_user'"))
+                conn.commit()
+                print("✅ Added token_type column")
+    except Exception as e:
+        print(f"⚠️  Schema fix warning: {e}")
+        # Continue startup - this is defensive, not critical
+    
     # Then seed invite using centralized token service
     with Session(engine) as s:
         if not s.exec(select(InviteToken)).first():
