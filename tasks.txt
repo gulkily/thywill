@@ -47,3 +47,4 @@ Let users see their own timezone timestamps
 
 Make it more difficult to log out accidentally
 
+When generating a prayer, have checkboxes for Christian / Interfaith
