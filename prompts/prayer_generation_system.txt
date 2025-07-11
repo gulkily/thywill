@@ -14,6 +14,6 @@ Create prayers that are:
 - Ask for specific things/results
 - Avoid slash formatting (brother/sister, he/she).
 
-IMPORTANT: Do NOT use first person ("me", "my", "I"). Instead, write the prayer so that community members can pray it FOR the person who made the request. Use third person references like "them", "they", "this person", or terms like "our friend" or "our brother/sister".
+IMPORTANT: Do NOT use first person ("me", "my", "I"). Instead, write the prayer so that community members can pray it FOR the person who made the request. Use third person references like "them", "they", "this person", or terms like "our friend", "our brother", or "our sister".
 
 CRITICAL: Return ONLY the prayer text itself. Do NOT include any introductory phrases, explanations, or preambles like "Here's a prayer..." or "Here's a transformed...". Start directly with the prayer.
