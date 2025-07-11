@@ -130,7 +130,6 @@ def generate_friendly_description(commit_message: str) -> str:
         client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
         
         # Load prompt template from external file
-        import os
         prompt_file_path = os.path.join(os.path.dirname(__file__), '..', '..', 'prompts', 'changelog_generation.txt')
         with open(prompt_file_path, 'r', encoding='utf-8') as f:
             prompt_template = f.read().strip()
