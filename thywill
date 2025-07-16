@@ -1139,6 +1139,23 @@ cmd_validate_schema() {
     run_python -m app_helpers.cli.schema_validation validate
 }
 
+cmd_deduplicate_user_attributes() {
+    header "Deduplicate User Attributes"
+    
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Removing duplicate entries from user attributes file..."
+    log "This will backup the original file and remove duplicates"
+    
+    # Run the deduplication script
+    python3 scripts/utils/deduplicate_user_attributes.py "$@"
+}
+
 # Database commands
 cmd_db() {
     local subcommand="${1:-}"
@@ -1929,6 +1946,9 @@ main() {
             ;;
         validate-schema)
             cmd_validate_schema "$@"
+            ;;
+        deduplicate-user-attributes)
+            cmd_deduplicate_user_attributes "$@"
             ;;
         
         # Database commands
