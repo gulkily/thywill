@@ -49,6 +49,21 @@
     header {
       min-height: 60px; /* Approximate header height */
     }
+    
+    /* Supporter badge styling */
+    .supporter-badge {
+      color: #dc2626; /* Red heart color */
+      font-size: 0.875rem; /* Slightly smaller than normal text */
+      margin-left: 0.25rem; /* Small space before the badge */
+      display: inline-block;
+      animation: pulse 2s infinite;
+      cursor: help;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
   </style>
   <script>
     // Timezone detection and management
@@ -194,7 +209,7 @@
     </a>
     {% if me %}
     <div class="flex items-center gap-4">
-     <span class="text-sm">Hi <a href="/profile" class="text-purple-200 hover:text-white underline">{{ me.display_name }}</a>{% if is_admin %} <a href="/admin" class="text-purple-200 hover:text-white underline"><em>(admin)</em></a>{% endif %}</span>
+     <span class="text-sm">Hi <a href="/profile" class="text-purple-200 hover:text-white underline">{{ me.display_name|username_display|safe }}</a>{% if is_admin %} <a href="/admin" class="text-purple-200 hover:text-white underline"><em>(admin)</em></a>{% endif %}</span>
      
      <!-- Notification Badge -->
      {% include "components/notification_badge.html" %}
