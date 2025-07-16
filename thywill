@@ -117,7 +117,6 @@ show_help() {
     echo "    role grant <user> <role> Grant specific role to user"
     echo "    role revoke <user> <role> Revoke specific role from user"
     echo "    import prayers <file>   Import prayers from JSON file"
-    echo "    import community <file> Import community data from ZIP export"
     echo "    import text-archives    Import data from text_archives/ directory"
     echo "    validate-archives       Check archive completeness and integrity"
     echo "    test-recovery          Simulate complete database recovery"
@@ -134,6 +133,9 @@ show_help() {
     echo "    heal-orphaned-prayers     Fix orphaned prayers by creating compatible users"
     echo "    reconstruct-from-archives Rebuild database relationships from text archives"
     echo "    validate-consistency      Validate archive-database consistency"
+    echo "    check-duplicates        Check for duplicate users"
+    echo "    merge-duplicates        Merge duplicate user accounts"
+    echo "    deduplicate-user-attributes Remove duplicate entries from user attributes file"
     echo ""
     header "  Database Commands:"
     echo "    db init             Initialize database tables (first time only)"
@@ -160,7 +162,6 @@ show_help() {
     echo "    thywill role grant \"Jane Doe\" moderator         # Grant moderator role"
     echo "    thywill admin token 24                            # Create 24-hour admin token"
     echo "    thywill import prayers backup.json               # Import prayer data"
-    echo "    thywill import community export.zip              # Import community export"
     echo "    thywill import text-archives --dry-run           # Preview text archive import"
     echo "    thywill import text-archives                     # Import from text_archives/"
     echo "    thywill validate-archives                        # Check archive integrity"
@@ -180,6 +181,9 @@ show_help() {
     echo "    thywill reconstruct-from-archives --execute     # Fix orphaned relationships from archives"
     echo "    thywill validate-consistency                     # Check archive-database consistency"
     echo "    thywill validate-schema                          # Validate database schema compatibility"
+    echo "    thywill check-duplicates                         # Check for duplicate users"
+    echo "    thywill merge-duplicates                         # Merge duplicate user accounts"
+    echo "    thywill deduplicate-user-attributes              # Remove duplicate entries from user attributes file"
     echo "    thywill sqlite                                    # Open SQLite3 CLI with database"
     echo "    thywill deploy                                    # Safe deployment"
     echo "    thywill backup                                    # Create database backup"
@@ -811,7 +815,7 @@ cmd_repair_archives() {
 
 cmd_heal_archives() {
     # Use Python CLI module for archive management
-    run_python -m app_helpers.cli.archive_management heal
+    run_python -m app_helpers.cli.archive_management heal-archives
 }
 
 cmd_sync_users() {
@@ -1046,10 +1050,6 @@ cmd_sync_archives() {
     echo "💡 Run 'thywill recovery-report' to see complete recovery capability"
 }
 
-cmd_sync_archives() {
-    # Use Python CLI module for archive management
-    run_python -m app_helpers.cli.archive_management sync
-}
 
 cmd_recovery_report() {
     # Use Python CLI module for recovery reports
