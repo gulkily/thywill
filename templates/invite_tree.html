@@ -16,7 +16,7 @@
       {% endif %}
     </span>
     <a href="/user/{{ node.user.display_name }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline">
-      {{ node.user.display_name }}
+      {{ node.user.display_name|username_display|safe }}
     </a>
     {% if node.user.display_name == me.display_name %}
       <span class="ml-2 text-gray-600 dark:text-gray-400">(You)</span>
@@ -127,7 +127,7 @@
               {% endif %}
             </div>
             <div>
-              <p class="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">{{ inviter.display_name }}</p>
+              <p class="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">{{ inviter.display_name|username_display|safe }}</p>
               <p class="text-sm text-gray-500 dark:text-gray-400">{{ inviter.invite_count }} successful invites</p>
             </div>
           </div>
@@ -155,7 +155,7 @@
                   <span class="text-white font-bold text-sm">{{ step.user.display_name[0]|upper }}</span>
                 </div>
               {% endif %}
-              <p class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 truncate max-w-20">{{ step.user.display_name }}</p>
+              <p class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 truncate max-w-20">{{ step.user.display_name|username_display|safe }}</p>
               {% if step.user.display_name == me.display_name %}
                 <p class="text-xs text-gray-600 dark:text-gray-400 font-bold">You</p>
               {% endif %}

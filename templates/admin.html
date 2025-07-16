@@ -141,7 +141,7 @@
         
         <footer class="mt-4 flex justify-between items-center">
           <span class="text-xs text-gray-500 dark:text-gray-400">
-            by {{ p.author_name }} · {{ p.created_at|timezone_format(user_timezone) }}
+            by {{ p.author_name|username_display|safe }} · {{ p.created_at|timezone_format(user_timezone) }}
           </span>
           <div class="flex space-x-2">
             <form method="post" action="/prayer/{{ p.id }}/archive" class="inline">

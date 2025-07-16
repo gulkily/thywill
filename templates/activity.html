@@ -30,12 +30,12 @@
                   ✓ You prayed this
                 </span>
               {% else %}
-                <a href="/user/{{ item.mark.user_id }}" class="text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 hover:underline">{{ item.marker_name }}</a>
+                <a href="/user/{{ item.mark.user_id }}" class="text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 hover:underline">{{ item.marker_name|username_display|safe }}</a>
                 <span class="text-sm text-gray-600 dark:text-gray-300">prayed</span>
                 {% if item.is_my_prayer %}
                   <span class="text-sm text-purple-600 dark:text-purple-400 font-medium">your prayer request</span>
                 {% else %}
-                  <span class="text-sm text-gray-600 dark:text-gray-300">a prayer by <a href="/user/{{ item.prayer.author_id }}" class="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 hover:underline">{{ item.author_name }}</a></span>
+                  <span class="text-sm text-gray-600 dark:text-gray-300">a prayer by <a href="/user/{{ item.prayer.author_id }}" class="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 hover:underline">{{ item.author_name|username_display|safe }}</a></span>
                 {% endif %}
               {% endif %}
               <span class="text-xs text-gray-400 dark:text-gray-500 ml-2">{{ item.mark.created_at|timezone_format(user_timezone) }}</span>
