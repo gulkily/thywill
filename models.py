@@ -15,6 +15,9 @@ class User(SQLModel, table=True):
     welcome_message_dismissed: bool = Field(default=False)  # Whether user has dismissed the welcome message
     # Text archive tracking
     text_file_path: str | None = Field(default=None)  # Path to the text archive file containing this user's registration
+    # Supporter status tracking
+    is_supporter: bool = Field(default=False)  # Manual supporter flag
+    supporter_since: datetime | None = Field(default=None)  # When they became a supporter
     
     def has_role(self, role_name: str, session: Session) -> bool:
         """Check if user has a specific role"""
