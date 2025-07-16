@@ -48,6 +48,7 @@ class ImportService:
                 import_functions = [
                     self._import_prayer_data,
                     self._import_user_data,
+                    self._import_user_attributes,
                     self._import_session_data,
                     self._import_authentication_data,
                     self._import_invite_data,
@@ -195,6 +196,128 @@ class ImportService:
         action = "Would import" if dry_run else "Imported"
         print(f"    ✅ {action} {total_imported} user-related records")
         return True
+    
+    def _import_user_attributes(self, session: DBSession, dry_run: bool) -> bool:
+        """Import user attributes from text_archives/users/user_attributes.txt"""
+        print("  📄 Importing user attributes...")
+        
+        users_dir = self.archives_dir / "users"
+        attributes_file = users_dir / "user_attributes.txt"
+        
+        if not attributes_file.exists():
+            print("    ⚠️  No user_attributes.txt file found")
+            return True
+        
+        try:
+            content = attributes_file.read_text(encoding='utf-8')
+            user_attributes = self._parse_user_attributes_file(content)
+            
+            total_imported = 0
+            for user_data in user_attributes:
+                if self._update_user_attributes(session, user_data, dry_run):
+                    total_imported += 1
+            
+            if not dry_run and total_imported > 0:
+                session.commit()
+                # Clear cache after successful import
+                from app_helpers.services.username_display_service import username_display_service
+                username_display_service.clear_cache()
+            
+            self.imported_counts['user_attributes'] = total_imported
+            action = "Would import" if dry_run else "Imported"
+            print(f"    ✅ {action} {total_imported} user attribute records")
+            return True
+            
+        except Exception as e:
+            print(f"    ❌ Error importing user attributes: {e}")
+            return False
+    
+    def _parse_user_attributes_file(self, content: str) -> List[Dict]:
+        """Parse user attributes from text file content"""
+        lines = content.split('\n')
+        users = []
+        current_user = {}
+        
+        for line in lines:
+            line = line.strip()
+            
+            # Skip empty lines and headers
+            if not line or line == "User Attributes":
+                continue
+            
+            # Process key-value pairs
+            if ':' in line:
+                key, value = line.split(':', 1)
+                key = key.strip()
+                value = value.strip()
+                
+                if key == 'username':
+                    # New user block - save previous if exists
+                    if current_user:
+                        users.append(current_user)
+                    current_user = {'username': value}
+                else:
+                    # Add attribute to current user
+                    if key == 'is_supporter':
+                        current_user[key] = value.lower() == 'true'
+                    elif key == 'supporter_since':
+                        try:
+                            from datetime import datetime
+                            current_user[key] = datetime.strptime(value, '%Y-%m-%d')
+                        except ValueError:
+                            print(f"    ⚠️  Invalid date format for supporter_since: {value}")
+                            current_user[key] = None
+                    elif key == 'welcome_message_dismissed':
+                        current_user[key] = value.lower() == 'true'
+                    else:
+                        current_user[key] = value
+        
+        # Add the last user if exists
+        if current_user:
+            users.append(current_user)
+        
+        return users
+    
+    def _update_user_attributes(self, session: DBSession, user_data: Dict, dry_run: bool) -> bool:
+        """Update user attributes in database"""
+        username = user_data.get('username')
+        if not username:
+            return False
+        
+        if dry_run:
+            print(f"    🔍 Would update attributes for user: {username}")
+            return True
+        
+        user = session.exec(select(User).where(User.display_name == username)).first()
+        if not user:
+            print(f"    ⚠️  User '{username}' not found for attribute update")
+            return False
+        
+        # Update user attributes
+        updated = False
+        
+        if 'is_supporter' in user_data:
+            if user.is_supporter != user_data['is_supporter']:
+                user.is_supporter = user_data['is_supporter']
+                updated = True
+        
+        if 'supporter_since' in user_data:
+            if user.supporter_since != user_data['supporter_since']:
+                user.supporter_since = user_data['supporter_since']
+                updated = True
+        
+        if 'welcome_message_dismissed' in user_data:
+            if user.welcome_message_dismissed != user_data['welcome_message_dismissed']:
+                user.welcome_message_dismissed = user_data['welcome_message_dismissed']
+                updated = True
+        
+        if updated:
+            session.add(user)
+            print(f"    ✅ Updated attributes for user: {username}")
+            return True
+        else:
+            print(f"    ℹ️  No changes needed for user: {username}")
+            return False
     
     def _import_session_data(self, session: DBSession, dry_run: bool) -> bool:
         """Import session data from text_archives/sessions/"""
