@@ -1,0 +1,8 @@
+{
+  "version": "010",
+  "name": "supporter_fields",
+  "description": "Add supporter status tracking fields to user table",
+  "created_at": "2025-07-16T00:00:00Z",
+  "requires_data_migration": false,
+  "rollback_safe": true
+}
