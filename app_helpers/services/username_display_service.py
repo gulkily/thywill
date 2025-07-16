@@ -69,8 +69,10 @@ class UsernameDisplayService:
         """
         user_data = self.get_user_display_data(username, session)
         
-        if user_data['is_supporter']:
-            return f'{username}<span class="supporter-badge" title="Supporter">♥</span>'
+        if user_data['is_supporter'] and user_data['user_object']:
+            from app_helpers.services.supporter_badge_service import supporter_badge_service
+            badge_html = supporter_badge_service.generate_user_badge_html(user_data['user_object'])
+            return f'{username}{badge_html}'
         
         return username
     
