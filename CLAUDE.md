@@ -70,6 +70,7 @@ VENMO_HANDLE=
 ## Database Models
 **Core**: User, Prayer, PrayerMark, Session, InviteToken
 **Advanced**: PrayerAttribute, AuthenticationRequest, AuthApproval, SecurityLog
+**User Attributes**: `is_supporter`, `supporter_since` - Manual supporter status management
 
 ## Key Routes
 **Main**: `GET /`, `POST /prayers`, `POST /mark/{id}`, `POST /flag/{id}`
@@ -103,6 +104,7 @@ VENMO_HANDLE=
 **HTMX**: `hx-target="body"` for modals, fixed positioning, escape handlers
 **Auth Flows**: Update routes, templates, ensure logging/rate limiting
 **Archives**: Use `ArchiveDownloadService`, link from prayer pages
+**Username Display**: Use `{{ username|username_display|safe }}` in templates for consistent supporter badges
 
 ## Code Consistency
 **CRITICAL**: When changing database schema, moving/renaming files, or renaming models/classes:
@@ -134,6 +136,14 @@ VENMO_HANDLE=
 - Duplicate detection prevents data corruption on repeated imports
 - Both operations guarantee full data coverage and integrity
 
+**User Attributes Archive**: `text_archives/users/user_attributes.txt`
+- Centralized file for all user attributes including supporter status
+- Manual editing for easy supporter management (set `is_supporter: true`)
+- Bidirectional sync through export/import system
+- Format: Username blocks with key-value pairs
+- Import with: `./thywill import-all` or `./thywill import text-archives`
+- Fully idempotent - safe to run multiple times
+
 ## Architecture  
 **Modular**: Backward compatibility, dual imports, incremental adoption
 **Archive-First**: Text files before DB, human-readable, disaster recovery
@@ -154,6 +164,18 @@ Whenever you see vmi2648361 in a command log, that means it was run on productio
 You don't have access to the production server, so please act accordingly.
 
 ## Recent Changes (July 2025)
+**Centralized Username Display System**: Implemented comprehensive supporter badge system
+- Created `UsernameDisplayService` for centralized username display logic
+- Added `username_display` template filter for consistent supporter badges across all templates
+- Updated all username display locations (prayer cards, activity feed, profiles, admin, etc.)
+- Fixed broken supporter badge implementation in prayer cards
+- Added caching for performance optimization
+- Integrated user attributes import into `./thywill import-all` command with full idempotency
+**User Attributes System**: Implemented bidirectional sync for supporter badges and user attributes
+- Added `is_supporter` and `supporter_since` fields to User model
+- Created `text_archives/users/user_attributes.txt` for manual supporter management
+- Integrated export/import system for user attributes
+- Manual editing support for easy supporter status changes
 **Terminology**: "Answered Prayers" → "Praise Reports" throughout UI (button text, headers, modals)
 **UI**: Logout button removed from header (now menu-only) to prevent accidental logouts
 **Prayer Generation**: Updated system prompt with enhanced community focus and Scripture references
