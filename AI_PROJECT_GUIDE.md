@@ -40,7 +40,7 @@
 ## Database Schema
 
 ### Core Models
-1. **User**: Basic user profile (id, display_name, created_at)
+1. **User**: Basic user profile (id, display_name, created_at, is_supporter, supporter_since)
 2. **Prayer**: Prayer requests (id, author_id, text, generated_prayer, project_tag, flagged)
 3. **PrayerMark**: Tracks when users pray for requests (user_id, prayer_id, created_at)
 4. **Session**: Enhanced user sessions (id, user_id, expires_at, auth_request_id, device_info, ip_address, is_fully_authenticated)
@@ -138,6 +138,7 @@ The prayer system now uses a flexible attributes approach instead of simple bool
 - **Archive Files**:
   - Prayer files: `text_archives/prayers/YYYY/MM/prayer_file.txt`
   - User registrations: `text_archives/users/YYYY_MM_users.txt`  
+  - User attributes: `text_archives/users/user_attributes.txt`
   - Activity logs: `text_archives/activity/activity_YYYY_MM.txt`
 
 ## API Endpoints
@@ -525,6 +526,17 @@ When making significant code changes, follow the successful patterns used in our
 **📝 Note for AI Assistants**: This guide reflects the complete prayer lifecycle management system with flexible attributes architecture, community-driven moderation, and comprehensive multi-device authentication. The platform balances security with usability through configurable approval workflows while maintaining admin oversight for content moderation, authentication management, and prayer status transitions. The prayer attributes system allows unlimited status combinations and extensibility without breaking changes.
 
 **🔄 Recent Updates**: 
+- **Centralized Username Display System (July 2025)**: Implemented comprehensive supporter badge system
+  - Created `UsernameDisplayService` for centralized username display logic with caching
+  - Added `username_display` template filter for consistent supporter badges across all templates
+  - Updated all username display locations: prayer cards, activity feed, profiles, users directory, admin panel, header, auth requests, invite tree
+  - Fixed broken supporter badge implementation in prayer cards
+  - Ensures supporter badges appear everywhere usernames are displayed
+- **User Attributes System (July 2025)**: Implemented bidirectional sync for supporter badges and user attributes
+  - Added `is_supporter` and `supporter_since` fields to User model
+  - Created `text_archives/users/user_attributes.txt` for manual supporter management
+  - Integrated export/import system for user attributes with round-trip compatibility
+  - Manual editing support for easy supporter status changes
 - **UI Terminology Update (July 2025)**: Changed "Answered Prayers" to "Praise Reports" throughout interface (buttons, headers, feeds, modals)
 - **Header Simplification (July 2025)**: Removed logout button from header to prevent accidental logouts - logout now available only through menu
 - **Enhanced Prayer Generation (July 2025)**: Updated AI prompt system with improved community focus, Scripture references, and reverent tone
