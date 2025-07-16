@@ -99,13 +99,13 @@ class ExportService:
             self._write_data_file(
                 prayer_dir / "prayer_attributes.txt",
                 "Prayer Attributes",
-                "id|set_at|prayer_id|attribute_name|attribute_value|set_by_user_id",
+                "id|created_at|prayer_id|attribute_name|attribute_value|created_by",
                 [(attr.id,
-                  attr.set_at.strftime("%B %d %Y at %H:%M"),
+                  attr.created_at.strftime("%B %d %Y at %H:%M"),
                   attr.prayer_id,
                   attr.attribute_name,
                   (attr.attribute_value or "").replace('|', '\\|'),
-                  attr.set_by_user_id) for attr in prayer_attributes]
+                  attr.created_by) for attr in prayer_attributes]
             )
             total_exported += len(prayer_attributes)
         
@@ -301,12 +301,10 @@ class ExportService:
             self._write_data_file(
                 auth_dir / "auth_approvals.txt",
                 "Authentication Approvals",
-                "approved_at|request_id|approver_user_id|approval_status|notes",
-                [(approval.approved_at.strftime("%B %d %Y at %H:%M"),
-                  approval.request_id,
-                  approval.approver_user_id,
-                  approval.approval_status,
-                  (approval.notes or "").replace('|', '\\|')) for approval in auth_approvals]
+                "created_at|auth_request_id|approver_user_id",
+                [(approval.created_at.strftime("%B %d %Y at %H:%M"),
+                  approval.auth_request_id,
+                  approval.approver_user_id) for approval in auth_approvals]
             )
             total_exported += len(auth_approvals)
         
@@ -314,13 +312,15 @@ class ExportService:
             self._write_data_file(
                 auth_dir / "auth_audit_logs.txt",
                 "Authentication Audit Logs",
-                "timestamp|user_id|action|ip_address|user_agent|details",
-                [(log.timestamp.strftime("%B %d %Y at %H:%M"),
-                  log.user_id,
+                "created_at|auth_request_id|action|actor_user_id|actor_type|details|ip_address|user_agent",
+                [(log.created_at.strftime("%B %d %Y at %H:%M"),
+                  log.auth_request_id,
                   log.action,
+                  log.actor_user_id or "unknown",
+                  log.actor_type or "unknown",
+                  (log.details or "").replace('|', '\\|'),
                   log.ip_address or "unknown",
-                  (log.user_agent or "unknown").replace('|', '\\|'),
-                  (log.details or "").replace('|', '\\|')) for log in auth_audit_logs]
+                  (log.user_agent or "unknown").replace('|', '\\|')) for log in auth_audit_logs]
             )
             total_exported += len(auth_audit_logs)
         
@@ -362,12 +362,11 @@ class ExportService:
             self._write_data_file(
                 invites_dir / "invite_token_usage.txt",
                 "Invite Token Usage",
-                "used_at|token_id|used_by_user_id|ip_address|user_agent",
-                [(usage.used_at.strftime("%B %d %Y at %H:%M"),
-                  usage.token_id,
-                  usage.used_by_user_id,
-                  usage.ip_address or "unknown",
-                  (usage.user_agent or "unknown").replace('|', '\\|')) for usage in invite_usage]
+                "claimed_at|invite_token_id|user_id|ip_address",
+                [(usage.claimed_at.strftime("%B %d %Y at %H:%M"),
+                  usage.invite_token_id,
+                  usage.user_id,
+                  usage.ip_address or "unknown") for usage in invite_usage]
             )
             total_exported += len(invite_usage)
         
@@ -481,13 +480,13 @@ class ExportService:
         self._write_data_file(
             system_dir / "changelog_entries.txt",
             "System Changelog Entries",
-            "created_at|version|title|description|category|created_by",
+            "created_at|commit_id|original_message|friendly_description|change_type|commit_date",
             [(entry.created_at.strftime("%B %d %Y at %H:%M"),
-              entry.version,
-              (entry.title or "").replace('|', '\\|'),
-              (entry.description or "").replace('|', '\\|').replace('\n', '\\\\n'),
-              entry.category or "",
-              entry.created_by or "system") for entry in changelog_entries]
+              entry.commit_id,
+              (entry.original_message or "").replace('|', '\\|'),
+              (entry.friendly_description or "").replace('|', '\\|').replace('\n', '\\\\n'),
+              entry.change_type or "",
+              entry.commit_date.strftime("%B %d %Y at %H:%M")) for entry in changelog_entries]
         )
         
         self.exported_counts['system'] = len(changelog_entries)
