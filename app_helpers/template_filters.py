@@ -72,9 +72,12 @@ def supporter_badge_filter(user) -> str:
     Returns:
         str: HTML for supporter badge or empty string
     """
-    if user and getattr(user, 'is_supporter', False):
-        return '<span class="supporter-badge" title="Supporter">♥</span>'
-    return ''
+    if not user or not getattr(user, 'is_supporter', False):
+        return ''
+    
+    # Import here to avoid circular imports
+    from app_helpers.services.supporter_badge_service import supporter_badge_service
+    return supporter_badge_service.generate_user_badge_html(user)
 
 
 def username_display_filter(username: str) -> str:
