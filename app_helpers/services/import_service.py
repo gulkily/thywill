@@ -560,8 +560,8 @@ class ImportService:
         if len(parts) < 6:
             return False
         
-        attr_id, set_at_str, prayer_id, attr_name, attr_value, set_by_user_id = parts[:6]
-        set_at = datetime.strptime(set_at_str, "%B %d %Y at %H:%M")
+        attr_id, created_at_str, prayer_id, attr_name, attr_value, created_by = parts[:6]
+        created_at = datetime.strptime(created_at_str, "%B %d %Y at %H:%M")
         attr_value = attr_value.replace('\\|', '|')
         
         # Check if already exists
@@ -573,8 +573,8 @@ class ImportService:
                 prayer_id=prayer_id,
                 attribute_name=attr_name,
                 attribute_value=attr_value or None,
-                set_by_user_id=set_by_user_id,
-                set_at=set_at
+                created_by=created_by,
+                created_at=created_at
             )
             session.add(attr)
         
@@ -724,55 +724,54 @@ class ImportService:
         return not existing
     
     def _import_auth_approval(self, session: DBSession, parts: List[str], dry_run: bool) -> bool:
-        if len(parts) < 5:
+        if len(parts) < 3:
             return False
         
-        approved_str, request_id, approver_user_id, approval_status, notes = parts[:5]
-        approved_at = datetime.strptime(approved_str, "%B %d %Y at %H:%M")
-        notes = notes.replace('\\|', '|')
+        created_str, auth_request_id, approver_user_id = parts[:3]
+        created_at = datetime.strptime(created_str, "%B %d %Y at %H:%M")
         
         # Check if already exists
         existing = session.exec(select(AuthApproval).where(
-            AuthApproval.request_id == request_id,
+            AuthApproval.auth_request_id == auth_request_id,
             AuthApproval.approver_user_id == approver_user_id
         )).first()
         
         if not existing and not dry_run:
             approval = AuthApproval(
-                request_id=request_id,
+                auth_request_id=auth_request_id,
                 approver_user_id=approver_user_id,
-                approval_status=approval_status,
-                notes=notes or None,
-                approved_at=approved_at
+                created_at=created_at
             )
             session.add(approval)
         
         return not existing
     
     def _import_auth_audit_log(self, session: DBSession, parts: List[str], dry_run: bool) -> bool:
-        if len(parts) < 6:
+        if len(parts) < 8:
             return False
         
-        timestamp_str, user_id, action, ip_address, user_agent, details = parts[:6]
-        timestamp = datetime.strptime(timestamp_str, "%B %d %Y at %H:%M")
+        created_str, auth_request_id, action, actor_user_id, actor_type, details, ip_address, user_agent = parts[:8]
+        created_at = datetime.strptime(created_str, "%B %d %Y at %H:%M")
         user_agent = user_agent.replace('\\|', '|')
         details = details.replace('\\|', '|')
         
         # Check if already exists
         existing = session.exec(select(AuthAuditLog).where(
-            AuthAuditLog.user_id == user_id,
-            AuthAuditLog.timestamp == timestamp,
+            AuthAuditLog.auth_request_id == auth_request_id,
+            AuthAuditLog.created_at == created_at,
             AuthAuditLog.action == action
         )).first()
         
         if not existing and not dry_run:
             audit = AuthAuditLog(
-                user_id=user_id,
+                auth_request_id=auth_request_id,
                 action=action,
+                actor_user_id=actor_user_id if actor_user_id != "unknown" else None,
+                actor_type=actor_type if actor_type != "unknown" else None,
+                details=details or None,
                 ip_address=ip_address if ip_address != "unknown" else None,
                 user_agent=user_agent if user_agent != "unknown" else None,
-                details=details or None,
-                timestamp=timestamp
+                created_at=created_at
             )
             session.add(audit)
         
@@ -803,27 +802,25 @@ class ImportService:
         return not existing
     
     def _import_invite_usage(self, session: DBSession, parts: List[str], dry_run: bool) -> bool:
-        if len(parts) < 5:
+        if len(parts) < 4:
             return False
         
-        used_str, token_id, used_by_user_id, ip_address, user_agent = parts[:5]
-        used_at = datetime.strptime(used_str, "%B %d %Y at %H:%M")
-        user_agent = user_agent.replace('\\|', '|')
+        claimed_str, invite_token_id, user_id, ip_address = parts[:4]
+        claimed_at = datetime.strptime(claimed_str, "%B %d %Y at %H:%M")
         
         # Check if already exists
         existing = session.exec(select(InviteTokenUsage).where(
-            InviteTokenUsage.token_id == token_id,
-            InviteTokenUsage.used_by_user_id == used_by_user_id,
-            InviteTokenUsage.used_at == used_at
+            InviteTokenUsage.invite_token_id == invite_token_id,
+            InviteTokenUsage.user_id == user_id,
+            InviteTokenUsage.claimed_at == claimed_at
         )).first()
         
         if not existing and not dry_run:
             usage = InviteTokenUsage(
-                token_id=token_id,
-                used_by_user_id=used_by_user_id,
+                invite_token_id=invite_token_id,
+                user_id=user_id,
                 ip_address=ip_address if ip_address != "unknown" else None,
-                user_agent=user_agent if user_agent != "unknown" else None,
-                used_at=used_at
+                claimed_at=claimed_at
             )
             session.add(usage)
         
@@ -905,24 +902,24 @@ class ImportService:
         if len(parts) < 6:
             return False
         
-        created_str, version, title, description, category, created_by = parts[:6]
+        created_str, commit_id, original_message, friendly_description, change_type, commit_date_str = parts[:6]
         created_at = datetime.strptime(created_str, "%B %d %Y at %H:%M")
-        title = title.replace('\\|', '|')
-        description = description.replace('\\|', '|').replace('\\\\n', '\n')
+        commit_date = datetime.strptime(commit_date_str, "%B %d %Y at %H:%M")
+        original_message = original_message.replace('\\|', '|')
+        friendly_description = friendly_description.replace('\\|', '|').replace('\\\\n', '\n')
         
         # Check if already exists
         existing = session.exec(select(ChangelogEntry).where(
-            ChangelogEntry.version == version,
-            ChangelogEntry.title == title
+            ChangelogEntry.commit_id == commit_id
         )).first()
         
         if not existing and not dry_run:
             entry = ChangelogEntry(
-                version=version,
-                title=title,
-                description=description or None,
-                category=category or None,
-                created_by=created_by or "system",
+                commit_id=commit_id,
+                original_message=original_message,
+                friendly_description=friendly_description or None,
+                change_type=change_type or None,
+                commit_date=commit_date,
                 created_at=created_at
             )
             session.add(entry)
