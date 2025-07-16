@@ -200,11 +200,18 @@ class ExportService:
         user_attributes_path = users_dir / "user_attributes.txt"
         
         try:
+            # Sort users by display_name for consistent output and deduplication
+            unique_users = {}
+            for user in users:
+                unique_users[user.display_name] = user
+            
             with open(user_attributes_path, 'w') as f:
                 f.write("User Attributes\n\n")
                 
-                for user in users:
-                    f.write(f"username: {user.display_name}\n")
+                # Export users in sorted order to ensure consistent output
+                for username in sorted(unique_users.keys()):
+                    user = unique_users[username]
+                    f.write(f"username: {username}\n")
                     f.write(f"is_supporter: {str(user.is_supporter).lower()}\n")
                     if user.supporter_since:
                         f.write(f"supporter_since: {user.supporter_since.strftime('%Y-%m-%d')}\n")
@@ -213,8 +220,8 @@ class ExportService:
                     f.write(f"welcome_message_dismissed: {str(user.welcome_message_dismissed).lower()}\n")
                     f.write("\n")  # Empty line between users
                 
-            self.exported_counts['user_attributes'] = len(users)
-            print(f"    ✅ Exported {len(users)} user attribute records")
+            self.exported_counts['user_attributes'] = len(unique_users)
+            print(f"    ✅ Exported {len(unique_users)} user attribute records")
             return True
             
         except Exception as e:
