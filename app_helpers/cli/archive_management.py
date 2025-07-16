@@ -38,7 +38,8 @@ def heal_archives() -> bool:
     try:
         result = subprocess.run([
             sys.executable, 
-            "scripts/utils/heal_prayer_archives.py"
+            "scripts/utils/heal_prayer_archives.py",
+            "--force"
         ], check=True, capture_output=True, text=True)
         
         print(result.stdout)

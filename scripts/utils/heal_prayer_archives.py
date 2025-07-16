@@ -10,6 +10,10 @@ import os
 import sys
 from sqlmodel import Session, select
 from sqlalchemy import inspect
+
+# Add current directory to path to import models
+sys.path.append('.')
+
 from models import engine, Prayer, User, PrayerMark, PrayerAttribute, PrayerActivityLog
 from app_helpers.services.text_archive_service import text_archive_service
 from datetime import datetime
