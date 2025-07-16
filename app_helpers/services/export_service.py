@@ -45,6 +45,7 @@ class ExportService:
                 export_functions = [
                     self._export_prayer_data,
                     self._export_user_data,
+                    self._export_user_attributes,
                     self._export_session_data,
                     self._export_authentication_data,
                     self._export_invite_data,
@@ -181,6 +182,42 @@ class ExportService:
         self.exported_counts['user_data'] = len(notification_states)
         print(f"    ✅ Exported {len(notification_states)} notification states")
         return True
+    
+    def _export_user_attributes(self, session: DBSession) -> bool:
+        """Export user attributes to text_archives/users/user_attributes.txt"""
+        print("  📄 Exporting user attributes...")
+        
+        users = session.exec(select(User)).all()
+        
+        if not users:
+            print("    ⚠️  No users found")
+            return True
+        
+        users_dir = self.archives_dir / "users"
+        users_dir.mkdir(exist_ok=True)
+        
+        # Create user attributes file
+        user_attributes_path = users_dir / "user_attributes.txt"
+        
+        try:
+            with open(user_attributes_path, 'w') as f:
+                f.write("User Attributes\n\n")
+                
+                for user in users:
+                    f.write(f"username: {user.display_name}\n")
+                    f.write(f"is_supporter: {str(user.is_supporter).lower()}\n")
+                    if user.supporter_since:
+                        f.write(f"supporter_since: {user.supporter_since.strftime('%Y-%m-%d')}\n")
+                    f.write(f"welcome_message_dismissed: {str(user.welcome_message_dismissed).lower()}\n")
+                    f.write("\n")  # Empty line between users
+                
+            self.exported_counts['user_attributes'] = len(users)
+            print(f"    ✅ Exported {len(users)} user attribute records")
+            return True
+            
+        except Exception as e:
+            print(f"    ❌ Error exporting user attributes: {e}")
+            return False
     
     def _export_session_data(self, session: DBSession) -> bool:
         """Export session data to text_archives/sessions/"""

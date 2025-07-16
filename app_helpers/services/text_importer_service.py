@@ -39,6 +39,7 @@ class TextImporterService:
             'prayer_marks_imported': 0,
             'prayer_attributes_imported': 0,
             'activity_logs_imported': 0,
+            'user_attributes_imported': 0,
             'errors': []
         }
     
@@ -72,12 +73,16 @@ class TextImporterService:
             'prayer_marks_imported': 0,
             'prayer_attributes_imported': 0,
             'activity_logs_imported': 0,
+            'user_attributes_imported': 0,
             'errors': []
         }
         
         try:
             # Import users from monthly registration files
             self._import_user_registrations(archive_path, dry_run)
+            
+            # Import user attributes from user_attributes.txt
+            self._import_user_attributes(archive_path, dry_run)
             
             # Import prayers from prayer archive files
             self._import_prayer_archives(archive_path, dry_run)
@@ -237,6 +242,116 @@ class TextImporterService:
             
             self.import_stats['users_imported'] += 1
             logger.info(f"Imported user: {user_data['display_name']}")
+    
+    def _import_user_attributes(self, archive_path: Path, dry_run: bool):
+        """Import user attributes from user_attributes.txt file"""
+        users_dir = archive_path / "users"
+        attributes_file = users_dir / "user_attributes.txt"
+        
+        if not attributes_file.exists():
+            logger.info("No user_attributes.txt file found, skipping user attributes import")
+            return
+        
+        try:
+            content = attributes_file.read_text(encoding='utf-8')
+            user_attributes = self._parse_user_attributes_file(content)
+            
+            logger.info(f"Found {len(user_attributes)} user attribute records")
+            
+            for user_data in user_attributes:
+                self._update_user_attributes(user_data, dry_run)
+                
+        except Exception as e:
+            error_msg = f"Failed to import user attributes: {e}"
+            logger.error(error_msg)
+            self.import_stats['errors'].append(error_msg)
+    
+    def _parse_user_attributes_file(self, content: str) -> List[Dict]:
+        """Parse user attributes from text file content"""
+        lines = content.split('\n')
+        users = []
+        current_user = {}
+        
+        for line in lines:
+            line = line.strip()
+            
+            # Skip empty lines and headers
+            if not line or line == "User Attributes":
+                continue
+            
+            # Process key-value pairs
+            if ':' in line:
+                key, value = line.split(':', 1)
+                key = key.strip()
+                value = value.strip()
+                
+                if key == 'username':
+                    # New user block - save previous if exists
+                    if current_user:
+                        users.append(current_user)
+                    current_user = {'username': value}
+                else:
+                    # Add attribute to current user
+                    if key == 'is_supporter':
+                        current_user[key] = value.lower() == 'true'
+                    elif key == 'supporter_since':
+                        try:
+                            current_user[key] = datetime.strptime(value, '%Y-%m-%d')
+                        except ValueError:
+                            logger.warning(f"Invalid date format for supporter_since: {value}")
+                            current_user[key] = None
+                    elif key == 'welcome_message_dismissed':
+                        current_user[key] = value.lower() == 'true'
+                    else:
+                        current_user[key] = value
+        
+        # Add the last user if exists
+        if current_user:
+            users.append(current_user)
+        
+        return users
+    
+    def _update_user_attributes(self, user_data: Dict, dry_run: bool):
+        """Update user attributes in database"""
+        if dry_run:
+            logger.info(f"DRY RUN: Would update attributes for user {user_data['username']}")
+            self.import_stats['user_attributes_imported'] += 1
+            return
+        
+        with Session(engine) as s:
+            user = s.exec(
+                select(User).where(User.display_name == user_data['username'])
+            ).first()
+            
+            if not user:
+                logger.warning(f"User '{user_data['username']}' not found for attribute update")
+                return
+            
+            # Update user attributes
+            updated = False
+            
+            if 'is_supporter' in user_data:
+                if user.is_supporter != user_data['is_supporter']:
+                    user.is_supporter = user_data['is_supporter']
+                    updated = True
+            
+            if 'supporter_since' in user_data:
+                if user.supporter_since != user_data['supporter_since']:
+                    user.supporter_since = user_data['supporter_since']
+                    updated = True
+            
+            if 'welcome_message_dismissed' in user_data:
+                if user.welcome_message_dismissed != user_data['welcome_message_dismissed']:
+                    user.welcome_message_dismissed = user_data['welcome_message_dismissed']
+                    updated = True
+            
+            if updated:
+                s.add(user)
+                s.commit()
+                logger.info(f"Updated attributes for user: {user_data['username']}")
+                self.import_stats['user_attributes_imported'] += 1
+            else:
+                logger.info(f"No attribute changes for user: {user_data['username']}")
     
     def _import_prayer_archives(self, archive_path: Path, dry_run: bool):
         """Import prayers from prayer archive files"""
