@@ -172,6 +172,9 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
             else:
                 prayer, author_name = result
                 
+            # Get author user object for supporter badge
+            author_user = s.exec(select(User).where(User.display_name == author_name)).first()
+            
             prayer_dict = {
                 'id': prayer.id,
                 'author_id': prayer.author_username,
@@ -181,6 +184,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 'created_at': prayer.created_at,
                 'flagged': prayer.flagged,
                 'author_name': author_name,
+                'author': author_user,  # Add user object for supporter badge
                 'marked_by_user': user_mark_counts.get(prayer.id, 0),
                 'mark_count': mark_counts.get(prayer.id, 0),
                 'distinct_user_count': distinct_user_counts.get(prayer.id, 0),

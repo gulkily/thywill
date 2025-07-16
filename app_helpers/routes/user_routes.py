@@ -90,6 +90,7 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
             recent_marked_prayers.append({
                 'prayer': prayer,
                 'author_name': author.display_name if author else "Unknown",
+                'author': author,  # Add user object for supporter badge
                 'last_marked': last_marked
             })
         

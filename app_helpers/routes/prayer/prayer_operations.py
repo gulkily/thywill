@@ -305,6 +305,8 @@ def recent_activity(request: Request, user_session: tuple = Depends(current_user
                 'prayer': prayer,
                 'marker_name': marker.display_name if marker else None,
                 'author_name': author.display_name if author else None,
+                'marker': marker,  # Add user object for supporter badge
+                'author': author,  # Add user object for supporter badge
                 'is_my_mark': mark.username == user.display_name,
                 'is_my_prayer': prayer.author_username == user.display_name
             })
