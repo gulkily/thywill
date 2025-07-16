@@ -18,6 +18,7 @@ class User(SQLModel, table=True):
     # Supporter status tracking
     is_supporter: bool = Field(default=False)  # Manual supporter flag
     supporter_since: datetime | None = Field(default=None)  # When they became a supporter
+    supporter_type: str | None = Field(default=None)  # Type of supporter: 'financial', 'prayer_warrior', 'advisor', 'community_leader' (comma-separated for multiple types)
     
     def has_role(self, role_name: str, session: Session) -> bool:
         """Check if user has a specific role"""
