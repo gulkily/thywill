@@ -43,6 +43,7 @@ python md_to_pdf_simple.py <file>   # Convert markdown to PDF
 **Auth**: `create_session()`, `current_user()`, `require_full_auth()`, `is_admin()`
 **Prayer**: `generate_prayer()`, `get_feed_counts()`, `prayer.set_attribute()`
 **Multi-device**: `create_auth_request()`, `approve_auth_request()`, rate limiting
+**Supporter Badges**: `supporter_badge_service.generate_user_badge_html()`, configurable multi-type system
 
 ## Environment Variables
 ```bash
@@ -70,7 +71,7 @@ VENMO_HANDLE=
 ## Database Models
 **Core**: User, Prayer, PrayerMark, Session, InviteToken
 **Advanced**: PrayerAttribute, AuthenticationRequest, AuthApproval, SecurityLog
-**User Attributes**: `is_supporter`, `supporter_since` - Manual supporter status management
+**User Attributes**: `is_supporter`, `supporter_since`, `supporter_type` - Multi-type supporter badge system
 
 ## Key Routes
 **Main**: `GET /`, `POST /prayers`, `POST /mark/{id}`, `POST /flag/{id}`
@@ -183,6 +184,60 @@ You don't have access to the production server, so please act accordingly.
 **Performance**: Refactored recent activity counting in feed functions
 **Testing**: User fields standardized to use display_name instead of id
 **Cleanup**: Removed unused database files for cleaner repository
+
+## Supporter Badge Configuration
+
+### Configuration File: `supporter_badges_config.json`
+Easy-to-edit JSON configuration for supporter badge types:
+
+```json
+{
+  "financial": {
+    "symbol": "♥",
+    "color": "#dc2626",
+    "tooltip": "Financial Supporter",
+    "priority": 1
+  },
+  "prayer_warrior": {
+    "symbol": "🙏",
+    "color": "#8b5cf6", 
+    "tooltip": "Prayer Warrior",
+    "priority": 2
+  },
+  "advisor": {
+    "symbol": "🌟",
+    "color": "#f59e0b",
+    "tooltip": "Community Advisor", 
+    "priority": 3
+  },
+  "community_leader": {
+    "symbol": "🤝",
+    "color": "#10b981",
+    "tooltip": "Community Leader",
+    "priority": 4
+  }
+}
+```
+
+### Text Archive Format
+In `text_archives/users/user_attributes.txt`:
+```
+username: Michael Resonance
+is_supporter: true
+supporter_type: financial
+supporter_since: 2025-07-15
+
+username: Max
+is_supporter: true
+supporter_type: prayer_warrior,advisor
+supporter_since: 2025-07-16
+```
+
+### Multi-Type Support
+- Users can have multiple supporter types (comma-separated)
+- Badges display in priority order (lower number = higher priority)
+- Maximum 3 badges to avoid UI clutter
+- Backward compatible with existing single-type supporters
 
 ---
 Faith-focused prayer platform emphasizing reverence, community moderation, secure access.
