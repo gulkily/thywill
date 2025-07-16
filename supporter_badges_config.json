@@ -1,0 +1,26 @@
+{
+  "financial": {
+    "symbol": "♥",
+    "color": "#dc2626",
+    "tooltip": "Financial Supporter",
+    "priority": 1
+  },
+  "prayer_warrior": {
+    "symbol": "🙏",
+    "color": "#8b5cf6",
+    "tooltip": "Prayer Warrior",
+    "priority": 2
+  },
+  "advisor": {
+    "symbol": "🌟",
+    "color": "#f59e0b",
+    "tooltip": "Community Advisor",
+    "priority": 3
+  },
+  "community_leader": {
+    "symbol": "🤝",
+    "color": "#10b981",
+    "tooltip": "Community Leader",
+    "priority": 4
+  }
+}
