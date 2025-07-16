@@ -58,6 +58,49 @@ def format_expiration_filter(hours: int) -> str:
     """
     return format_expiration_message(hours)
 
+
+def supporter_badge_filter(user) -> str:
+    """
+    Jinja2 template filter for displaying supporter badges.
+    
+    Usage in templates:
+    {{ user|supporter_badge }}
+    
+    Args:
+        user: User object with is_supporter attribute
+        
+    Returns:
+        str: HTML for supporter badge or empty string
+    """
+    if user and getattr(user, 'is_supporter', False):
+        return '<span class="supporter-badge" title="Supporter">♥</span>'
+    return ''
+
+
+def username_display_filter(username: str) -> str:
+    """
+    Jinja2 template filter for displaying usernames with supporter badges.
+    
+    Usage in templates:
+    {{ username|username_display|safe }}
+    
+    Args:
+        username: Username string to display
+        
+    Returns:
+        str: HTML for username with supporter badge if applicable
+    """
+    if not username:
+        return ''
+    
+    # Import here to avoid circular imports
+    from app_helpers.services.username_display_service import username_display_service
+    from models import engine
+    from sqlmodel import Session
+    
+    with Session(engine) as session:
+        return username_display_service.render_username_with_badge(username, session)
+
 def register_filters(templates):
     """
     Register all custom filters with the Jinja2 templates environment.
@@ -68,3 +111,5 @@ def register_filters(templates):
     templates.env.filters['timezone_format'] = timezone_format_filter
     templates.env.filters['format_hours'] = format_hours_filter
     templates.env.filters['format_expiration'] = format_expiration_filter
+    templates.env.filters['supporter_badge'] = supporter_badge_filter
+    templates.env.filters['username_display'] = username_display_filter
