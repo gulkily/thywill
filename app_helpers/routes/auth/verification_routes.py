@@ -123,10 +123,11 @@ def auth_status_check(request: Request, user_session: tuple = Depends(current_us
     # If already fully authenticated, trigger redirect
     if session.is_fully_authenticated:
         return HTMLResponse("""
-            <div hx-trigger="load" hx-get="/" hx-target="body" hx-swap="outerHTML">
+            <div hx-trigger="load">
                 <div class="text-center text-green-600 dark:text-green-400 font-medium">
                     ✅ Approved! Redirecting to main page...
                 </div>
+                <script>window.location.href = "/";</script>
             </div>
         """)
     
@@ -165,10 +166,11 @@ def auth_status_check(request: Request, user_session: tuple = Depends(current_us
             
             # Return redirect trigger
             return HTMLResponse("""
-                <div hx-trigger="load" hx-get="/" hx-target="body" hx-swap="outerHTML">
+                <div hx-trigger="load">
                     <div class="text-center text-green-600 dark:text-green-400 font-medium">
                         ✅ Approved! Redirecting to main page...
                     </div>
+                    <script>window.location.href = "/";</script>
                 </div>
             """)
         
