@@ -208,6 +208,8 @@ class ExportService:
                     f.write(f"is_supporter: {str(user.is_supporter).lower()}\n")
                     if user.supporter_since:
                         f.write(f"supporter_since: {user.supporter_since.strftime('%Y-%m-%d')}\n")
+                    if user.supporter_type:
+                        f.write(f"supporter_type: {user.supporter_type}\n")
                     f.write(f"welcome_message_dismissed: {str(user.welcome_message_dismissed).lower()}\n")
                     f.write("\n")  # Empty line between users
                 

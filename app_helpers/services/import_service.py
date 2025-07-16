@@ -269,6 +269,8 @@ class ImportService:
                             current_user[key] = None
                     elif key == 'welcome_message_dismissed':
                         current_user[key] = value.lower() == 'true'
+                    elif key == 'supporter_type':
+                        current_user[key] = value
                     else:
                         current_user[key] = value
         
@@ -309,6 +311,11 @@ class ImportService:
         if 'welcome_message_dismissed' in user_data:
             if user.welcome_message_dismissed != user_data['welcome_message_dismissed']:
                 user.welcome_message_dismissed = user_data['welcome_message_dismissed']
+                updated = True
+        
+        if 'supporter_type' in user_data:
+            if user.supporter_type != user_data['supporter_type']:
+                user.supporter_type = user_data['supporter_type']
                 updated = True
         
         if updated:
