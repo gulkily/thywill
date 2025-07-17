@@ -40,3 +40,5 @@ Available Backups
 When generating a prayer, have checkboxes for Christian / Interfaith
 
 Add a setting to show original request expanded by default
+
+How to host on Heroku?
