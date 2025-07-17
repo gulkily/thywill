@@ -1,26 +1,32 @@
 {
+  "supporter": {
+    "symbol": "⭐",
+    "color": "#3b82f6",
+    "tooltip": "Supporter",
+    "priority": 1
+  },
   "financial": {
     "symbol": "♥",
     "color": "#dc2626",
     "tooltip": "Financial Supporter",
-    "priority": 1
+    "priority": 2
   },
   "prayer_warrior": {
     "symbol": "🙏",
     "color": "#8b5cf6",
     "tooltip": "Prayer Warrior",
-    "priority": 2
+    "priority": 3
   },
   "advisor": {
     "symbol": "🌟",
     "color": "#f59e0b",
     "tooltip": "Community Advisor",
-    "priority": 3
+    "priority": 4
   },
   "community_leader": {
     "symbol": "🤝",
     "color": "#10b981",
     "tooltip": "Community Leader",
-    "priority": 4
+    "priority": 5
   }
 }
