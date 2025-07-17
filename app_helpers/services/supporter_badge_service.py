@@ -117,9 +117,9 @@ class SupporterBadgeService:
         
         supporter_type = getattr(user, 'supporter_type', None)
         
-        # Backward compatibility: if no supporter_type, default to financial
+        # Backward compatibility: if no supporter_type, default to supporter
         if not supporter_type:
-            supporter_type = 'financial'
+            supporter_type = 'supporter'
         
         return self.generate_badge_html(supporter_type)
     
