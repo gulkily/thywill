@@ -248,6 +248,26 @@
   
   <!-- Prayer card Original Request toggle -->
   <script>
+    // Get auto-expand preference from localStorage
+    function getAutoExpandPreference() {
+      try {
+        const preference = localStorage.getItem('prayer_original_request_auto_expand');
+        return preference === 'true';
+      } catch (e) {
+        return false; // Default to collapsed on error
+      }
+    }
+
+    // Save auto-expand preference to localStorage
+    function setAutoExpandPreference(enabled) {
+      try {
+        localStorage.setItem('prayer_original_request_auto_expand', enabled.toString());
+      } catch (e) {
+        // Silently handle storage errors (private browsing, storage full, etc.)
+      }
+    }
+
+    // Toggle individual Original Request section
     function toggleOriginalRequest(prayerId) {
       const content = document.getElementById('original-request-' + prayerId);
       const chevron = document.getElementById('chevron-' + prayerId);
@@ -260,6 +280,73 @@
         chevron.textContent = '▶';
       }
     }
+
+    // Apply auto-expand preference to all prayer cards on page load
+    function initializeOriginalRequestPreference() {
+      const autoExpand = getAutoExpandPreference();
+      
+      if (autoExpand) {
+        // Find all Original Request sections and expand them
+        const contents = document.querySelectorAll('.original-request-content');
+        const chevrons = document.querySelectorAll('.original-request-chevron');
+        
+        contents.forEach(content => {
+          content.classList.remove('hidden');
+        });
+        
+        chevrons.forEach(chevron => {
+          chevron.textContent = '▼';
+        });
+      }
+    }
+
+    // Toggle auto-expand preference and apply immediately
+    function toggleAutoExpandPreference() {
+      const currentPreference = getAutoExpandPreference();
+      const newPreference = !currentPreference;
+      
+      setAutoExpandPreference(newPreference);
+      
+      // Apply preference to all visible cards immediately
+      const contents = document.querySelectorAll('.original-request-content');
+      const chevrons = document.querySelectorAll('.original-request-chevron');
+      
+      if (newPreference) {
+        // Expand all
+        contents.forEach(content => {
+          content.classList.remove('hidden');
+        });
+        chevrons.forEach(chevron => {
+          chevron.textContent = '▼';
+        });
+      } else {
+        // Collapse all
+        contents.forEach(content => {
+          content.classList.add('hidden');
+        });
+        chevrons.forEach(chevron => {
+          chevron.textContent = '▶';
+        });
+      }
+      
+      // Update menu toggle state
+      updateAutoExpandMenuToggle();
+    }
+
+    // Update the menu toggle to reflect current preference
+    function updateAutoExpandMenuToggle() {
+      const toggle = document.getElementById('auto-expand-toggle');
+      if (toggle) {
+        const autoExpand = getAutoExpandPreference();
+        toggle.checked = autoExpand;
+      }
+    }
+
+    // Initialize preference on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      initializeOriginalRequestPreference();
+      updateAutoExpandMenuToggle();
+    });
   </script>
  </body>
 </html>

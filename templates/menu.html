@@ -227,6 +227,32 @@
     </div>
     <div id="advanced-tools" class="hidden">
       <div class="grid grid-cols-1 gap-6 max-w-md mx-auto">
+        <!-- Prayer Feed Settings -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow min-h-[160px] flex flex-col justify-between">
+          <div class="flex items-center mb-4">
+            <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+              <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Prayer Feed Settings</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Customize your feed experience</p>
+            </div>
+          </div>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Auto-expand Original Requests</span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="auto-expand-toggle" class="sr-only peer" onchange="toggleAutoExpandPreference()">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+              </label>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">When enabled, Original Request sections will be expanded by default on all prayer cards.</p>
+          </div>
+        </div>
+
         <!-- Export Community -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow min-h-[160px] flex flex-col justify-between">
           <div class="flex items-center mb-4">

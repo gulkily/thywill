@@ -22,10 +22,10 @@
   <!-- Original Request (smaller, secondary) -->
   <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded border-l-2 border-gray-300 dark:border-gray-600">
     <h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 cursor-pointer flex items-center gap-1" onclick="toggleOriginalRequest('{{ p.id }}')">
-      <span id="chevron-{{ p.id }}" class="transition-transform">▶</span>
+      <span id="chevron-{{ p.id }}" class="transition-transform original-request-chevron">▶</span>
       Original Request
     </h4>
-    <div id="original-request-{{ p.id }}" class="hidden">
+    <div id="original-request-{{ p.id }}" class="original-request-content hidden">
       <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ p.text }}</p>
       
     </div>
