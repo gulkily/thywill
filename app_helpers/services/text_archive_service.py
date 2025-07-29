@@ -86,15 +86,24 @@ class TextArchiveService:
         if prayer_data.get('target_audience'):
             content.append(f"Audience: {prayer_data['target_audience']}")
         
-        # Add categorization metadata if present
+        # Add categorization metadata if present and feature is enabled
         categorization = prayer_data.get('categorization')
         if categorization:
-            content.append(f"Safety Score: {categorization.get('safety_score', 1.0)}")
-            content.append(f"Safety Flags: {json.dumps(categorization.get('safety_flags', []))}")
-            content.append(f"Category: {categorization.get('subject_category', 'general')}")
-            content.append(f"Specificity: {categorization.get('specificity_type', 'unknown')}")
-            content.append(f"Categorization Method: {categorization.get('categorization_method', 'default')}")
-            content.append(f"Categorization Confidence: {categorization.get('categorization_confidence', 0.0)}")
+            # Check if categorization metadata export is enabled
+            try:
+                from app import CATEGORIZATION_METADATA_EXPORT
+                export_enabled = CATEGORIZATION_METADATA_EXPORT
+            except ImportError:
+                import os
+                export_enabled = os.getenv("CATEGORIZATION_METADATA_EXPORT", "false").lower() == "true"
+            
+            if export_enabled:
+                content.append(f"Safety Score: {categorization.get('safety_score', 1.0)}")
+                content.append(f"Safety Flags: {json.dumps(categorization.get('safety_flags', []))}")
+                content.append(f"Category: {categorization.get('subject_category', 'general')}")
+                content.append(f"Specificity: {categorization.get('specificity_type', 'unknown')}")
+                content.append(f"Categorization Method: {categorization.get('categorization_method', 'default')}")
+                content.append(f"Categorization Confidence: {categorization.get('categorization_confidence', 0.0)}")
         
         content.append("")  # Blank line
         content.append(prayer_data['text'])  # Original request

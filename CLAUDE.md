@@ -66,6 +66,16 @@ DEFAULT_INVITE_MAX_USES=1          # Default max uses for new invite tokens
 TEXT_ARCHIVE_ENABLED=true
 PAYPAL_USERNAME=
 VENMO_HANDLE=
+
+# Prayer Categorization Feature Flags (default: false)
+PRAYER_CATEGORIZATION_ENABLED=false           # Master toggle for categorization system
+PRAYER_CATEGORY_BADGES_ENABLED=false          # Show category badges on prayer cards
+PRAYER_CATEGORY_FILTERING_ENABLED=false       # Enable category filtering in feeds
+AI_CATEGORIZATION_ENABLED=false               # Use AI for categorization
+KEYWORD_FALLBACK_ENABLED=false                # Keyword-based categorization fallback
+SAFETY_SCORING_ENABLED=false                  # Calculate and use safety scores
+HIGH_SAFETY_FILTER_ENABLED=false              # Show "High Safety Only" filter
+SPECIFICITY_BADGES_ENABLED=false              # Show Personal/Community badges
 ```
 
 ## Database Models

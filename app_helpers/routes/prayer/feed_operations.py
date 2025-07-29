@@ -21,7 +21,18 @@ from app_helpers.services.auth_helpers import current_user
 from app_helpers.services.prayer_helpers import get_feed_counts, todays_prompt
 from app_helpers.services.auth.validation_helpers import is_admin
 from app_helpers.timezone_utils import get_user_timezone_from_request
-from app import PRAYER_MODE_ENABLED
+from app import (
+    PRAYER_MODE_ENABLED,
+    PRAYER_CATEGORIZATION_ENABLED,
+    PRAYER_CATEGORY_BADGES_ENABLED, 
+    PRAYER_CATEGORY_FILTERING_ENABLED,
+    SPECIFICITY_BADGES_ENABLED,
+    SAFETY_SCORING_ENABLED,
+    HIGH_SAFETY_FILTER_ENABLED,
+    SAFETY_BADGES_VISIBLE,
+    CATEGORY_FILTER_DROPDOWN_ENABLED,
+    FILTER_PERSISTENCE_ENABLED
+)
 
 # Use shared templates instance with filters registered
 from app_helpers.shared_templates import templates
@@ -31,7 +42,8 @@ router = APIRouter()
 
 
 @router.get("/", response_class=HTMLResponse)
-def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends(current_user)):
+def feed(request: Request, feed_type: str = "all", category: Optional[str] = None, 
+         min_safety: Optional[float] = None, user_session: tuple = Depends(current_user)):
     """
     Main feed displaying prayers with various filtering options.
     
@@ -60,6 +72,21 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .where(PrayerAttribute.attribute_name == 'archived')
             )
         
+        # Categorization filters
+        def apply_category_filters(stmt):
+            """Apply category and safety filters to a statement"""
+            # Only apply filters if categorization is enabled
+            if not PRAYER_CATEGORIZATION_ENABLED:
+                return stmt
+                
+            if category and category != 'all' and PRAYER_CATEGORY_FILTERING_ENABLED:
+                stmt = stmt.where(Prayer.subject_category == category)
+            
+            if min_safety is not None and SAFETY_SCORING_ENABLED:
+                stmt = stmt.where(Prayer.safety_score >= min_safety)
+            
+            return stmt
+        
         
         if feed_type == "new_unprayed":
             # New prayers and prayers that have never been prayed (exclude archived)
@@ -73,6 +100,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .having(func.count(PrayerMark.id) == 0)
                 .order_by(Prayer.created_at.desc())
             )
+            stmt = apply_category_filters(stmt)
         elif feed_type == "most_prayed":
             # Most prayed prayers (by total prayer count, exclude archived)
             stmt = (
@@ -85,6 +113,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .order_by(func.count(PrayerMark.id).desc())
                 .limit(50)
             )
+            stmt = apply_category_filters(stmt)
         elif feed_type == "my_prayers":
             # Prayers the current user has marked as prayed (include all statuses)
             stmt = (
@@ -96,6 +125,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .group_by(Prayer.id)
                 .order_by(func.max(PrayerMark.created_at).desc())
             )
+            stmt = apply_category_filters(stmt)
         elif feed_type == "my_requests":
             # Prayer requests submitted by the current user (include all statuses)
             stmt = (
@@ -105,6 +135,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .where(Prayer.author_username == user.display_name)
                 .order_by(Prayer.created_at.desc())
             )
+            stmt = apply_category_filters(stmt)
         elif feed_type == "recent_activity":
             # Prayers with recent prayer marks (most recently prayed, exclude archived)
             stmt = (
@@ -117,6 +148,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .order_by(func.max(PrayerMark.created_at).desc())
                 .limit(50)
             )
+            stmt = apply_category_filters(stmt)
         elif feed_type == "answered":
             # Answered prayers (public celebration feed)
             stmt = (
@@ -127,6 +159,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .where(PrayerAttribute.attribute_name == 'answered')
                 .order_by(Prayer.created_at.desc())
             )
+            stmt = apply_category_filters(stmt)
         elif feed_type == "archived":
             # Archived prayers (personal feed for prayer authors only)
             stmt = (
@@ -138,6 +171,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .where(PrayerAttribute.attribute_name == 'archived')
                 .order_by(Prayer.created_at.desc())
             )
+            stmt = apply_category_filters(stmt)
         else:  # "all" or default
             # All prayers (exclude archived)
             stmt = (
@@ -147,6 +181,7 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
                 .where(exclude_archived())
                 .order_by(Prayer.created_at.desc())
             )
+            stmt = apply_category_filters(stmt)
             
         results = s.exec(stmt).all()
         
@@ -206,5 +241,15 @@ def feed(request: Request, feed_type: str = "all", user_session: tuple = Depends
         {"request": request, "prayers": prayers_with_authors, "prompt": todays_prompt(), 
          "me": user, "session": session, "current_feed": feed_type, "feed_counts": feed_counts,
          "PRAYER_MODE_ENABLED": PRAYER_MODE_ENABLED, "is_admin": is_admin(user),
-         "user_timezone": user_timezone}
+         "user_timezone": user_timezone,
+         # Prayer Categorization Feature Flags
+         "PRAYER_CATEGORIZATION_ENABLED": PRAYER_CATEGORIZATION_ENABLED,
+         "PRAYER_CATEGORY_BADGES_ENABLED": PRAYER_CATEGORY_BADGES_ENABLED,
+         "PRAYER_CATEGORY_FILTERING_ENABLED": PRAYER_CATEGORY_FILTERING_ENABLED,
+         "SPECIFICITY_BADGES_ENABLED": SPECIFICITY_BADGES_ENABLED,
+         "SAFETY_SCORING_ENABLED": SAFETY_SCORING_ENABLED,
+         "HIGH_SAFETY_FILTER_ENABLED": HIGH_SAFETY_FILTER_ENABLED,
+         "SAFETY_BADGES_VISIBLE": SAFETY_BADGES_VISIBLE,
+         "CATEGORY_FILTER_DROPDOWN_ENABLED": CATEGORY_FILTER_DROPDOWN_ENABLED,
+         "FILTER_PERSISTENCE_ENABLED": FILTER_PERSISTENCE_ENABLED}
     )
