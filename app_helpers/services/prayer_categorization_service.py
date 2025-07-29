@@ -10,8 +10,28 @@ import json
 import logging
 from typing import Dict, List, Optional
 from datetime import datetime
+import os
 
 logger = logging.getLogger(__name__)
+
+# Import feature flags
+try:
+    from app import (
+        PRAYER_CATEGORIZATION_ENABLED,
+        AI_CATEGORIZATION_ENABLED, 
+        KEYWORD_FALLBACK_ENABLED,
+        CATEGORIZATION_CIRCUIT_BREAKER_ENABLED,
+        SAFETY_SCORING_ENABLED,
+        CATEGORIZATION_CACHING_ENABLED
+    )
+except ImportError:
+    # Fallback for testing or standalone usage
+    PRAYER_CATEGORIZATION_ENABLED = os.getenv("PRAYER_CATEGORIZATION_ENABLED", "false").lower() == "true"
+    AI_CATEGORIZATION_ENABLED = os.getenv("AI_CATEGORIZATION_ENABLED", "false").lower() == "true"
+    KEYWORD_FALLBACK_ENABLED = os.getenv("KEYWORD_FALLBACK_ENABLED", "false").lower() == "true"
+    CATEGORIZATION_CIRCUIT_BREAKER_ENABLED = os.getenv("CATEGORIZATION_CIRCUIT_BREAKER_ENABLED", "false").lower() == "true"
+    SAFETY_SCORING_ENABLED = os.getenv("SAFETY_SCORING_ENABLED", "false").lower() == "true"
+    CATEGORIZATION_CACHING_ENABLED = os.getenv("CATEGORIZATION_CACHING_ENABLED", "false").lower() == "true"
 
 # Default categorization for fallback scenarios
 DEFAULT_CATEGORIZATION = {
@@ -41,31 +61,41 @@ class PrayerCategorizationService:
     """Service for categorizing prayers with multiple fallback strategies"""
     
     def __init__(self):
-        self.circuit_breaker = CategorizationCircuitBreaker()
+        if CATEGORIZATION_CIRCUIT_BREAKER_ENABLED:
+            self.circuit_breaker = CategorizationCircuitBreaker()
+        else:
+            self.circuit_breaker = None
     
     def categorize_prayer_with_fallback(self, prayer_text: str, ai_response: str = None) -> dict:
         """Categorize prayer with multiple fallback strategies"""
         
-        # Strategy 1: Parse AI response if provided
-        if ai_response and self.circuit_breaker.should_attempt_ai_categorization():
+        # Check if categorization is enabled at all
+        if not PRAYER_CATEGORIZATION_ENABLED:
+            return DEFAULT_CATEGORIZATION
+            
+        # Strategy 1: Parse AI response if provided and AI categorization enabled
+        if ai_response and AI_CATEGORIZATION_ENABLED and (not self.circuit_breaker or self.circuit_breaker.should_attempt_ai_categorization()):
             try:
                 categories = self.parse_ai_categorization(ai_response)
                 if self.validate_categorization(categories):
-                    self.circuit_breaker.record_attempt(True)
+                    if self.circuit_breaker:
+                        self.circuit_breaker.record_attempt(True)
                     categories['categorization_method'] = 'ai_full'
                     return categories
             except Exception as e:
                 logger.warning(f"AI categorization parsing failed: {e}")
-                self.circuit_breaker.record_attempt(False)
+                if self.circuit_breaker:
+                    self.circuit_breaker.record_attempt(False)
         
-        # Strategy 2: Keyword-based fallback
-        try:
-            categories = self.keyword_based_categorization(prayer_text)
-            categories['categorization_method'] = 'keyword_fallback'
-            logger.info(f"Using keyword fallback categorization for prayer")
-            return categories
-        except Exception as e:
-            logger.error(f"Keyword fallback failed: {e}")
+        # Strategy 2: Keyword-based fallback (if enabled)
+        if KEYWORD_FALLBACK_ENABLED:
+            try:
+                categories = self.keyword_based_categorization(prayer_text)
+                categories['categorization_method'] = 'keyword_fallback'
+                logger.info(f"Using keyword fallback categorization for prayer")
+                return categories
+            except Exception as e:
+                logger.error(f"Keyword fallback failed: {e}")
         
         # Strategy 3: Safe defaults
         logger.warning("Using default fallback categorization")
@@ -89,14 +119,22 @@ class PrayerCategorizationService:
         has_names = any(word[0].isupper() and len(word) > 2 and word.isalpha() for word in words)
         specificity = 'specific' if has_names else 'general'
         
-        return {
-            'safety_score': 1.0,  # Keywords assume safe content
-            'safety_flags': [],
+        result = {
             'specificity_type': specificity,
             'subject_category': subject_category,
             'specificity_confidence': 0.6,  # Lower confidence for keyword matching
             'categorization_confidence': 0.6
         }
+        
+        # Only add safety scoring if enabled
+        if SAFETY_SCORING_ENABLED:
+            result['safety_score'] = 1.0  # Keywords assume safe content
+            result['safety_flags'] = []
+        else:
+            result['safety_score'] = 1.0  # Default safe
+            result['safety_flags'] = []
+        
+        return result
     
     def parse_ai_categorization(self, response_text: str) -> dict:
         """Extract categorization data from AI response"""

@@ -44,6 +44,26 @@ TEXT_ARCHIVE_COMPRESSION_AFTER_DAYS = int(os.getenv("TEXT_ARCHIVE_COMPRESSION_AF
 # Prayer Mode Settings
 PRAYER_MODE_ENABLED = os.getenv("PRAYER_MODE_ENABLED", "true").lower() == "true"
 
+# Prayer Categorization Feature Flags
+PRAYER_CATEGORIZATION_ENABLED = os.getenv("PRAYER_CATEGORIZATION_ENABLED", "false").lower() == "true"
+PRAYER_CATEGORY_BADGES_ENABLED = os.getenv("PRAYER_CATEGORY_BADGES_ENABLED", "false").lower() == "true"
+PRAYER_CATEGORY_FILTERING_ENABLED = os.getenv("PRAYER_CATEGORY_FILTERING_ENABLED", "false").lower() == "true"
+AI_CATEGORIZATION_ENABLED = os.getenv("AI_CATEGORIZATION_ENABLED", "false").lower() == "true"
+KEYWORD_FALLBACK_ENABLED = os.getenv("KEYWORD_FALLBACK_ENABLED", "false").lower() == "true"
+CATEGORIZATION_CIRCUIT_BREAKER_ENABLED = os.getenv("CATEGORIZATION_CIRCUIT_BREAKER_ENABLED", "false").lower() == "true"
+SAFETY_SCORING_ENABLED = os.getenv("SAFETY_SCORING_ENABLED", "false").lower() == "true"
+HIGH_SAFETY_FILTER_ENABLED = os.getenv("HIGH_SAFETY_FILTER_ENABLED", "false").lower() == "true"
+SAFETY_BADGES_VISIBLE = os.getenv("SAFETY_BADGES_VISIBLE", "false").lower() == "true"
+SPECIFICITY_BADGES_ENABLED = os.getenv("SPECIFICITY_BADGES_ENABLED", "false").lower() == "true"
+CATEGORY_FILTER_DROPDOWN_ENABLED = os.getenv("CATEGORY_FILTER_DROPDOWN_ENABLED", "false").lower() == "true"
+FILTER_PERSISTENCE_ENABLED = os.getenv("FILTER_PERSISTENCE_ENABLED", "false").lower() == "true"
+CATEGORIZATION_METADATA_EXPORT = os.getenv("CATEGORIZATION_METADATA_EXPORT", "false").lower() == "true"
+HISTORICAL_CATEGORIZATION_ENABLED = os.getenv("HISTORICAL_CATEGORIZATION_ENABLED", "false").lower() == "true"
+ADMIN_CATEGORIZATION_OVERRIDE = os.getenv("ADMIN_CATEGORIZATION_OVERRIDE", "false").lower() == "true"
+CATEGORIZATION_CACHING_ENABLED = os.getenv("CATEGORIZATION_CACHING_ENABLED", "false").lower() == "true"
+BACKGROUND_CATEGORIZATION_ENABLED = os.getenv("BACKGROUND_CATEGORIZATION_ENABLED", "false").lower() == "true"
+BATCH_CATEGORIZATION_ENABLED = os.getenv("BATCH_CATEGORIZATION_ENABLED", "false").lower() == "true"
+
 # Use shared templates instance with filters registered
 from app_helpers.shared_templates import templates
 

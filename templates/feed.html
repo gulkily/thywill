@@ -74,6 +74,60 @@
 
 {% include "components/todays_reflection.html" %}
 
+<!-- Category Filtering Controls -->
+{% if PRAYER_CATEGORIZATION_ENABLED and PRAYER_CATEGORY_FILTERING_ENABLED %}
+<section class="mb-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+  <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+    <div class="flex-shrink-0">
+      <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Filter by Category:</h3>
+    </div>
+    
+    <!-- Category Filter -->
+    {% if CATEGORY_FILTER_DROPDOWN_ENABLED %}
+    <div class="flex-1">
+      <select id="category-filter" 
+              onchange="updateFeedFilters()"
+              class="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400">
+        <option value="all">All Categories</option>
+        <option value="health">🏥 Health</option>
+        <option value="relationships">💕 Relationships</option>
+        <option value="work">💼 Work</option>
+        <option value="spiritual">✝️ Spiritual</option>
+        <option value="provision">💰 Provision</option>
+        <option value="protection">🛡️ Protection</option>
+        <option value="guidance">🧭 Guidance</option>
+        <option value="gratitude">🙏 Gratitude</option>
+        <option value="transitions">🌟 Transitions</option>
+        <option value="crisis">🚨 Crisis</option>
+        <option value="general">📝 General</option>
+      </select>
+    </div>
+    {% endif %}
+    
+    <!-- Safety Filter -->
+    {% if HIGH_SAFETY_FILTER_ENABLED %}
+    <div class="flex-shrink-0">
+      <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+        <input type="checkbox" 
+               id="high-safety-filter"
+               onchange="updateFeedFilters()"
+               class="rounded border-gray-300 dark:border-gray-600 text-purple-600 focus:ring-purple-500 dark:focus:ring-purple-400">
+        High Safety Only
+      </label>
+    </div>
+    {% endif %}
+    
+    <!-- Clear Filters -->
+    <div class="flex-shrink-0">
+      <button onclick="clearFilters()" 
+              class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 underline">
+        Clear All
+      </button>
+    </div>
+  </div>
+</section>
+{% endif %}
+
 <!-- Prayer list (now the main focus) -->
 <section>
   {% if current_feed == "new_unprayed" %}
@@ -294,6 +348,82 @@ document.addEventListener('click', function(e) {
   document.querySelectorAll('[id^="dropdown-"]').forEach(dropdown => {
     dropdown.classList.add('hidden');
   });
+});
+
+// Category Filtering Functions
+function updateFeedFilters() {
+  {% if not FILTER_PERSISTENCE_ENABLED %}
+  // Filter persistence disabled - no action
+  return;
+  {% endif %}
+  
+  const categoryFilter = document.getElementById('category-filter');
+  const safetyFilter = document.getElementById('high-safety-filter');
+  
+  const currentUrl = new URL(window.location);
+  const params = new URLSearchParams(currentUrl.search);
+  
+  // Update category parameter
+  if (categoryFilter) {
+    const selectedCategory = categoryFilter.value;
+    if (selectedCategory && selectedCategory !== 'all') {
+      params.set('category', selectedCategory);
+    } else {
+      params.delete('category');
+    }
+  }
+  
+  // Update safety parameter
+  if (safetyFilter) {
+    if (safetyFilter.checked) {
+      params.set('min_safety', '0.8'); // High safety threshold
+    } else {
+      params.delete('min_safety');
+    }
+  }
+  
+  // Navigate to updated URL
+  const newUrl = currentUrl.pathname + '?' + params.toString();
+  window.location.href = newUrl;
+}
+
+function clearFilters() {
+  {% if not FILTER_PERSISTENCE_ENABLED %}
+  // Filter persistence disabled - no action
+  return;
+  {% endif %}
+  
+  const currentUrl = new URL(window.location);
+  const params = new URLSearchParams(currentUrl.search);
+  
+  // Remove filter parameters
+  params.delete('category');
+  params.delete('min_safety');
+  
+  // Navigate to cleared URL
+  const newUrl = currentUrl.pathname + '?' + params.toString();
+  window.location.href = newUrl;
+}
+
+// Initialize filter state on page load
+document.addEventListener('DOMContentLoaded', function() {
+  {% if FILTER_PERSISTENCE_ENABLED %}
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  // Set category filter
+  const categoryParam = urlParams.get('category');
+  const categoryFilter = document.getElementById('category-filter');
+  if (categoryParam && categoryFilter) {
+    categoryFilter.value = categoryParam;
+  }
+  
+  // Set safety filter
+  const safetyParam = urlParams.get('min_safety');
+  const safetyFilter = document.getElementById('high-safety-filter');
+  if (safetyParam && safetyFilter) {
+    safetyFilter.checked = parseFloat(safetyParam) >= 0.8;
+  }
+  {% endif %}
 });
 </script>
 

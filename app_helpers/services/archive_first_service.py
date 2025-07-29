@@ -419,13 +419,27 @@ def submit_prayer_archive_first(text: str, author: User,
     Returns:
         Created Prayer record
     """
-    # Import categorization service
+    # Import categorization service and feature flags
     from app_helpers.services.prayer_categorization_service import PrayerCategorizationService
+    try:
+        from app import PRAYER_CATEGORIZATION_ENABLED
+    except ImportError:
+        import os
+        PRAYER_CATEGORIZATION_ENABLED = os.getenv("PRAYER_CATEGORIZATION_ENABLED", "false").lower() == "true"
     
-    categorization_service = PrayerCategorizationService()
-    
-    # Generate categorization with fallback
-    categorization = categorization_service.categorize_prayer_with_fallback(text, ai_response)
+    # Generate categorization with fallback (only if enabled)
+    if PRAYER_CATEGORIZATION_ENABLED:
+        categorization_service = PrayerCategorizationService()
+        categorization = categorization_service.categorize_prayer_with_fallback(text, ai_response)
+    else:
+        categorization = {
+            'safety_score': 1.0,
+            'safety_flags': [],
+            'subject_category': 'general',
+            'specificity_type': 'unknown',
+            'categorization_method': 'disabled',
+            'categorization_confidence': 0.0
+        }
     
     prayer_data = {
         'author_username': author.display_name,
