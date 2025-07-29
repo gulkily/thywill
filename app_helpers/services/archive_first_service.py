@@ -44,7 +44,8 @@ def create_prayer_with_text_archive(prayer_data: Dict) -> Tuple[Prayer, str]:
         'text': prayer_data['text'],
         'generated_prayer': prayer_data.get('generated_prayer'),
         'project_tag': prayer_data.get('project_tag'),
-        'created_at': prayer_data.get('created_at', datetime.now())
+        'created_at': prayer_data.get('created_at', datetime.now()),
+        'categorization': prayer_data.get('categorization')  # Pass categorization to archive
     }
     
     # Create archive file with temporary ID
