@@ -107,6 +107,14 @@ class Prayer(SQLModel, table=True):
     # Text archive tracking
     text_file_path: str | None = Field(default=None)  # Path to the text archive file containing this prayer
     
+    # Categorization fields (cache layer - populated from text archives)
+    safety_score: float = Field(default=1.0)  # 0.0 (concerning) to 1.0 (safe)
+    safety_flags: str = Field(default='[]')  # JSON array of safety concerns
+    categorization_method: str = Field(default='default')  # 'ai_full', 'keyword_fallback', 'default_fallback'
+    specificity_type: str = Field(default='unknown')  # 'specific', 'general', 'mixed', 'unknown'
+    specificity_confidence: float = Field(default=0.0)  # Confidence score 0.0-1.0
+    subject_category: str = Field(default='general')  # Primary subject category
+    
     def has_attribute(self, name: str, session: Session) -> bool:
         """Check if prayer has a specific attribute"""
         stmt = select(PrayerAttribute).where(
