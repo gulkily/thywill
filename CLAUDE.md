@@ -194,6 +194,15 @@ You don't have access to the production server, so please act accordingly.
 **Performance**: Refactored recent activity counting in feed functions
 **Testing**: User fields standardized to use display_name instead of id
 **Cleanup**: Removed unused database files for cleaner repository
+**Prayer Categorization System**: Implemented comprehensive archive-first categorization with feature flags
+- Added AI-powered and keyword-based prayer categorization (safety, subject, specificity)
+- Implemented 18 feature flags for controlled rollout (all disabled by default)
+- Added category badges on prayer cards with color-coded icons (🏥 Health, 💼 Work, etc.)
+- Created feed filtering UI with category and safety filters
+- Integrated archive-first architecture with categorization metadata export
+- Added circuit breaker pattern for AI service reliability
+- Database migration 011_prayer_categorization for new categorization fields
+- Complete UI integration with JavaScript filtering controls and URL persistence
 
 ## Supporter Badge Configuration
 

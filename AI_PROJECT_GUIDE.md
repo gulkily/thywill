@@ -41,7 +41,7 @@
 
 ### Core Models
 1. **User**: Basic user profile (id, display_name, created_at, is_supporter, supporter_since)
-2. **Prayer**: Prayer requests (id, author_id, text, generated_prayer, project_tag, flagged)
+2. **Prayer**: Prayer requests (id, author_id, text, generated_prayer, project_tag, flagged, safety_score, safety_flags, subject_category, specificity_type, categorization_method)
 3. **PrayerMark**: Tracks when users pray for requests (user_id, prayer_id, created_at)
 4. **Session**: Enhanced user sessions (id, user_id, expires_at, auth_request_id, device_info, ip_address, is_fully_authenticated)
 5. **InviteToken**: Invitation system for new users (token, created_by_user, used, expires_at)
@@ -79,6 +79,18 @@ The prayer system now uses a flexible attributes approach instead of simple bool
 - Prayers are written in third person so others can pray FOR the requester
 - Community members can mark prayers as "prayed"
 - Multiple feed views: all, new/unprayed, most prayed, my prayers, my requests, answered, archived
+
+#### Prayer Categorization System (Feature-Flagged)
+- **AI-Powered Categorization**: Automatic classification of prayers by subject, safety, and specificity
+- **Subject Categories**: Health 🏥, Work 💼, Relationships 💕, Spiritual ✝️, Provision 💰, Protection 🛡️, Guidance 🧭, Gratitude 🙏, Transitions 🌟, Crisis 🚨
+- **Safety Scoring**: 0.0-1.0 scale for content safety assessment with flagging capability  
+- **Specificity Classification**: Personal vs Community prayer types
+- **Keyword Fallback**: Reliable categorization when AI services unavailable
+- **Circuit Breaker Pattern**: Automatic fallback during AI service issues
+- **Category Badges**: Visual indicators on prayer cards with color-coded icons
+- **Feed Filtering**: Filter prayers by category and safety level
+- **Archive Integration**: Categorization metadata included in text archives
+- **18 Feature Flags**: Complete control over categorization features (all disabled by default)
 
 ### Prayer Lifecycle Management (New)
 - **Prayer Author Controls**: Authors can manage their own prayer requests
@@ -526,6 +538,14 @@ When making significant code changes, follow the successful patterns used in our
 **📝 Note for AI Assistants**: This guide reflects the complete prayer lifecycle management system with flexible attributes architecture, community-driven moderation, and comprehensive multi-device authentication. The platform balances security with usability through configurable approval workflows while maintaining admin oversight for content moderation, authentication management, and prayer status transitions. The prayer attributes system allows unlimited status combinations and extensibility without breaking changes.
 
 **🔄 Recent Updates**: 
+- **Prayer Categorization System (July 2025)**: Implemented comprehensive archive-first categorization with 18 feature flags
+  - Added AI-powered and keyword-based prayer categorization for safety, subject, and specificity
+  - Created visual category badges on prayer cards with color-coded icons (🏥 Health, 💼 Work, etc.)
+  - Implemented feed filtering UI with category dropdown and safety filters
+  - Added circuit breaker pattern for AI service reliability and graceful degradation
+  - Database migration 011_prayer_categorization adds categorization fields to Prayer model
+  - All features disabled by default through feature flags for safe deployment
+  - Archive-first architecture ensures categorization metadata included in text exports
 - **Centralized Username Display System (July 2025)**: Implemented comprehensive supporter badge system
   - Created `UsernameDisplayService` for centralized username display logic with caching
   - Added `username_display` template filter for consistent supporter badges across all templates
