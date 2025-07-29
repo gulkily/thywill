@@ -12,6 +12,7 @@ Import Philosophy:
 - Validation ensures data consistency
 """
 
+import json
 import os
 import logging
 from pathlib import Path
@@ -437,6 +438,9 @@ class TextImporterService:
                     if not author_user:
                         raise e
             
+            # Parse categorization metadata from archive
+            categorization = self.archive_service.parse_prayer_archive_categorization(str(prayer_file))
+            
             # Create prayer record
             prayer = Prayer(
                 id=prayer_id,
@@ -446,7 +450,14 @@ class TextImporterService:
                 project_tag=parsed_data.get('project_tag'),
                 target_audience=parsed_data.get('target_audience', 'all'),
                 text_file_path=str(prayer_file),
-                created_at=self._parse_timestamp(parsed_data.get('submitted', ''))
+                created_at=self._parse_timestamp(parsed_data.get('submitted', '')),
+                # Populate categorization fields from archive (database cache)
+                safety_score=categorization.get('safety_score', 1.0),
+                safety_flags=json.dumps(categorization.get('safety_flags', [])),
+                categorization_method=categorization.get('categorization_method', 'default'),
+                specificity_type=categorization.get('specificity_type', 'unknown'),
+                specificity_confidence=categorization.get('categorization_confidence', 0.0),
+                subject_category=categorization.get('subject_category', 'general')
             )
             
             s.add(prayer)

@@ -6,6 +6,7 @@ written FIRST, then database records are created with references to the archives
 This ensures text files are always the authoritative source of truth.
 """
 
+import json
 from datetime import datetime
 from typing import Dict, Optional, Tuple
 from sqlmodel import Session
@@ -51,13 +52,23 @@ def create_prayer_with_text_archive(prayer_data: Dict) -> Tuple[Prayer, str]:
     
     # Step 2: Create database record pointing to archive file
     with Session(engine) as s:
+        # Extract categorization data for database cache
+        categorization = prayer_data.get('categorization', {})
+        
         prayer = Prayer(
             author_username=prayer_data['author_username'],
             text=prayer_data['text'],
             generated_prayer=prayer_data.get('generated_prayer'),
             project_tag=prayer_data.get('project_tag'),
             text_file_path=temp_file_path,  # Critical: track source archive
-            created_at=prayer_data.get('created_at', datetime.now())
+            created_at=prayer_data.get('created_at', datetime.now()),
+            # Populate categorization fields from archive data (database cache)
+            safety_score=categorization.get('safety_score', 1.0),
+            safety_flags=json.dumps(categorization.get('safety_flags', [])),
+            categorization_method=categorization.get('categorization_method', 'default'),
+            specificity_type=categorization.get('specificity_type', 'unknown'),
+            specificity_confidence=categorization.get('categorization_confidence', 0.0),
+            subject_category=categorization.get('subject_category', 'general')
         )
         s.add(prayer)
         s.commit()
@@ -393,23 +404,34 @@ def validate_archive_database_consistency(prayer_id: str) -> Dict:
 
 # Convenience function for backward compatibility
 def submit_prayer_archive_first(text: str, author: User,
-                               generated_prayer: str = None) -> Prayer:
+                               generated_prayer: str = None, 
+                               ai_response: str = None) -> Prayer:
     """
-    Submit prayer using archive-first approach - convenience wrapper.
+    Submit prayer using archive-first approach with categorization - convenience wrapper.
     
     Args:
         text: Prayer request text
         author: User submitting the prayer
         generated_prayer: Pre-generated prayer text
+        ai_response: AI response containing both prayer and categorization
     
     Returns:
         Created Prayer record
     """
+    # Import categorization service
+    from app_helpers.services.prayer_categorization_service import PrayerCategorizationService
+    
+    categorization_service = PrayerCategorizationService()
+    
+    # Generate categorization with fallback
+    categorization = categorization_service.categorize_prayer_with_fallback(text, ai_response)
+    
     prayer_data = {
         'author_username': author.display_name,
         'author_display_name': author.display_name,
         'text': text,
-        'generated_prayer': generated_prayer
+        'generated_prayer': generated_prayer,
+        'categorization': categorization
     }
     
     prayer, _ = create_prayer_with_text_archive(prayer_data)

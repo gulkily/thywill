@@ -86,6 +86,16 @@ class TextArchiveService:
         if prayer_data.get('target_audience'):
             content.append(f"Audience: {prayer_data['target_audience']}")
         
+        # Add categorization metadata if present
+        categorization = prayer_data.get('categorization')
+        if categorization:
+            content.append(f"Safety Score: {categorization.get('safety_score', 1.0)}")
+            content.append(f"Safety Flags: {json.dumps(categorization.get('safety_flags', []))}")
+            content.append(f"Category: {categorization.get('subject_category', 'general')}")
+            content.append(f"Specificity: {categorization.get('specificity_type', 'unknown')}")
+            content.append(f"Categorization Method: {categorization.get('categorization_method', 'default')}")
+            content.append(f"Categorization Confidence: {categorization.get('categorization_confidence', 0.0)}")
+        
         content.append("")  # Blank line
         content.append(prayer_data['text'])  # Original request
         content.append("")  # Blank line
@@ -103,6 +113,59 @@ class TextArchiveService:
         
         logger.info(f"Created prayer archive: {file_path}")
         return file_path
+    
+    def parse_prayer_archive_categorization(self, archive_path: str) -> Dict:
+        """Parse categorization metadata from prayer archive file"""
+        if not self.enabled or not archive_path or not Path(archive_path).exists():
+            # Return defaults for missing archives
+            from app_helpers.services.prayer_categorization_service import DEFAULT_CATEGORIZATION
+            return DEFAULT_CATEGORIZATION.copy()
+        
+        try:
+            with open(archive_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            lines = content.split('\n')
+            categorization = {}
+            
+            for line in lines:
+                line = line.strip()
+                if ':' not in line:
+                    continue
+                
+                key, value = line.split(':', 1)
+                key = key.strip()
+                value = value.strip()
+                
+                try:
+                    if key == 'Safety Score':
+                        categorization['safety_score'] = float(value)
+                    elif key == 'Safety Flags':
+                        categorization['safety_flags'] = json.loads(value) if value != '[]' else []
+                    elif key == 'Category':
+                        categorization['subject_category'] = value
+                    elif key == 'Specificity':
+                        categorization['specificity_type'] = value
+                    elif key == 'Categorization Method':
+                        categorization['categorization_method'] = value
+                    elif key == 'Categorization Confidence':
+                        categorization['categorization_confidence'] = float(value)
+                except (ValueError, json.JSONDecodeError) as e:
+                    logger.warning(f"Failed to parse categorization field '{key}' from {archive_path}: {e}")
+                    continue
+            
+            # Apply defaults for missing fields (backward compatibility)
+            from app_helpers.services.prayer_categorization_service import DEFAULT_CATEGORIZATION
+            for field, default_value in DEFAULT_CATEGORIZATION.items():
+                if field not in categorization:
+                    categorization[field] = default_value
+            
+            return categorization
+            
+        except Exception as e:
+            logger.error(f"Failed to parse categorization from archive {archive_path}: {e}")
+            from app_helpers.services.prayer_categorization_service import DEFAULT_CATEGORIZATION
+            return DEFAULT_CATEGORIZATION.copy()
     
     def append_prayer_activity(self, file_path: str, action: str, user: str, extra: str = "", old_value: str = None, new_value: str = None):
         """Append activity to prayer archive file with complete metadata"""
