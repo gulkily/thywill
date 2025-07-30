@@ -87,22 +87,17 @@ def main():
     print("ThyWill Database Creation Script")
     print("=" * 40)
     
-    # Confirmation prompt
-    response = input("Are you sure you want to create database tables? (type 'yes' to confirm): ")
-    if response.lower() != 'yes':
-        print("Database creation cancelled.")
-        sys.exit(0)
-    
-    # Check if database file already exists
+    # Check if database file already exists - exit immediately if it does
     db_path = Path("thywill.db")
     if db_path.exists():
         size = db_path.stat().st_size
-        print(f"⚠️  Database file already exists (size: {size} bytes)")
-        if size > 1024:  # If larger than 1KB, probably has data
-            response = input("Database appears to contain data. Continue anyway? (type 'yes' to confirm): ")
-            if response.lower() != 'yes':
-                print("Database creation cancelled to protect existing data.")
-                sys.exit(0)
+        print(f"❌ Database file already exists (size: {size} bytes)")
+        print("Database initialization skipped to protect existing data.")
+        print("If you want to recreate the database, remove 'thywill.db' first.")
+        sys.exit(1)
+    
+    # No confirmation needed if database doesn't exist
+    print("Database file not found - creating new database...")
     
     try:
         # Import models to get the engine and table definitions

@@ -8,6 +8,7 @@ Replaces separate import scripts with clean, maintainable code.
 
 import os
 import sys
+import json
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List
@@ -327,24 +328,36 @@ class ImportService:
             return False
     
     def _import_session_data(self, session: DBSession, dry_run: bool) -> bool:
-        """Import session data from text_archives/sessions/"""
+        """Import session data from text_archives/sessions/, system snapshots, and JSON backups"""
         print("  📄 Importing session data...")
-        
-        sessions_dir = self.archives_dir / "sessions"
-        if not sessions_dir.exists():
-            print("    ⚠️  No sessions directory found")
-            return True
         
         total_imported = 0
         
-        # Import all session files
-        for session_file in sessions_dir.glob("*_sessions.txt"):
-            imported = self._import_data_file(
-                session_file,
-                lambda parts: self._import_session(session, parts, dry_run),
-                dry_run
-            )
+        # First try structured session files
+        sessions_dir = self.archives_dir / "sessions"
+        if sessions_dir.exists():
+            for session_file in sessions_dir.glob("*_sessions.txt"):
+                imported = self._import_data_file(
+                    session_file,
+                    lambda parts: self._import_session(session, parts, dry_run),
+                    dry_run
+                )
+                total_imported += imported
+        
+        # Try JSON backup file from export-sessions command
+        json_backup_file = Path("sessions_backup.json")
+        if json_backup_file.exists():
+            imported = self._import_json_sessions_backup(session, json_backup_file, dry_run)
             total_imported += imported
+        
+        # Also try system archive snapshots
+        system_sessions_file = self.archives_dir / "system" / "current_state" / "active_sessions.txt"
+        if system_sessions_file.exists():
+            imported = self._import_system_sessions_snapshot(session, system_sessions_file, dry_run)
+            total_imported += imported
+        
+        if not sessions_dir.exists() and not system_sessions_file.exists() and not json_backup_file.exists():
+            print("    ⚠️  No session data found")
         
         if not dry_run and total_imported > 0:
             session.commit()
@@ -554,6 +567,188 @@ class ImportService:
                 imported_count += 1
         
         return imported_count
+    
+    def _import_system_sessions_snapshot(self, session: DBSession, snapshot_file: Path, dry_run: bool) -> int:
+        """Import sessions from system archive snapshot format."""
+        with open(snapshot_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        imported_count = 0
+        current_session = {}
+        
+        for line in content.split('\n'):
+            line = line.strip()
+            
+            # Skip comments and empty lines
+            if line.startswith('#') or not line:
+                continue
+            
+            # Session header
+            if line.startswith('Session ') and line.endswith(':'):
+                # Process previous session if exists
+                if current_session:
+                    if self._import_session_from_snapshot(session, current_session, dry_run):
+                        imported_count += 1
+                
+                # Start new session
+                session_id = line.replace('Session ', '').replace(':', '')
+                current_session = {'id': session_id}
+            
+            # Session attributes
+            elif line.startswith('  ') and ':' in line:
+                key, value = line.strip().split(':', 1)
+                key = key.strip()
+                value = value.strip()
+                
+                if key == 'User':
+                    # Extract username from "username (ID: id)" format
+                    if '(ID: ' in value:
+                        current_session['username'] = value.split('(ID: ')[1].rstrip(')')
+                    else:
+                        current_session['username'] = value
+                elif key == 'Created':
+                    current_session['created_at'] = value
+                elif key == 'Expires':
+                    current_session['expires_at'] = value
+                elif key == 'IP':
+                    current_session['ip_address'] = value if value != 'None' else None
+                elif key == 'Device':
+                    current_session['device_info'] = value if value != 'Unknown' else None
+                elif key == 'Fully authenticated':
+                    current_session['is_fully_authenticated'] = (value == 'True')
+        
+        # Process last session
+        if current_session:
+            if self._import_session_from_snapshot(session, current_session, dry_run):
+                imported_count += 1
+        
+        return imported_count
+    
+    def _import_json_sessions_backup(self, session: DBSession, json_file: Path, dry_run: bool) -> int:
+        """Import sessions from JSON backup file (from export-sessions command)."""
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            sessions_data = data.get('sessions', [])
+            imported_count = 0
+            
+            print(f"    📄 Processing {len(sessions_data)} sessions from JSON backup...")
+            
+            for session_data in sessions_data:
+                if self._import_session_from_json(session, session_data, dry_run):
+                    imported_count += 1
+            
+            return imported_count
+            
+        except Exception as e:
+            print(f"    ⚠️  Error importing JSON sessions backup: {e}")
+            return 0
+    
+    def _import_session_from_json(self, session: DBSession, session_data: dict, dry_run: bool) -> bool:
+        """Import a single session from JSON backup data."""
+        try:
+            session_id = session_data.get('session_id')
+            if not session_id:
+                return False
+            
+            # Check if already exists
+            existing = session.exec(select(Session).where(Session.id == session_id)).first()
+            if existing:
+                return False
+            
+            if dry_run:
+                return True
+            
+            username = session_data.get('username')
+            if not username:
+                return False
+            
+            # Parse dates (handle ISO format from JSON)
+            created_str = session_data['created_at']
+            expires_str = session_data['expires_at']
+            
+            try:
+                # Try ISO format first
+                created_at = datetime.fromisoformat(created_str.replace('Z', '+00:00'))
+                expires_at = datetime.fromisoformat(expires_str.replace('Z', '+00:00'))
+            except:
+                # Fall back to other formats
+                try:
+                    created_at = datetime.strptime(created_str, '%Y-%m-%d %H:%M:%S.%f')
+                    expires_at = datetime.strptime(expires_str, '%Y-%m-%d %H:%M:%S.%f')
+                except ValueError:
+                    created_at = datetime.strptime(created_str, '%Y-%m-%d %H:%M:%S')
+                    expires_at = datetime.strptime(expires_str, '%Y-%m-%d %H:%M:%S')
+            
+            device_info = session_data.get('device_info')
+            ip_address = session_data.get('ip_address')
+            is_fully_authenticated = session_data.get('is_fully_authenticated', True)
+            auth_request_id = session_data.get('auth_request_id')
+            
+            sess = Session(
+                id=session_id,  # Preserve exact session ID
+                username=username,
+                created_at=created_at,
+                expires_at=expires_at,
+                device_info=device_info if device_info else None,
+                ip_address=ip_address if ip_address else None,
+                is_fully_authenticated=is_fully_authenticated,
+                auth_request_id=auth_request_id
+            )
+            session.add(sess)
+            return True
+            
+        except Exception as e:
+            print(f"    ⚠️  Error importing session {session_data.get('session_id', 'unknown')}: {e}")
+            return False
+    
+    def _import_session_from_snapshot(self, session: DBSession, session_data: dict, dry_run: bool) -> bool:
+        """Import a single session from snapshot data."""
+        try:
+            session_id = session_data.get('id')
+            if not session_id:
+                return False
+            
+            # Check if already exists
+            existing = session.exec(select(Session).where(Session.id == session_id)).first()
+            if existing:
+                return False
+            
+            if dry_run:
+                return True
+            
+            # Parse dates (handle microseconds)
+            created_str = session_data['created_at']
+            expires_str = session_data['expires_at']
+            
+            # Try with microseconds first, then without
+            try:
+                created_at = datetime.strptime(created_str, '%Y-%m-%d %H:%M:%S.%f')
+            except ValueError:
+                created_at = datetime.strptime(created_str, '%Y-%m-%d %H:%M:%S')
+            
+            try:
+                expires_at = datetime.strptime(expires_str, '%Y-%m-%d %H:%M:%S.%f')
+            except ValueError:
+                expires_at = datetime.strptime(expires_str, '%Y-%m-%d %H:%M:%S')
+            
+            # Create session
+            sess = Session(
+                id=session_id,
+                username=session_data['username'],
+                created_at=created_at,
+                expires_at=expires_at,
+                device_info=session_data.get('device_info'),
+                ip_address=session_data.get('ip_address'),
+                is_fully_authenticated=session_data.get('is_fully_authenticated', True)
+            )
+            session.add(sess)
+            return True
+            
+        except Exception as e:
+            print(f"    ⚠️  Error importing session {session_data.get('id', 'unknown')}: {e}")
+            return False
     
     # Individual import functions for each data type
     def _import_prayer_attribute(self, session: DBSession, parts: List[str], dry_run: bool) -> bool:
@@ -832,8 +1027,8 @@ class ImportService:
         
         role_id, role_name, description, permissions, created_by, is_system_role = parts[:6]
         
-        # Check if already exists
-        existing = session.exec(select(Role).where(Role.id == role_id)).first()
+        # Check if role already exists by name (since name has UNIQUE constraint)
+        existing = session.exec(select(Role).where(Role.name == role_name)).first()
         
         if not existing and not dry_run:
             role = Role(

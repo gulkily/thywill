@@ -214,6 +214,11 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
                 })
             # Continue to existing user login logic below
             
+        elif inv.token_type == "admin":
+            # ADMIN TOKEN: Allow both existing and new users (will grant admin permissions)
+            # No validation needed - admin tokens can create new users or login existing users
+            pass
+            
         else:
             # Invalid token type (shouldn't happen with default values, but defensive)
             return templates.TemplateResponse("claim.html", {
