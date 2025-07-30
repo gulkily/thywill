@@ -161,6 +161,69 @@ class AuthArchiveWriter:
         
         return str(daily_file)
     
+    def log_session_creation(self, session_data: Dict) -> str:
+        """Log individual session creation to monthly structured archive"""
+        if not self.enabled:
+            return ""
+        
+        # Write to main sessions archive directory (not auth subdirectory)
+        sessions_dir = self.base_dir / "sessions"
+        sessions_dir.mkdir(parents=True, exist_ok=True)
+        
+        now = datetime.now()
+        monthly_file = sessions_dir / f"{now.year}_{now.month:02d}_sessions.txt"
+        
+        # Create header if new file
+        if not monthly_file.exists():
+            header = f"Sessions for {now.strftime('%B %Y')} (exported {now.strftime('%B %d %Y at %H:%M')})\n"
+            header += "Format: created_at|session_id|username|expires_at|device_info|ip_address|is_fully_authenticated\n\n"
+            self._write_file_atomic(str(monthly_file), header)
+        
+        # Format session data 
+        created_at = session_data.get('created_at', now).strftime('%B %d %Y at %H:%M')
+        session_id = session_data.get('session_id', '')
+        username = session_data.get('username', '')
+        expires_at = session_data.get('expires_at', '').strftime('%B %d %Y at %H:%M') if session_data.get('expires_at') else ''
+        
+        # Preserve actual device_info values, including None - use empty string for None to avoid "unknown" conversion
+        raw_device_info = session_data.get('device_info')
+        if raw_device_info is None:
+            device_info = ''  # Use empty string instead of "unknown"
+        else:
+            device_info = str(raw_device_info).replace('|', '_')  # Replace pipes to avoid parsing issues
+        
+        # Preserve actual ip_address values, including None
+        raw_ip_address = session_data.get('ip_address')
+        if raw_ip_address is None:
+            ip_address = ''  # Use empty string instead of "unknown"
+        else:
+            ip_address = str(raw_ip_address)
+            
+        is_fully_authenticated = 'yes' if session_data.get('is_fully_authenticated', True) else 'no'
+        
+        session_line = f"{created_at}|{session_id}|{username}|{expires_at}|{device_info}|{ip_address}|{is_fully_authenticated}"
+        
+        self._append_to_file(str(monthly_file), session_line)
+        logger.info(f"Archived session creation for user {username}")
+        
+        return str(monthly_file)
+    
+    def backfill_missing_sessions(self, sessions: List[Dict]) -> int:
+        """Backfill sessions that weren't archived in real-time"""
+        if not self.enabled:
+            return 0
+            
+        archived_count = 0
+        for session_data in sessions:
+            try:
+                self.log_session_creation(session_data)
+                archived_count += 1
+            except Exception as e:
+                logger.warning(f"Failed to backfill session {session_data.get('session_id', 'unknown')}: {e}")
+        
+        logger.info(f"Backfilled {archived_count} missing sessions to archives")
+        return archived_count
+    
     def log_notification_event(self, notification: Dict) -> str:
         """Log notification state change to monthly archive"""
         if not self.enabled:
