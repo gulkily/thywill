@@ -168,8 +168,10 @@ class SystemArchiveService:
         try:
             from models import engine
             with Session(engine) as session:
+                # Get all non-expired sessions
+                now = datetime.now(timezone.utc)
                 active_sessions = session.exec(
-                    select(UserSession).where(UserSession.is_active == True)
+                    select(UserSession).where(UserSession.expires_at > now)
                 ).all()
                 
                 # Generate human-readable snapshot
@@ -186,7 +188,7 @@ class SystemArchiveService:
                     lines.append(f"Session {sess.id}:")
                     lines.append(f"  User: {username} (ID: {sess.username})")
                     lines.append(f"  Created: {sess.created_at}")
-                    lines.append(f"  Last seen: {sess.last_activity}")
+                    lines.append(f"  Expires: {sess.expires_at}")
                     lines.append(f"  IP: {sess.ip_address}")
                     lines.append(f"  Device: {sess.device_info or 'Unknown'}")
                     lines.append(f"  Fully authenticated: {sess.is_fully_authenticated}")

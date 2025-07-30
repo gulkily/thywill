@@ -53,6 +53,24 @@ def create_session(user_id: str, auth_request_id: str = None, device_info: str =
             })
         except Exception as e:
             logger.warning(f"Failed to archive session creation: {e}")
+        
+        # Archive full session data for export/import continuity
+        try:
+            from ..system_archive_service import SystemArchiveService
+            system_archive = SystemArchiveService()
+            archive_data = {
+                'id': sid,
+                'username': user_id,
+                'created_at': session_data.created_at.isoformat(),
+                'expires_at': session_data.expires_at.isoformat(),
+                'ip_address': ip_address,
+                'device_info': device_info,
+                'is_fully_authenticated': is_fully_authenticated,
+                'auth_request_id': auth_request_id
+            }
+            system_archive.log_session_event('created', archive_data, user_id)
+        except Exception as e:
+            logger.warning(f"Failed to archive full session data: {e}")
     
     return sid
 

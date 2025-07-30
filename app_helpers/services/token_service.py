@@ -48,6 +48,7 @@ def create_invite_token(
     custom_token: Optional[str] = None,
     custom_expiration_hours: Optional[int] = None,
     max_uses: Optional[int] = None,
+    token_type: Optional[str] = None,
     db_session: Optional[Session] = None
 ) -> dict:
     """
@@ -73,7 +74,8 @@ def create_invite_token(
         expires_at=expires_at,
         usage_count=0,
         max_uses=token_max_uses,
-        used_by_user_id=None
+        used_by_user_id=None,
+        token_type=token_type or "new_user"
     )
     
     # Use provided session or create a new one
@@ -119,7 +121,8 @@ def create_system_token(custom_expiration_hours: Optional[int] = None, max_uses:
     return create_invite_token(
         created_by_user="system",
         custom_expiration_hours=custom_expiration_hours,
-        max_uses=max_uses
+        max_uses=max_uses,
+        token_type="admin"
     )
 
 def get_token_expiration_config() -> dict:
