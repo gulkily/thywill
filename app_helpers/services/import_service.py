@@ -333,10 +333,23 @@ class ImportService:
         
         total_imported = 0
         
-        # First try structured session files
+        # First try structured session files from both locations
         sessions_dir = self.archives_dir / "sessions"
+        db_exports_sessions_dir = self.archives_dir / "database_exports" / "sessions"
+        
+        # Import from regular text archives (real-time archiving)
         if sessions_dir.exists():
             for session_file in sessions_dir.glob("*_sessions.txt"):
+                imported = self._import_data_file(
+                    session_file,
+                    lambda parts: self._import_session(session, parts, dry_run),
+                    dry_run
+                )
+                total_imported += imported
+        
+        # Import from database exports (manual exports)
+        if db_exports_sessions_dir.exists():
+            for session_file in db_exports_sessions_dir.glob("*_sessions.txt"):
                 imported = self._import_data_file(
                     session_file,
                     lambda parts: self._import_session(session, parts, dry_run),
@@ -554,12 +567,13 @@ class ImportService:
     def _import_data_file(self, file_path: Path, import_func, dry_run: bool) -> int:
         """Import data from a text archive file."""
         with open(file_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()[3:]  # Skip header lines
+            lines = f.readlines()
         
         imported_count = 0
         for line in lines:
             line = line.strip()
-            if not line:
+            # Skip empty lines, headers, and format lines
+            if not line or not '|' in line or line.startswith('Format:') or line.startswith('Sessions for'):
                 continue
             
             parts = line.split('|')
@@ -880,13 +894,17 @@ class ImportService:
         existing = session.exec(select(Session).where(Session.id == session_id)).first()
         
         if not existing and not dry_run:
+            # Convert empty strings back to None (preserve original values)
+            device_info_value = device_info if device_info and device_info != "unknown" else None
+            ip_address_value = ip_address if ip_address and ip_address != "unknown" else None
+            
             sess = Session(
                 id=session_id,
                 username=username,
                 created_at=created_at,
                 expires_at=expires_at,
-                device_info=device_info if device_info != "unknown" else None,
-                ip_address=ip_address if ip_address != "unknown" else None,
+                device_info=device_info_value,
+                ip_address=ip_address_value,
                 is_fully_authenticated=(is_fully_auth == "yes")
             )
             session.add(sess)

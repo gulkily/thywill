@@ -290,7 +290,17 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             
             s.add(inv)
             s.commit()
-            sid = create_session(user_id)
+            
+            # Extract device info for session creation
+            device_info = request.headers.get("User-Agent", "Unknown") if request else "Unknown"
+            ip_address = request.client.host if request else "Unknown"
+            
+            sid = create_session(
+                user_id=user_id,
+                device_info=device_info,
+                ip_address=ip_address,
+                is_fully_authenticated=True
+            )
             resp = RedirectResponse("/", 303)
             resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
             return resp
@@ -361,7 +371,16 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             
             s.commit()
 
-            sid = create_session(user.display_name)
+            # Extract device info for session creation
+            device_info = request.headers.get("User-Agent", "Unknown") if request else "Unknown"
+            ip_address = request.client.host if request else "Unknown"
+
+            sid = create_session(
+                user_id=user.display_name,
+                device_info=device_info,
+                ip_address=ip_address,
+                is_fully_authenticated=True
+            )
             resp = RedirectResponse("/", 303)
             resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
             return resp
