@@ -36,6 +36,16 @@
         <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'my_prayers' %}bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-100{% else %}bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} rounded-full">{{ feed_counts.my_prayers or 0 }}</span>
       </a>
       
+      <a href="/?feed_type=my_unprayed" 
+         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'my_unprayed' %}bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+        <span>🔍 Not Prayed Yet</span>
+        {% if feed_counts.my_unprayed > 0 %}
+          <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full">{{ feed_counts.my_unprayed }}</span>
+        {% else %}
+          <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'my_unprayed' %}bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-100{% else %}bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} rounded-full">0</span>
+        {% endif %}
+      </a>
+      
       <a href="/?feed_type=my_requests" 
          class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'my_requests' %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
         <span>My Prayer Requests</span>
