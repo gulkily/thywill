@@ -52,6 +52,7 @@ def feed(request: Request, feed_type: str = "all", category: Optional[str] = Non
     - new_unprayed: Prayers that have never been prayed
     - most_prayed: Most prayed prayers by total count
     - my_prayers: Prayers the current user has marked as prayed
+    - my_unprayed: Prayers the current user has not prayed yet
     - my_requests: Prayer requests submitted by current user
     - recent_activity: Prayers with recent prayer marks
     - answered: Answered prayers (celebration feed)
@@ -124,6 +125,20 @@ def feed(request: Request, feed_type: str = "all", category: Optional[str] = Non
                 .where(PrayerMark.username == user.display_name)
                 .group_by(Prayer.id)
                 .order_by(func.max(PrayerMark.created_at).desc())
+            )
+            stmt = apply_category_filters(stmt)
+        elif feed_type == "my_unprayed":
+            # Prayers the current user has NOT prayed yet
+            stmt = (
+                select(Prayer, User.display_name)
+                .outerjoin(User, Prayer.author_username == User.display_name)
+                .outerjoin(PrayerMark, 
+                    (Prayer.id == PrayerMark.prayer_id) & 
+                    (PrayerMark.username == user.display_name))
+                .where(Prayer.flagged == False)
+                .where(exclude_archived())
+                .where(PrayerMark.id.is_(None))  # User hasn't prayed this
+                .order_by(Prayer.created_at.desc())
             )
             stmt = apply_category_filters(stmt)
         elif feed_type == "my_requests":

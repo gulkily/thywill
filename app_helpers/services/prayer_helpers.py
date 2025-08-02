@@ -86,6 +86,23 @@ def get_feed_counts(user_id: str) -> dict:
             .where(PrayerMark.username == user_id)
         ).first()
         
+        # My unprayed (prayers user hasn't marked yet)
+        counts['my_unprayed'] = s.exec(
+            select(func.count(Prayer.id))
+            .select_from(Prayer)
+            .outerjoin(PrayerMark, 
+                (Prayer.id == PrayerMark.prayer_id) & 
+                (PrayerMark.username == user_id))
+            .where(Prayer.flagged == False)
+            .where(
+                ~Prayer.id.in_(
+                    select(PrayerAttribute.prayer_id)
+                    .where(PrayerAttribute.attribute_name == 'archived')
+                )
+            )
+            .where(PrayerMark.id.is_(None))
+        ).first()
+        
         # My requests - include all statuses  
         counts['my_requests'] = s.exec(
             select(func.count(Prayer.id))
@@ -177,15 +194,24 @@ def todays_prompt() -> str:
 def generate_prayer(prompt: str) -> dict:
     """Generate a proper prayer from a user prompt using Anthropic API"""
     try:
-        # Load system prompt from external file
-        import os
-        prompt_file_path = os.path.join(os.path.dirname(__file__), '..', '..', 'prompts', 'prayer_generation_system.txt')
-        with open(prompt_file_path, 'r', encoding='utf-8') as f:
-            system_prompt = f.read().strip()
+        # Use dynamic prompt composition based on feature flags
+        from app_helpers.services.prompt_composition_service import prompt_composition_service
+        system_prompt = prompt_composition_service.build_prayer_generation_prompt()
+        
+        # Determine max tokens based on categorization features
+        try:
+            from app import PRAYER_CATEGORIZATION_ENABLED, AI_CATEGORIZATION_ENABLED
+        except ImportError:
+            import os
+            PRAYER_CATEGORIZATION_ENABLED = os.getenv("PRAYER_CATEGORIZATION_ENABLED", "false").lower() == "true"
+            AI_CATEGORIZATION_ENABLED = os.getenv("AI_CATEGORIZATION_ENABLED", "false").lower() == "true"
+        
+        # Increase max tokens if categorization analysis is enabled
+        max_tokens = 400 if (PRAYER_CATEGORIZATION_ENABLED and AI_CATEGORIZATION_ENABLED) else 200
 
         response = anthropic_client.messages.create(
             model="claude-3-5-sonnet-20241022",
-            max_tokens=200,
+            max_tokens=max_tokens,
             temperature=0.7,
             system=system_prompt,
             messages=[
@@ -193,13 +219,18 @@ def generate_prayer(prompt: str) -> dict:
             ]
         )
         
+        ai_response = response.content[0].text.strip()
+        
         return {
-            'prayer': response.content[0].text.strip(),
+            'prayer': ai_response,
+            'full_response': ai_response,  # Include full response for categorization parsing
             'service_status': 'normal'
         }
     except Exception as e:
         print(f"Error generating prayer: {e}")
+        fallback_prayer = f"Divine Creator, we lift up our friend who asks for help with: {prompt}. May your will be done in their life. Amen."
         return {
-            'prayer': f"Divine Creator, we lift up our friend who asks for help with: {prompt}. May your will be done in their life. Amen.",
+            'prayer': fallback_prayer,
+            'full_response': fallback_prayer,  # Consistent structure for error handling
             'service_status': 'degraded'
         }
