@@ -16,6 +16,11 @@ pip install -r requirements.txt && chmod +x thywill
 ./thywill status       # Database status
 pytest                 # Run tests
 
+# Environment Configuration
+python tools/update_env_defaults.py              # Update .env with missing .env.example defaults
+python tools/update_env_defaults.py --dry-run    # Preview changes without applying
+python tools/update_env_defaults.py --backup-only # Just create backup
+
 # Template Validation
 ./validate_templates.py  # Comprehensive template field validation
 ./check_templates.sh     # Quick static analysis for common issues
@@ -190,6 +195,11 @@ You don't have access to the production server, so please act accordingly.
 **Terminology**: "Answered Prayers" → "Praise Reports" throughout UI (button text, headers, modals)
 **UI**: Logout button removed from header (now menu-only) to prevent accidental logouts
 **Prayer Generation**: Updated system prompt with enhanced community focus and Scripture references
+**Modular Prompt Architecture**: Implemented dynamic prompt composition for prayer categorization
+- Created 4 separate auditable prompt files for categorization components
+- Built `PromptCompositionService` for feature-flag-controlled prompt assembly
+- Integrated dual analysis workflow (request + generated prayer) into AI system prompt
+- All prompt text version-controlled in `prompts/` directory for GitHub auditability
 **Documentation**: Added `generate_app_overview.py` and `md_to_pdf_simple.py` tools
 **Performance**: Refactored recent activity counting in feed functions
 **Testing**: User fields standardized to use display_name instead of id
