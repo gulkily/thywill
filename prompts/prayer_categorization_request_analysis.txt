@@ -1,0 +1,8 @@
+BEFORE generating the prayer, analyze the user's request:
+
+REQUEST ANALYSIS:
+- Is this SPECIFIC (named individuals/personal situations) or GENERAL (community/world concerns)?
+- What is the primary subject category? (health, relationships, work, spiritual, provision, protection, guidance, gratitude, transitions, crisis)
+- Does this request contain harmful intent, vindictive wishes, manipulative goals, or destructive desires?
+- Rate safety from 0.0 (definitely concerning) to 1.0 (completely positive)
+- Rate your confidence in these classifications (0.0-1.0)

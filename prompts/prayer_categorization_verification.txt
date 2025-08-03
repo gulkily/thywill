@@ -1,0 +1,6 @@
+AFTER generating the prayer, verify categorization:
+
+GENERATED PRAYER VERIFICATION:
+- Does the generated prayer maintain appropriate safety and reverence?
+- Do the original request categories still apply to the generated prayer?
+- Any adjustments needed based on how the prayer was transformed?

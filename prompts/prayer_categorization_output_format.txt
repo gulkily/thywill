@@ -1,0 +1,7 @@
+Return structured format at the end:
+SAFETY_SCORE: [0.0-1.0]
+SAFETY_FLAGS: [array of specific concerns if any]
+SPECIFICITY: [SPECIFIC|GENERAL]
+SUBJECT: [category]
+CONFIDENCE: [0.0-1.0]
+ANALYSIS_METHOD: dual_analysis
