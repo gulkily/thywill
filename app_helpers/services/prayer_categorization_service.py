@@ -161,11 +161,41 @@ class PrayerCategorizationService:
                     categories['categorization_confidence'] = float(value)
                 elif key == 'SAFETY_FLAGS':
                     categories['safety_flags'] = json.loads(value) if value != '[]' else []
+                elif key == 'ANALYSIS_METHOD':
+                    categories['categorization_method'] = value.lower()
             except (ValueError, json.JSONDecodeError) as e:
                 logger.warning(f"Failed to parse categorization field {key}: {e}")
                 continue
         
         return categories
+    
+    def extract_prayer_from_response(self, response_text: str) -> str:
+        """Extract just the prayer text from AI response, removing categorization metadata"""
+        lines = response_text.split('\n')
+        prayer_lines = []
+        
+        # Stop collecting prayer text when we hit categorization metadata
+        categorization_started = False
+        for line in lines:
+            stripped = line.strip()
+            
+            # Check if this line starts categorization metadata
+            if (stripped.startswith('SAFETY_SCORE:') or 
+                stripped.startswith('SPECIFICITY:') or 
+                stripped.startswith('SUBJECT:') or
+                stripped.startswith('CONFIDENCE:') or
+                stripped.startswith('SAFETY_FLAGS:') or
+                stripped.startswith('ANALYSIS_METHOD:')):
+                categorization_started = True
+                break
+            
+            # If we haven't hit categorization yet, include this line in prayer
+            if not categorization_started:
+                prayer_lines.append(line)
+        
+        # Clean up the prayer text
+        prayer_text = '\n'.join(prayer_lines).strip()
+        return prayer_text
     
     def validate_categorization(self, categories: dict) -> bool:
         """Validate that categorization contains required fields with valid values"""

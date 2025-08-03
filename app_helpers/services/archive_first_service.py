@@ -431,6 +431,12 @@ def submit_prayer_archive_first(text: str, author: User,
     if PRAYER_CATEGORIZATION_ENABLED:
         categorization_service = PrayerCategorizationService()
         categorization = categorization_service.categorize_prayer_with_fallback(text, ai_response)
+        
+        # If AI categorization is enabled and we have ai_response, extract the clean prayer text
+        if ai_response and categorization.get('categorization_method') in ['ai_full', 'dual_analysis']:
+            extracted_prayer = categorization_service.extract_prayer_from_response(ai_response)
+            if extracted_prayer:
+                generated_prayer = extracted_prayer
     else:
         categorization = {
             'safety_score': 1.0,
