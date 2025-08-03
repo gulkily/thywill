@@ -105,82 +105,294 @@ CREATE INDEX idx_prayer_safety ON prayer(safety_score);
 -- The text archive is the authoritative source of truth
 ```
 
-## Implementation Phases
+## Implementation Status
 
-### Phase 1: Archive-First Safety System (Week 1-2)
+### ✅ COMPLETED - Phase 1: Archive-First Safety System 
 **Goal**: Implement basic safety filtering with archive-first architecture
 
-**Tasks**:
-1. **Archive Format Update**: Enhance `TextArchiveService` to write categorization metadata
-2. **Prayer Generation Integration**: Modify `generate_prayer()` to include AI categorization
-3. **Archive Writing**: Update `create_prayer_archive()` to include safety metadata
-4. **Import Enhancement**: Update `text_importer_service.py` to parse categorization data
-5. **Database Population**: Populate Prayer model fields from parsed archive data
-6. **Feed Filtering**: Add safety filtering to feed queries (hide score < 0.7)
-7. **Admin Interface**: Create interface to review flagged content
+**✅ Completed Tasks**:
+1. **✅ Database Schema**: Migration 011 added all categorization fields to Prayer table
+   - `safety_score`, `safety_flags`, `categorization_method`
+   - `specificity_type`, `specificity_confidence`, `subject_category`
+   - Proper indexes and safe defaults for existing prayers
 
-**Acceptance Criteria**:
-- All new prayers write categorization to text archives FIRST
-- Database fields populated from archive data during import
-- Safety filtering works from database cache layer
-- Archives contain human-readable categorization metadata
-- Import process is fully idempotent with categorization data
+2. **✅ Archive Format Update**: TextArchiveService writes categorization metadata
+   - Safety Score, Safety Flags, Category, Specificity, Method, Confidence
+   - Controlled by `CATEGORIZATION_METADATA_EXPORT` flag
+   - Full parsing support for import with fallback defaults
 
-### Phase 2: Archive-First Full Classification (Week 3-4)
+3. **✅ Prayer Generation Integration**: Archive-first service integrates categorization
+   - `create_prayer_archive_first()` calls PrayerCategorizationService
+   - Writes categorization to archive FIRST, then populates database cache
+   - Feature flag controlled (`PRAYER_CATEGORIZATION_ENABLED`)
+
+4. **✅ Categorization Service**: Full PrayerCategorizationService implemented
+   - AI categorization with circuit breaker pattern
+   - Keyword-based fallback system
+   - Progressive retry strategies
+   - 18 feature flags for granular control
+
+5. **✅ Feed Filtering**: Category and safety filtering in feed operations
+   - Database queries filter by category and safety score
+   - All controlled by feature flags
+
+**✅ COMPLETED**: System prompt integration for AI categorization analysis
+   - Dynamic prompt composition from modular text files
+   - Feature flag controlled prompt building
+   - Dual analysis format (request + generated prayer)
+   - Prayer text extraction from AI response
+
+## Implementation Phases
+
+### ✅ COMPLETED - Phase 2: Archive-First Full Classification 
 **Goal**: Implement specificity and subject categorization with full archive integration
 
-**Tasks**:
-1. **Archive Format Expansion**: Add specificity and subject metadata to archive format
-2. **AI Integration Enhancement**: Enhance system prompt with full categorization instructions
-3. **Archive Writing**: Update archive creation to include all categorization data
-4. **Import Parser Enhancement**: Extend import parser for all categorization fields
-5. **Database Schema**: Add remaining classification columns to Prayer model
-6. **UI Integration**: Add category badges/indicators to prayer cards in feeds
-7. **Feed Filtering**: Create category-based feed filters using database cache
+**✅ Completed Tasks**:
+1. **✅ Archive Format Expansion**: All categorization metadata in archive format
+   - Complete specificity and subject metadata support
+   - Backward compatible parsing with safe defaults
 
-**Acceptance Criteria**:
-- Archives contain complete categorization metadata in human-readable format
-- All new prayers classified as specific/general with subject categories
-- Import process handles all categorization fields idempotently
-- Users can filter feeds by category using database cache
-- Category information visible in prayer cards
-- Archives remain the authoritative source for all categorization data
+2. **✅ Database Schema**: All classification columns added to Prayer model
+   - Migration 011 included all planned fields
+   - Proper indexing for efficient filtering
 
-### Phase 3: Advanced Features with Archive Consistency (Week 5-6)
+3. **✅ UI Integration**: Complete category badges and filtering UI
+   - Category badges with color-coded icons (🏥 Health, 💼 Work, etc.)
+   - Specificity badges (👤 Personal, 🌍 Community)
+   - Category filtering dropdown with "High Safety Only" option
+   - All UI controlled by feature flags
+
+4. **✅ Feed Filtering**: Category-based filtering fully implemented
+   - Database cache queries filter by category and safety
+   - JavaScript filtering controls with URL persistence
+   - Feature flag gated functionality
+
+**✅ COMPLETED**: AI system prompt enhancement for categorization analysis
+   - Modular prompt architecture with separate auditable files
+   - Dynamic composition based on active feature flags
+   - Dual analysis workflow integrated into prayer generation
+
+### 🚧 IN PROGRESS - Phase 3: Advanced Features with Archive Consistency
 **Goal**: Enhanced user experience and matching while maintaining archive integrity
 
-**Tasks**:
-1. **User Preferences**: Category filtering controls in user settings
-2. **Prayer Partner Matching**: Based on category compatibility from database cache
-3. **Category Suggestions**: Category-specific prayer prompts and suggestions
-4. **Analytics Dashboard**: Category trends from database aggregation
-5. **Historical Categorization**: Bulk re-categorization with archive updates
-6. **Archive Healing**: Ensure all prayers have categorization metadata in archives
-7. **Export Consistency**: Verify export includes all categorization data
+**✅ Completed Tasks**:
+1. **✅ Archive Healing**: Import/export maintains categorization data consistency
+   - Text importer handles all categorization fields
+   - Archive export includes categorization metadata
+   - Fully idempotent import process
 
-**Acceptance Criteria**:
-- Users can set category preferences in settings
-- Prayer partner suggestions consider category interests from cached data
-- Historical prayers categorized and written back to archives
-- Admin dashboard shows category distribution and trends
-- All categorization changes update both archive and database
-- Export/import maintains full categorization data consistency
+2. **✅ Circuit Breaker & Fallbacks**: Robust error handling implemented
+   - Progressive retry with increasing timeouts  
+   - Keyword-based fallback categorization
+   - Background processing queue support
+
+**⚠️ PENDING Tasks**:
+1. **User Preferences**: Category filtering controls in user settings
+2. **Prayer Partner Matching**: Based on category compatibility
+3. **Category Suggestions**: Category-specific prayer prompts
+4. **Analytics Dashboard**: Category trends and distribution
+5. **Historical Categorization**: Bulk re-categorization tools
+
+**✅ COMPLETED**: AI System Prompt integration with categorization analysis
+
+## Feature Flags Configuration
+
+The prayer categorization system is controlled by 18 feature flags that allow granular control over functionality:
+
+### Master Toggle
+- `PRAYER_CATEGORIZATION_ENABLED` - Master switch for entire categorization system
+
+### AI Processing Flags
+- `AI_CATEGORIZATION_ENABLED` - Enable AI-powered categorization analysis
+- `KEYWORD_FALLBACK_ENABLED` - Enable keyword-based fallback categorization
+- `SAFETY_SCORING_ENABLED` - Enable safety score calculation and storage
+- `CATEGORIZATION_CIRCUIT_BREAKER_ENABLED` - Enable circuit breaker for AI failures
+- `CATEGORIZATION_CACHING_ENABLED` - Enable caching of categorization results
+
+### UI Display Flags
+- `PRAYER_CATEGORY_BADGES_ENABLED` - Show category badges on prayer cards
+- `PRAYER_CATEGORY_FILTERING_ENABLED` - Enable category filtering controls
+- `SPECIFICITY_BADGES_ENABLED` - Show Personal/Community specificity badges
+- `HIGH_SAFETY_FILTER_ENABLED` - Show "High Safety Only" filter option
+- `SAFETY_BADGES_VISIBLE` - Display safety-related indicators
+- `CATEGORY_FILTER_DROPDOWN_ENABLED` - Enable category dropdown filters
+- `FILTER_PERSISTENCE_ENABLED` - Remember user filter preferences
+
+### Advanced Features
+- `CATEGORIZATION_ANALYTICS_ENABLED` - Enable category analytics and reporting
+- `BACKGROUND_CATEGORIZATION_ENABLED` - Enable background processing queue
+- `USER_CATEGORIZATION_FEEDBACK_ENABLED` - Allow users to provide category feedback
+- `TEMPORAL_PRAYER_HANDLING_ENABLED` - Enable time-sensitive prayer features
+- `BULK_RECATEGORIZATION_ENABLED` - Enable bulk re-categorization tools
+
+**Default State**: All flags default to `false` for controlled rollout.
+
+**Current Implementation Status**: All 18 feature flags are implemented in codebase but disabled by default.
 
 ## AI Integration
 
-### Enhanced System Prompt Addition
-```
-After generating the prayer, analyze it for categorization:
+### Feature Flag Integration Strategy
 
-SAFETY EVALUATION:
+The system prompt must be dynamically constructed based on active feature flags to avoid unnecessary AI processing when categorization features are disabled.
+
+#### Prompt Construction Logic
+```python
+def build_categorization_prompt() -> str:
+    """Build categorization prompt based on active feature flags"""
+    
+    if not PRAYER_CATEGORIZATION_ENABLED:
+        return ""  # No categorization instructions
+    
+    prompt_parts = []
+    
+    # Add request analysis if AI categorization enabled
+    if AI_CATEGORIZATION_ENABLED:
+        prompt_parts.append("""
+BEFORE generating the prayer, analyze the user's request:
+
+REQUEST ANALYSIS:
+- Is this SPECIFIC (named individuals/personal situations) or GENERAL (community/world concerns)?
+- What is the primary subject category? (health, relationships, work, spiritual, provision, protection, guidance, gratitude, transitions, crisis)
+- Rate your confidence in these classifications (0.0-1.0)
+""")
+    
+    # Add safety analysis if safety scoring enabled
+    if SAFETY_SCORING_ENABLED:
+        prompt_parts.append("""
 - Does this request contain harmful intent, vindictive wishes, manipulative goals, or destructive desires?
 - Rate safety from 0.0 (definitely concerning) to 1.0 (completely positive)
-- If score < 1.0, list specific concerns
+""")
+    
+    # Add verification section
+    if AI_CATEGORIZATION_ENABLED:
+        prompt_parts.append("""
+[Generate the prayer based on existing guidelines]
 
-CATEGORIZATION:
-- Specificity: SPECIFIC (named individuals/personal situations) or GENERAL (community/world concerns)?
-- Subject: Which primary category? (health, relationships, work, spiritual, provision, protection, guidance, gratitude, transitions, crisis)
-- Confidence: How certain are you of these classifications? (0.0-1.0)
+AFTER generating the prayer, verify categorization:
+- Does the generated prayer maintain appropriate safety and reverence?
+- Do the original request categories still apply to the generated prayer?
+""")
+    
+    # Add structured output format
+    output_fields = []
+    if AI_CATEGORIZATION_ENABLED:
+        output_fields.extend(["SPECIFICITY: [SPECIFIC|GENERAL]", "SUBJECT: [category]", "CONFIDENCE: 0.0-1.0"])
+    if SAFETY_SCORING_ENABLED:
+        output_fields.extend(["SAFETY_SCORE: 0.0-1.0", "SAFETY_FLAGS: []"])
+    
+    if output_fields:
+        prompt_parts.append(f"""
+Return structured format:
+{chr(10).join(output_fields)}
+ANALYSIS_METHOD: dual_analysis
+""")
+    
+    return "".join(prompt_parts)
+
+def get_system_prompt() -> str:
+    """Get complete system prompt with dynamic categorization"""
+    
+    # Load base prayer generation prompt
+    with open('prompts/prayer_generation_system.txt', 'r') as f:
+        base_prompt = f.read().strip()
+    
+    # Add categorization instructions if enabled
+    categorization_prompt = build_categorization_prompt()
+    
+    if categorization_prompt:
+        return f"{base_prompt}\n\n{categorization_prompt}"
+    else:
+        return base_prompt
+```
+
+#### Prompt File Strategy
+
+**Option 1: Single Dynamic File**
+- Keep existing `prayer_generation_system.txt` as base
+- Dynamically append categorization instructions based on flags
+- Requires code changes to `generate_prayer()` function
+
+**Option 2: Separate Prompt Files**
+- `prompts/prayer_generation_base.txt` - Core prayer generation
+- `prompts/categorization_analysis.txt` - Categorization instructions
+- `prompts/safety_analysis.txt` - Safety evaluation instructions
+- Compose final prompt from active components
+
+**Option 3: Templated Prompt File**
+- Use template syntax in prompt file with conditional blocks
+- `prompts/prayer_generation_template.txt` with `{%if AI_CATEGORIZATION_ENABLED%}` blocks
+- Process template with feature flags at runtime
+
+**Recommended**: Option 2 for maintainability and testing
+
+## ✅ IMPLEMENTED - Modular Prompt Architecture
+
+The categorization system now uses a **modular prompt architecture** that maintains full auditability while enabling dynamic composition.
+
+### Prompt File Structure
+```
+prompts/
+├── prayer_generation_system.txt              # Base prayer generation (always included)
+├── prayer_categorization_request_analysis.txt # Pre-generation analysis
+├── prayer_categorization_verification.txt    # Post-generation verification  
+└── prayer_categorization_output_format.txt   # Structured output format
+```
+
+### Dynamic Composition Logic
+The `PromptCompositionService` builds prompts based on active feature flags:
+
+**Configuration 1: All flags disabled**
+- Uses only `prayer_generation_system.txt` 
+- Standard prayer generation without categorization
+- 1,300 characters
+
+**Configuration 2: Safety-only mode**
+- `PRAYER_CATEGORIZATION_ENABLED=true`
+- `SAFETY_SCORING_ENABLED=true` 
+- `AI_CATEGORIZATION_ENABLED=false`
+- Adds inline safety evaluation instructions
+- 1,505 characters
+
+**Configuration 3: Full AI categorization**
+- `PRAYER_CATEGORIZATION_ENABLED=true`
+- `AI_CATEGORIZATION_ENABLED=true`
+- `SAFETY_SCORING_ENABLED=true`
+- Composes all 4 prompt files into dual analysis format
+- 2,429 characters
+
+### Integration Points
+1. **Prayer Generation**: `generate_prayer()` uses dynamic prompt composition
+2. **Token Allocation**: Max tokens increased to 400 when categorization enabled
+3. **Response Parsing**: Categorization service extracts prayer text and metadata
+4. **Archive Integration**: Clean prayer text written to archives, metadata cached in database
+
+### Auditability Features
+- All prompt text stored in version-controlled `.txt` files
+- No prompt content in code - only composition logic
+- GitHub-reviewable changes to categorization instructions
+- Runtime feature flag control without code changes
+
+### Enhanced System Prompt Addition (Dual Analysis)
+
+**Dual Analysis Approach**: The system prompt must analyze both the original prayer request AND the generated prayer to ensure comprehensive categorization.
+
+```
+BEFORE generating the prayer, analyze the user's request:
+
+REQUEST ANALYSIS:
+- Does this request contain harmful intent, vindictive wishes, manipulative goals, or destructive desires?
+- Is this SPECIFIC (named individuals/personal situations) or GENERAL (community/world concerns)?
+- What is the primary subject category? (health, relationships, work, spiritual, provision, protection, guidance, gratitude, transitions, crisis)
+- Rate your confidence in these classifications (0.0-1.0)
+
+[Generate the prayer based on existing guidelines]
+
+AFTER generating the prayer, verify categorization:
+
+GENERATED PRAYER VERIFICATION:
+- Does the generated prayer maintain appropriate safety and reverence?
+- Do the original request categories still apply to the generated prayer?
+- Any adjustments needed based on how the prayer was transformed?
 
 Return structured format:
 SAFETY_SCORE: 0.95
@@ -188,6 +400,7 @@ SAFETY_FLAGS: []
 SPECIFICITY: SPECIFIC
 SUBJECT: health
 CONFIDENCE: 0.88
+ANALYSIS_METHOD: dual_analysis
 ```
 
 ### Archive-First Categorization Integration
