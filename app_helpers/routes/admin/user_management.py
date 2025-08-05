@@ -4,13 +4,13 @@ Admin User Management Routes
 Contains routes for managing users including deactivation, reactivation, and status checking.
 """
 
-from fastapi import APIRouter, Request, Depends, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Request, Depends, HTTPException, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select, func
 
 # Import models
-from models import engine, User, Prayer, PrayerMark
+from models import engine, User, Prayer, PrayerMark, InviteToken
 
 # Import helper functions
 from app_helpers.services.auth_helpers import current_user, is_admin
@@ -18,6 +18,8 @@ from app_helpers.utils.user_management import (
     deactivate_user, reactivate_user, is_user_deactivated, 
     get_user_deactivation_info, UserManagementError
 )
+from app_helpers.services.token_service import create_user_login_token
+from app_helpers.utils.username_helpers import find_users_with_equivalent_usernames
 
 # Initialize templates
 # Use shared templates instance with filters registered
@@ -210,3 +212,93 @@ def get_user_status(user_id: str, request: Request, user_session: tuple = Depend
             
     except Exception as e:
         raise HTTPException(500, f"Internal error: {str(e)}")
+
+
+@router.post("/admin/create-login-link")
+def create_login_link(
+    request: Request, 
+    username: str = Form(...),
+    goto_url: str = Form(""),
+    hours: int = Form(12),
+    user_session: tuple = Depends(current_user)
+):
+    """
+    Create User-Specific Login Link
+    
+    Creates a user_login token for an existing user with optional redirect URL.
+    This allows admins to generate direct login links for users.
+    
+    Args:
+        username: The username to create a login link for
+        goto_url: Optional redirect path after login (must be relative)
+        hours: Token expiration time in hours (default: 12)
+        
+    Returns:
+        RedirectResponse: Back to admin panel with success message or error
+        
+    Requires admin privileges.
+    """
+    user, session = user_session
+    if not is_admin(user):
+        raise HTTPException(403, "Admin privileges required")
+    
+    try:
+        with Session(engine) as db:
+            # Validate username exists
+            existing_users = find_users_with_equivalent_usernames(db, username.strip())
+            if not existing_users:
+                return RedirectResponse(
+                    f"/admin?error=Username '{username}' not found. Please check the username and try again.",
+                    status_code=303
+                )
+            
+            target_user = existing_users[0]
+            
+            # Validate hours
+            if hours <= 0 or hours > 168:  # 1 week max
+                return RedirectResponse(
+                    "/admin?error=Hours must be between 1 and 168 (1 week max).",
+                    status_code=303
+                )
+            
+            # Create the user login token
+            token_info = create_user_login_token(
+                created_by_user=user.display_name,
+                custom_expiration_hours=hours,
+                max_uses=1,  # Single use for security
+                db_session=db
+            )
+            
+            # Store the target user in the token for user_login tokens
+            token_record = db.get(InviteToken, token_info['token'])
+            token_record.used_by_user_id = target_user.display_name  # Pre-populate target user
+            db.add(token_record)
+            
+            db.commit()
+            
+            # Build the claim URL
+            base_url = str(request.url_for("claim_get", token=token_info['token']))
+            
+            # Add goto parameter if provided
+            if goto_url.strip() and goto_url.startswith('/'):
+                from urllib.parse import urlencode
+                params = urlencode({'goto': goto_url.strip()})
+                claim_url = f"{base_url}?{params}"
+            else:
+                claim_url = base_url
+            
+            # Success message with the generated URL
+            success_msg = f"✅ Login link created for {target_user.display_name} (valid for {hours} hours)"
+            
+            # Store the URL in a way that makes it easy to copy
+            from urllib.parse import quote
+            return RedirectResponse(
+                f"/admin?success={quote(success_msg)}&login_url={quote(claim_url)}&username={quote(target_user.display_name)}",
+                status_code=303
+            )
+            
+    except Exception as e:
+        return RedirectResponse(
+            f"/admin?error=Failed to create login link: {str(e)}",
+            status_code=303
+        )

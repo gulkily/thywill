@@ -32,7 +32,7 @@ router = APIRouter()
 
 
 @router.get("/admin", response_class=HTMLResponse)
-def admin(request: Request, user_session: tuple = Depends(current_user)):
+def admin(request: Request, user_session: tuple = Depends(current_user), success: str = None, error: str = None, message: str = None, login_url: str = None, username: str = None):
     """
     Admin Dashboard
     
@@ -106,7 +106,12 @@ def admin(request: Request, user_session: tuple = Depends(current_user)):
         "user": user,
         "flagged_prayers": flagged_prayers,
         "auth_requests": auth_requests,
-        "user_timezone": user_timezone
+        "user_timezone": user_timezone,
+        "success_message": success,
+        "error_message": error,
+        "info_message": message,
+        "login_url": login_url,
+        "login_username": username
     })
 
 

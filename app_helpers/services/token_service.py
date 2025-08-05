@@ -125,6 +125,32 @@ def create_system_token(custom_expiration_hours: Optional[int] = None, max_uses:
         token_type="admin"
     )
 
+def create_user_login_token(
+    created_by_user: str,
+    custom_expiration_hours: Optional[int] = None,
+    max_uses: Optional[int] = None,
+    db_session: Optional[Session] = None
+) -> dict:
+    """
+    Create a user login token for existing users (no privilege escalation).
+    
+    Args:
+        created_by_user: Username of the admin creating the token
+        custom_expiration_hours: Optional custom expiration time in hours
+        max_uses: Optional maximum number of uses
+        db_session: Optional existing database session to use
+        
+    Returns:
+        dict: Token information (token, expires_at, created_by_user, usage_count, max_uses)
+    """
+    return create_invite_token(
+        created_by_user=created_by_user,
+        custom_expiration_hours=custom_expiration_hours,
+        max_uses=max_uses,
+        token_type="user_login",
+        db_session=db_session
+    )
+
 def get_token_expiration_config() -> dict:
     """
     Get current token expiration configuration info.

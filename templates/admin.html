@@ -20,6 +20,83 @@
   </div>
 </div>
 
+<!-- Success/Error Messages -->
+{% if success_message %}
+<div class="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg">
+  <div class="flex items-center mb-2">
+    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+    </svg>
+    <span class="text-sm font-medium">{{ success_message }}</span>
+  </div>
+  
+  {% if login_url %}
+  <div class="mt-3 p-3 bg-white dark:bg-gray-800 rounded border">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-medium text-gray-600 dark:text-gray-400">🔗 Login Link for {{ login_username }}:</span>
+      <button onclick="copyToClipboard('{{ login_url }}')" 
+              class="text-xs px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded transition-colors">
+        📋 Copy Link
+      </button>
+    </div>
+    <div class="bg-gray-50 dark:bg-gray-700 p-2 rounded text-xs font-mono break-all">
+      {{ login_url }}
+    </div>
+    <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+      💡 Send this link to {{ login_username }} - they can click it to log in directly
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(function() {
+    // Show brief feedback
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = '✅ Copied!';
+    button.classList.add('bg-green-800');
+    setTimeout(() => {
+      button.textContent = originalText;
+      button.classList.remove('bg-green-800');
+    }, 2000);
+  }).catch(function(err) {
+    console.error('Could not copy text: ', err);
+    // Fallback - select the text
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+  });
+}
+</script>
+{% endif %}
+
+{% if error_message %}
+<div class="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg">
+  <div class="flex items-center">
+    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+    </svg>
+    <span class="text-sm">{{ error_message }}</span>
+  </div>
+</div>
+{% endif %}
+
+{% if info_message %}
+<div class="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 px-4 py-3 rounded-lg">
+  <div class="flex items-center">
+    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+    </svg>
+    <span class="text-sm">{{ info_message }}</span>
+  </div>
+</div>
+{% endif %}
+
 <!-- Authentication Requests Section -->
 <section class="mb-8">
   <h2 class="font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
@@ -175,6 +252,72 @@
   {% else %}
     <p class="text-gray-500 dark:text-gray-400 text-center py-8">No flagged prayers at the moment.</p>
   {% endif %}
+</section>
+
+<!-- User Login Links Section -->
+<section class="mb-8">
+  <h2 class="font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
+    <svg class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    Create User Login Links
+  </h2>
+  
+  <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg shadow border-l-4 border-blue-400 dark:border-blue-500">
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+      Generate secure login links for existing users with optional redirect to specific pages.
+    </p>
+    
+    <form method="post" action="/admin/create-login-link" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Username <span class="text-red-500">*</span>
+          </label>
+          <input type="text" 
+                 id="username" 
+                 name="username" 
+                 required
+                 placeholder="Enter exact username"
+                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        
+        <div>
+          <label for="hours" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Valid for (hours)
+          </label>
+          <input type="number" 
+                 id="hours" 
+                 name="hours" 
+                 value="12" 
+                 min="1" 
+                 max="168"
+                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        </div>
+      </div>
+      
+      <div>
+        <label for="goto_url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Redirect URL (optional)
+        </label>
+        <input type="text" 
+               id="goto_url" 
+               name="goto_url" 
+               placeholder="/prayer/123 or /admin/users (relative paths only)"
+               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Optional: Where to redirect user after login. Must start with '/' for security.
+        </p>
+      </div>
+      
+      <div class="flex justify-end">
+        <button type="submit" 
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+          🔗 Generate Login Link
+        </button>
+      </div>
+    </form>
+  </div>
 </section>
 
 <div class="mt-8 flex space-x-4">

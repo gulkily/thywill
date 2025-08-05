@@ -52,6 +52,42 @@ SESSION_DAYS = int(os.getenv("SESSION_DAYS", 90))
 MULTI_DEVICE_AUTH_ENABLED = os.getenv("MULTI_DEVICE_AUTH_ENABLED", "True").lower() == "true"
 
 
+def validate_goto_path(goto: str) -> str | None:
+    """
+    Validate goto parameter to prevent open redirect attacks.
+    
+    Args:
+        goto: The goto parameter to validate
+        
+    Returns:
+        str | None: Validated relative path starting with '/', or None if invalid
+    """
+    if not goto:
+        return None
+    
+    # Must be a string
+    if not isinstance(goto, str):
+        return None
+    
+    # Must start with '/' (relative path)
+    if not goto.startswith('/'):
+        return None
+    
+    # Cannot contain protocol patterns (prevent external redirects)
+    if '://' in goto or goto.startswith('//'):
+        return None
+    
+    # Cannot contain dangerous characters
+    if any(char in goto for char in ['<', '>', '"', "'"]):
+        return None
+    
+    # Length limit for safety
+    if len(goto) > 500:
+        return None
+    
+    return goto
+
+
 def grant_admin_role_for_system_token(user_id: str, token: str, session: Session) -> None:
     """
     Grant admin role to user if they claimed a system-generated admin token.
@@ -95,13 +131,14 @@ def grant_admin_role_for_system_token(user_id: str, token: str, session: Session
 
 
 @router.get("/claim/{token}", response_class=HTMLResponse)
-def claim_get(token: str, request: Request):
+def claim_get(token: str, request: Request, goto: str = None):
     """
     Display the claim form for an invite token, with immediate validation.
     
     Args:
         token: The invite token to claim
         request: FastAPI request object
+        goto: Optional redirect path after successful login (relative paths only)
         
     Returns:
         HTMLResponse: The claim.html template with token context, or error if invalid
@@ -132,6 +169,19 @@ def claim_get(token: str, request: Request):
                 "token": token,
                 "error": f"This invite link has expired. Invite links are {format_validity_message(TOKEN_EXP_H)}. Please request a new invite link."
             })
+        
+        # Special handling for user_login tokens - auto-login without form
+        if inv.token_type == "user_login":
+            # For user_login tokens, the target user is pre-stored in used_by_user_id
+            if not inv.used_by_user_id:
+                return templates.TemplateResponse("claim.html", {
+                    "request": request, 
+                    "token": token,
+                    "error": "This login link is invalid - no target user specified."
+                })
+            
+            # Automatically log in the specified user
+            return claim_post(token, inv.used_by_user_id, request, goto)
     
     # Token is valid, show the normal claim form with token type context
     return templates.TemplateResponse("claim.html", {
@@ -144,7 +194,7 @@ def claim_get(token: str, request: Request):
 
 
 @router.post("/claim/{token}")
-def claim_post(token: str, display_name: str = Form(...), request: Request = None):
+def claim_post(token: str, display_name: str = Form(...), request: Request = None, goto: str = None):
     """
     Process invite token claim - either create new user or initiate multi-device auth.
     
@@ -156,6 +206,7 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
         token: The invite token being claimed
         display_name: The username being claimed
         request: FastAPI request object for device/IP info
+        goto: Optional redirect path after successful login (relative paths only)
         
     Returns:
         RedirectResponse: To main feed (new users) or auth status (existing users)
@@ -163,6 +214,9 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
     Raises:
         HTTPException: 400 if invite expired, 429 if auth request already pending
     """
+    # Validate goto parameter for security
+    validated_goto = validate_goto_path(goto)
+    
     with Session(engine) as s:
         inv = s.get(InviteToken, token)
         if not inv or inv.expires_at < datetime.utcnow():
@@ -218,6 +272,16 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
             # ADMIN TOKEN: Allow both existing and new users (will grant admin permissions)
             # No validation needed - admin tokens can create new users or login existing users
             pass
+            
+        elif inv.token_type == "user_login":
+            # USER LOGIN TOKEN: Only for existing users, no privilege escalation
+            if not existing_user:
+                return templates.TemplateResponse("claim.html", {
+                    "request": request,
+                    "token": token,
+                    "error": f"This login link is for an existing account. Username '{display_name}' not found. Please enter the exact username for the account you want to access."
+                })
+            # Continue to existing user login logic below
             
         else:
             # Invalid token type (shouldn't happen with default values, but defensive)
@@ -301,7 +365,9 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
                 ip_address=ip_address,
                 is_fully_authenticated=True
             )
-            resp = RedirectResponse("/", 303)
+            # Use validated goto parameter or default to home
+            redirect_url = validated_goto if validated_goto else "/"
+            resp = RedirectResponse(redirect_url, 303)
             resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
             return resp
         
@@ -381,7 +447,9 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
                 ip_address=ip_address,
                 is_fully_authenticated=True
             )
-            resp = RedirectResponse("/", 303)
+            # Use validated goto parameter or default to home
+            redirect_url = validated_goto if validated_goto else "/"
+            resp = RedirectResponse(redirect_url, 303)
             resp.set_cookie("sid", sid, httponly=True, max_age=60*60*24*SESSION_DAYS)
             return resp
 

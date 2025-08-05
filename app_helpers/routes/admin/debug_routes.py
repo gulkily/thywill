@@ -12,7 +12,7 @@ from sqlmodel import Session
 
 from app_helpers.services.auth_helpers import current_user, is_admin
 from models import InviteToken, engine
-from app import templates
+from app_helpers.shared_templates import templates
 
 router = APIRouter()
 

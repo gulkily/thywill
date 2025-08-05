@@ -352,8 +352,8 @@ def get_database_path():
         any('pytest' in arg for arg in sys.argv)):
         return ':memory:'
     
-    # Explicit configuration
-    if 'DATABASE_PATH' in os.environ:
+    # Explicit configuration (ignore empty strings)
+    if 'DATABASE_PATH' in os.environ and os.environ['DATABASE_PATH'].strip():
         return os.environ['DATABASE_PATH']
     
     # Default production
