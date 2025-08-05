@@ -37,6 +37,14 @@ python generate_app_overview.py     # Generate app overview with live stats
 python md_to_pdf_simple.py <file>   # Convert markdown to PDF
 ```
 
+## Feature Development Process
+**CRITICAL**: For all new feature development, follow the 3-step process defined in FEATURE_DEVELOPMENT_PROCESS.md:
+1. **Step 1**: Feature Description (high-level, no code, user stories, requirements)
+2. **Step 2**: Development Plan (atomic stages <2 hours each, minimal code) 
+3. **Step 3**: Implementation (following the plan systematically)
+
+When user requests a new feature, automatically create Step 1 document and wait for approval before proceeding to Step 2.
+
 ## Architecture
 - `app.py` - Main FastAPI app
 - `models.py` - Database schema  
