@@ -1,0 +1,298 @@
+/**
+ * Session Persistence - LocalStorage backup for session cookies
+ * 
+ * Automatically backs up and restores session data to survive cookie clearing.
+ * Works transparently with minimal backend changes.
+ */
+
+(function() {
+    'use strict';
+    
+    // Constants
+    const STORAGE_KEY = 'thywill_session_backup';
+    const SESSION_COOKIE_NAME = 'sid';
+    const STORAGE_VERSION = 1;
+    
+    // Utility functions
+    function log(message, ...args) {
+        if (console && console.log) {
+            console.log('[SessionPersistence]', message, ...args);
+        }
+    }
+    
+    function warn(message, ...args) {
+        if (console && console.warn) {
+            console.warn('[SessionPersistence]', message, ...args);
+        }
+    }
+    
+    function error(message, ...args) {
+        if (console && console.error) {
+            console.error('[SessionPersistence]', message, ...args);
+        }
+    }
+    
+    // Check browser support
+    function isSupported() {
+        try {
+            return typeof Storage !== 'undefined' && 
+                   typeof localStorage !== 'undefined' &&
+                   typeof crypto !== 'undefined' &&
+                   typeof crypto.getRandomValues === 'function';
+        } catch (e) {
+            return false;
+        }
+    }
+    
+    // Simple encryption using browser's crypto API
+    function encryptData(data) {
+        try {
+            // Simple base64 encoding for now - can enhance later
+            return btoa(JSON.stringify(data));
+        } catch (e) {
+            warn('Failed to encrypt session data:', e);
+            return null;
+        }
+    }
+    
+    function decryptData(encryptedData) {
+        try {
+            return JSON.parse(atob(encryptedData));
+        } catch (e) {
+            warn('Failed to decrypt session data:', e);
+            return null;
+        }
+    }
+    
+    // Get session cookie value (this will require backend support since cookie is httpOnly)
+    function getSessionCookie() {
+        // Since the cookie is httpOnly, we can't read it directly
+        // We'll need to get the session ID through a different method
+        return null;
+    }
+    
+    // Check if session cookie exists (indirect method)
+    function hasSessionCookie() {
+        // We can't directly check httpOnly cookies, but we can check if we're authenticated
+        // by looking for authenticated user indicators in the DOM
+        return document.querySelector('[data-authenticated="true"]') !== null ||
+               document.querySelector('a[href="/profile"]') !== null ||
+               document.body.classList.contains('authenticated');
+    }
+    
+    // Backup session data to LocalStorage
+    function backupSessionData(sessionId, userData) {
+        if (!isSupported()) {
+            log('LocalStorage not supported, skipping backup');
+            return false;
+        }
+        
+        try {
+            const backupData = {
+                version: STORAGE_VERSION,
+                sessionId: sessionId,
+                userData: userData,
+                timestamp: Date.now(),
+                userAgent: navigator.userAgent.substring(0, 100), // Basic fingerprinting
+                expires: Date.now() + (14 * 24 * 60 * 60 * 1000) // 14 days
+            };
+            
+            const encrypted = encryptData(backupData);
+            if (encrypted) {
+                localStorage.setItem(STORAGE_KEY, encrypted);
+                log('Session backed up to LocalStorage');
+                broadcastStorageUpdate('backup', sessionId);
+                return true;
+            }
+        } catch (e) {
+            error('Failed to backup session:', e);
+        }
+        
+        return false;
+    }
+    
+    // Restore session from LocalStorage
+    function restoreSessionFromStorage() {
+        if (!isSupported()) {
+            return null;
+        }
+        
+        try {
+            const encrypted = localStorage.getItem(STORAGE_KEY);
+            if (!encrypted) {
+                log('No session backup found');
+                return null;
+            }
+            
+            const backupData = decryptData(encrypted);
+            if (!backupData || backupData.version !== STORAGE_VERSION) {
+                warn('Invalid or outdated session backup');
+                clearSessionData();
+                return null;
+            }
+            
+            // Check expiration
+            if (Date.now() > backupData.expires) {
+                log('Session backup expired');
+                clearSessionData();
+                return null;
+            }
+            
+            // Basic validation
+            if (!backupData.sessionId || !backupData.userData) {
+                warn('Invalid session backup data');
+                clearSessionData();
+                return null;
+            }
+            
+            log('Found valid session backup');
+            return backupData;
+            
+        } catch (e) {
+            error('Failed to restore session:', e);
+            clearSessionData();
+        }
+        
+        return null;
+    }
+    
+    // Clear session data from LocalStorage
+    function clearSessionData() {
+        if (!isSupported()) {
+            return;
+        }
+        
+        try {
+            localStorage.removeItem(STORAGE_KEY);
+            log('Session data cleared from LocalStorage');
+            broadcastStorageUpdate('clear', null);
+        } catch (e) {
+            error('Failed to clear session data:', e);
+        }
+    }
+    
+    // Cross-tab communication via storage events
+    function broadcastStorageUpdate(action, sessionId) {
+        try {
+            // Storage events are automatically broadcast to other tabs
+            // We can add custom data if needed
+            window.dispatchEvent(new CustomEvent('sessionPersistenceUpdate', {
+                detail: { action, sessionId, timestamp: Date.now() }
+            }));
+        } catch (e) {
+            // Ignore errors in event dispatching
+        }
+    }
+    
+    // Listen for storage changes from other tabs
+    function setupCrossTabSync() {
+        if (!isSupported()) {
+            return;
+        }
+        
+        window.addEventListener('storage', function(e) {
+            if (e.key === STORAGE_KEY) {
+                log('Session storage updated in another tab');
+                // Could trigger UI updates or re-validation here
+            }
+        });
+        
+        // Listen for custom session events
+        window.addEventListener('sessionPersistenceUpdate', function(e) {
+            log('Session persistence event:', e.detail);
+        });
+    }
+    
+    // Restore session on page load if needed
+    function attemptSessionRestore() {
+        // Only attempt restore if we don't currently have a session
+        if (hasSessionCookie()) {
+            log('Session cookie present, no restore needed');
+            return;
+        }
+        
+        log('No session cookie found, attempting restore from LocalStorage');
+        const backupData = restoreSessionFromStorage();
+        
+        if (backupData) {
+            // We need to send the session ID to the backend to restore the cookie
+            restoreSessionCookie(backupData.sessionId, backupData.userData);
+        } else {
+            log('No valid session backup available');
+        }
+    }
+    
+    // Send session restore request to backend
+    function restoreSessionCookie(sessionId, userData) {
+        log('Attempting to restore session cookie:', sessionId);
+        
+        // Make request to backend to restore the session cookie
+        fetch('/api/session/restore', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                sessionId: sessionId,
+                userData: userData
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                log('Session cookie restored successfully');
+                // Reload the page to continue with authenticated state
+                window.location.reload();
+            } else {
+                warn('Failed to restore session cookie:', response.status);
+                // Clear invalid backup data
+                clearSessionData();
+            }
+        })
+        .catch(error => {
+            error('Error restoring session cookie:', error);
+            clearSessionData();
+        });
+    }
+    
+    // Initialize session persistence
+    function init() {
+        if (!isSupported()) {
+            log('Session persistence not supported in this browser');
+            return;
+        }
+        
+        log('Initializing session persistence');
+        
+        // Set up cross-tab synchronization
+        setupCrossTabSync();
+        
+        // Attempt to restore session on page load
+        attemptSessionRestore();
+        
+        // Add logout handler to clear data
+        document.addEventListener('click', function(e) {
+            const target = e.target.closest('[href*="logout"], [onclick*="logout"]');
+            if (target) {
+                log('Logout detected, clearing session data');
+                clearSessionData();
+            }
+        });
+    }
+    
+    // Public API
+    window.SessionPersistence = {
+        backup: backupSessionData,
+        restore: restoreSessionFromStorage,
+        clear: clearSessionData,
+        isSupported: isSupported,
+        hasSession: hasSessionCookie
+    };
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+    
+})();
