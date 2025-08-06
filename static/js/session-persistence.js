@@ -244,6 +244,7 @@
         // Only attempt restore if we don't currently have a session
         if (hasSessionCookie()) {
             log('Session cookie present, no restore needed');
+            dispatchRestorationComplete(false);
             return;
         }
         
@@ -255,6 +256,18 @@
             restoreSessionCookie(backupData);
         } else {
             log('No valid session backup available');
+            dispatchRestorationComplete(false);
+        }
+    }
+    
+    // Dispatch completion event for UI updates
+    function dispatchRestorationComplete(restored) {
+        try {
+            window.dispatchEvent(new CustomEvent('sessionPersistenceComplete', {
+                detail: { restored: restored, timestamp: Date.now() }
+            }));
+        } catch (e) {
+            // Ignore event dispatch errors
         }
     }
     
@@ -285,11 +298,13 @@
                 warn('Failed to restore session cookie:', response.status);
                 // Clear invalid backup data
                 clearSessionData();
+                dispatchRestorationComplete(false);
             }
         })
         .catch(error => {
             error('Error restoring session cookie:', error);
             clearSessionData();
+            dispatchRestorationComplete(false);
         });
     }
     

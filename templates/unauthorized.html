@@ -27,8 +27,60 @@
   </script>
   <!-- Session persistence for automatic restoration -->
   <script src="/static/js/session-persistence.js"></script>
+  <style>
+    /* Loading overlay for session restoration */
+    #restoration-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgb(243, 244, 246);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.3s ease-out;
+    }
+    .dark #restoration-overlay {
+      background: rgb(17, 24, 39);
+    }
+    
+    /* Hide main content during restoration check */
+    body.checking-restoration main {
+      visibility: hidden;
+    }
+    
+    /* Spinner animation */
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e5e7eb;
+      border-top: 4px solid #8b5cf6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    .dark .spinner {
+      border-color: #374151;
+      border-top-color: #a78bfa;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
  </head>
- <body class="min-h-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col">
+ <body class="min-h-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col checking-restoration">
+  
+  <!-- Loading overlay during session restoration -->
+  <div id="restoration-overlay">
+    <div class="text-center">
+      <div class="spinner mb-4"></div>
+      <p class="text-sm text-gray-600 dark:text-gray-400">Checking session...</p>
+    </div>
+  </div>
   <!-- Header -->
   <header class="bg-purple-600 dark:bg-purple-800 text-white">
    <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
@@ -201,6 +253,30 @@
         button.textContent = 'Learn more about ThyWill ↓';
       }
     }
+    
+    // Hide loading overlay and show content after restoration check
+    function showContent() {
+      const overlay = document.getElementById('restoration-overlay');
+      const body = document.body;
+      
+      if (overlay) {
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+          overlay.style.display = 'none';
+          body.classList.remove('checking-restoration');
+        }, 300);
+      }
+    }
+    
+    // Listen for session restoration events
+    window.addEventListener('sessionPersistenceComplete', showContent);
+    
+    // Fallback: show content after 3 seconds if no restoration event
+    setTimeout(() => {
+      if (document.getElementById('restoration-overlay').style.display !== 'none') {
+        showContent();
+      }
+    }, 3000);
   </script>
 
   <!-- Footer -->
