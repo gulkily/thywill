@@ -98,6 +98,7 @@ from app_helpers.routes.invite_routes import router as invite_router
 from app_helpers.routes.general_routes import router as general_router
 from app_helpers.routes.changelog_routes import router as changelog_router
 from app_helpers.routes.archive_routes import router as archive_router
+from app_helpers.routes.email_settings_routes import router as email_settings_router
 
 app = FastAPI()
 
@@ -170,6 +171,8 @@ app.include_router(invite_router)
 app.include_router(general_router)
 # Include changelog routes
 app.include_router(changelog_router)
+# Email settings routes
+app.include_router(email_settings_router)
 
 # Custom exception handler for 401 unauthorized errors
 @app.exception_handler(401)

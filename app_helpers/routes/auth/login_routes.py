@@ -182,6 +182,41 @@ def claim_get(token: str, request: Request, goto: str = None):
             
             # Automatically log in the specified user
             return claim_post(token, inv.used_by_user_id, request, goto)
+        
+        # Special handling for email_verification tokens - auto-verify and redirect
+        if inv.token_type == "email_verification":
+            # Import here to avoid circular imports
+            from app_helpers.services.email_management_service import EmailManagementService
+            
+            if not inv.used_by_user_id:
+                return templates.TemplateResponse("claim.html", {
+                    "request": request, 
+                    "token": token,
+                    "error": "This verification link is invalid - no target user specified."
+                })
+            
+            # Verify the email
+            email_service = EmailManagementService()
+            success, message = email_service.verify_email_token(token)
+            
+            if success:
+                # Mark token as used by incrementing usage count
+                inv.usage_count += 1
+                s.commit()
+                
+                return templates.TemplateResponse("claim.html", {
+                    "request": request, 
+                    "token": token,
+                    "success": "Email verified successfully! You can now use email recovery to access your account.",
+                    "is_email_verification": True
+                })
+            else:
+                return templates.TemplateResponse("claim.html", {
+                    "request": request, 
+                    "token": token,
+                    "error": f"Email verification failed: {message}",
+                    "is_email_verification": True
+                })
     
     # Token is valid, show the normal claim form with token type context
     return templates.TemplateResponse("claim.html", {
@@ -455,7 +490,7 @@ def claim_post(token: str, display_name: str = Form(...), request: Request = Non
 
 
 @router.get("/login", response_class=HTMLResponse)
-def login_get(request: Request):
+def login_get(request: Request, recovery_sent: str = None):
     """
     Display the login form for existing users.
     
@@ -494,7 +529,9 @@ def login_get(request: Request):
     
     return templates.TemplateResponse("login.html", {
         "request": request,
-        "MULTI_DEVICE_AUTH_ENABLED": MULTI_DEVICE_AUTH_ENABLED
+        "MULTI_DEVICE_AUTH_ENABLED": MULTI_DEVICE_AUTH_ENABLED,
+        "email_auth_enabled": os.getenv('EMAIL_AUTH_ENABLED', 'false').lower() == 'true',
+        "recovery_sent": recovery_sent == 'true'
     })
 
 

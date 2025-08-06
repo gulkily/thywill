@@ -22,7 +22,7 @@ Use LocalStorage as a pure backup/sync mechanism for session cookies. Frontend a
 **Goal**: Restore session cookies from LocalStorage when missing
 **Dependencies**: Stage 1
 **Changes**:
-- Add restoration logic to run before any authenticated requests	
+- Add restoration logic to run before any authenticated requests
 - Validate and restore cookie from LocalStorage backup
 - Handle expiration and invalid data gracefully
 - Ensure restoration happens transparently

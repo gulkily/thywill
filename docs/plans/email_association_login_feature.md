@@ -1,12 +1,12 @@
 # Feature: Email Association for Account Recovery
 
 ## Problem
-Users who lose access to their devices or have persistent cookie/session issues have no way to recover their accounts or prove their identity. The current invite-only system works for initial access but provides no recovery mechanism for established community members. Users must create new accounts and lose their prayer history, connections, and community standing when device access is lost.
+Users who lose access to their devices or have persistent cookie/session issues face significant friction when trying to regain access to their accounts. While the current multi-device authentication system does allow users to re-login to their existing accounts, it requires waiting for approval from an admin or another authenticated user, which can take time and may not always be available. This creates barriers for legitimate users who need timely access to their prayer community, especially during urgent spiritual needs or when traveling across time zones where community members may not be active.
 
 ## User Stories
 - As an established user, I want to associate an email with my account so that I can recover access if I lose my device or sessions
-- As a user with persistent browser issues, I want an alternative way to prove my identity without waiting for community approval every time
-- As a mobile user who switches devices, I want a secure way to transfer my account to a new phone without losing my prayer history
+- As a user with persistent browser issues, I want an alternative way to prove my identity that's faster than waiting for community approval
+- As a mobile user who switches devices, I want a secure way to transfer my account to a new phone without waiting for approval
 - As a privacy-conscious user, I want my email to be stored securely and used only for account recovery, not marketing or notifications
 - As a community member, I want account recovery to be secure and prevent impersonation while still being accessible to legitimate users
 
@@ -43,7 +43,7 @@ Users who lose access to their devices or have persistent cookie/session issues 
 ## Success Criteria
 - Users can successfully associate and verify email addresses with their accounts
 - Email recovery links work reliably and securely restore account access
-- Recovery process is faster than waiting for community approval
+- Recovery process is faster and more reliable than waiting for community approval
 - Email data is properly encrypted and access is audited
 - System prevents email-based account takeover attempts
 - Users can manage their email settings independently

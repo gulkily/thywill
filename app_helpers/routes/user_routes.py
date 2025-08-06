@@ -19,12 +19,12 @@ from app_helpers.shared_templates import templates
 router = APIRouter()
 
 @router.get("/profile", response_class=HTMLResponse)
-def my_profile(request: Request, user_session: tuple = Depends(current_user)):
+def my_profile(request: Request, user_session: tuple = Depends(current_user), email_success: str = None, email_error: str = None):
     user, session = user_session
-    return user_profile(request, user.display_name, user_session)
+    return user_profile(request, user.display_name, user_session, email_success, email_error)
 
 @router.get("/user/{user_id}", response_class=HTMLResponse)
-def user_profile(request: Request, user_id: str, user_session: tuple = Depends(current_user)):
+def user_profile(request: Request, user_id: str, user_session: tuple = Depends(current_user), email_success: str = None, email_error: str = None):
     user, session = user_session
     with Session(engine) as s:
         # Get the profile user
@@ -108,6 +108,17 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
         
         user_timezone = get_user_timezone_from_request(request)
         
+        # Get email information for own profile
+        user_email = None
+        email_auth_enabled = os.getenv('EMAIL_AUTH_ENABLED', 'false').lower() == 'true'
+        if is_own_profile and email_auth_enabled:
+            try:
+                from app_helpers.services.email_management_service import EmailManagementService
+                email_service = EmailManagementService()
+                user_email = email_service.get_user_email(profile_user.display_name)
+            except Exception:
+                pass  # Email service not available or error
+        
         return templates.TemplateResponse(
             "profile.html",
             {
@@ -123,7 +134,11 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
                 "user_roles": user_roles,
                 "role_names": role_names,
                 "is_admin": is_admin(user),
-                "user_timezone": user_timezone
+                "user_timezone": user_timezone,
+                "user_email": user_email,
+                "email_auth_enabled": email_auth_enabled,
+                "email_success": email_success,
+                "email_error": email_error
             }
         )
 

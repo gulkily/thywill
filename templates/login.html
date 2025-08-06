@@ -114,6 +114,77 @@
       </div>
     </div>
 
+    <!-- Email Recovery Success Message -->
+    {% if recovery_sent %}
+    <div class="rounded-md bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 p-4">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-green-800 dark:text-green-200">
+            Recovery Email Sent
+          </h3>
+          <div class="mt-2 text-sm text-green-700 dark:text-green-300">
+            <p>If an account with that email address exists and is verified, we've sent a recovery link. Please check your inbox.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Email Recovery (if enabled) -->
+    {% if email_auth_enabled %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
+      <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+        Recover with Email
+      </h2>
+      
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        If you've associated an email with your account, you can use it to recover access instantly.
+      </p>
+      
+      <form method="post" action="/auth/email-recovery" class="space-y-4">
+        <div>
+          <label for="recovery_email" class="block text-sm font-medium text-gray-700 dark:text-gray-200">
+            Email Address
+          </label>
+          <input 
+            type="email" 
+            id="recovery_email" 
+            name="email" 
+            required 
+            autocomplete="email"
+            class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-gray-100"
+            placeholder="Enter your email address"
+          />
+        </div>
+        
+        <button 
+          type="submit" 
+          class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:bg-green-700 dark:hover:bg-green-800"
+        >
+          Send Recovery Email
+        </button>
+      </form>
+      
+      <div class="bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-md p-3">
+        <div class="flex">
+          <svg class="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div class="ml-3">
+            <p class="text-sm text-yellow-700 dark:text-yellow-300">
+              Recovery links expire in 1 hour for security. Check your spam folder if you don't see the email.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Alternative Options -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
       <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
