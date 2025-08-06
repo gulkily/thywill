@@ -110,12 +110,15 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
         
         # Get email information for own profile
         user_email = None
+        email_status = None
         email_auth_enabled = os.getenv('EMAIL_AUTH_ENABLED', 'false').lower() == 'true'
         if is_own_profile and email_auth_enabled:
             try:
                 from app_helpers.services.email_management_service import EmailManagementService
                 email_service = EmailManagementService()
-                user_email = email_service.get_user_email(profile_user.display_name)
+                email_status = email_service.get_user_email_status(profile_user.display_name)
+                if email_status and email_status['verified']:
+                    user_email = email_status['email']
             except Exception:
                 pass  # Email service not available or error
         
@@ -136,6 +139,7 @@ def user_profile(request: Request, user_id: str, user_session: tuple = Depends(c
                 "is_admin": is_admin(user),
                 "user_timezone": user_timezone,
                 "user_email": user_email,
+                "email_status": email_status,
                 "email_auth_enabled": email_auth_enabled,
                 "email_success": email_success,
                 "email_error": email_error

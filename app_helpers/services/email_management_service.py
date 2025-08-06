@@ -81,14 +81,21 @@ class EmailManagementService:
                 return False, "User not found"
         
         with Session(email_engine) as email_session:
-            # Check if user already has email
+            # Check if user already has a VERIFIED email
             existing = email_session.exec(
                 select(UserEmail).where(UserEmail.user_id == user_id)
             ).first()
             
-            if existing:
+            if existing and existing.email_verified:
                 self._log_security_event("email_add_already_exists", user_id, ip_address, email)
-                return False, "User already has an email address associated"
+                return False, "User already has a verified email address. Use 'Change Email' instead."
+            
+            # If user has unverified email, we'll replace it
+            if existing and not existing.email_verified:
+                self._log_security_event("email_replace_unverified", user_id, ip_address, email)
+                # Remove the unverified email record
+                email_session.delete(existing)
+                email_session.commit()
             
             # Check if email is already used by another user
             encrypted_email = self.encrypt_email(email.lower().strip())
@@ -306,6 +313,22 @@ The ThyWill Team
             
             if user_email:
                 return self.decrypt_email(user_email.email_encrypted)
+            return None
+    
+    def get_user_email_status(self, user_id: str) -> dict:
+        """Get user email information including verification status"""
+        with Session(email_engine) as email_session:
+            user_email = email_session.exec(
+                select(UserEmail).where(UserEmail.user_id == user_id)
+            ).first()
+            
+            if user_email:
+                return {
+                    'email': self.decrypt_email(user_email.email_encrypted),
+                    'verified': user_email.email_verified,
+                    'added_at': user_email.added_at,
+                    'verified_at': user_email.verified_at
+                }
             return None
     
     def remove_user_email(self, user_id: str, ip_address: str = None) -> bool:

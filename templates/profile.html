@@ -122,8 +122,9 @@
           {% endif %}
           
           <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-            {% if user_email %}
-            <!-- User has email -->
+            {% if email_status %}
+              {% if email_status.verified %}
+                <!-- User has verified email -->
             <div class="space-y-4">
               <div class="flex justify-between items-center">
                 <span class="text-gray-600 dark:text-gray-300">Email Address:</span>
@@ -165,6 +166,55 @@
                 </form>
               </div>
             </div>
+              {% else %}
+                <!-- User has unverified email -->
+                <div class="space-y-4">
+                  <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-300">Email Address:</span>
+                    <span class="font-medium dark:text-gray-100">{{ email_status.email }}</span>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-300">Status:</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200">
+                      <svg class="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 8 8">
+                        <circle cx="4" cy="4" r="3"/>
+                      </svg>
+                      Pending Verification
+                    </span>
+                  </div>
+                  
+                  <div class="bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-md p-3">
+                    <div class="flex">
+                      <svg class="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                      <div class="ml-3">
+                        <p class="text-sm text-yellow-700 dark:text-yellow-300">
+                          Please check your email for a verification link. You can add a different email below to replace this unverified one.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="border-t border-gray-200 dark:border-gray-600 pt-4">
+                    <!-- Replace Email Form -->
+                    <form method="post" action="/settings/email/add" class="space-y-3">
+                      <label for="new_email_unverified" class="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Replace with Different Email
+                      </label>
+                      <div class="flex space-x-2">
+                        <input type="email" name="email" id="new_email_unverified" required
+                               placeholder="Enter new email address"
+                               class="flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
+                        <button type="submit" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                          Replace & Verify
+                        </button>
+                      </div>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">This will replace your current unverified email</p>
+                    </form>
+                  </div>
+                </div>
+              {% endif %}
             {% else %}
             <!-- User has no email -->
             <div class="space-y-4">
