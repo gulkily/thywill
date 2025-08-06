@@ -1,221 +1,86 @@
-# Feature Development Collaboration Process
+# Feature Development Process
 
 ## Overview
-A structured 3-step process for collaborating on new feature development, ensuring clear communication and preventing scope creep.
+3-step process for feature development with optional solution assessment.
 
-## The 3-Step Process
+## The Process
+
+### Step 0: Solution Assessment (Optional)
+**When Needed**: Multiple viable approaches, complex trade-offs, or unclear direction
+
+**Format**: Brief comparison document (2-3 pages max)
+- Problem context (2-3 sentences)  
+- 2-4 solution options with pros/cons
+- Comparison on: complexity, maintainability, performance, UX, risk
+- Recommended approach with reasoning
+
+**Avoid**: Implementation details, >4 options, minor variations
+
+---
 
 ### Step 1: Feature Description
-**Goal**: Create a concise, high-level overview for initial review
+**Content**: Problem statement, 3-5 user stories, core requirements, user flow, success criteria
 
-**Format**: Brief document (1-2 pages max)
-**Content Should Include**:
-- **Problem Statement**: What problem does this solve?
-- **User Stories**: 3-5 stories in "As a [role], I want [goal] so that [benefit]" format
-- **Core Requirements**: 3-7 bullet points of key functionality
-- **User Flow**: Simple description of how users interact with the feature
-- **Success Criteria**: How do we know it's working?
-- **Constraints**: Any limitations or requirements to consider
+**Format**: 1-2 pages in `docs/plans/`
+- Problem (2-3 sentences)
+- User stories ("As a [role], I want [goal] so that [benefit]")  
+- Core requirements (3-7 bullet points)
+- Simple user flow description
+- Measurable success criteria
 
-**What to AVOID**:
-- Implementation details
-- Code snippets (except minimal examples for clarity)
-- Database schema specifics
-- UI mockups (unless essential for understanding)
-
-**Example Structure**:
-```markdown
-# Feature: [Name]
-## Problem
-[2-3 sentences describing the issue]
-
-## User Stories
-- As an [admin], I want [capability] so that [benefit]
-- As a [community member], I want [capability] so that [benefit]
-- As a [user], I want [capability] so that [benefit]
-
-## Core Requirements
-1. [Requirement 1]
-2. [Requirement 2]
-...
-
-## User Flow
-[Simple paragraph describing user interaction]
-
-## Success Criteria
-- [Measurable outcome 1]
-- [Measurable outcome 2]
-```
-
-**Approval Gate**: User reviews and approves concept before proceeding
-
-This file should be added to docs/plans/ directory and committed to master before proceeding with Step 2.
+**Avoid**: Implementation details, code, database schema, UI mockups
 
 ---
 
 ### Step 2: Development Plan
-**Goal**: Create atomic implementation steps with minimal code
+**Content**: Atomic stages (<2 hours each), dependencies, testing strategy, risk assessment
 
-**Format**: Structured plan with numbered stages
-**Content Should Include**:
-- **Atomic Stages**: Each stage should be implementable in <2 hours
-- **Dependencies**: What must be done before each stage
-- **Database Changes**: High-level schema modifications (no SQL)
-- **Key Functions**: Function signatures and purposes (no implementation)
-- **Testing Strategy**: What needs to be tested at each stage
-- **Risk Assessment**: What could go wrong and mitigation
+**Format**: Numbered stages in `docs/plans/`
+- Each stage: goal, dependencies, high-level changes, testing, risks
+- Database changes (no SQL)
+- Function signatures (no implementation)
 
-**What to AVOID**:
-- Full code implementations
-- Complete HTML templates
-- Detailed SQL migrations
-- Extensive code examples
-
-**Example Structure**:
-```markdown
-# Development Plan: [Feature Name]
-
-## Stage 1: Database Foundation
-**Goal**: [What this stage accomplishes]
-**Dependencies**: None
-**Changes**: Add X table with Y fields
-**Testing**: Unit tests for model creation
-**Risk**: [Potential issue and mitigation]
-
-## Stage 2: Backend Service
-**Goal**: [What this stage accomplishes]  
-**Dependencies**: Stage 1 complete
-**Changes**: Create XService with methods: create(), validate(), process()
-**Testing**: Service unit tests
-**Risk**: [Potential issue and mitigation]
-
-[Continue for each stage...]
-```
-
-**Approval Gate**: User reviews plan structure and stages before implementation
-
-This file should be added to docs/plans/ directory and committed to master before proceeding with Step 3.
+**Avoid**: Full code, HTML templates, detailed SQL, extensive examples
 
 ---
 
 ### Step 3: Implementation
-**Goal**: Execute the development plan systematically
+**Process**: Create feature branch, implement stages in order, test each stage, commit with descriptive messages
 
-**Process**:
-1. **Follow the Plan**: Implement each stage in order
-2. **Stage Completion**: Mark each stage complete before moving to next
-3. **Test as You Go**: Run tests after each stage
-4. **Document Deviations**: If plan changes, note why and update plan
-5. **Regular Check-ins**: Confirm direction at key milestones
-
-**Implementation Guidelines**:
-- **CRITICAL**: Start a new branch for implementing the feature (e.g., `git checkout -b feature/admin-rights-management`)
-- **CRITICAL**: Confirm branch creation before any code changes
-- Complete one atomic stage at a time
-- Commit to the branch after each stage with descriptive messages
-- Test functionality before proceeding to next stage
-- Update TodoWrite with progress tracking
-- Flag any issues that require plan changes
-- Maintain code quality standards throughout
-- Do not stop or restart the server; Pause to let the collaborator do it
+**Critical Requirements**:
+- **MUST create feature branch first** (e.g., `feature/admin-rights-management`)
+- Complete stages atomically (<2 hours each)
+- Test before proceeding to next stage
+- Track progress with TodoWrite
 
 **Completion Criteria**:
 - All stages implemented and tested
-- Success criteria from Step 1 met
-- **Navigation verified**: Users can access the feature without typing URLs
-- **System dependencies resolved**: All required roles, migrations, etc. completed
-- Documentation updated (CLAUDE.md, etc.)
-- Ready for user acceptance testing
+- Feature accessible through normal UI (not just direct URLs)
+- System dependencies resolved (roles, migrations, etc.)
+- Documentation updated
 
-**Post-Implementation Checklist**:
-- [ ] Feature accessible through normal user flows (not just direct URLs)
-- [ ] All system dependencies identified and resolved
-- [ ] Error scenarios tested (missing roles, permissions, etc.)
-- [ ] Documentation reflects actual implementation
-- [ ] Branch ready for merge/review
+## Key Rules
 
----
+**Claude Code**:
+- Suggest Step 0 for complex/multi-solution features  
+- Stay in current step, don't jump ahead
+- Wait for explicit approval between steps
+- ALWAYS create feature branch before Step 3
+- Flag scope creep, return to appropriate step
 
-## Communication Rules
+**User**:
+- Review and approve explicitly at each step
+- Flag issues early (easier to change)
+- Resist adding features mid-implementation
 
-### For Claude Code:
-- **Stay in Step**: Don't jump ahead to implementation details in Step 1
-- **Ask for Approval**: Wait for explicit approval before proceeding to next step
-- **Branch First**: ALWAYS create feature branch before any Step 3 implementation
-- **Confirm Branch**: Explicitly state branch name and confirm creation
-- **Flag Scope Creep**: If requirements expand, return to appropriate step
-- **Be Atomic**: Each stage should be small and focused
-- **Test Navigation**: Verify feature is accessible through normal UI flows
-- **Document Everything**: Keep plans and implementation synchronized
+## Warning Signs
+- **Step 0**: >4 options, implementation details, analysis paralysis
+- **Step 1**: >3 pages, code examples, UI/database details  
+- **Step 2**: >2 hour stages, complex dependencies, missing tests/risks
+- **Step 3**: No feature branch, skipping stages, changing requirements
 
-### For User:
-- **Review Thoroughly**: Each step builds on the previous
-- **Approve Explicitly**: Clear approval before Claude proceeds
-- **Flag Issues Early**: Easier to change in earlier steps
-- **Stay Focused**: Resist adding features mid-implementation
+## Workflows
 
-## Warning Signs Process Is Going Off-Rails
+**Simple**: Step 1 → Step 2 → Step 3 (feature branch → implement stages → test/commit → complete)
 
-### Step 1 Issues:
-- Document is >3 pages
-- Contains code implementations
-- Gets into UI design details
-- Includes database schema SQL
-
-### Step 2 Issues:
-- Stages take >2 hours to implement
-- Dependencies are complex/circular
-- Plan lacks testing strategy
-- Risk assessment is missing
-
-### Step 3 Issues:
-- **CRITICAL**: Starting implementation without creating feature branch
-- Implementing features not in plan
-- Skipping stages or testing
-- Feature not accessible through normal UI navigation
-- Missing system dependencies discovered during testing
-- Requirements changing during implementation
-- Plan and implementation diverging
-
-## Recovery Process
-If process goes off-rails:
-1. **Stop Current Work**: Don't continue implementation
-2. **Identify Step**: Which step are we actually in?
-3. **Return to Appropriate Step**: Go back to where the process broke
-4. **Revise Documents**: Update plans to match current understanding
-5. **Get Approval**: Re-sync with user before proceeding
-
-## Example Workflow
-
-```
-User: "I want feature X"
-↓
-Claude: Creates Step 1 document
-↓
-User: Reviews and approves concept
-↓
-Claude: Creates Step 2 development plan
-↓
-User: Reviews plan structure and stages
-↓
-Claude: Creates feature branch (e.g., `feature/admin-rights-management`)
-↓
-Claude: Implements Stage 1, tests, commits to branch, marks complete
-↓
-Claude: Implements Stage 2, tests, commits to branch, marks complete
-↓
-[Continue until all stages complete]
-↓
-Claude: Tests navigation, resolves dependencies, updates docs
-↓
-Claude: Feature complete on branch, ready for merge/review
-```
-
-## Success Metrics
-- **Clear Expectations**: Both parties understand what's being built
-- **No Scope Creep**: Implementation matches original concept
-- **Atomic Progress**: Each stage delivers working functionality
-- **Quality Results**: Feature works as intended with proper testing
-- **Maintainable Code**: Implementation follows project patterns
-
-This process ensures we build the right thing, build it well, and avoid the frustration of scope creep and miscommunication.
+**Complex**: Step 0 (solution assessment) → Step 1 → Step 2 → Step 3
