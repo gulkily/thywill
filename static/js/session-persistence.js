@@ -12,6 +12,9 @@
     const STORAGE_KEY = 'thywill_session_backup';
     const SESSION_COOKIE_NAME = 'sid';
     const STORAGE_VERSION = 1;
+    const RESTORE_ATTEMPT_KEY = 'thywill_restore_attempt';
+    const RESTORE_ATTEMPT_EXPIRY = 5 * 60 * 1000; // 5 minutes
+    const MAX_RESTORE_ATTEMPTS = 3; // Max attempts per session
     
     // Utility functions
     function log(message, ...args) {
@@ -37,10 +40,64 @@
         try {
             return typeof Storage !== 'undefined' && 
                    typeof localStorage !== 'undefined' &&
+                   typeof sessionStorage !== 'undefined' &&
                    typeof crypto !== 'undefined' &&
                    typeof crypto.getRandomValues === 'function';
         } catch (e) {
             return false;
+        }
+    }
+    
+    // Restoration attempt tracking
+    function getRestoreAttempts() {
+        try {
+            const data = sessionStorage.getItem(RESTORE_ATTEMPT_KEY);
+            if (!data) return { count: 0, firstAttempt: Date.now() };
+            
+            const parsed = JSON.parse(data);
+            
+            // Check if attempts have expired
+            if (Date.now() - parsed.firstAttempt > RESTORE_ATTEMPT_EXPIRY) {
+                sessionStorage.removeItem(RESTORE_ATTEMPT_KEY);
+                return { count: 0, firstAttempt: Date.now() };
+            }
+            
+            return parsed;
+        } catch (e) {
+            return { count: 0, firstAttempt: Date.now() };
+        }
+    }
+    
+    function incrementRestoreAttempts() {
+        try {
+            const attempts = getRestoreAttempts();
+            attempts.count += 1;
+            attempts.lastAttempt = Date.now();
+            sessionStorage.setItem(RESTORE_ATTEMPT_KEY, JSON.stringify(attempts));
+            return attempts;
+        } catch (e) {
+            warn('Failed to track restore attempts:', e);
+            return { count: 1, firstAttempt: Date.now() };
+        }
+    }
+    
+    function shouldAllowRestoreAttempt() {
+        const attempts = getRestoreAttempts();
+        const allowed = attempts.count < MAX_RESTORE_ATTEMPTS;
+        
+        if (!allowed) {
+            log(`Restore attempts exceeded (${attempts.count}/${MAX_RESTORE_ATTEMPTS}), blocking restore`);
+        }
+        
+        return allowed;
+    }
+    
+    function clearRestoreAttempts() {
+        try {
+            sessionStorage.removeItem(RESTORE_ATTEMPT_KEY);
+            log('Restore attempt tracking cleared');
+        } catch (e) {
+            // Ignore errors
         }
     }
     
@@ -239,12 +296,63 @@
         }
     }
     
-    // Restore session on page load if needed
-    function attemptSessionRestore() {
-        // Check if session restoration is disabled for this page
+    // Smart page detection for appropriate session restoration
+    function shouldSkipSessionRestore() {
+        // Check manual disable marker
         if (document.body.hasAttribute('data-disable-session-restore') || 
             document.querySelector('[data-disable-session-restore]')) {
-            log('Session restoration disabled for this page');
+            log('Session restoration manually disabled for this page');
+            return true;
+        }
+        
+        // Check URL patterns that should not restore sessions
+        const pathname = window.location.pathname;
+        const skipPatterns = [
+            /^\/claim\/[a-f0-9]+/,        // Invite claim links
+            /^\/auth\/status/,            // Authentication pending
+            /^\/login/,                   // Login page
+            /^\/auth\/login/,             // Alt login page
+            /^\/auth\/requests/,          // Auth requests page
+        ];
+        
+        for (const pattern of skipPatterns) {
+            if (pattern.test(pathname)) {
+                log(`Skipping session restore for URL pattern: ${pathname}`);
+                return true;
+            }
+        }
+        
+        // Check for page elements that indicate session restoration shouldn't happen
+        const skipIndicators = [
+            '[data-page-type="auth"]',           // Auth pages
+            '[data-page-type="claim"]',          // Claim pages  
+            '[data-page-type="pending"]',        // Pending pages
+            'form[action*="/login"]',            // Login forms
+            'form[action*="/claim"]',            // Claim forms
+            '.auth-pending-page',                // Auth pending content
+            '.claim-invite-page'                 // Claim invite content
+        ];
+        
+        for (const selector of skipIndicators) {
+            if (document.querySelector(selector)) {
+                log(`Skipping session restore due to page indicator: ${selector}`);
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    // Restore session on page load if needed
+    function attemptSessionRestore() {
+        // Smart detection of pages that shouldn't restore sessions
+        if (shouldSkipSessionRestore()) {
+            dispatchRestorationComplete(false);
+            return;
+        }
+        
+        // Check restore attempt limits
+        if (!shouldAllowRestoreAttempt()) {
             dispatchRestorationComplete(false);
             return;
         }
@@ -252,6 +360,7 @@
         // Only attempt restore if we don't currently have a session
         if (hasSessionCookie()) {
             log('Session cookie present, no restore needed');
+            clearRestoreAttempts(); // Clear tracking since we have a valid session
             dispatchRestorationComplete(false);
             return;
         }
@@ -283,6 +392,10 @@
     function restoreSessionCookie(backupData) {
         log('Attempting to restore session cookie for user:', backupData.displayName);
         
+        // Track this restoration attempt
+        const attempts = incrementRestoreAttempts();
+        log(`Session restore attempt ${attempts.count}/${MAX_RESTORE_ATTEMPTS}`);
+        
         // Make request to backend to restore the session cookie
         fetch('/api/session/restore', {
             method: 'POST',
@@ -300,18 +413,30 @@
         .then(response => {
             if (response.ok) {
                 log('Session cookie restored successfully for user:', backupData.displayName);
+                clearRestoreAttempts(); // Clear attempts on success
                 // Reload the page to continue with authenticated state
                 window.location.reload();
             } else {
-                warn('Failed to restore session cookie:', response.status);
-                // Clear invalid backup data
-                clearSessionData();
+                warn(`Failed to restore session cookie (${response.status}), attempt ${attempts.count}/${MAX_RESTORE_ATTEMPTS}`);
+                
+                // If we've exhausted attempts, clear data and stop trying
+                if (attempts.count >= MAX_RESTORE_ATTEMPTS) {
+                    log('Maximum restore attempts reached, clearing session data');
+                    clearSessionData();
+                }
+                
                 dispatchRestorationComplete(false);
             }
         })
         .catch(error => {
-            error('Error restoring session cookie:', error);
-            clearSessionData();
+            error(`Error restoring session cookie (attempt ${attempts.count}/${MAX_RESTORE_ATTEMPTS}):`, error);
+            
+            // If we've exhausted attempts, clear data and stop trying
+            if (attempts.count >= MAX_RESTORE_ATTEMPTS) {
+                log('Maximum restore attempts reached due to errors, clearing session data');
+                clearSessionData();
+            }
+            
             dispatchRestorationComplete(false);
         });
     }
@@ -362,14 +487,7 @@
             return;
         }
         
-        // Check if session restoration is disabled for this page (early check)
-        if (document.body.hasAttribute('data-disable-session-restore') || 
-            document.querySelector('[data-disable-session-restore]')) {
-            log('Session persistence disabled for this page, skipping initialization');
-            return;
-        }
-        
-        log('Initializing session persistence');
+        log('Initializing session persistence with smart detection');
         
         // Set up cross-tab synchronization
         setupCrossTabSync();
@@ -391,8 +509,11 @@
         backup: backupSessionData,
         restore: restoreSessionFromStorage,
         clear: clearSessionData,
+        clearAttempts: clearRestoreAttempts,
+        getAttempts: getRestoreAttempts,
         isSupported: isSupported,
-        hasSession: hasSessionCookie
+        hasSession: hasSessionCookie,
+        shouldSkip: shouldSkipSessionRestore
     };
     
     // Initialize when DOM is ready

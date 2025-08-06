@@ -1,8 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Authentication Pending{% endblock %}
 {% block content %}
-<!-- Disable session restoration on auth pending page to prevent reload loops -->
-<div data-disable-session-restore></div>
+<!-- Session restoration automatically disabled for auth pending pages -->
 <div class="max-w-md mx-auto mt-10 p-6 bg-white dark:bg-gray-800 rounded-xl shadow">
   <div class="text-center mb-6">
     <div class="w-16 h-16 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center mx-auto mb-4">
