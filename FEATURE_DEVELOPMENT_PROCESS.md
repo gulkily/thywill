@@ -109,11 +109,12 @@ This file should be added to docs/plans/ directory and committed to master befor
 5. **Regular Check-ins**: Confirm direction at key milestones
 
 **Implementation Guidelines**:
-- Start a new branch for implementing the feature
+- **CRITICAL**: Start a new branch for implementing the feature (e.g., `git checkout -b feature/admin-rights-management`)
+- **CRITICAL**: Confirm branch creation before any code changes
 - Complete one atomic stage at a time
-- Commit to the branch after each stage
-- Test functionality before proceeding
-- Update TodoWrite with progress
+- Commit to the branch after each stage with descriptive messages
+- Test functionality before proceeding to next stage
+- Update TodoWrite with progress tracking
 - Flag any issues that require plan changes
 - Maintain code quality standards throughout
 - Do not stop or restart the server; Pause to let the collaborator do it
@@ -121,8 +122,17 @@ This file should be added to docs/plans/ directory and committed to master befor
 **Completion Criteria**:
 - All stages implemented and tested
 - Success criteria from Step 1 met
+- **Navigation verified**: Users can access the feature without typing URLs
+- **System dependencies resolved**: All required roles, migrations, etc. completed
 - Documentation updated (CLAUDE.md, etc.)
 - Ready for user acceptance testing
+
+**Post-Implementation Checklist**:
+- [ ] Feature accessible through normal user flows (not just direct URLs)
+- [ ] All system dependencies identified and resolved
+- [ ] Error scenarios tested (missing roles, permissions, etc.)
+- [ ] Documentation reflects actual implementation
+- [ ] Branch ready for merge/review
 
 ---
 
@@ -131,8 +141,11 @@ This file should be added to docs/plans/ directory and committed to master befor
 ### For Claude Code:
 - **Stay in Step**: Don't jump ahead to implementation details in Step 1
 - **Ask for Approval**: Wait for explicit approval before proceeding to next step
+- **Branch First**: ALWAYS create feature branch before any Step 3 implementation
+- **Confirm Branch**: Explicitly state branch name and confirm creation
 - **Flag Scope Creep**: If requirements expand, return to appropriate step
 - **Be Atomic**: Each stage should be small and focused
+- **Test Navigation**: Verify feature is accessible through normal UI flows
 - **Document Everything**: Keep plans and implementation synchronized
 
 ### For User:
@@ -156,8 +169,11 @@ This file should be added to docs/plans/ directory and committed to master befor
 - Risk assessment is missing
 
 ### Step 3 Issues:
+- **CRITICAL**: Starting implementation without creating feature branch
 - Implementing features not in plan
 - Skipping stages or testing
+- Feature not accessible through normal UI navigation
+- Missing system dependencies discovered during testing
 - Requirements changing during implementation
 - Plan and implementation diverging
 
@@ -182,13 +198,17 @@ Claude: Creates Step 2 development plan
 ↓
 User: Reviews plan structure and stages
 ↓
-Claude: Implements Stage 1, tests, marks complete
+Claude: Creates feature branch (e.g., `feature/admin-rights-management`)
 ↓
-Claude: Implements Stage 2, tests, marks complete
+Claude: Implements Stage 1, tests, commits to branch, marks complete
+↓
+Claude: Implements Stage 2, tests, commits to branch, marks complete
 ↓
 [Continue until all stages complete]
 ↓
-Claude: Feature complete, documentation updated
+Claude: Tests navigation, resolves dependencies, updates docs
+↓
+Claude: Feature complete on branch, ready for merge/review
 ```
 
 ## Success Metrics
