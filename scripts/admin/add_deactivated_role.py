@@ -10,7 +10,9 @@ import json
 from sqlmodel import Session, select
 
 # Add the project root to sys.path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(os.path.dirname(script_dir))  # Go up two levels from scripts/admin/
+sys.path.insert(0, project_root)
 
 from models import engine, Role
 
