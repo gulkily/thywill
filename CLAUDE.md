@@ -100,11 +100,13 @@ SPECIFICITY_BADGES_ENABLED=false              # Show Personal/Community badges
 **Main**: `GET /`, `POST /prayers`, `POST /mark/{id}`, `POST /flag/{id}`
 **Prayer**: `POST /prayer/{id}/archive|restore|answered`
 **Auth**: `GET|POST /login`, `POST /auth/request|approve/{id}`, `GET /claim/{token}`
+**Admin**: `GET /admin/users`, `POST /admin/users/{user_id}/grant-admin`, `POST /admin/users/{user_id}/deactivate|reactivate`
 **Archive**: `GET /api/archive/user/{id}/download`, `GET /api/archive/community/download`
 
 ## Features
 **Prayer**: AI generation, multiple feeds, status management, text archives, praise reports
 **Auth**: Invite-only, multi-device approval, rate limiting, security logging  
+**Admin**: Web-based user management, admin rights granting, user deactivation/reactivation
 **Community**: Content flagging, lifecycle management, testimony sharing, transparency
 **UI**: Header logout removed (menu-only), praise reports terminology, updated prayer prompts
 
@@ -187,7 +189,16 @@ This ensures documentation stays synchronized with codebase changes.
 Whenever you see vmi2648361 in a command log, that means it was run on production.
 You don't have access to the production server, so please act accordingly.
 
-## Recent Changes (July 2025)
+## Recent Changes (August 2025)
+**Admin Rights Management**: Implemented web-based admin promotion system
+- Added `POST /admin/users/{user_id}/grant-admin` route for promoting users to admin status
+- Updated `/admin/users` interface with "Grant Admin Rights" button for non-admin users
+- Added JavaScript confirmation dialog with security warnings
+- Integrated with existing role-based permission system using `UserRole` model
+- Includes audit trail tracking who granted admin rights and when
+- Added "User Management" navigation button to admin panel for easy access
+- Fixed missing `deactivated` role in system with `scripts/admin/add_deactivated_role.py`
+
 **Centralized Username Display System**: Implemented comprehensive supporter badge system
 - Created `UsernameDisplayService` for centralized username display logic
 - Added `username_display` template filter for consistent supporter badges across all templates
