@@ -31,9 +31,11 @@ from .auth.login_routes import router as login_router
 from .auth.multi_device_routes import router as multi_device_router  
 from .auth.verification_routes import router as verification_router
 from .auth.notification_routes import router as notification_router
+from .auth.session_api_routes import router as session_api_router
 
 # Include all sub-routers to maintain all existing routes
 router.include_router(login_router)
 router.include_router(multi_device_router)
 router.include_router(verification_router)
 router.include_router(notification_router)
+router.include_router(session_api_router)

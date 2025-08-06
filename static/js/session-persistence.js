@@ -64,10 +64,16 @@
         }
     }
     
-    // Get session cookie value (this will require backend support since cookie is httpOnly)
-    function getSessionCookie() {
-        // Since the cookie is httpOnly, we can't read it directly
-        // We'll need to get the session ID through a different method
+    // Get session info from backend (since cookie is httpOnly)
+    async function getSessionInfo() {
+        try {
+            const response = await fetch('/api/session/info');
+            if (response.ok) {
+                return await response.json();
+            }
+        } catch (e) {
+            // Session not available or other error
+        }
         return null;
     }
     
@@ -81,7 +87,7 @@
     }
     
     // Backup session data to LocalStorage
-    function backupSessionData(sessionId, userData) {
+    async function backupSessionData(sessionInfo) {
         if (!isSupported()) {
             log('LocalStorage not supported, skipping backup');
             return false;
@@ -90,18 +96,33 @@
         try {
             const backupData = {
                 version: STORAGE_VERSION,
-                sessionId: sessionId,
-                userData: userData,
+                sessionId: sessionInfo.sessionId,
+                userId: sessionInfo.userId,
+                displayName: sessionInfo.displayName,
+                expiresAt: sessionInfo.expiresAt,
+                isFullyAuthenticated: sessionInfo.isFullyAuthenticated,
                 timestamp: Date.now(),
-                userAgent: navigator.userAgent.substring(0, 100), // Basic fingerprinting
-                expires: Date.now() + (14 * 24 * 60 * 60 * 1000) // 14 days
+                userAgent: navigator.userAgent.substring(0, 100) // Basic fingerprinting
             };
             
             const encrypted = encryptData(backupData);
             if (encrypted) {
                 localStorage.setItem(STORAGE_KEY, encrypted);
-                log('Session backed up to LocalStorage');
-                broadcastStorageUpdate('backup', sessionId);
+                log('Session backed up to LocalStorage for user:', sessionInfo.displayName);
+                broadcastStorageUpdate('backup', sessionInfo.sessionId);
+                
+                // Notify backend of successful backup
+                try {
+                    await fetch('/api/session/backup', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({userData: {displayName: sessionInfo.displayName}})
+                    });
+                } catch (e) {
+                    // Backup notification failed, but local backup succeeded
+                    warn('Failed to notify backend of backup:', e);
+                }
+                
                 return true;
             }
         } catch (e) {
@@ -139,7 +160,7 @@
             }
             
             // Basic validation
-            if (!backupData.sessionId || !backupData.userData) {
+            if (!backupData.sessionId || !backupData.userId) {
                 warn('Invalid session backup data');
                 clearSessionData();
                 return null;
@@ -203,6 +224,21 @@
         });
     }
     
+    // Backup current session if authenticated
+    async function attemptSessionBackup() {
+        try {
+            const sessionInfo = await getSessionInfo();
+            if (sessionInfo) {
+                log('Found active session, backing up to LocalStorage');
+                await backupSessionData(sessionInfo);
+            } else {
+                log('No active session found for backup');
+            }
+        } catch (e) {
+            warn('Failed to backup session:', e);
+        }
+    }
+    
     // Restore session on page load if needed
     function attemptSessionRestore() {
         // Only attempt restore if we don't currently have a session
@@ -215,16 +251,16 @@
         const backupData = restoreSessionFromStorage();
         
         if (backupData) {
-            // We need to send the session ID to the backend to restore the cookie
-            restoreSessionCookie(backupData.sessionId, backupData.userData);
+            // Send the session data to the backend to restore the cookie
+            restoreSessionCookie(backupData);
         } else {
             log('No valid session backup available');
         }
     }
     
     // Send session restore request to backend
-    function restoreSessionCookie(sessionId, userData) {
-        log('Attempting to restore session cookie:', sessionId);
+    function restoreSessionCookie(backupData) {
+        log('Attempting to restore session cookie for user:', backupData.displayName);
         
         // Make request to backend to restore the session cookie
         fetch('/api/session/restore', {
@@ -233,13 +269,16 @@
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                sessionId: sessionId,
-                userData: userData
+                sessionId: backupData.sessionId,
+                userData: {
+                    userId: backupData.userId,
+                    displayName: backupData.displayName
+                }
             })
         })
         .then(response => {
             if (response.ok) {
-                log('Session cookie restored successfully');
+                log('Session cookie restored successfully for user:', backupData.displayName);
                 // Reload the page to continue with authenticated state
                 window.location.reload();
             } else {
@@ -268,6 +307,11 @@
         
         // Attempt to restore session on page load
         attemptSessionRestore();
+        
+        // If user is authenticated, backup their session
+        if (hasSessionCookie()) {
+            attemptSessionBackup();
+        }
         
         // Add logout handler to clear data
         document.addEventListener('click', function(e) {
