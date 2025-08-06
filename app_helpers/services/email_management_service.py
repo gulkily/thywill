@@ -28,11 +28,18 @@ class EmailManagementService:
         """Get or generate encryption key for email storage"""
         key_env = os.getenv('EMAIL_ENCRYPTION_KEY')
         if key_env:
-            return base64.urlsafe_b64decode(key_env.encode())
+            try:
+                # Fernet keys are base64 encoded, return as bytes
+                return key_env.encode('utf-8')
+            except Exception as e:
+                logger.error(f"Invalid EMAIL_ENCRYPTION_KEY format: {e}")
+                logger.error("Generate a new key with: python -c \"from cryptography.fernet import Fernet; print('EMAIL_ENCRYPTION_KEY=' + Fernet.generate_key().decode())\"")
+                raise Exception("Invalid EMAIL_ENCRYPTION_KEY format. Please generate a new key.")
         
         # Generate new key if not configured
         key = Fernet.generate_key()
-        logger.warning(f"Generated new email encryption key. Add to .env: EMAIL_ENCRYPTION_KEY={base64.urlsafe_b64encode(key).decode()}")
+        logger.warning(f"No EMAIL_ENCRYPTION_KEY found. Generated new key.")
+        logger.warning(f"Add to .env: EMAIL_ENCRYPTION_KEY={key.decode()}")
         return key
     
     def encrypt_email(self, email: str) -> str:
