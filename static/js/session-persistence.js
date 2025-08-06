@@ -241,6 +241,14 @@
     
     // Restore session on page load if needed
     function attemptSessionRestore() {
+        // Check if session restoration is disabled for this page
+        if (document.body.hasAttribute('data-disable-session-restore') || 
+            document.querySelector('[data-disable-session-restore]')) {
+            log('Session restoration disabled for this page');
+            dispatchRestorationComplete(false);
+            return;
+        }
+        
         // Only attempt restore if we don't currently have a session
         if (hasSessionCookie()) {
             log('Session cookie present, no restore needed');

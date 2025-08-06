@@ -193,7 +193,8 @@ def claim_get(token: str, request: Request, goto: str = None):
                     return templates.TemplateResponse("claim.html", {
                         "request": request, 
                         "token": token,
-                        "error": "This verification link is invalid - no target user specified."
+                        "error": "This verification link is invalid - no target user specified.",
+                        "token_exp_hours": TOKEN_EXP_H
                     })
                 
                 # Verify the email
@@ -209,14 +210,16 @@ def claim_get(token: str, request: Request, goto: str = None):
                         "request": request, 
                         "token": token,
                         "success": "Email verified successfully! You can now use email recovery to access your account.",
-                        "is_email_verification": True
+                        "is_email_verification": True,
+                        "token_exp_hours": TOKEN_EXP_H
                     })
                 else:
                     return templates.TemplateResponse("claim.html", {
                         "request": request, 
                         "token": token,
                         "error": f"Email verification failed: {message}",
-                        "is_email_verification": True
+                        "is_email_verification": True,
+                        "token_exp_hours": TOKEN_EXP_H
                     })
             except ImportError:
                 # Email service not available (e.g., on servers without email feature)
@@ -224,7 +227,8 @@ def claim_get(token: str, request: Request, goto: str = None):
                     "request": request, 
                     "token": token,
                     "error": "Email verification is not available on this server. Please contact an administrator.",
-                    "is_email_verification": True
+                    "is_email_verification": True,
+                    "token_exp_hours": TOKEN_EXP_H
                 })
     
     # Token is valid, show the normal claim form with token type context
