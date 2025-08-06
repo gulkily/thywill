@@ -10,7 +10,7 @@ from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select, func
 
 # Import models
-from models import engine, User, Prayer, PrayerMark, InviteToken
+from models import engine, User, Prayer, PrayerMark, InviteToken, Role, UserRole
 
 # Import helper functions
 from app_helpers.services.auth_helpers import current_user, is_admin
@@ -20,6 +20,7 @@ from app_helpers.utils.user_management import (
 )
 from app_helpers.services.token_service import create_user_login_token
 from app_helpers.utils.username_helpers import find_users_with_equivalent_usernames
+from datetime import datetime
 
 # Initialize templates
 # Use shared templates instance with filters registered
@@ -302,3 +303,64 @@ def create_login_link(
             f"/admin?error=Failed to create login link: {str(e)}",
             status_code=303
         )
+
+
+@router.post("/admin/users/{user_id}/grant-admin")
+def grant_admin_role_route(user_id: str, request: Request, user_session: tuple = Depends(current_user)):
+    """
+    Grant Admin Role to User
+    
+    Grants admin privileges to an existing user through the role-based system.
+    This allows admins to promote other users to admin status via the web interface.
+    
+    Args:
+        user_id: The display name of the user to promote to admin
+        
+    Returns:
+        JSON response: Success/error status with message
+        
+    Requires admin privileges.
+    """
+    user, session = user_session
+    if not is_admin(user):
+        return {"status": "error", "message": "Admin privileges required"}
+    
+    try:
+        with Session(engine) as db:
+            # Check if target user exists
+            target_user = db.exec(select(User).where(User.display_name == user_id)).first()
+            if not target_user:
+                return {"status": "error", "message": "User not found"}
+            
+            # Prevent self-promotion (though redundant for existing admins)
+            if user_id == user.display_name:
+                return {"status": "error", "message": "Cannot grant admin rights to yourself"}
+            
+            # Check if user already has admin role
+            if target_user.has_role("admin", db):
+                return {"status": "error", "message": f"{target_user.display_name} already has admin rights"}
+            
+            # Get admin role
+            admin_role = db.exec(select(Role).where(Role.name == 'admin')).first()
+            if not admin_role:
+                return {"status": "error", "message": "Admin role not found in system. Contact system administrator."}
+            
+            # Grant admin role
+            user_role = UserRole(
+                user_id=target_user.display_name,
+                role_id=admin_role.id,
+                granted_by=user.display_name,  # Track who granted the role
+                granted_at=datetime.utcnow()
+            )
+            db.add(user_role)
+            db.commit()
+            
+            return {
+                "status": "success", 
+                "message": f"Admin rights granted to {target_user.display_name}",
+                "user_id": target_user.display_name,
+                "is_admin": True
+            }
+            
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to grant admin rights: {str(e)}"}
