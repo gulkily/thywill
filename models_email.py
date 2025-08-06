@@ -4,15 +4,18 @@ Email Database Models - Separate database for email data isolation
 import os
 import sys
 from datetime import datetime
-from sqlmodel import Field, SQLModel, create_engine, Session
+from sqlmodel import Field, SQLModel, create_engine, Session, MetaData
 import uuid
 
-class UserEmail(SQLModel, table=True):
+# Create separate metadata for email tables to avoid importing all main DB tables
+email_metadata = MetaData()
+
+class UserEmail(SQLModel, table=True, metadata=email_metadata):
     """User email associations stored in separate database for security isolation"""
     __tablename__ = "user_email"
     
     id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
-    user_id: str = Field(foreign_key="user.display_name", index=True)  # Links to User.display_name in main db
+    user_id: str = Field(index=True)  # Links to User.display_name in main db (no FK for isolation)
     email_encrypted: str = Field(index=True)  # AES encrypted email address
     email_verified: bool = Field(default=False)
     verification_token: str | None = Field(default=None, index=True)
@@ -51,5 +54,5 @@ email_engine = create_engine(
     pool_pre_ping=True if EMAIL_DATABASE_PATH != ':memory:' else False
 )
 
-# Create tables on import for email database
-SQLModel.metadata.create_all(email_engine)
+# Create only email tables in the email database
+UserEmail.__table__.create(email_engine, checkfirst=True)
