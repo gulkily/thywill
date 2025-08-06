@@ -27,19 +27,24 @@ class EmailManagementService:
     def _get_encryption_key(self) -> bytes:
         """Get or generate encryption key for email storage"""
         key_env = os.getenv('EMAIL_ENCRYPTION_KEY')
-        if key_env:
+        if key_env and key_env.strip():  # Check for non-empty key
             try:
                 # Fernet keys are base64 encoded, return as bytes
-                return key_env.encode('utf-8')
+                logger.debug("Using EMAIL_ENCRYPTION_KEY from environment")
+                return key_env.strip().encode('utf-8')
             except Exception as e:
                 logger.error(f"Invalid EMAIL_ENCRYPTION_KEY format: {e}")
                 logger.error("Generate a new key with: python -c \"from cryptography.fernet import Fernet; print('EMAIL_ENCRYPTION_KEY=' + Fernet.generate_key().decode())\"")
                 raise Exception("Invalid EMAIL_ENCRYPTION_KEY format. Please generate a new key.")
         
-        # Generate new key if not configured
+        # Generate new key if not configured - this should only happen in development
+        logger.error("❌ CRITICAL: No EMAIL_ENCRYPTION_KEY found in environment!")
+        logger.error("❌ This will cause data loss - emails encrypted with different keys cannot be decrypted!")
+        logger.error("❌ Set EMAIL_ENCRYPTION_KEY in your .env file immediately!")
+        
         key = Fernet.generate_key()
-        logger.warning(f"No EMAIL_ENCRYPTION_KEY found. Generated new key.")
-        logger.warning(f"Add to .env: EMAIL_ENCRYPTION_KEY={key.decode()}")
+        logger.warning(f"🚨 TEMPORARY key generated: EMAIL_ENCRYPTION_KEY={key.decode()}")
+        logger.warning("🚨 Add this to your .env file to prevent data loss!")
         return key
     
     def encrypt_email(self, email: str) -> str:
