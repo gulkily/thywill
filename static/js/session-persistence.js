@@ -308,6 +308,45 @@
         });
     }
     
+    // Setup logout detection and cleanup handlers
+    function setupLogoutHandlers() {
+        log('Setting up logout detection handlers');
+        
+        // Handle logout form submissions
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            if (form && form.action && form.action.includes('/logout')) {
+                log('Logout form submission detected, clearing session data');
+                clearSessionData();
+            }
+        });
+        
+        // Handle logout button clicks (for direct links)
+        document.addEventListener('click', function(e) {
+            const target = e.target.closest('[href*="/logout"], [onclick*="logout"]');
+            if (target) {
+                log('Logout button clicked, clearing session data');
+                clearSessionData();
+            }
+        });
+        
+        // Listen for beforeunload when session has been cleared (logout redirect)
+        window.addEventListener('beforeunload', function() {
+            // If we're navigating away and no session cookie exists,
+            // it might be due to logout, so don't try to restore
+            if (!hasSessionCookie()) {
+                try {
+                    const backupData = localStorage.getItem(STORAGE_KEY);
+                    if (backupData) {
+                        log('Page unloading without session - potential logout detected');
+                    }
+                } catch (e) {
+                    // Ignore storage errors
+                }
+            }
+        });
+    }
+    
     // Initialize session persistence
     function init() {
         if (!isSupported()) {
@@ -329,13 +368,7 @@
         }
         
         // Add logout handler to clear data
-        document.addEventListener('click', function(e) {
-            const target = e.target.closest('[href*="logout"], [onclick*="logout"]');
-            if (target) {
-                log('Logout detected, clearing session data');
-                clearSessionData();
-            }
-        });
+        setupLogoutHandlers();
     }
     
     // Public API

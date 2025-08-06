@@ -345,11 +345,16 @@
     <a href="/" class="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg">
       ← Prayer Feed
     </a>
-    <form action="/logout" method="post" class="inline">
-      <button type="submit" class="inline-flex items-center px-8 py-3 border border-red-300 dark:border-red-600 rounded-xl shadow-sm bg-red-50 dark:bg-red-900/50 text-base font-medium text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-800 transition-colors">
-        🚪 Log Out
+    <div class="flex flex-col sm:flex-row gap-2">
+      <form action="/logout" method="post" class="inline">
+        <button type="submit" class="inline-flex items-center px-6 py-3 border border-red-300 dark:border-red-600 rounded-xl shadow-sm bg-red-50 dark:bg-red-900/50 text-sm font-medium text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-800 transition-colors">
+          🚪 Log Out
+        </button>
+      </form>
+      <button onclick="clearAllSiteData()" class="inline-flex items-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm bg-gray-50 dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        🗑️ Clear Site Data
       </button>
-    </form>
+    </div>
   </div>
 </div>
 
@@ -364,6 +369,40 @@ function toggleSection(sectionId) {
   } else {
     section.classList.add('hidden');
     icon.style.transform = 'rotate(0deg)';
+  }
+}
+
+function clearAllSiteData() {
+  if (confirm('Clear all site data including session backup?\n\nThis will:\n• Remove stored session data\n• Clear browser storage\n• Log you out\n\nYou will need to log in again. Continue?')) {
+    // Clear session persistence data
+    if (window.SessionPersistence) {
+      window.SessionPersistence.clear();
+    }
+    
+    // Clear all localStorage for this site
+    try {
+      localStorage.clear();
+    } catch (e) {
+      console.warn('Could not clear localStorage:', e);
+    }
+    
+    // Clear all sessionStorage for this site  
+    try {
+      sessionStorage.clear();
+    } catch (e) {
+      console.warn('Could not clear sessionStorage:', e);
+    }
+    
+    // Call the server-side clear session endpoint and then redirect
+    fetch('/api/session/clear', { method: 'DELETE' })
+      .then(() => {
+        alert('All site data cleared successfully.');
+        window.location.href = '/logged-out';
+      })
+      .catch(() => {
+        alert('Site data cleared locally. You may need to refresh the page.');
+        window.location.href = '/logged-out';
+      });
   }
 }
 </script>
