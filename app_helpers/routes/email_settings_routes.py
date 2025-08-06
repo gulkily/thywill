@@ -4,7 +4,7 @@ Email Settings Routes - User email management endpoints
 import os
 from fastapi import APIRouter, Request, Form, HTTPException, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
-from app_helpers.auth import current_user
+from app_helpers.services.auth_helpers import current_user
 from app_helpers.services.email_management_service import EmailManagementService
 import logging
 
