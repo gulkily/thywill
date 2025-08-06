@@ -151,6 +151,7 @@ show_help() {
     echo "    uninstall           Remove global installation"
     echo "    config              Show current configuration"
     echo "    sqlite              Open SQLite3 with helpful flags and table listing"
+    echo "    update-env          Update .env with missing defaults from .env.example"
     echo "    help                Show this help message"
     echo "    version             Show version information"
     echo ""
@@ -184,6 +185,8 @@ show_help() {
     echo "    thywill check-duplicates                         # Check for duplicate users"
     echo "    thywill merge-duplicates                         # Merge duplicate user accounts"
     echo "    thywill deduplicate-user-attributes              # Remove duplicate entries from user attributes file"
+    echo "    thywill update-env                               # Update .env with missing defaults"
+    echo "    thywill update-env --dry-run                     # Preview what would be added"
     echo "    thywill sqlite                                    # Open SQLite3 CLI with database"
     echo "    thywill deploy                                    # Safe deployment"
     echo "    thywill backup                                    # Create database backup"
@@ -228,6 +231,18 @@ cmd_start() {
         pip install -r requirements.txt
     else
         ensure_venv
+    fi
+    
+    # Update .env file with missing defaults from .env.example
+    if [ -f ".env.example" ]; then
+        log "Checking for missing environment variables..."
+        if run_python tools/update_env_defaults.py --dry-run 2>/dev/null | grep -q "Found.*missing environment variables"; then
+            log "Found missing environment variables. Updating .env file..."
+            run_python tools/update_env_defaults.py 2>/dev/null || true
+            log "Environment file updated with missing defaults"
+        else
+            log "Environment file is up to date"
+        fi
     fi
     
     # Check if .env file exists and create if needed
@@ -1844,6 +1859,22 @@ cmd_merge_duplicates() {
     run_python -m app_helpers.cli.user_management merge
 }
 
+cmd_update_env() {
+    header "Update Environment Defaults"
+    
+    # Check if we're in the right directory
+    if [ ! -f ".env.example" ]; then
+        error ".env.example not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+    
+    log "Updating .env file with missing defaults from .env.example..."
+    
+    # Use the update_env_defaults.py script with all passed arguments
+    run_python tools/update_env_defaults.py "$@"
+}
+
 # Main command dispatcher
 main() {
     local command="${1:-help}"
@@ -1968,6 +1999,9 @@ main() {
             ;;
         merge-duplicates)
             cmd_merge_duplicates "$@"
+            ;;
+        update-env)
+            cmd_update_env "$@"
             ;;
         
         # Utility commands
