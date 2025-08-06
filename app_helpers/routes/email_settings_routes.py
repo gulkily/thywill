@@ -60,9 +60,8 @@ def change_email(
     email_service = EmailManagementService()
     
     try:
-        # Remove current email and add new one
-        email_service.remove_user_email(user.display_name)
-        success, message = email_service.add_user_email(user.display_name, new_email)
+        # Add new email without removing current one (allow_pending=True)
+        success, message = email_service.add_user_email(user.display_name, new_email, allow_pending=True)
         
         if success:
             return RedirectResponse(

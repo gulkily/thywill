@@ -65,9 +65,14 @@ class EmailManagementService:
         """Generate unique verification token"""
         return uuid.uuid4().hex
     
-    def add_user_email(self, user_id: str, email: str, ip_address: str = None) -> tuple[bool, str]:
+    def add_user_email(self, user_id: str, email: str, ip_address: str = None, allow_pending: bool = False) -> tuple[bool, str]:
         """
         Add email to user account and send verification
+        Args:
+            user_id: User ID
+            email: Email address to add
+            ip_address: Client IP for logging
+            allow_pending: Allow adding email when user already has one (for email changes)
         Returns: (success, message/error)
         """
         if not self.validate_email_format(email):
@@ -81,20 +86,38 @@ class EmailManagementService:
                 return False, "User not found"
         
         with Session(email_engine) as email_session:
-            # Check if user already has a VERIFIED email
-            existing = email_session.exec(
+            # Check existing emails for this user
+            existing_emails = email_session.exec(
                 select(UserEmail).where(UserEmail.user_id == user_id)
-            ).first()
+            ).all()
             
-            if existing and existing.email_verified:
+            has_verified = any(email.email_verified for email in existing_emails)
+            has_unverified = any(not email.email_verified for email in existing_emails)
+            
+            # Logic for first email (user has no emails)
+            if not existing_emails:
+                pass  # Continue to add first email
+            
+            # Logic for users with verified email wanting to change
+            elif has_verified and not allow_pending:
                 self._log_security_event("email_add_already_exists", user_id, ip_address, email)
                 return False, "User already has a verified email address. Use 'Change Email' instead."
             
-            # If user has unverified email, we'll replace it
-            if existing and not existing.email_verified:
+            # Logic for email changes - remove any existing unverified emails (keep verified ones)
+            elif allow_pending and has_unverified:
+                self._log_security_event("email_replace_unverified", user_id, ip_address, email)
+                # Remove only unverified emails, keep verified ones
+                for existing in existing_emails:
+                    if not existing.email_verified:
+                        email_session.delete(existing)
+                email_session.commit()
+            
+            # For users with only unverified email, replace it
+            elif has_unverified and not has_verified:
                 self._log_security_event("email_replace_unverified", user_id, ip_address, email)
                 # Remove the unverified email record
-                email_session.delete(existing)
+                for existing in existing_emails:
+                    email_session.delete(existing)
                 email_session.commit()
             
             # Check if email is already used by another user
@@ -202,6 +225,21 @@ The ThyWill Team
             user_email.email_verified = True
             user_email.verified_at = datetime.utcnow()
             user_email.verification_token = None  # Clear token
+            
+            # When verifying a new email, remove any old verified emails (for email changes)
+            # This ensures only one verified email per user
+            other_verified_emails = email_session.exec(
+                select(UserEmail).where(
+                    UserEmail.user_id == user_id,
+                    UserEmail.email_verified == True,
+                    UserEmail.id != user_email.id  # Don't delete the one we just verified
+                )
+            ).all()
+            
+            for old_email in other_verified_emails:
+                self._log_security_event("email_replaced_on_verify", user_id, None, self.decrypt_email(old_email.email_encrypted))
+                email_session.delete(old_email)
+            
             email_session.commit()
             
             # Log email verification

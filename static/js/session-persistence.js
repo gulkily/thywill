@@ -362,6 +362,13 @@
             return;
         }
         
+        // Check if session restoration is disabled for this page (early check)
+        if (document.body.hasAttribute('data-disable-session-restore') || 
+            document.querySelector('[data-disable-session-restore]')) {
+            log('Session persistence disabled for this page, skipping initialization');
+            return;
+        }
+        
         log('Initializing session persistence');
         
         // Set up cross-tab synchronization
