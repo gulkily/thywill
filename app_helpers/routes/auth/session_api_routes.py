@@ -136,7 +136,7 @@ async def restore_session_cookie(
             
             # Check if user is deactivated
             from app_helpers.utils.user_management import is_user_deactivated
-            if is_user_deactivated(user.display_name):
+            if is_user_deactivated(user.display_name, db):
                 logger.warning(f"Session restore failed: User {user.display_name} is deactivated")
                 raise HTTPException(status_code=401, detail="User account deactivated")
         
