@@ -185,36 +185,45 @@ def claim_get(token: str, request: Request, goto: str = None):
         
         # Special handling for email_verification tokens - auto-verify and redirect
         if inv.token_type == "email_verification":
-            # Import here to avoid circular imports
-            from app_helpers.services.email_management_service import EmailManagementService
-            
-            if not inv.used_by_user_id:
-                return templates.TemplateResponse("claim.html", {
-                    "request": request, 
-                    "token": token,
-                    "error": "This verification link is invalid - no target user specified."
-                })
-            
-            # Verify the email
-            email_service = EmailManagementService()
-            success, message = email_service.verify_email_token(token)
-            
-            if success:
-                # Mark token as used by incrementing usage count
-                inv.usage_count += 1
-                s.commit()
+            # Import here to avoid circular imports and handle missing service gracefully
+            try:
+                from app_helpers.services.email_management_service import EmailManagementService
                 
+                if not inv.used_by_user_id:
+                    return templates.TemplateResponse("claim.html", {
+                        "request": request, 
+                        "token": token,
+                        "error": "This verification link is invalid - no target user specified."
+                    })
+                
+                # Verify the email
+                email_service = EmailManagementService()
+                success, message = email_service.verify_email_token(token)
+                
+                if success:
+                    # Mark token as used by incrementing usage count
+                    inv.usage_count += 1
+                    s.commit()
+                    
+                    return templates.TemplateResponse("claim.html", {
+                        "request": request, 
+                        "token": token,
+                        "success": "Email verified successfully! You can now use email recovery to access your account.",
+                        "is_email_verification": True
+                    })
+                else:
+                    return templates.TemplateResponse("claim.html", {
+                        "request": request, 
+                        "token": token,
+                        "error": f"Email verification failed: {message}",
+                        "is_email_verification": True
+                    })
+            except ImportError:
+                # Email service not available (e.g., on servers without email feature)
                 return templates.TemplateResponse("claim.html", {
                     "request": request, 
                     "token": token,
-                    "success": "Email verified successfully! You can now use email recovery to access your account.",
-                    "is_email_verification": True
-                })
-            else:
-                return templates.TemplateResponse("claim.html", {
-                    "request": request, 
-                    "token": token,
-                    "error": f"Email verification failed: {message}",
+                    "error": "Email verification is not available on this server. Please contact an administrator.",
                     "is_email_verification": True
                 })
     

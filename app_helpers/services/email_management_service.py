@@ -173,18 +173,30 @@ The ThyWill Team
     def verify_email_token(self, token: str) -> tuple[bool, str]:
         """
         Verify email token and mark email as verified
+        The token parameter is the invite token, we need to find the corresponding email record
         Returns: (success, message)
         """
+        # First get the invite token to find the user_id
+        with Session(engine) as main_session:
+            invite_token = main_session.get(InviteToken, token)
+            if not invite_token or invite_token.token_type != "email_verification":
+                return False, "Invalid verification token"
+            
+            user_id = invite_token.used_by_user_id
+            if not user_id:
+                return False, "Invalid verification token"
+        
+        # Now find and verify the email record for this user
         with Session(email_engine) as email_session:
             user_email = email_session.exec(
-                select(UserEmail).where(UserEmail.verification_token == token)
+                select(UserEmail).where(
+                    UserEmail.user_id == user_id,
+                    UserEmail.email_verified == False
+                )
             ).first()
             
             if not user_email:
-                return False, "Invalid verification token"
-            
-            if user_email.email_verified:
-                return False, "Email already verified"
+                return False, "No unverified email found for this user"
             
             # Mark as verified
             user_email.email_verified = True
