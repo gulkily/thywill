@@ -116,6 +116,13 @@ show_help() {
     echo "    role list               List all available roles"
     echo "    role grant <user> <role> Grant specific role to user"
     echo "    role revoke <user> <role> Revoke specific role from user"
+    echo ""
+    header "  Authentication Commands:"
+    echo "    auth list [--details]   List pending authentication requests"
+    echo "    auth approve <id> [--by <user>] Approve authentication request"
+    echo "    auth reject <id> [--reason <text>] Reject authentication request"
+    echo "    auth cleanup            Clean up expired authentication requests"
+    echo "    auth stats              Show authentication statistics"
     echo "    import prayers <file>   Import prayers from JSON file"
     echo "    import text-archives    Import data from text_archives/ directory"
     echo "    validate-archives       Check archive completeness and integrity"
@@ -621,6 +628,127 @@ cmd_role_revoke() {
     
     # Use Python CLI module for role management
     run_python -m app_helpers.cli.role_management revoke "$user_identifier" "$role_name"
+}
+
+cmd_auth() {
+    local subcommand="${1:-}"
+    shift || true
+    
+    case "$subcommand" in
+        list)
+            cmd_auth_list "$@"
+            ;;
+        approve)
+            cmd_auth_approve "$@"
+            ;;
+        reject)
+            cmd_auth_reject "$@"
+            ;;
+        cleanup)
+            cmd_auth_cleanup "$@"
+            ;;
+        stats)
+            cmd_auth_stats "$@"
+            ;;
+        *)
+            error "Unknown auth subcommand: $subcommand"
+            echo "Available subcommands: list, approve, reject, cleanup, stats"
+            echo "Usage: thywill auth <subcommand> [args]"
+            echo ""
+            echo "Examples:"
+            echo "  thywill auth list                    # List pending requests"
+            echo "  thywill auth list --details         # List with full details"
+            echo "  thywill auth approve abc123         # Approve request by ID"
+            echo "  thywill auth approve abc123 --by john # Approve as specific user"
+            echo "  thywill auth reject abc123          # Reject request"
+            echo "  thywill auth cleanup                # Clean expired requests"
+            echo "  thywill auth stats                  # Show statistics"
+            exit 1
+            ;;
+    esac
+}
+
+cmd_auth_list() {
+    header "Authentication Requests"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ]; then
+        error "Must run from ThyWill project directory"
+        exit 1
+    fi
+    
+    # Use the auth manager tool
+    run_python tools/auth_manager.py list "$@"
+}
+
+cmd_auth_approve() {
+    local request_id="${1:-}"
+    
+    if [ -z "$request_id" ]; then
+        error "Request ID required"
+        echo "Usage: thywill auth approve <request_id> [--by <approver>]"
+        echo "Example: thywill auth approve abc123"
+        exit 1
+    fi
+    
+    header "Approving Authentication Request"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ]; then
+        error "Must run from ThyWill project directory"
+        exit 1
+    fi
+    
+    # Use the auth manager tool
+    run_python tools/auth_manager.py approve "$@"
+}
+
+cmd_auth_reject() {
+    local request_id="${1:-}"
+    
+    if [ -z "$request_id" ]; then
+        error "Request ID required"
+        echo "Usage: thywill auth reject <request_id> [--reason <reason>]"
+        echo "Example: thywill auth reject abc123 --reason 'Suspicious activity'"
+        exit 1
+    fi
+    
+    header "Rejecting Authentication Request"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ]; then
+        error "Must run from ThyWill project directory"
+        exit 1
+    fi
+    
+    # Use the auth manager tool
+    run_python tools/auth_manager.py reject "$@"
+}
+
+cmd_auth_cleanup() {
+    header "Cleaning Up Expired Requests"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ]; then
+        error "Must run from ThyWill project directory"
+        exit 1
+    fi
+    
+    # Use the auth manager tool
+    run_python tools/auth_manager.py cleanup "$@"
+}
+
+cmd_auth_stats() {
+    header "Authentication Statistics"
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ]; then
+        error "Must run from ThyWill project directory"
+        exit 1
+    fi
+    
+    # Use the auth manager tool
+    run_python tools/auth_manager.py stats "$@"
 }
 
 cmd_import() {
@@ -1926,6 +2054,9 @@ main() {
             ;;
         role)
             cmd_role "$@"
+            ;;
+        auth)
+            cmd_auth "$@"
             ;;
         import)
             cmd_import "$@"
