@@ -1,0 +1,19 @@
+Feed navigation selector not scrollable on desktop, hiding archived prayers option.
+
+Steps to reproduce:
+
+1. Log in as admin or user with archived prayers
+2. View the main feed page on desktop/wide screen
+3. Look at the feed navigation buttons at the top
+4. Observe that "Archived" option may not be visible if there are many feed options
+
+Expected:
+Feed navigation should be scrollable or wrap to show all available options including "Archived"
+
+Actual:
+Feed navigation appears to be cut off on desktop, potentially hiding the "Archived" feed option
+
+Notes:
+- This affects discoverability of archived prayers
+- Users may not realize they have archived content
+- Mobile layout may handle this differently than desktop
