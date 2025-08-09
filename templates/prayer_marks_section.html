@@ -41,16 +41,16 @@
          class="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg z-50 hidden"
          onclick="event.stopPropagation();">
       <div class="py-1">
-      <!-- Prayer management buttons for prayer authors -->
-      {% if prayer_session.is_fully_authenticated and prayer.author_id == me.display_name %}
-        {% if not prayer.is_answered %}
+      <!-- Prayer management buttons for prayer authors or admins -->
+      {% if prayer_session.is_fully_authenticated and (prayer.author_id == me.display_name or is_admin) %}
+        {% if not is_prayer_answered %}
           <button onclick="showAnsweredModal('{{ prayer_id }}'); hideDropdown('{{ prayer_id }}')"
                   class="block w-full text-left px-4 py-3 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-800 dark:hover:text-green-300 transition-colors duration-150 font-medium whitespace-nowrap">
             ✓ Add Praise
           </button>
         {% endif %}
         
-        {% if prayer.is_archived %}
+        {% if is_prayer_archived %}
           <form method="post" action="/prayer/{{ prayer_id }}/restore" class="block">
             <button type="submit" 
                     hx-post="/prayer/{{ prayer_id }}/restore"

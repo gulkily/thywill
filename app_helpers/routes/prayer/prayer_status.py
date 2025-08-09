@@ -72,6 +72,13 @@ def mark_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(
             )
             user_mark_count = s.exec(user_mark_count_stmt).first()
             
+            # Refresh prayer object to get current state after any updates
+            s.refresh(prayer)
+            
+            # Pre-compute prayer status for template (methods require session parameter)
+            is_prayer_archived = prayer.is_archived(s)
+            is_prayer_answered = prayer.is_answered(s)
+            
             # Build the prayer stats display
             prayer_stats = ""
             if total_mark_count > 0:
@@ -90,7 +97,10 @@ def mark_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(
                 user_mark_count=user_mark_count,
                 prayer=prayer,
                 me=user,
-                prayer_session=session
+                prayer_session=session,
+                is_admin=is_admin(user),
+                is_prayer_archived=is_prayer_archived,
+                is_prayer_answered=is_prayer_answered
             ))
     
     # For non-HTMX requests, redirect back to the specific prayer
