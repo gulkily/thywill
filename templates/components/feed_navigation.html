@@ -1,10 +1,29 @@
 <!-- Prayer Feed Navigation -->
 <section class="mb-6">
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-1">
-    <nav class="flex overflow-x-auto scrollbar-hide space-x-1" style="scrollbar-width: none; -ms-overflow-style: none;">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-1 relative">
+    <!-- Scroll indicators for desktop -->
+    <div class="feed-nav-indicators hidden lg:flex absolute inset-y-0 pointer-events-none z-10">
+      <div id="scrollLeft" class="scroll-indicator left flex items-center justify-center w-8 h-full bg-gradient-to-r from-white dark:from-gray-800 to-transparent opacity-0 transition-opacity duration-300">
+        <span class="text-gray-400 dark:text-gray-500 text-sm">‹</span>
+      </div>
+      <div id="scrollRight" class="scroll-indicator right flex items-center justify-center w-8 h-full bg-gradient-to-l from-white dark:from-gray-800 to-transparent opacity-0 transition-opacity duration-300 ml-auto">
+        <span class="text-gray-400 dark:text-gray-500 text-sm">›</span>
+      </div>
+    </div>
+    
+    <nav id="feedNavigation" class="feed-nav-scroll flex overflow-x-auto scrollbar-hide space-x-1" style="scrollbar-width: none; -ms-overflow-style: none;">
       <style>
         .scrollbar-hide::-webkit-scrollbar {
           display: none;
+        }
+        .scroll-indicator.left {
+          left: 0;
+        }
+        .scroll-indicator.right {
+          right: 0;
+        }
+        .feed-nav-scroll {
+          scroll-behavior: smooth;
         }
       </style>
       
@@ -82,4 +101,43 @@
       ← Swipe to see more tabs →
     </div>
   </div>
+
+  <!-- Desktop scrolling functionality -->
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const nav = document.getElementById('feedNavigation');
+    const leftIndicator = document.getElementById('scrollLeft');
+    const rightIndicator = document.getElementById('scrollRight');
+    
+    if (!nav || !leftIndicator || !rightIndicator) return;
+    
+    // Mouse wheel horizontal scrolling for desktop
+    nav.addEventListener('wheel', function(e) {
+      // Only handle horizontal scrolling
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        nav.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
+    
+    // Update scroll indicators
+    function updateScrollIndicators() {
+      const canScrollLeft = nav.scrollLeft > 0;
+      const canScrollRight = nav.scrollLeft < (nav.scrollWidth - nav.clientWidth);
+      
+      // Show left indicator if can scroll left
+      leftIndicator.style.opacity = canScrollLeft ? '0.8' : '0';
+      
+      // Show right indicator if can scroll right  
+      rightIndicator.style.opacity = canScrollRight ? '0.8' : '0';
+    }
+    
+    // Initialize and update indicators on scroll
+    nav.addEventListener('scroll', updateScrollIndicators);
+    window.addEventListener('resize', updateScrollIndicators);
+    
+    // Initial check
+    setTimeout(updateScrollIndicators, 100);
+  });
+  </script>
 </section>
