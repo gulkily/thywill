@@ -1,0 +1,16 @@
+Archive and Praise menu choices disappear after Prayed button is pressed.
+
+Steps to reproduce:
+
+0. Log in with an admin account that has these choices.
+1. Open the prayer feed.
+2. Choose one prayer in the feed, and press the "..." button
+3. Observe that there are at least 3 choices: Add Praise, Archive, Flag
+4. Press the Prayed button on the prayer
+5. Open the "..." menu again
+
+Expected:
+Prayer still has Add Praise, Archive, and Flag choices
+
+Actual:
+Prayer only has Flag choice
