@@ -15,6 +15,9 @@
     const RESTORE_ATTEMPT_KEY = 'thywill_restore_attempt';
     const RESTORE_ATTEMPT_EXPIRY = 5 * 60 * 1000; // 5 minutes
     const MAX_RESTORE_ATTEMPTS = 3; // Max attempts per session
+    const RELOAD_LOOP_KEY = 'thywill_reload_prevention';
+    const RELOAD_LOOP_THRESHOLD = 3; // Max reloads per session
+    const RELOAD_COOLDOWN = 30 * 1000; // 30 seconds cooldown
     
     // Utility functions
     function log(message, ...args) {
@@ -101,6 +104,59 @@
         }
     }
     
+    // Reload loop prevention
+    function getReloadCount() {
+        try {
+            const data = sessionStorage.getItem(RELOAD_LOOP_KEY);
+            if (!data) return { count: 0, firstReload: Date.now() };
+            
+            const parsed = JSON.parse(data);
+            
+            // Reset counter if cooldown period has passed
+            if (Date.now() - parsed.firstReload > RELOAD_COOLDOWN) {
+                sessionStorage.removeItem(RELOAD_LOOP_KEY);
+                return { count: 0, firstReload: Date.now() };
+            }
+            
+            return parsed;
+        } catch (e) {
+            return { count: 0, firstReload: Date.now() };
+        }
+    }
+    
+    function incrementReloadCount() {
+        try {
+            const reloads = getReloadCount();
+            reloads.count += 1;
+            reloads.lastReload = Date.now();
+            sessionStorage.setItem(RELOAD_LOOP_KEY, JSON.stringify(reloads));
+            return reloads;
+        } catch (e) {
+            warn('Failed to track reload count:', e);
+            return { count: 1, firstReload: Date.now() };
+        }
+    }
+    
+    function shouldPreventReload() {
+        const reloads = getReloadCount();
+        const prevented = reloads.count >= RELOAD_LOOP_THRESHOLD;
+        
+        if (prevented) {
+            log(`Reload loop detected (${reloads.count}/${RELOAD_LOOP_THRESHOLD}), preventing reload`);
+        }
+        
+        return prevented;
+    }
+    
+    function clearReloadTracking() {
+        try {
+            sessionStorage.removeItem(RELOAD_LOOP_KEY);
+            log('Reload tracking cleared');
+        } catch (e) {
+            // Ignore errors
+        }
+    }
+    
     // Simple encryption using browser's crypto API
     function encryptData(data) {
         try {
@@ -134,13 +190,34 @@
         return null;
     }
     
-    // Check if session cookie exists (indirect method)
+    // Check if session exists using server-provided meta tag
     function hasSessionCookie() {
-        // We can't directly check httpOnly cookies, but we can check if we're authenticated
-        // by looking for authenticated user indicators in the DOM
-        return document.querySelector('[data-authenticated="true"]') !== null ||
-               document.querySelector('a[href="/profile"]') !== null ||
-               document.body.classList.contains('authenticated');
+        try {
+            const sessionMeta = document.querySelector('meta[name="session-state"]');
+            log('Session meta tag found:', sessionMeta ? sessionMeta.content : 'NOT FOUND');
+            
+            if (sessionMeta) {
+                const sessionState = JSON.parse(sessionMeta.content);
+                log('Parsed session state:', sessionState);
+                
+                const hasSession = sessionState.hasValidSession === true && sessionState.isAuthenticated === true;
+                log('Has valid session:', hasSession);
+                return hasSession;
+            }
+        } catch (e) {
+            warn('Failed to parse session state meta tag:', e);
+        }
+        
+        // Fallback: check for common authenticated indicators
+        const fallbackChecks = {
+            dataAuthenticated: document.querySelector('[data-authenticated="true"]') !== null,
+            profileLink: document.querySelector('a[href="/profile"]') !== null,
+            bodyClass: document.body.classList.contains('authenticated')
+        };
+        
+        log('Fallback session checks:', fallbackChecks);
+        
+        return fallbackChecks.dataAuthenticated || fallbackChecks.profileLink || fallbackChecks.bodyClass;
     }
     
     // Backup session data to LocalStorage
@@ -351,6 +428,27 @@
             return;
         }
         
+        // CRITICAL FIX: Check if we just restored a session recently
+        try {
+            const recentRestore = sessionStorage.getItem('thywill_session_restored');
+            if (recentRestore) {
+                const restoreTime = parseInt(recentRestore);
+                const timeSinceRestore = Date.now() - restoreTime;
+                
+                // If we restored within the last 10 seconds, don't try again
+                if (timeSinceRestore < 10000) {
+                    log('Session was recently restored, skipping restoration attempt');
+                    dispatchRestorationComplete(false);
+                    return;
+                }
+                
+                // Clear old restoration markers after 10 seconds
+                sessionStorage.removeItem('thywill_session_restored');
+            }
+        } catch (e) {
+            // Ignore storage errors
+        }
+        
         // Check restore attempt limits
         if (!shouldAllowRestoreAttempt()) {
             dispatchRestorationComplete(false);
@@ -361,6 +459,7 @@
         if (hasSessionCookie()) {
             log('Session cookie present, no restore needed');
             clearRestoreAttempts(); // Clear tracking since we have a valid session
+            clearReloadTracking(); // Clear reload tracking since session is working
             dispatchRestorationComplete(false);
             return;
         }
@@ -374,6 +473,36 @@
         } else {
             log('No valid session backup available');
             dispatchRestorationComplete(false);
+        }
+    }
+    
+    // Update page session state without full reload
+    function updatePageSessionState(authenticated) {
+        try {
+            // Update session meta tag
+            const sessionMeta = document.querySelector('meta[name="session-state"]');
+            if (sessionMeta) {
+                const newState = authenticated ? 
+                    '{"hasValidSession": true, "isAuthenticated": true}' :
+                    '{"hasValidSession": false, "isAuthenticated": false}';
+                sessionMeta.setAttribute('content', newState);
+                log('Updated session state meta tag');
+            }
+            
+            // Update body class
+            if (authenticated) {
+                document.body.classList.add('authenticated');
+            } else {
+                document.body.classList.remove('authenticated');
+            }
+            
+            // Dispatch custom event for other scripts
+            window.dispatchEvent(new CustomEvent('sessionStateChanged', {
+                detail: { authenticated: authenticated, timestamp: Date.now() }
+            }));
+            
+        } catch (e) {
+            warn('Failed to update page session state:', e);
         }
     }
     
@@ -414,8 +543,45 @@
             if (response.ok) {
                 log('Session cookie restored successfully for user:', backupData.displayName);
                 clearRestoreAttempts(); // Clear attempts on success
-                // Reload the page to continue with authenticated state
-                window.location.reload();
+                
+                // CRITICAL FIX: Check if we actually need to reload
+                // If the page is already showing authenticated content, don't reload
+                const pageHasAuthContent = document.querySelector('a[href="/profile"]') !== null ||
+                                         document.querySelector('[data-authenticated="true"]') !== null ||
+                                         document.body.classList.contains('authenticated') ||
+                                         document.querySelector('.authenticated') !== null;
+                
+                if (pageHasAuthContent) {
+                    log('Page already shows authenticated content - no reload needed');
+                    updatePageSessionState(true);
+                    dispatchRestorationComplete(true);
+                    return;
+                }
+                
+                // Check for reload loops before reloading
+                if (shouldPreventReload()) {
+                    warn('Reload loop detected - session restored but not reloading page to prevent infinite loop');
+                    // Update page state instead of reloading
+                    updatePageSessionState(true);
+                    dispatchRestorationComplete(true);
+                    return;
+                }
+                
+                // Mark that we've successfully restored a session to prevent immediate re-attempts
+                try {
+                    sessionStorage.setItem('thywill_session_restored', Date.now().toString());
+                } catch (e) {
+                    // Ignore storage errors
+                }
+                
+                // Track this reload to prevent loops
+                incrementReloadCount();
+                log('Reloading page to continue with authenticated state');
+                
+                // Add a slight delay to ensure cookie is fully set
+                setTimeout(() => {
+                    window.location.reload();
+                }, 100);
             } else {
                 warn(`Failed to restore session cookie (${response.status}), attempt ${attempts.count}/${MAX_RESTORE_ATTEMPTS}`);
                 
@@ -492,11 +658,16 @@
         // Set up cross-tab synchronization
         setupCrossTabSync();
         
-        // Attempt to restore session on page load
-        attemptSessionRestore();
+        // Check session status first with detailed logging
+        const sessionExists = hasSessionCookie();
+        log('Session detection result:', sessionExists);
         
-        // If user is authenticated, backup their session
-        if (hasSessionCookie()) {
+        if (!sessionExists) {
+            // Attempt to restore session on page load
+            attemptSessionRestore();
+        } else {
+            log('Valid session detected, skipping restoration');
+            // If user is authenticated, backup their session
             attemptSessionBackup();
         }
         
@@ -511,9 +682,12 @@
         clear: clearSessionData,
         clearAttempts: clearRestoreAttempts,
         getAttempts: getRestoreAttempts,
+        clearReloads: clearReloadTracking,
+        getReloads: getReloadCount,
         isSupported: isSupported,
         hasSession: hasSessionCookie,
-        shouldSkip: shouldSkipSessionRestore
+        shouldSkip: shouldSkipSessionRestore,
+        updateState: updatePageSessionState
     };
     
     // Initialize when DOM is ready
