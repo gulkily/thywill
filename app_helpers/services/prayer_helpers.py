@@ -124,6 +124,9 @@ def get_feed_counts(user_id: str) -> dict:
             )
         ).first()
         
+        # Daily prayer count (same as recent_activity - prayers with any marks)
+        counts['daily_prayer'] = counts['recent_activity']
+        
         # Answered prayers count
         counts['answered'] = s.exec(
             select(func.count(func.distinct(Prayer.id)))

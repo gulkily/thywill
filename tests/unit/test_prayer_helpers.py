@@ -115,6 +115,7 @@ class TestFeedCounts:
             assert counts['my_prayers'] == 0
             assert counts['my_requests'] == 0
             assert counts['recent_activity'] == 0
+            assert counts['daily_prayer'] == 0
     
     def test_get_feed_counts_with_prayers(self, test_session):
         """Test feed counts with various prayers"""
@@ -201,6 +202,7 @@ class TestFeedCounts:
             
             # All prayers with marks should count (no time restriction)
             assert counts['recent_activity'] == 2  # Both prayer1 and prayer2 have marks
+            assert counts['daily_prayer'] == 2  # Same as recent_activity
     
     def test_get_feed_counts_excludes_flagged_prayers(self, test_session):
         """Test that flagged prayers are excluded from all counts"""
