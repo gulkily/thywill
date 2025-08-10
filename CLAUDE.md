@@ -83,6 +83,9 @@ VENMO_HANDLE=
 # Changelog Configuration
 CHANGELOG_AI_DISABLED=true            # HOTFIX: Disable AI changelog generation to prevent server lockups
 
+# Prayer System Feature Flags
+DAILY_PRIORITY_ENABLED=false         # Enable daily priority system with rotation and visibility controls
+
 # Prayer Categorization Feature Flags (default: false)
 PRAYER_CATEGORIZATION_ENABLED=false           # Master toggle for categorization system
 PRAYER_CATEGORY_BADGES_ENABLED=false          # Show category badges on prayer cards
