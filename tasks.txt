@@ -49,3 +49,4 @@ Add provisions to prompt for negative requests
 	Write a good prayer anyway
 
 For sponsorship, add specific expenses and offer sponsorship in their entirety
+
