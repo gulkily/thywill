@@ -8,39 +8,41 @@
 ### Step 0: Solution Assessment (Optional)
 **When Needed**: Multiple viable approaches, complex trade-offs, or unclear direction
 
-**Format**: Brief comparison document (2-3 pages max)
-- Problem context (2-3 sentences)  
-- 2-4 solution options with pros/cons
-- Comparison on: complexity, maintainability, performance, UX, risk
-- Recommended approach with reasoning
+**Format**: Ultra-concise comparison document (≤1 page) in `docs/plans/`
+**Filename**: `{feature_name}_solution_assessment.md`
+- Problem statement (1 sentence)
+- 2-4 solution options with key pros/cons (bullet points only)
+- Clear recommendation with brief reasoning
 
-**Avoid**: Implementation details, >4 options, minor variations
+**Avoid**: Long explanations, implementation details, >4 options, verbose prose
 
 ---
 
 ### Step 1: Feature Description
 **Content**: Problem statement, 3-5 user stories, core requirements, user flow, success criteria
 
-**Format**: 1-2 pages in `docs/plans/`
-- Problem (2-3 sentences)
-- User stories ("As a [role], I want [goal] so that [benefit]")  
-- Core requirements (3-7 bullet points)
-- Simple user flow description
-- Measurable success criteria
+**Format**: Concise document (≤1 page) in `docs/plans/`
+**Filename**: `{feature_name}_feature_description.md`
+- Problem (1-2 sentences)
+- User stories (bullet points: "As [role], I want [goal] so that [benefit]")
+- Core requirements (3-5 bullet points)
+- Simple user flow (numbered steps)
+- Success criteria (measurable outcomes)
 
-**Avoid**: Implementation details, code, database schema, UI mockups
+**Avoid**: Implementation details, code, database schema, UI mockups, verbose descriptions
 
 ---
 
 ### Step 2: Development Plan
 **Content**: Atomic stages (<2 hours each), dependencies, testing strategy, risk assessment
 
-**Format**: Numbered stages in `docs/plans/`
-- Each stage: goal, dependencies, high-level changes, testing, risks
-- Database changes (no SQL)
+**Format**: Numbered stages in `docs/plans/` (≤1 page)
+**Filename**: `{feature_name}_development_plan.md`
+- Each stage: goal, dependencies, changes, testing, risks (bullet points)
+- Database changes (conceptual, no SQL)
 - Function signatures (no implementation)
 
-**Avoid**: Full code, HTML templates, detailed SQL, extensive examples
+**Avoid**: Full code, HTML templates, detailed SQL, verbose explanations
 
 ---
 
@@ -59,12 +61,19 @@
 - System dependencies resolved (roles, migrations, etc.)
 - Documentation updated
 
+## File Naming Convention
+Each step MUST be a separate file in `docs/plans/`:
+- **Step 0**: `{feature_name}_solution_assessment.md`
+- **Step 1**: `{feature_name}_feature_description.md`
+- **Step 2**: `{feature_name}_development_plan.md`
+
 ## Key Rules
 
 **Claude Code**:
 - Suggest Step 0 for complex/multi-solution features  
 - Stay in current step, don't jump ahead
 - Wait for explicit approval between steps
+- ALWAYS create separate files for each step
 - ALWAYS create feature branch before Step 3
 - Flag scope creep, return to appropriate step
 
@@ -74,9 +83,9 @@
 - Resist adding features mid-implementation
 
 ## Warning Signs
-- **Step 0**: >4 options, implementation details, analysis paralysis
-- **Step 1**: >3 pages, code examples, UI/database details  
-- **Step 2**: >2 hour stages, complex dependencies, missing tests/risks
+- **Step 0**: >1 page, >4 options, verbose explanations
+- **Step 1**: >1 page, code examples, UI/database details  
+- **Step 2**: >1 page, >2 hour stages, complex dependencies
 - **Step 3**: No feature branch, skipping stages, changing requirements
 
 ## Workflows
