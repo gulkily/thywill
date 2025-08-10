@@ -1,0 +1,33 @@
+Daily Priority menu choice disappears after Prayed button is pressed.
+
+Steps to reproduce:
+
+0. Log in with an admin account that has daily priority choices.
+1. Open the prayer feed.
+2. Choose one prayer in the feed, and press the "..." button
+3. Observe that there are admin choices including: Mark as Daily Priority (or Remove Daily Priority if already set)
+4. Press the "I Prayed This" button on the prayer
+5. Open the "..." menu again
+
+Expected:
+Prayer still has the daily priority menu choice (Mark as Daily Priority or Remove Daily Priority)
+
+Actual:
+Daily priority choice is missing from the menu
+
+Root Cause Analysis:
+The "I Prayed This" button uses HTMX to update the prayer marks section via `/mark/{prayer_id}` endpoint. This endpoint returns updated HTML that replaces the prayer marks section, which includes the dropdown menu. However, the template context used to render the updated menu may not include the `is_daily_priority` status, causing the conditional daily priority menu items to disappear.
+
+Related Issues:
+- Similar to bug #1 where Archive and Praise menu choices disappear
+- Affects prayer_marks_section.html template rendering
+- HTMX target: #prayer-marks-{{ p.id }}
+
+Technical Details:
+- Endpoint: POST /mark/{prayer_id} 
+- HTMX Response: prayer_marks_section.html template
+- Missing Context: p.is_daily_priority status in template rendering
+
+Priority: Medium
+Impact: Admin workflow disruption, requires page refresh to restore menu
+Workaround: Refresh page to restore daily priority menu options

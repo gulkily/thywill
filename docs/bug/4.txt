@@ -1,0 +1,24 @@
+Prayer actions dropdown menu text overflow - "Mark as Daily Priority" extends past menu boundary
+
+Steps to reproduce:
+
+1. Navigate to any prayer in the feed
+2. Click the "..." button to open the dropdown menu
+3. Observe the "Mark as Daily Priority" menu item
+
+Expected:
+All menu text should be contained within the dropdown menu boundaries with proper text wrapping or menu width adjustment
+
+Actual:
+The text "Mark as Daily Priority" extends beyond the right edge of the dropdown menu, making it partially unreadable and creating a poor user experience
+
+Technical Details:
+- The dropdown menu has insufficient width to accommodate longer menu item text
+- CSS styling needs adjustment for either:
+  - Increased menu width to fit longest text
+  - Text wrapping for long menu items
+  - Truncation with ellipsis for overflow text
+
+Priority: Low-Medium
+Impact: Visual/UX issue that affects readability but doesn't break functionality
+Component: Prayer actions dropdown menu CSS/styling
