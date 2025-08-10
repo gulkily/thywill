@@ -126,6 +126,11 @@ def categorize_commit(message: str) -> str:
 
 def generate_friendly_description(commit_message: str) -> str:
     """Use AI to generate a user-friendly description of the commit"""
+    # HOTFIX: Check if AI changelog generation is disabled
+    if os.getenv('CHANGELOG_AI_DISABLED', 'false').lower() == 'true':
+        print("AI changelog generation disabled, using basic cleanup")
+        return commit_message.capitalize()
+    
     try:
         client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
         
