@@ -91,6 +91,9 @@ VENMO_HANDLE=your_venmo_handle
 # Optional - Text Archive Settings
 TEXT_ARCHIVE_ENABLED=true
 TEXT_ARCHIVE_BASE_DIR=./text_archives
+
+# Optional - Development/Debugging
+CHANGELOG_AI_DISABLED=false          # Disable AI changelog generation if causing performance issues
 ```
 
 ## Development Workflow
