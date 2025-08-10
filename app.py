@@ -44,6 +44,9 @@ TEXT_ARCHIVE_COMPRESSION_AFTER_DAYS = int(os.getenv("TEXT_ARCHIVE_COMPRESSION_AF
 # Prayer Mode Settings
 PRAYER_MODE_ENABLED = os.getenv("PRAYER_MODE_ENABLED", "true").lower() == "true"
 
+# Daily Priority Feature Flag
+DAILY_PRIORITY_ENABLED = os.getenv("DAILY_PRIORITY_ENABLED", "false").lower() == "true"
+
 # Prayer Categorization Feature Flags
 PRAYER_CATEGORIZATION_ENABLED = os.getenv("PRAYER_CATEGORIZATION_ENABLED", "false").lower() == "true"
 PRAYER_CATEGORY_BADGES_ENABLED = os.getenv("PRAYER_CATEGORY_BADGES_ENABLED", "false").lower() == "true"

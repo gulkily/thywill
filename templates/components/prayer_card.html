@@ -24,7 +24,7 @@
   
   <!-- Daily Priority Badge -->
   <div id="priority-badge-{{ p.id }}">
-    {% if p.is_daily_priority %}
+    {% if DAILY_PRIORITY_ENABLED and p.is_daily_priority %}
     <div class="mb-3 flex items-center gap-2">
       <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 border-2 border-yellow-300 dark:border-yellow-600 shadow-md">
         ⭐ Daily Priority
@@ -188,7 +188,7 @@
               {% endif %}
               
               <!-- Daily Priority Options (Admin Only) -->
-              {% if is_admin %}
+              {% if DAILY_PRIORITY_ENABLED and is_admin %}
                 {% if p.is_daily_priority %}
                   <form method="post" action="/prayer/{{ p.id }}/remove-priority" class="block">
                     <button type="submit" 

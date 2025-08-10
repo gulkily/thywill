@@ -6,6 +6,7 @@ Contains the main feed functionality with various filtering options.
 Extracted from prayer_routes.py for better maintainability.
 """
 
+import os
 from typing import Optional
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
@@ -21,18 +22,8 @@ from app_helpers.services.auth_helpers import current_user
 from app_helpers.services.prayer_helpers import get_feed_counts, todays_prompt, is_daily_priority
 from app_helpers.services.auth.validation_helpers import is_admin
 from app_helpers.timezone_utils import get_user_timezone_from_request
-from app import (
-    PRAYER_MODE_ENABLED,
-    PRAYER_CATEGORIZATION_ENABLED,
-    PRAYER_CATEGORY_BADGES_ENABLED, 
-    PRAYER_CATEGORY_FILTERING_ENABLED,
-    SPECIFICITY_BADGES_ENABLED,
-    SAFETY_SCORING_ENABLED,
-    HIGH_SAFETY_FILTER_ENABLED,
-    SAFETY_BADGES_VISIBLE,
-    CATEGORY_FILTER_DROPDOWN_ENABLED,
-    FILTER_PERSISTENCE_ENABLED
-)
+# Note: Avoiding imports from app.py to prevent circular imports
+# Using os.getenv directly for feature flags
 
 # Use shared templates instance with filters registered
 from app_helpers.shared_templates import templates
@@ -242,7 +233,7 @@ def feed(request: Request, feed_type: str = "all", category: Optional[str] = Non
                 'is_answered': prayer.is_answered(s),
                 'answer_date': prayer.answer_date(s),
                 'answer_testimony': prayer.answer_testimony(s),
-                'is_daily_priority': is_daily_priority(prayer, s)
+                'is_daily_priority': is_daily_priority(prayer, s) if os.getenv('DAILY_PRIORITY_ENABLED', 'false').lower() == 'true' else False
             }
             prayers_with_authors.append(prayer_dict)
     
@@ -256,16 +247,18 @@ def feed(request: Request, feed_type: str = "all", category: Optional[str] = Non
         "feed.html",
         {"request": request, "prayers": prayers_with_authors, "prompt": todays_prompt(), 
          "me": user, "session": session, "current_feed": feed_type, "feed_counts": feed_counts,
-         "PRAYER_MODE_ENABLED": PRAYER_MODE_ENABLED, "is_admin": is_admin(user),
+         "PRAYER_MODE_ENABLED": os.getenv('PRAYER_MODE_ENABLED', 'true').lower() == 'true', 
+         "is_admin": is_admin(user),
+         "DAILY_PRIORITY_ENABLED": os.getenv('DAILY_PRIORITY_ENABLED', 'false').lower() == 'true',
          "user_timezone": user_timezone,
          # Prayer Categorization Feature Flags
-         "PRAYER_CATEGORIZATION_ENABLED": PRAYER_CATEGORIZATION_ENABLED,
-         "PRAYER_CATEGORY_BADGES_ENABLED": PRAYER_CATEGORY_BADGES_ENABLED,
-         "PRAYER_CATEGORY_FILTERING_ENABLED": PRAYER_CATEGORY_FILTERING_ENABLED,
-         "SPECIFICITY_BADGES_ENABLED": SPECIFICITY_BADGES_ENABLED,
-         "SAFETY_SCORING_ENABLED": SAFETY_SCORING_ENABLED,
-         "HIGH_SAFETY_FILTER_ENABLED": HIGH_SAFETY_FILTER_ENABLED,
-         "SAFETY_BADGES_VISIBLE": SAFETY_BADGES_VISIBLE,
-         "CATEGORY_FILTER_DROPDOWN_ENABLED": CATEGORY_FILTER_DROPDOWN_ENABLED,
-         "FILTER_PERSISTENCE_ENABLED": FILTER_PERSISTENCE_ENABLED}
+         "PRAYER_CATEGORIZATION_ENABLED": os.getenv('PRAYER_CATEGORIZATION_ENABLED', 'false').lower() == 'true',
+         "PRAYER_CATEGORY_BADGES_ENABLED": os.getenv('PRAYER_CATEGORY_BADGES_ENABLED', 'false').lower() == 'true',
+         "PRAYER_CATEGORY_FILTERING_ENABLED": os.getenv('PRAYER_CATEGORY_FILTERING_ENABLED', 'false').lower() == 'true',
+         "SPECIFICITY_BADGES_ENABLED": os.getenv('SPECIFICITY_BADGES_ENABLED', 'false').lower() == 'true',
+         "SAFETY_SCORING_ENABLED": os.getenv('SAFETY_SCORING_ENABLED', 'false').lower() == 'true',
+         "HIGH_SAFETY_FILTER_ENABLED": os.getenv('HIGH_SAFETY_FILTER_ENABLED', 'false').lower() == 'true',
+         "SAFETY_BADGES_VISIBLE": os.getenv('SAFETY_BADGES_VISIBLE', 'false').lower() == 'true',
+         "CATEGORY_FILTER_DROPDOWN_ENABLED": os.getenv('CATEGORY_FILTER_DROPDOWN_ENABLED', 'false').lower() == 'true',
+         "FILTER_PERSISTENCE_ENABLED": os.getenv('FILTER_PERSISTENCE_ENABLED', 'false').lower() == 'true'}
     )

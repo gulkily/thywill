@@ -74,7 +74,7 @@
       {% endif %}
       
       <!-- Daily Priority Options (Admin Only) -->
-      {% if is_admin %}
+      {% if DAILY_PRIORITY_ENABLED and is_admin %}
         {% if is_daily_priority %}
           <form method="post" action="/prayer/{{ prayer_id }}/remove-priority" class="block">
             <button type="submit" 

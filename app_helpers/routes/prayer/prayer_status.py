@@ -6,6 +6,7 @@ Contains functionality for marking prayers, archiving, and answering prayers.
 Extracted from prayer_routes.py for better maintainability.
 """
 
+import os
 from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Request, Form, Depends, HTTPException
@@ -80,9 +81,9 @@ def mark_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(
             is_prayer_archived = prayer.is_archived(s)
             is_prayer_answered = prayer.is_answered(s)
             
-            # Import is_daily_priority function
+            # Import is_daily_priority function and check feature flag
             from app_helpers.services.prayer_helpers import is_daily_priority
-            is_prayer_daily_priority = is_daily_priority(prayer, s)
+            is_prayer_daily_priority = is_daily_priority(prayer, s) if os.getenv('DAILY_PRIORITY_ENABLED', 'false').lower() == 'true' else False
             
             # Build the prayer stats display
             prayer_stats = ""
@@ -106,7 +107,8 @@ def mark_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(
                 is_admin=is_admin(user),
                 is_prayer_archived=is_prayer_archived,
                 is_prayer_answered=is_prayer_answered,
-                is_daily_priority=is_prayer_daily_priority
+                is_daily_priority=is_prayer_daily_priority,
+                DAILY_PRIORITY_ENABLED=os.getenv('DAILY_PRIORITY_ENABLED', 'false').lower() == 'true'
             ))
     
     # For non-HTMX requests, redirect back to the specific prayer
@@ -278,6 +280,10 @@ def set_prayer_priority(prayer_id: str, request: Request, user_session: tuple = 
         For HTMX: HTML response with success message
         For regular: Redirect to main feed
     """
+    # Check if daily priority feature is enabled
+    if not os.getenv('DAILY_PRIORITY_ENABLED', 'false').lower() == 'true':
+        raise HTTPException(404, "Feature not available")
+    
     user, session = user_session
     if not session.is_fully_authenticated:
         raise HTTPException(403, "Full authentication required")
@@ -327,6 +333,10 @@ def remove_prayer_priority(prayer_id: str, request: Request, user_session: tuple
         For HTMX: HTML response with success message
         For regular: Redirect to main feed
     """
+    # Check if daily priority feature is enabled
+    if not os.getenv('DAILY_PRIORITY_ENABLED', 'false').lower() == 'true':
+        raise HTTPException(404, "Feature not available")
+    
     user, session = user_session
     if not session.is_fully_authenticated:
         raise HTTPException(403, "Full authentication required")
