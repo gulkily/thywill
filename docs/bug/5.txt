@@ -1,0 +1,27 @@
+Infinite reload loop on specific pages: /auth/my-requests, /admin, /changelog
+
+Steps to reproduce:
+
+1. Log in to the application with any user account
+2. Navigate to any of the following URLs:
+   - /auth/my-requests
+   - /admin  
+   - /changelog
+3. Observe page behavior upon loading
+
+Expected:
+Page should load normally and display the expected content without continuous reloading
+
+Actual:
+Page gets stuck in an infinite reload loop, continuously refreshing and never displaying stable content
+
+Notes:
+- Affects multiple distinct pages with different functionalities
+- Issue occurs consistently across the affected URLs
+- May be related to authentication checks, permission validation, or HTMX behavior
+- Creates poor user experience and prevents access to important features
+- Admin functionality is completely inaccessible due to this issue
+
+Priority: High
+Impact: Critical functionality disruption - admin panel inaccessible, authentication management unusable, changelog unavailable
+Workaround: None identified - affected pages are completely unusable
