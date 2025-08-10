@@ -292,12 +292,14 @@ def set_prayer_priority(prayer_id: str, request: Request, user_session: tuple = 
             raise HTTPException(500, "Failed to set daily priority")
         
         if request.headers.get("HX-Request"):
-            # Return success message
+            # Return the updated priority badge area (now showing the badge)
             return HTMLResponse(f'''
-                <div class="prayer-priority-set bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded border border-yellow-200 dark:border-yellow-700 text-center">
-                    <span class="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
-                        ⭐ Prayer marked as daily priority
+                <div id="priority-badge-{prayer_id}">
+                  <div class="mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 border-2 border-yellow-300 dark:border-yellow-600 shadow-md">
+                      ⭐ Daily Priority
                     </span>
+                  </div>
                 </div>
             ''')
     
@@ -339,12 +341,9 @@ def remove_prayer_priority(prayer_id: str, request: Request, user_session: tuple
             raise HTTPException(500, "Failed to remove daily priority")
         
         if request.headers.get("HX-Request"):
-            # Return success message
+            # Return the updated priority badge area (now empty - no badge)
             return HTMLResponse(f'''
-                <div class="prayer-priority-removed bg-orange-50 dark:bg-orange-900/20 p-3 rounded border border-orange-200 dark:border-orange-700 text-center">
-                    <span class="text-orange-700 dark:text-orange-300 text-sm font-medium">
-                        ⭐ Daily priority removed
-                    </span>
+                <div id="priority-badge-{prayer_id}">
                 </div>
             ''')
     
