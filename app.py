@@ -98,6 +98,7 @@ from app_helpers.routes.invite_routes import router as invite_router
 from app_helpers.routes.general_routes import router as general_router
 from app_helpers.routes.changelog_routes import router as changelog_router
 from app_helpers.routes.archive_routes import router as archive_router
+from app_helpers.routes.file_routes import router as file_router
 from app_helpers.routes.email_settings_routes import router as email_settings_router
 
 app = FastAPI()
@@ -165,6 +166,8 @@ app.include_router(admin_router)
 app.include_router(user_router)
 # Include archive routes
 app.include_router(archive_router)
+# Include file routes
+app.include_router(file_router)
 # Include invite routes
 app.include_router(invite_router)
 # Include general routes

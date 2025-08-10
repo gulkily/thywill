@@ -9,6 +9,9 @@ from app_helpers.utils.time_formatting import (
     format_expiration_message,
     format_validity_message
 )
+from pathlib import Path
+import re
+from typing import Optional
 
 
 def timezone_format_filter(dt: datetime, timezone_str: str = None) -> str:
@@ -104,6 +107,34 @@ def username_display_filter(username: str) -> str:
     with Session(engine) as session:
         return username_display_service.render_username_with_badge(username, session)
 
+
+def prayer_file_url_filter(prayer) -> Optional[str]:
+    """
+    Jinja2 template filter for generating file system URLs for prayer archive files.
+    
+    Usage in templates:
+    {{ prayer|prayer_file_url }}
+    
+    Args:
+        prayer: Prayer object with text_file_path attribute
+        
+    Returns:
+        str: File system URL like /files/prayers/2025/08/filename.txt or None if no archive
+    """
+    if not prayer or not getattr(prayer, 'text_file_path', None):
+        return None
+    
+    file_path = prayer.text_file_path
+    
+    # Extract year, month, and filename from path like:
+    # "text_archives/prayers.123456/2025/08/2025_08_10_prayer_at_1234.txt"
+    match = re.search(r'/(\d{4})/(\d{2})/([^/]+\.txt)$', file_path)
+    if not match:
+        return None
+    
+    year, month, filename = match.groups()
+    return f"/files/prayers/{year}/{month}/{filename}"
+
 def register_filters(templates):
     """
     Register all custom filters with the Jinja2 templates environment.
@@ -116,3 +147,4 @@ def register_filters(templates):
     templates.env.filters['format_expiration'] = format_expiration_filter
     templates.env.filters['supporter_badge'] = supporter_badge_filter
     templates.env.filters['username_display'] = username_display_filter
+    templates.env.filters['prayer_file_url'] = prayer_file_url_filter

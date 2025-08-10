@@ -144,11 +144,15 @@ def prayer_marks(prayer_id: str, request: Request, user_session: tuple = Depends
         distinct_users = len(set(mark['user_name'] for mark in marks_with_users))
     
     user_timezone = get_user_timezone_from_request(request)
+    
+    # Import TEXT_ARCHIVE_ENABLED setting for template
+    from app import TEXT_ARCHIVE_ENABLED
+    
     return templates.TemplateResponse(
         "prayer_marks.html",
         {"request": request, "prayer": prayer, "marks": marks_with_users, "me": user, 
          "session": session, "total_marks": total_marks, "distinct_users": distinct_users, 
-         "user_timezone": user_timezone}
+         "user_timezone": user_timezone, "TEXT_ARCHIVE_ENABLED": TEXT_ARCHIVE_ENABLED}
     )
 
 
