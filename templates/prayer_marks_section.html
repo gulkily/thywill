@@ -73,6 +73,33 @@
         {% endif %}
       {% endif %}
       
+      <!-- Daily Priority Options (Admin Only) -->
+      {% if is_admin %}
+        {% if is_daily_priority %}
+          <form method="post" action="/prayer/{{ prayer_id }}/remove-priority" class="block">
+            <button type="submit" 
+                    hx-post="/prayer/{{ prayer_id }}/remove-priority"
+                    hx-target="#priority-badge-{{ prayer_id }}"
+                    hx-swap="outerHTML"
+                    onclick="hideDropdown('{{ prayer_id }}')"
+                    class="block w-full text-left px-4 py-3 text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-800 dark:hover:text-orange-300 transition-colors duration-150 font-medium whitespace-nowrap">
+              ⭐ Remove Daily Priority
+            </button>
+          </form>
+        {% else %}
+          <form method="post" action="/prayer/{{ prayer_id }}/set-priority" class="block">
+            <button type="submit" 
+                    hx-post="/prayer/{{ prayer_id }}/set-priority"
+                    hx-target="#priority-badge-{{ prayer_id }}"
+                    hx-swap="outerHTML"
+                    onclick="hideDropdown('{{ prayer_id }}')"
+                    class="block w-full text-left px-4 py-3 text-sm text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-800 dark:hover:text-yellow-300 transition-colors duration-150 font-medium whitespace-nowrap">
+              ⭐ Mark as Daily Priority
+            </button>
+          </form>
+        {% endif %}
+      {% endif %}
+      
       <form method="post" action="/flag/{{ prayer_id }}" class="block">
         <button type="submit" 
                 hx-post="/flag/{{ prayer_id }}"

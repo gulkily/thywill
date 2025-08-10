@@ -80,6 +80,10 @@ def mark_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(
             is_prayer_archived = prayer.is_archived(s)
             is_prayer_answered = prayer.is_answered(s)
             
+            # Import is_daily_priority function
+            from app_helpers.services.prayer_helpers import is_daily_priority
+            is_prayer_daily_priority = is_daily_priority(prayer, s)
+            
             # Build the prayer stats display
             prayer_stats = ""
             if total_mark_count > 0:
@@ -101,7 +105,8 @@ def mark_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(
                 prayer_session=session,
                 is_admin=is_admin(user),
                 is_prayer_archived=is_prayer_archived,
-                is_prayer_answered=is_prayer_answered
+                is_prayer_answered=is_prayer_answered,
+                is_daily_priority=is_prayer_daily_priority
             ))
     
     # For non-HTMX requests, redirect back to the specific prayer
