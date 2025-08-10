@@ -38,6 +38,7 @@ class SessionInfoResponse(BaseModel):
     displayName: str
     expiresAt: str
     isFullyAuthenticated: bool
+    hasValidSession: bool
 
 
 @router.get("/api/session/info", response_model=SessionInfoResponse)
@@ -56,11 +57,22 @@ async def get_session_info(request: Request):
             userId=user.display_name,  # display_name is the primary key
             displayName=user.display_name,
             expiresAt=session.expires_at.isoformat(),
-            isFullyAuthenticated=session.is_fully_authenticated
+            isFullyAuthenticated=session.is_fully_authenticated,
+            hasValidSession=True
         )
         
     except HTTPException as e:
-        # Re-raise authentication errors
+        # For authentication errors, return a response indicating no valid session
+        if e.status_code in [401, 403]:
+            return SessionInfoResponse(
+                sessionId="",
+                userId="",
+                displayName="",
+                expiresAt="",
+                isFullyAuthenticated=False,
+                hasValidSession=False
+            )
+        # Re-raise other HTTP errors
         raise e
     except Exception as e:
         logger.error(f"Error getting session info: {e}")

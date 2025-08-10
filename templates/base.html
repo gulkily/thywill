@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ThyWill – {% block title %}{% endblock %}</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  
+  <!-- Session State for Session Persistence Script -->
+  {% if user %}
+  <meta name="session-state" content='{"hasValidSession": true, "isAuthenticated": true, "userId": "{{ user.display_name }}", "displayName": "{{ user.display_name }}"}'>
+  {% else %}
+  <meta name="session-state" content='{"hasValidSession": false, "isAuthenticated": false}'>
+  {% endif %}
   <!-- Tailwind via CDN for zero‑setup styling -->
   <script>
     // Dark mode setup - must run before Tailwind loads
