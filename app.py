@@ -291,6 +291,35 @@ def validate_schema_compatibility() -> tuple[bool, list[str]]:
 # ───────── Startup: seed first invite ─────────
 @app.on_event("startup")
 def startup():
+    # Schedule daily priority cleanup task
+    import asyncio
+    from app_helpers.services.prayer_helpers import expire_old_priorities
+    
+    async def daily_cleanup():
+        """Daily task to expire old priority prayers"""
+        import time
+        while True:
+            try:
+                # Run at midnight
+                current_time = datetime.now()
+                next_midnight = current_time.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+                sleep_seconds = (next_midnight - current_time).total_seconds()
+                
+                await asyncio.sleep(sleep_seconds)
+                
+                # Expire old priorities
+                with Session(engine) as s:
+                    expired_count = expire_old_priorities(s)
+                    if expired_count > 0:
+                        print(f"🗓️ Expired {expired_count} old daily priority prayers")
+                        
+            except Exception as e:
+                print(f"⚠️ Error in daily priority cleanup: {e}")
+                await asyncio.sleep(3600)  # Retry in 1 hour if error occurs
+    
+    # Start the cleanup task
+    asyncio.create_task(daily_cleanup())
+    
     # Auto-migration on startup (if enabled and using file-based database)
     from models import DATABASE_PATH
     if AUTO_MIGRATE_ON_STARTUP and DATABASE_PATH != ':memory:':

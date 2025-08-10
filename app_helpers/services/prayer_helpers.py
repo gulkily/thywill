@@ -234,3 +234,80 @@ def generate_prayer(prompt: str) -> dict:
             'full_response': fallback_prayer,  # Consistent structure for error handling
             'service_status': 'degraded'
         }
+
+
+def set_daily_priority(prayer_id: str, admin_user: User, session: Session) -> bool:
+    """Set a prayer as daily priority for today"""
+    try:
+        # Get the prayer
+        prayer = session.exec(select(Prayer).where(Prayer.id == prayer_id)).first()
+        if not prayer:
+            return False
+        
+        # Set the daily priority attribute with today's date
+        today_str = date.today().isoformat()
+        prayer.set_attribute('daily_priority', today_str, admin_user.display_name, session)
+        session.commit()
+        return True
+    except Exception:
+        session.rollback()
+        return False
+
+
+def remove_daily_priority(prayer_id: str, session: Session) -> bool:
+    """Remove daily priority status from a prayer"""
+    try:
+        # Get the prayer
+        prayer = session.exec(select(Prayer).where(Prayer.id == prayer_id)).first()
+        if not prayer:
+            return False
+        
+        # Remove the daily priority attribute
+        prayer.remove_attribute('daily_priority', session)
+        session.commit()
+        return True
+    except Exception:
+        session.rollback()
+        return False
+
+
+def expire_old_priorities(session: Session) -> int:
+    """Remove expired daily priority attributes (older than today)"""
+    try:
+        today_str = date.today().isoformat()
+        
+        # Find all daily_priority attributes with dates before today
+        old_priorities = session.exec(
+            select(PrayerAttribute)
+            .where(PrayerAttribute.attribute_name == 'daily_priority')
+            .where(PrayerAttribute.attribute_value < today_str)
+        ).all()
+        
+        count = len(old_priorities)
+        
+        # Delete expired priority attributes
+        for priority_attr in old_priorities:
+            session.delete(priority_attr)
+        
+        session.commit()
+        return count
+    except Exception:
+        session.rollback()
+        return 0
+
+
+def is_daily_priority(prayer: Prayer, session: Session) -> bool:
+    """Check if a prayer is marked as daily priority for today"""
+    try:
+        today_str = date.today().isoformat()
+        
+        priority_attr = session.exec(
+            select(PrayerAttribute)
+            .where(PrayerAttribute.prayer_id == prayer.id)
+            .where(PrayerAttribute.attribute_name == 'daily_priority')
+            .where(PrayerAttribute.attribute_value == today_str)
+        ).first()
+        
+        return priority_attr is not None
+    except Exception:
+        return False

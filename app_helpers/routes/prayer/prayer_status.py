@@ -18,6 +18,7 @@ from models import engine, Prayer, PrayerMark
 # Import helper functions
 from app_helpers.services.auth_helpers import current_user, is_admin
 from app_helpers.services.archive_first_service import append_prayer_activity_with_archive
+from app_helpers.services.prayer_helpers import set_daily_priority, remove_daily_priority
 
 # Initialize templates
 # Use shared templates instance with filters registered
@@ -250,6 +251,100 @@ def mark_prayer_answered(prayer_id: str, request: Request,
                     <p class="text-green-700 dark:text-green-300 text-sm">
                         Praise the Lord! This prayer has been moved to the celebration feed.
                     </p>
+                </div>
+            ''')
+    
+    return RedirectResponse("/", 303)
+
+
+@router.post("/prayer/{prayer_id}/set-priority")
+def set_prayer_priority(prayer_id: str, request: Request, user_session: tuple = Depends(current_user)):
+    """
+    Mark a prayer as daily priority (admin only).
+    
+    Only admins can set daily priorities.
+    
+    Args:
+        prayer_id: ID of prayer to set as daily priority
+        request: FastAPI request object
+        user_session: Current authenticated user session
+    
+    Returns:
+        For HTMX: HTML response with success message
+        For regular: Redirect to main feed
+    """
+    user, session = user_session
+    if not session.is_fully_authenticated:
+        raise HTTPException(403, "Full authentication required")
+    
+    # Only admins can set daily priorities
+    if not is_admin(user):
+        raise HTTPException(403, "Only admins can set daily priorities")
+    
+    with Session(engine) as s:
+        prayer = s.get(Prayer, prayer_id)
+        if not prayer:
+            raise HTTPException(404, "Prayer not found")
+        
+        # Set daily priority
+        success = set_daily_priority(prayer_id, user, s)
+        if not success:
+            raise HTTPException(500, "Failed to set daily priority")
+        
+        if request.headers.get("HX-Request"):
+            # Return success message
+            return HTMLResponse(f'''
+                <div class="prayer-priority-set bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded border border-yellow-200 dark:border-yellow-700 text-center">
+                    <span class="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
+                        ⭐ Prayer marked as daily priority
+                    </span>
+                </div>
+            ''')
+    
+    return RedirectResponse("/", 303)
+
+
+@router.post("/prayer/{prayer_id}/remove-priority")
+def remove_prayer_priority(prayer_id: str, request: Request, user_session: tuple = Depends(current_user)):
+    """
+    Remove daily priority status from a prayer (admin only).
+    
+    Only admins can remove daily priorities.
+    
+    Args:
+        prayer_id: ID of prayer to remove priority from
+        request: FastAPI request object
+        user_session: Current authenticated user session
+    
+    Returns:
+        For HTMX: HTML response with success message
+        For regular: Redirect to main feed
+    """
+    user, session = user_session
+    if not session.is_fully_authenticated:
+        raise HTTPException(403, "Full authentication required")
+    
+    # Only admins can remove daily priorities
+    if not is_admin(user):
+        raise HTTPException(403, "Only admins can remove daily priorities")
+    
+    with Session(engine) as s:
+        prayer = s.get(Prayer, prayer_id)
+        if not prayer:
+            raise HTTPException(404, "Prayer not found")
+        
+        # Remove daily priority
+        success = remove_daily_priority(prayer_id, s)
+        if not success:
+            raise HTTPException(500, "Failed to remove daily priority")
+        
+        if request.headers.get("HX-Request"):
+            # Return success message
+            return HTMLResponse(f'''
+                <div class="prayer-priority-removed bg-orange-50 dark:bg-orange-900/20 p-3 rounded border border-orange-200 dark:border-orange-700 text-center">
+                    <span class="text-orange-700 dark:text-orange-300 text-sm font-medium">
+                        ⭐ Daily priority removed
+                    </span>
                 </div>
             ''')
     
