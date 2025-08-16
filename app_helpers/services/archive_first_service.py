@@ -69,7 +69,10 @@ def create_prayer_with_text_archive(prayer_data: Dict) -> Tuple[Prayer, str]:
             categorization_method=categorization.get('categorization_method', 'default'),
             specificity_type=categorization.get('specificity_type', 'unknown'),
             specificity_confidence=categorization.get('categorization_confidence', 0.0),
-            subject_category=categorization.get('subject_category', 'general')
+            subject_category=categorization.get('subject_category', 'general'),
+            # Populate archive date fields
+            suggested_archive_date=prayer_data.get('suggested_archive_date'),
+            archive_suggestion_dismissed=False
         )
         s.add(prayer)
         s.commit()
@@ -406,7 +409,8 @@ def validate_archive_database_consistency(prayer_id: str) -> Dict:
 # Convenience function for backward compatibility
 def submit_prayer_archive_first(text: str, author: User,
                                generated_prayer: str = None, 
-                               ai_response: str = None) -> Prayer:
+                               ai_response: str = None,
+                               suggested_archive_date: datetime = None) -> Prayer:
     """
     Submit prayer using archive-first approach with categorization - convenience wrapper.
     
@@ -422,10 +426,11 @@ def submit_prayer_archive_first(text: str, author: User,
     # Import categorization service and feature flags
     from app_helpers.services.prayer_categorization_service import PrayerCategorizationService
     try:
-        from app import PRAYER_CATEGORIZATION_ENABLED
+        from app import PRAYER_CATEGORIZATION_ENABLED, AUTO_ARCHIVE_DATE_ENABLED
     except ImportError:
         import os
         PRAYER_CATEGORIZATION_ENABLED = os.getenv("PRAYER_CATEGORIZATION_ENABLED", "false").lower() == "true"
+        AUTO_ARCHIVE_DATE_ENABLED = os.getenv("AUTO_ARCHIVE_DATE_ENABLED", "false").lower() == "true"
     
     # Generate categorization with fallback (only if enabled)
     if PRAYER_CATEGORIZATION_ENABLED:
@@ -437,6 +442,11 @@ def submit_prayer_archive_first(text: str, author: User,
             extracted_prayer = categorization_service.extract_prayer_from_response(ai_response)
             if extracted_prayer:
                 generated_prayer = extracted_prayer
+        
+        # Extract archive date from AI response if enabled and not already provided
+        if AUTO_ARCHIVE_DATE_ENABLED and ai_response and not suggested_archive_date:
+            from app_helpers.services.prayer_helpers import extract_archive_date_from_ai_response
+            suggested_archive_date = extract_archive_date_from_ai_response(ai_response)
     else:
         categorization = {
             'safety_score': 1.0,
@@ -452,7 +462,8 @@ def submit_prayer_archive_first(text: str, author: User,
         'author_display_name': author.display_name,
         'text': text,
         'generated_prayer': generated_prayer,
-        'categorization': categorization
+        'categorization': categorization,
+        'suggested_archive_date': suggested_archive_date
     }
     
     prayer, _ = create_prayer_with_text_archive(prayer_data)

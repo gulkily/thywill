@@ -82,17 +82,21 @@ def submit_prayer(text: str = Form(...),
         raise HTTPException(403, "Full authentication required to submit prayers")
     
     # Use pre-generated prayer if provided, otherwise generate new one
+    suggested_archive_date = None
     if generated_prayer:
         final_prayer = generated_prayer
     else:
         prayer_result = generate_prayer(text)
         final_prayer = prayer_result['prayer']
+        suggested_archive_date = prayer_result.get('suggested_archive_date')
     
     # Use archive-first approach: write text file FIRST, then database
     prayer = submit_prayer_archive_first(
         text=text,
         author=user,
-        generated_prayer=final_prayer
+        generated_prayer=final_prayer,
+        ai_response=prayer_result.get('full_response') if not generated_prayer else None,
+        suggested_archive_date=suggested_archive_date
     )
     
     return RedirectResponse("/", 303)

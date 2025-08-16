@@ -115,6 +115,10 @@ class Prayer(SQLModel, table=True):
     specificity_confidence: float = Field(default=0.0)  # Confidence score 0.0-1.0
     subject_category: str = Field(default='general')  # Primary subject category
     
+    # Auto-archive date fields
+    suggested_archive_date: datetime | None = Field(default=None)  # AI-suggested archive date
+    archive_suggestion_dismissed: bool = Field(default=False)  # User dismissed suggestion flag
+    
     def has_attribute(self, name: str, session: Session) -> bool:
         """Check if prayer has a specific attribute"""
         stmt = select(PrayerAttribute).where(

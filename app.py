@@ -47,6 +47,9 @@ PRAYER_MODE_ENABLED = os.getenv("PRAYER_MODE_ENABLED", "true").lower() == "true"
 # Daily Priority Feature Flag
 DAILY_PRIORITY_ENABLED = os.getenv("DAILY_PRIORITY_ENABLED", "false").lower() == "true"
 
+# Auto-Archive Date Feature Flag
+AUTO_ARCHIVE_DATE_ENABLED = os.getenv("AUTO_ARCHIVE_DATE_ENABLED", "false").lower() == "true"
+
 # Prayer Categorization Feature Flags
 PRAYER_CATEGORIZATION_ENABLED = os.getenv("PRAYER_CATEGORIZATION_ENABLED", "false").lower() == "true"
 PRAYER_CATEGORY_BADGES_ENABLED = os.getenv("PRAYER_CATEGORY_BADGES_ENABLED", "false").lower() == "true"
@@ -299,7 +302,7 @@ def validate_schema_compatibility() -> tuple[bool, list[str]]:
 def startup():
     # Schedule daily priority cleanup task
     import asyncio
-    from app_helpers.services.prayer_helpers import expire_old_priorities
+    from app_helpers.services.prayer_helpers import expire_old_priorities, check_approaching_archive_dates
     
     async def daily_cleanup():
         """Daily task to expire old priority prayers"""
@@ -318,6 +321,12 @@ def startup():
                     expired_count = expire_old_priorities(s)
                     if expired_count > 0:
                         print(f"🗓️ Expired {expired_count} old daily priority prayers")
+                    
+                    # Check for approaching archive dates (if feature enabled)
+                    if AUTO_ARCHIVE_DATE_ENABLED:
+                        approaching_prayers = check_approaching_archive_dates(s)
+                        if approaching_prayers:
+                            print(f"📅 Found {len(approaching_prayers)} prayers approaching archive dates")
                         
             except Exception as e:
                 print(f"⚠️ Error in daily priority cleanup: {e}")

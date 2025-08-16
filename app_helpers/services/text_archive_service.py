@@ -105,6 +105,23 @@ class TextArchiveService:
                 content.append(f"Categorization Method: {categorization.get('categorization_method', 'default')}")
                 content.append(f"Categorization Confidence: {categorization.get('categorization_confidence', 0.0)}")
         
+        # Add archive date metadata if present and feature is enabled
+        suggested_archive_date = prayer_data.get('suggested_archive_date')
+        if suggested_archive_date:
+            try:
+                from app import AUTO_ARCHIVE_DATE_ENABLED
+                archive_enabled = AUTO_ARCHIVE_DATE_ENABLED
+            except ImportError:
+                import os
+                archive_enabled = os.getenv("AUTO_ARCHIVE_DATE_ENABLED", "false").lower() == "true"
+            
+            if archive_enabled:
+                if isinstance(suggested_archive_date, datetime):
+                    date_str = suggested_archive_date.strftime('%Y-%m-%d')
+                else:
+                    date_str = str(suggested_archive_date)
+                content.append(f"Suggested Archive Date: {date_str}")
+        
         content.append("")  # Blank line
         content.append(prayer_data['text'])  # Original request
         content.append("")  # Blank line
@@ -159,6 +176,11 @@ class TextArchiveService:
                         categorization['categorization_method'] = value
                     elif key == 'Categorization Confidence':
                         categorization['categorization_confidence'] = float(value)
+                    elif key == 'Suggested Archive Date':
+                        try:
+                            categorization['suggested_archive_date'] = datetime.fromisoformat(value)
+                        except ValueError:
+                            logger.warning(f"Invalid archive date format '{value}' in {archive_path}")
                 except (ValueError, json.JSONDecodeError) as e:
                     logger.warning(f"Failed to parse categorization field '{key}' from {archive_path}: {e}")
                     continue

@@ -5,6 +5,8 @@ This module contains prayer management, filtering, and generation functions.
 
 import anthropic
 import os
+import json
+import re
 from datetime import datetime, timedelta, date
 from sqlmodel import Session, select, func, text
 from models import (
@@ -201,16 +203,18 @@ def generate_prayer(prompt: str) -> dict:
         from app_helpers.services.prompt_composition_service import prompt_composition_service
         system_prompt = prompt_composition_service.build_prayer_generation_prompt()
         
-        # Determine max tokens based on categorization features
+        # Determine max tokens based on enabled features
         try:
-            from app import PRAYER_CATEGORIZATION_ENABLED, AI_CATEGORIZATION_ENABLED
+            from app import PRAYER_CATEGORIZATION_ENABLED, AI_CATEGORIZATION_ENABLED, AUTO_ARCHIVE_DATE_ENABLED
         except ImportError:
             import os
             PRAYER_CATEGORIZATION_ENABLED = os.getenv("PRAYER_CATEGORIZATION_ENABLED", "false").lower() == "true"
             AI_CATEGORIZATION_ENABLED = os.getenv("AI_CATEGORIZATION_ENABLED", "false").lower() == "true"
+            AUTO_ARCHIVE_DATE_ENABLED = os.getenv("AUTO_ARCHIVE_DATE_ENABLED", "false").lower() == "true"
         
-        # Increase max tokens if categorization analysis is enabled
-        max_tokens = 400 if (PRAYER_CATEGORIZATION_ENABLED and AI_CATEGORIZATION_ENABLED) else 200
+        # Increase max tokens for analysis features
+        analysis_enabled = (PRAYER_CATEGORIZATION_ENABLED and AI_CATEGORIZATION_ENABLED) or AUTO_ARCHIVE_DATE_ENABLED
+        max_tokens = 500 if analysis_enabled else 200
 
         response = anthropic_client.messages.create(
             model="claude-3-5-sonnet-20241022",
@@ -224,9 +228,15 @@ def generate_prayer(prompt: str) -> dict:
         
         ai_response = response.content[0].text.strip()
         
+        # Parse archive date suggestion if feature is enabled
+        archive_date = None
+        if AUTO_ARCHIVE_DATE_ENABLED:
+            archive_date = extract_archive_date_from_ai_response(ai_response)
+        
         return {
             'prayer': ai_response,
             'full_response': ai_response,  # Include full response for categorization parsing
+            'suggested_archive_date': archive_date,
             'service_status': 'normal'
         }
     except Exception as e:
@@ -235,6 +245,7 @@ def generate_prayer(prompt: str) -> dict:
         return {
             'prayer': fallback_prayer,
             'full_response': fallback_prayer,  # Consistent structure for error handling
+            'suggested_archive_date': None,  # No archive date for fallback prayers
             'service_status': 'degraded'
         }
 
@@ -267,6 +278,83 @@ def remove_daily_priority(prayer_id: str, session: Session) -> bool:
         
         # Remove the daily priority attribute
         prayer.remove_attribute('daily_priority', session)
+        session.commit()
+        return True
+    except Exception:
+        session.rollback()
+        return False
+
+
+def extract_archive_date_from_ai_response(ai_response: str) -> datetime | None:
+    """Extract suggested archive date from AI response JSON"""
+    try:
+        # Look for JSON block in response
+        json_match = re.search(r'```json\s*\n({.*?})\s*\n```', ai_response, re.DOTALL)
+        if not json_match:
+            return None
+        
+        json_str = json_match.group(1)
+        data = json.loads(json_str)
+        
+        archive_date_str = data.get('suggested_archive_date')
+        if not archive_date_str or archive_date_str == 'null':
+            return None
+        
+        # Parse ISO date string
+        return datetime.fromisoformat(archive_date_str)
+    except (json.JSONDecodeError, ValueError, KeyError):
+        return None
+
+
+def check_approaching_archive_dates(session: Session) -> list[Prayer]:
+    """Find prayers with archive dates approaching within 7 days"""
+    try:
+        from app import AUTO_ARCHIVE_DATE_ENABLED
+    except ImportError:
+        AUTO_ARCHIVE_DATE_ENABLED = os.getenv("AUTO_ARCHIVE_DATE_ENABLED", "false").lower() == "true"
+    
+    if not AUTO_ARCHIVE_DATE_ENABLED:
+        return []
+    
+    seven_days_from_now = datetime.now() + timedelta(days=7)
+    
+    return session.exec(
+        select(Prayer)
+        .where(Prayer.suggested_archive_date.is_not(None))
+        .where(Prayer.suggested_archive_date <= seven_days_from_now)
+        .where(Prayer.archive_suggestion_dismissed == False)
+        .where(
+            ~Prayer.id.in_(
+                select(PrayerAttribute.prayer_id)
+                .where(PrayerAttribute.attribute_name == 'archived')
+            )
+        )
+    ).all()
+
+
+def dismiss_archive_suggestion(prayer_id: str, user_id: str, session: Session) -> bool:
+    """Mark archive suggestion as dismissed for a prayer"""
+    try:
+        prayer = session.exec(select(Prayer).where(Prayer.id == prayer_id)).first()
+        if not prayer or prayer.author_username != user_id:
+            return False
+        
+        prayer.archive_suggestion_dismissed = True
+        session.commit()
+        return True
+    except Exception:
+        session.rollback()
+        return False
+
+
+def postpone_archive_suggestion(prayer_id: str, days: int, session: Session) -> bool:
+    """Postpone archive suggestion by extending the suggested date"""
+    try:
+        prayer = session.exec(select(Prayer).where(Prayer.id == prayer_id)).first()
+        if not prayer or not prayer.suggested_archive_date:
+            return False
+        
+        prayer.suggested_archive_date = prayer.suggested_archive_date + timedelta(days=days)
         session.commit()
         return True
     except Exception:

@@ -13,13 +13,15 @@ try:
     from app import (
         PRAYER_CATEGORIZATION_ENABLED,
         AI_CATEGORIZATION_ENABLED, 
-        SAFETY_SCORING_ENABLED
+        SAFETY_SCORING_ENABLED,
+        AUTO_ARCHIVE_DATE_ENABLED
     )
 except ImportError:
     # Fallback for testing or standalone usage
     PRAYER_CATEGORIZATION_ENABLED = os.getenv("PRAYER_CATEGORIZATION_ENABLED", "false").lower() == "true"
     AI_CATEGORIZATION_ENABLED = os.getenv("AI_CATEGORIZATION_ENABLED", "false").lower() == "true"
     SAFETY_SCORING_ENABLED = os.getenv("SAFETY_SCORING_ENABLED", "false").lower() == "true"
+    AUTO_ARCHIVE_DATE_ENABLED = os.getenv("AUTO_ARCHIVE_DATE_ENABLED", "false").lower() == "true"
 
 
 class PromptCompositionService:
@@ -35,7 +37,8 @@ class PromptCompositionService:
             "prayer_generation_system.txt",
             "prayer_categorization_request_analysis.txt",
             "prayer_categorization_verification.txt", 
-            "prayer_categorization_output_format.txt"
+            "prayer_categorization_output_format.txt",
+            "auto_archive_analysis.txt"
         ]
         
         for filename in required_files:
@@ -66,6 +69,7 @@ class PromptCompositionService:
         prayer_categorization_enabled = os.getenv("PRAYER_CATEGORIZATION_ENABLED", "false").lower() == "true"
         ai_categorization_enabled = os.getenv("AI_CATEGORIZATION_ENABLED", "false").lower() == "true"
         safety_scoring_enabled = os.getenv("SAFETY_SCORING_ENABLED", "false").lower() == "true"
+        auto_archive_date_enabled = os.getenv("AUTO_ARCHIVE_DATE_ENABLED", "false").lower() == "true"
         
         # Always start with base prayer generation prompt
         prompt_parts = [self._read_prompt_file("prayer_generation_system.txt")]
@@ -88,6 +92,11 @@ class PromptCompositionService:
             # Add structured output format
             prompt_parts.append("")
             prompt_parts.append(self._read_prompt_file("prayer_categorization_output_format.txt"))
+        
+        # Add auto-archive analysis if enabled (independent of categorization)
+        if auto_archive_date_enabled:
+            prompt_parts.append("")
+            prompt_parts.append(self._read_prompt_file("auto_archive_analysis.txt"))
         
         elif prayer_categorization_enabled and safety_scoring_enabled:
             # Safety-only mode (minimal categorization)
@@ -114,6 +123,7 @@ class PromptCompositionService:
         prayer_categorization_enabled = os.getenv("PRAYER_CATEGORIZATION_ENABLED", "false").lower() == "true"
         ai_categorization_enabled = os.getenv("AI_CATEGORIZATION_ENABLED", "false").lower() == "true"
         safety_scoring_enabled = os.getenv("SAFETY_SCORING_ENABLED", "false").lower() == "true"
+        auto_archive_date_enabled = os.getenv("AUTO_ARCHIVE_DATE_ENABLED", "false").lower() == "true"
         
         components = ["prayer_generation_system.txt"]
         
@@ -126,12 +136,16 @@ class PromptCompositionService:
         elif prayer_categorization_enabled and safety_scoring_enabled:
             components.append("inline_safety_analysis")
         
+        if auto_archive_date_enabled:
+            components.append("auto_archive_analysis.txt")
+        
         return {
             "components": components,
             "feature_flags": {
                 "PRAYER_CATEGORIZATION_ENABLED": prayer_categorization_enabled,
                 "AI_CATEGORIZATION_ENABLED": ai_categorization_enabled,
-                "SAFETY_SCORING_ENABLED": safety_scoring_enabled
+                "SAFETY_SCORING_ENABLED": safety_scoring_enabled,
+                "AUTO_ARCHIVE_DATE_ENABLED": auto_archive_date_enabled
             },
             "total_components": len(components)
         }

@@ -1,0 +1,10 @@
+{
+  "migration_id": "012_auto_archive_date",
+  "description": "Add auto-archive date suggestion fields to prayer table",
+  "created_at": "2025-08-16T00:00:00Z",
+  "dependencies": ["011_prayer_categorization"],
+  "reversible": true,
+  "affects_tables": ["prayer"],
+  "adds_columns": ["suggested_archive_date", "archive_suggestion_dismissed"],
+  "adds_indexes": ["idx_prayer_suggested_archive_date"]
+}
