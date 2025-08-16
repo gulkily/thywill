@@ -306,10 +306,8 @@ def set_prayer_priority(prayer_id: str, request: Request, user_session: tuple = 
             # Return the updated priority badge area (now showing the badge)
             return HTMLResponse(f'''
                 <div id="priority-badge-{prayer_id}">
-                  <div class="mb-3 flex items-center gap-2">
-                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 border-2 border-yellow-300 dark:border-yellow-600 shadow-md">
-                      ⭐ Daily Priority
-                    </span>
+                  <div class="absolute top-2 right-2">
+                    <span class="text-yellow-500 dark:text-yellow-400 text-sm opacity-75" title="Daily Priority Prayer">⭐</span>
                   </div>
                 </div>
             ''')
