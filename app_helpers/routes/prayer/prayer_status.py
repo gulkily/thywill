@@ -303,14 +303,30 @@ def set_prayer_priority(prayer_id: str, request: Request, user_session: tuple = 
             raise HTTPException(500, "Failed to set daily priority")
         
         if request.headers.get("HX-Request"):
-            # Return the updated priority badge area (now showing the badge)
-            return HTMLResponse(f'''
+            # Return priority badge with out-of-band menu update
+            priority_badge_html = f'''
                 <div id="priority-badge-{prayer_id}">
                   <div class="absolute top-2 right-2">
                     <span class="text-yellow-500 dark:text-yellow-400 text-sm opacity-75" title="Daily Priority Prayer">⭐</span>
                   </div>
                 </div>
-            ''')
+            '''
+            
+            # Update dropdown menu out-of-band
+            menu_html = f'''
+                <form method="post" action="/prayer/{prayer_id}/remove-priority" class="block" hx-swap-oob="outerHTML:form[action='/prayer/{prayer_id}/set-priority']">
+                  <button type="submit" 
+                          hx-post="/prayer/{prayer_id}/remove-priority"
+                          hx-target="#priority-badge-{prayer_id}"
+                          hx-swap="outerHTML"
+                          onclick="hideDropdown('{prayer_id}')"
+                          class="block w-full text-left px-4 py-3 text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-800 dark:hover:text-orange-300 transition-colors duration-150 font-medium whitespace-nowrap">
+                    ⭐ Remove Daily Priority
+                  </button>
+                </form>
+            '''
+            
+            return HTMLResponse(priority_badge_html + menu_html)
     
     return RedirectResponse("/", 303)
 
@@ -354,10 +370,26 @@ def remove_prayer_priority(prayer_id: str, request: Request, user_session: tuple
             raise HTTPException(500, "Failed to remove daily priority")
         
         if request.headers.get("HX-Request"):
-            # Return the updated priority badge area (now empty - no badge)
-            return HTMLResponse(f'''
+            # Return empty priority badge with out-of-band menu update
+            priority_badge_html = f'''
                 <div id="priority-badge-{prayer_id}">
                 </div>
-            ''')
+            '''
+            
+            # Update dropdown menu out-of-band
+            menu_html = f'''
+                <form method="post" action="/prayer/{prayer_id}/set-priority" class="block" hx-swap-oob="outerHTML:form[action='/prayer/{prayer_id}/remove-priority']">
+                  <button type="submit" 
+                          hx-post="/prayer/{prayer_id}/set-priority"
+                          hx-target="#priority-badge-{prayer_id}"
+                          hx-swap="outerHTML"
+                          onclick="hideDropdown('{prayer_id}')"
+                          class="block w-full text-left px-4 py-3 text-sm text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-800 dark:hover:text-yellow-300 transition-colors duration-150 font-medium whitespace-nowrap">
+                    ⭐ Mark as Daily Priority
+                  </button>
+                </form>
+            '''
+            
+            return HTMLResponse(priority_badge_html + menu_html)
     
     return RedirectResponse("/", 303)
