@@ -276,6 +276,10 @@ def remove_daily_priority(prayer_id: str, session: Session) -> bool:
 
 def expire_old_priorities(session: Session) -> int:
     """Remove expired daily priority attributes (older than today)"""
+    # Check if auto-expiration is enabled
+    if not os.getenv('DAILY_PRIORITY_AUTO_EXPIRE', 'false').lower() == 'true':
+        return 0  # Auto-expiration disabled, return 0 expired
+    
     try:
         today_str = date.today().isoformat()
         

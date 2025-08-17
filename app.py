@@ -302,10 +302,16 @@ def startup():
     from app_helpers.services.prayer_helpers import expire_old_priorities
     
     async def daily_cleanup():
-        """Daily task to expire old priority prayers"""
+        """Daily task to expire old priority prayers (if auto-expiration is enabled)"""
         import time
         while True:
             try:
+                # Only run cleanup if auto-expiration is enabled
+                if not os.getenv('DAILY_PRIORITY_AUTO_EXPIRE', 'false').lower() == 'true':
+                    # If auto-expiration is disabled, sleep for 24 hours and check again
+                    await asyncio.sleep(86400)  # 24 hours
+                    continue
+                
                 # Run at midnight
                 current_time = datetime.now()
                 next_midnight = current_time.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)

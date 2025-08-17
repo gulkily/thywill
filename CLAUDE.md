@@ -85,6 +85,7 @@ CHANGELOG_AI_DISABLED=true            # HOTFIX: Disable AI changelog generation 
 
 # Prayer System Feature Flags
 DAILY_PRIORITY_ENABLED=false         # Enable daily priority system with rotation and visibility controls
+DAILY_PRIORITY_AUTO_EXPIRE=false   # Auto-expire daily priorities at midnight (false = persist until manually removed)
 
 # Prayer Categorization Feature Flags (default: false)
 PRAYER_CATEGORIZATION_ENABLED=false           # Master toggle for categorization system
