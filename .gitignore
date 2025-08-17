@@ -15,6 +15,7 @@ dist/
 env/
 venv/
 ENV/
+.env.backup*
 
 # Flask stuff
 instance/
