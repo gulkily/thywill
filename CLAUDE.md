@@ -85,7 +85,7 @@ CHANGELOG_AI_DISABLED=true            # HOTFIX: Disable AI changelog generation 
 
 # Prayer System Feature Flags
 DAILY_PRIORITY_ENABLED=false         # Enable daily priority system with rotation and visibility controls
-DAILY_PRIORITY_AUTO_EXPIRE=false   # Auto-expire daily priorities at midnight (false = persist until manually removed)
+DAILY_PRIORITY_AUTO_EXPIRE=false   # Auto-expire daily priorities at midnight (false = priorities persist until manually removed)
 
 # Prayer Categorization Feature Flags (default: false)
 PRAYER_CATEGORIZATION_ENABLED=false           # Master toggle for categorization system
@@ -197,6 +197,13 @@ Whenever you see vmi2648361 in a command log, that means it was run on productio
 You don't have access to the production server, so please act accordingly.
 
 ## Recent Changes (August 2025)
+**Persistent Daily Priorities**: Implemented persistent daily priority system (August 18, 2025)
+- Daily priorities now persist until manually removed (no automatic daily expiration)  
+- Priority date serves as metadata showing when priority was set
+- UI shows "Daily Priority Prayer (set on YYYY-MM-DD)" in tooltips and admin controls
+- Existing daily priorities preserved during transition to persistent behavior
+- Archive system logs all priority actions with full audit trail (who, when)
+- Feature uses hybrid approach: date stored as metadata, no longer used for expiration logic
 **Admin Rights Management**: Implemented web-based admin promotion system
 - Added `POST /admin/users/{user_id}/grant-admin` route for promoting users to admin status
 - Updated `/admin/users` interface with "Grant Admin Rights" button for non-admin users
