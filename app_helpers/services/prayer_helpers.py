@@ -275,10 +275,14 @@ def remove_daily_priority(prayer_id: str, session: Session) -> bool:
 
 
 def expire_old_priorities(session: Session) -> int:
-    """Remove expired daily priority attributes (older than today)"""
-    # Check if auto-expiration is enabled
+    """Remove expired daily priority attributes (older than today)
+    
+    Note: With persistent priorities, this function now defaults to disabled.
+    Only expires priorities when DAILY_PRIORITY_AUTO_EXPIRE=true is explicitly set.
+    """
+    # Check if auto-expiration is enabled (now defaults to false for persistent behavior)
     if not os.getenv('DAILY_PRIORITY_AUTO_EXPIRE', 'false').lower() == 'true':
-        return 0  # Auto-expiration disabled, return 0 expired
+        return 0  # Auto-expiration disabled, priorities persist until manually removed
     
     try:
         today_str = date.today().isoformat()
@@ -304,15 +308,12 @@ def expire_old_priorities(session: Session) -> int:
 
 
 def is_daily_priority(prayer: Prayer, session: Session) -> bool:
-    """Check if a prayer is marked as daily priority for today"""
+    """Check if a prayer is marked as daily priority (persistent until manually removed)"""
     try:
-        today_str = date.today().isoformat()
-        
         priority_attr = session.exec(
             select(PrayerAttribute)
             .where(PrayerAttribute.prayer_id == prayer.id)
             .where(PrayerAttribute.attribute_name == 'daily_priority')
-            .where(PrayerAttribute.attribute_value == today_str)
         ).first()
         
         return priority_attr is not None
