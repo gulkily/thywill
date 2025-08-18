@@ -3,11 +3,12 @@
     data-is-daily-priority="{{ p.is_daily_priority|lower }}"
     class="relative {% if p.is_answered %}bg-green-50 dark:bg-green-900/10 border-l-4 border-green-400 dark:border-green-500{% elif p.is_archived %}bg-amber-50 dark:bg-amber-900/10 border-l-4 border-amber-400 dark:border-amber-500{% else %}bg-white dark:bg-gray-800 border-l-4 border-purple-300 dark:border-purple-500{% endif %} p-6 rounded-lg shadow dark:shadow-gray-900/20">
   
-  <!-- Daily Priority Indicator (subtle, positioned absolute) -->
+  <!-- Daily Priority Indicator with date metadata -->
   <div id="priority-badge-{{ p.id }}">
     {% if DAILY_PRIORITY_ENABLED and p.is_daily_priority %}
     <div class="absolute top-2 right-2">
-      <span class="text-yellow-500 dark:text-yellow-400 text-sm opacity-75" title="Daily Priority Prayer">⭐</span>
+      <span class="text-yellow-500 dark:text-yellow-400 text-sm opacity-75" 
+            title="Daily Priority Prayer{% if p.priority_date %} (set on {{ p.priority_date }}){% endif %}">⭐</span>
     </div>
     {% endif %}
   </div>
@@ -196,8 +197,11 @@
                             hx-target="#priority-badge-{{ p.id }}"
                             hx-swap="outerHTML"
                             onclick="hideDropdown('{{ p.id }}')"
-                            class="block w-full text-left px-4 py-3 text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-800 dark:hover:text-orange-300 transition-colors duration-150 font-medium whitespace-nowrap">
-                      ⭐ Remove Daily Priority
+                            class="block w-full text-left px-4 py-3 text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-800 dark:hover:text-orange-300 transition-colors duration-150 font-medium">
+                      <div>⭐ Remove Daily Priority</div>
+                      {% if p.priority_date %}
+                      <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Set on {{ p.priority_date }}</div>
+                      {% endif %}
                     </button>
                   </form>
                 {% else %}

@@ -19,7 +19,7 @@ from models import engine, Prayer, PrayerMark
 # Import helper functions
 from app_helpers.services.auth_helpers import current_user, is_admin
 from app_helpers.services.archive_first_service import append_prayer_activity_with_archive
-from app_helpers.services.prayer_helpers import set_daily_priority, remove_daily_priority
+from app_helpers.services.prayer_helpers import set_daily_priority, remove_daily_priority, get_daily_priority_date
 
 # Initialize templates
 # Use shared templates instance with filters registered
@@ -303,16 +303,23 @@ def set_prayer_priority(prayer_id: str, request: Request, user_session: tuple = 
             raise HTTPException(500, "Failed to set daily priority")
         
         if request.headers.get("HX-Request"):
+            # Get the priority date that was just set
+            priority_date = get_daily_priority_date(prayer_id, s)
+            priority_date_tooltip = f" (set on {priority_date})" if priority_date else ""
+            
             # Return priority badge with out-of-band menu update
             priority_badge_html = f'''
                 <div id="priority-badge-{prayer_id}">
                   <div class="absolute top-2 right-2">
-                    <span class="text-yellow-500 dark:text-yellow-400 text-sm opacity-75" title="Daily Priority Prayer">⭐</span>
+                    <span class="text-yellow-500 dark:text-yellow-400 text-sm opacity-75" title="Daily Priority Prayer{priority_date_tooltip}">⭐</span>
                   </div>
                 </div>
             '''
             
-            # Update dropdown menu out-of-band
+            # Update dropdown menu out-of-band with priority date
+            priority_date_display = f'''
+                      <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Set on {priority_date}</div>''' if priority_date else ""
+            
             menu_html = f'''
                 <form method="post" action="/prayer/{prayer_id}/remove-priority" class="block" hx-swap-oob="outerHTML:form[action='/prayer/{prayer_id}/set-priority']">
                   <button type="submit" 
@@ -320,8 +327,8 @@ def set_prayer_priority(prayer_id: str, request: Request, user_session: tuple = 
                           hx-target="#priority-badge-{prayer_id}"
                           hx-swap="outerHTML"
                           onclick="hideDropdown('{prayer_id}')"
-                          class="block w-full text-left px-4 py-3 text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-800 dark:hover:text-orange-300 transition-colors duration-150 font-medium whitespace-nowrap">
-                    ⭐ Remove Daily Priority
+                          class="block w-full text-left px-4 py-3 text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-800 dark:hover:text-orange-300 transition-colors duration-150 font-medium">
+                    <div>⭐ Remove Daily Priority</div>{priority_date_display}
                   </button>
                 </form>
             '''

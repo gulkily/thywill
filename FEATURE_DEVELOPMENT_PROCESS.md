@@ -52,6 +52,7 @@
 **Critical Requirements**:
 - **MUST create feature branch first** (e.g., `feature/admin-rights-management`)
 - Complete stages atomically (<2 hours each)
+- Complete each completed stage to the branch
 - Test before proceeding to next stage
 - Track progress with TodoWrite
 

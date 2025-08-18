@@ -20,7 +20,7 @@ from models import (
 
 # Import helper functions
 from app_helpers.services.auth_helpers import current_user
-from app_helpers.services.prayer_helpers import get_feed_counts, todays_prompt, is_daily_priority
+from app_helpers.services.prayer_helpers import get_feed_counts, todays_prompt, is_daily_priority, get_daily_priority_date
 from app_helpers.services.auth.validation_helpers import is_admin
 from app_helpers.timezone_utils import get_user_timezone_from_request
 # Note: Avoiding imports from app.py to prevent circular imports
@@ -248,7 +248,8 @@ def feed(request: Request, feed_type: str = "all", category: Optional[str] = Non
                 'is_answered': prayer.is_answered(s),
                 'answer_date': prayer.answer_date(s),
                 'answer_testimony': prayer.answer_testimony(s),
-                'is_daily_priority': is_daily_priority(prayer, s) if os.getenv('DAILY_PRIORITY_ENABLED', 'false').lower() == 'true' else False
+                'is_daily_priority': is_daily_priority(prayer, s) if os.getenv('DAILY_PRIORITY_ENABLED', 'false').lower() == 'true' else False,
+                'priority_date': get_daily_priority_date(prayer, s) if os.getenv('DAILY_PRIORITY_ENABLED', 'false').lower() == 'true' else None
             }
             prayers_with_authors.append(prayer_dict)
     

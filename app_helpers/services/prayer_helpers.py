@@ -319,3 +319,17 @@ def is_daily_priority(prayer: Prayer, session: Session) -> bool:
         return priority_attr is not None
     except Exception:
         return False
+
+
+def get_daily_priority_date(prayer: Prayer, session: Session) -> str | None:
+    """Get the date when a prayer was set as daily priority"""
+    try:
+        priority_attr = session.exec(
+            select(PrayerAttribute)
+            .where(PrayerAttribute.prayer_id == prayer.id)
+            .where(PrayerAttribute.attribute_name == 'daily_priority')
+        ).first()
+        
+        return priority_attr.attribute_value if priority_attr else None
+    except Exception:
+        return None
