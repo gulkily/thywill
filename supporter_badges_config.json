@@ -28,5 +28,11 @@
     "color": "#10b981",
     "tooltip": "Community Leader",
     "priority": 5
+  },
+  "logistical": {
+    "symbol": "⚙️",
+    "color": "#6b7280",
+    "tooltip": "Logistical Support",
+    "priority": 6
   }
 }

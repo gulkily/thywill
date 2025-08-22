@@ -470,8 +470,11 @@ class TextArchiveService:
                 elif current_section == "generated_prayer" and line:
                     prayer_data['generated_prayer'] = line
                 elif line and current_section == "header" and ":" not in line:
-                    # This is likely the original request text
-                    prayer_data['original_request'] = line
+                    # This is likely the original request text (may be multi-line)
+                    if 'original_request' not in prayer_data:
+                        prayer_data['original_request'] = line
+                    else:
+                        prayer_data['original_request'] += '\n' + line
             else:
                 # Parse activity section
                 if " - " in line and " at " in line:

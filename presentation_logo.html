@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThyWill - Presentation Logo</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            background-color: #7c3aed;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .logo-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .presentation-logo {
+            max-width: 90vw;
+            max-height: 90vh;
+            width: auto;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <svg viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg" class="presentation-logo">
+            <defs>
+                <!-- cohesive gold‒purple gradient -->
+                <linearGradient id="goldPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#EACD5E"/>
+                    <stop offset="100%" stop-color="#815FA9"/>
+                </linearGradient>
+
+                <!-- warm inner glow -->
+                <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#ffffff"/>
+                    <stop offset="60%" stop-color="#F8EFBF"/>
+                    <stop offset="100%" stop-color="#EACD5E"/>
+                </radialGradient>
+
+                <style>
+                    .ray {
+                        stroke: url(#goldPurple);
+                        stroke-linecap: round;
+                        animation: pulse 3s ease-in-out infinite;
+                        transform-origin: 150px 150px;
+                    }
+                    .ray.cardinal { stroke-width: 8; }
+                    .ray.diagonal { stroke-width: 6; }
+
+                    .node {
+                        fill: url(#goldPurple);
+                        animation: pulse 3s ease-in-out infinite;
+                        transform-origin: 150px 150px;
+                    }
+
+                    .title-text {
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                        font-weight: bold;
+                        font-size: 72px;
+                        letter-spacing: 0.1em;
+                        fill: white;
+                        text-anchor: start;
+                        dominant-baseline: central;
+                    }
+
+                    @keyframes pulse {
+                        0%,100% { opacity: .85; transform: scale(1); }
+                        50%      { opacity: 1;   transform: scale(1.05); }
+                    }
+                </style>
+            </defs>
+
+            <!-- Purple background matching the website header -->
+            <rect width="800" height="300" fill="#7c3aed"/>
+
+            <!-- Logo positioned on left side -->
+            <g transform="translate(50, 25)">
+                <!-- eight-pointed radiance with subtle organic offsets -->
+                <!-- cardinal rays (slightly varied lengths) -->
+                <line x1="150" y1="150" x2="150" y2="45" class="ray cardinal"/>
+                <line x1="150" y1="150" x2="255" y2="150" class="ray cardinal"/>
+                <line x1="150" y1="150" x2="150" y2="245" class="ray cardinal"/>
+                <line x1="150" y1="150" x2="45" y2="150" class="ray cardinal"/>
+                <!-- diagonal rays (soft angle & length variance) -->
+                <line x1="150" y1="150" x2="225" y2="75" class="ray diagonal"/>
+                <line x1="150" y1="150" x2="215" y2="225" class="ray diagonal"/>
+                <line x1="150" y1="150" x2="85" y2="230" class="ray diagonal"/>
+                <line x1="150" y1="150" x2="70" y2="70" class="ray diagonal"/>
+
+                <!-- nodes with varied sizes -->
+                <circle cx="150" cy="45" r="13"  class="node"/>
+                <circle cx="255" cy="150" r="12" class="node"/>
+                <circle cx="150" cy="245" r="12.5"   class="node"/>
+                <circle cx="45" cy="150" r="12.5"   class="node"/>
+                <circle cx="225" cy="75" r="9.5" class="node"/>
+                <circle cx="215" cy="225" r="10.5" class="node"/>
+                <circle cx="85" cy="230" r="9" class="node"/>
+                <circle cx="70" cy="70" r="10"   class="node"/>
+
+                <!-- concentric centre -->
+                <circle cx="150" cy="150" r="45" fill="none" stroke="url(#goldPurple)" stroke-width="6"/>
+                <circle cx="150" cy="150" r="25" fill="none" stroke="url(#goldPurple)" stroke-width="4" opacity=".8"/>
+                <circle cx="150" cy="150" r="17.5"  fill="url(#coreGlow)"/>
+                <circle cx="150" cy="150" r="7.5"  fill="#ffffff"/>
+            </g>
+
+            <!-- ThyWill text positioned to the right of the logo -->
+            <text x="350" y="150" class="title-text">ThyWill</text>
+        </svg>
+    </div>
+</body>
+</html>
