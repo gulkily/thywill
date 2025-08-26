@@ -1,11 +1,11 @@
 # Feature Development Process
 
 ## Overview
-3-step process for feature development with optional solution assessment.
+4-step process for feature development with optional solution assessment.
 
 ## The Process
 
-### Step 0: Solution Assessment (Optional)
+### Step 1: Solution Assessment (Optional)
 **When Needed**: Multiple viable approaches, complex trade-offs, or unclear direction
 
 **Format**: Ultra-concise comparison document (≤1 page) in `docs/plans/`
@@ -18,7 +18,7 @@
 
 ---
 
-### Step 1: Feature Description
+### Step 2: Feature Description
 **Content**: Problem statement, 3-5 user stories, core requirements, user flow, success criteria
 
 **Format**: Concise document (≤1 page) in `docs/plans/`
@@ -33,7 +33,7 @@
 
 ---
 
-### Step 2: Development Plan
+### Step 3: Development Plan
 **Content**: Atomic stages (<2 hours each), dependencies, testing strategy, risk assessment
 
 **Format**: Numbered stages in `docs/plans/` (≤1 page)
@@ -46,7 +46,7 @@
 
 ---
 
-### Step 3: Implementation
+### Step 4: Implementation
 **Process**: Create feature branch, implement stages in order, test each stage, commit with descriptive messages
 
 **Critical Requirements**:
@@ -64,18 +64,18 @@
 
 ## File Naming Convention
 Each step MUST be a separate file in `docs/plans/`:
-- **Step 0**: `{feature_name}_solution_assessment.md`
-- **Step 1**: `{feature_name}_feature_description.md`
-- **Step 2**: `{feature_name}_development_plan.md`
+- **Step 1**: `{feature_name}_solution_assessment.md`
+- **Step 2**: `{feature_name}_feature_description.md`
+- **Step 3**: `{feature_name}_development_plan.md`
 
 ## Key Rules
 
 **Claude Code**:
-- Suggest Step 0 for complex/multi-solution features  
+- Suggest Step 1 for complex/multi-solution features
 - Stay in current step, don't jump ahead
 - Wait for explicit approval between steps
 - ALWAYS create separate files for each step
-- ALWAYS create feature branch before Step 3
+- ALWAYS create feature branch before Step 4
 - Flag scope creep, return to appropriate step
 
 **User**:
@@ -84,13 +84,13 @@ Each step MUST be a separate file in `docs/plans/`:
 - Resist adding features mid-implementation
 
 ## Warning Signs
-- **Step 0**: >1 page, >4 options, verbose explanations
-- **Step 1**: >1 page, code examples, UI/database details  
-- **Step 2**: >1 page, >2 hour stages, complex dependencies
-- **Step 3**: No feature branch, skipping stages, changing requirements
+- **Step 1**: >1 page, >4 options, verbose explanations
+- **Step 2**: >1 page, code examples, UI/database details
+- **Step 3**: >1 page, >2 hour stages, complex dependencies
+- **Step 4**: No feature branch, skipping stages, changing requirements
 
 ## Workflows
 
-**Simple**: Step 1 → Step 2 → Step 3 (feature branch → implement stages → test/commit → complete)
+**Simple**: Step 2 → Step 3 → Step 4 (feature branch → implement stages → test/commit → complete)
 
-**Complex**: Step 0 (solution assessment) → Step 1 → Step 2 → Step 3
+**Complex**: Step 1 (solution assessment) → Step 2 → Step 3 → Step 4
