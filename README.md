@@ -2,7 +2,7 @@
 
 A community-driven prayer platform that creates a safe, faith-based environment for sharing prayer requests and supporting one another spiritually.
 
-![ThyWill Logo](logo.svg)
+![ThyWill Logo](static/logos/logo.svg)
 
 ## ✨ Features
 
