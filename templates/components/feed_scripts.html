@@ -4,11 +4,27 @@ function toggleAddPrayer() {
     const isVisible = form.style.display !== 'none';
     
     if (isVisible) {
+        // Check if we're editing request from preview
+        if (isEditingRequestFromPreview && currentPreviewData) {
+            // Return to preview instead of hiding form
+            isEditingRequestFromPreview = false;
+            showPreviewSection(currentPreviewData);
+            
+            // Reset cancel button text
+            const cancelBtn = document.querySelector('#add-prayer-form button[onclick="toggleAddPrayer()"]');
+            if (cancelBtn) {
+                cancelBtn.textContent = 'Cancel';
+            }
+            return;
+        }
+        
+        // Normal cancel behavior - hide form
         form.style.display = 'none';
     } else {
         // Reset form when opening to ensure clean state
         document.getElementById('prayer-form').reset();
         currentPreviewData = null;
+        isEditingRequestFromPreview = false;
         
         form.style.display = 'block';
         // Focus on the textarea when opening
@@ -22,6 +38,7 @@ function toggleAddPrayer() {
 // Global variable to store current preview data
 let currentPreviewData = null;
 let originalGeneratedPrayer = null;
+let isEditingRequestFromPreview = false;
 
 // Handle prayer form submission with preview flow
 document.addEventListener('DOMContentLoaded', function() {
@@ -163,6 +180,8 @@ function setupPreviewActions() {
                 });
                 
                 if (response.ok) {
+                    // Reset state before reload
+                    isEditingRequestFromPreview = false;
                     // Success - reload page to show new prayer
                     window.location.reload();
                 } else {
@@ -237,7 +256,14 @@ function setupPreviewActions() {
     const editRequest = document.getElementById('edit-request');
     if (editRequest) {
         editRequest.addEventListener('click', function() {
+            isEditingRequestFromPreview = true;
             hidePreviewSection();
+            
+            // Update cancel button text to indicate it will return to preview
+            const cancelBtn = document.querySelector('#add-prayer-form button[onclick="toggleAddPrayer()"]');
+            if (cancelBtn) {
+                cancelBtn.textContent = 'Back to Preview';
+            }
             
             // Restore form with previous values
             if (currentPreviewData) {
@@ -255,6 +281,7 @@ function setupPreviewActions() {
             // Reset form
             document.getElementById('prayer-form').reset();
             currentPreviewData = null;
+            isEditingRequestFromPreview = false;
         });
     }
 }
