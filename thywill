@@ -126,6 +126,7 @@ show_help() {
     echo "    import prayers <file>   Import prayers from JSON file"
     echo "    import prayer <file>    Import single prayer from text archive file"  
     echo "    import text-archives    Import data from text_archives/ directory"
+    echo "    fix-prayer-content      Fix prayers with corrupted content from text archives"
     echo "    validate-archives       Check archive completeness and integrity"
     echo "    test-recovery          Simulate complete database recovery"
     echo "    full-recovery          Perform complete database reconstruction"
@@ -173,6 +174,8 @@ show_help() {
     echo "    thywill import prayers backup.json               # Import prayer data"
     echo "    thywill import prayer text_archives/prayers/2025/06/prayer.txt  # Import single prayer"
     echo "    thywill import prayer text_archives/prayers/2025/06/prayer.txt --dry-run  # Preview single prayer import"
+    echo "    thywill fix-prayer-content --dry-run             # Preview fixing corrupted prayer content"
+    echo "    thywill fix-prayer-content                       # Fix all prayers with corrupted content"
     echo "    thywill import text-archives --dry-run           # Preview text archive import"
     echo "    thywill import text-archives                     # Import from text_archives/"
     echo "    thywill validate-archives                        # Check archive integrity"
@@ -1048,6 +1051,127 @@ cmd_repair_archives() {
 cmd_heal_archives() {
     # Use Python CLI module for archive management
     run_python -m app_helpers.cli.archive_management heal-archives
+}
+
+cmd_fix_prayer_content() {
+    local dry_run_flag=""
+    local archives_dir="text_archives"
+    
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --dry-run)
+                dry_run_flag="--dry-run"
+                shift
+                ;;
+            --archives-dir)
+                archives_dir="$2"
+                shift 2
+                ;;
+            *)
+                error "Unknown argument: $1"
+                echo "Usage: thywill fix-prayer-content [--dry-run] [--archives-dir DIR]"
+                echo ""
+                echo "This command fixes prayers with corrupted content by updating them"
+                echo "with the correct content from their text archive files."
+                echo ""
+                echo "Options:"
+                echo "  --dry-run           Preview changes without making them"
+                echo "  --archives-dir DIR  Use specific archives directory (default: text_archives)"
+                echo ""
+                echo "Examples:"
+                echo "  thywill fix-prayer-content --dry-run    # Preview what would be fixed"
+                echo "  thywill fix-prayer-content              # Fix all corrupted prayers"
+                exit 1
+                ;;
+        esac
+    done
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
+        error "Must run from ThyWill project directory"
+        echo "Database or models.py not found"
+        exit 1
+    fi
+    
+    # Check if archives directory exists
+    if [ ! -d "$archives_dir" ]; then
+        error "Archives directory not found: $archives_dir"
+        echo "Please ensure the archives directory exists"
+        exit 1
+    fi
+    
+    # Check if prayer archives exist
+    if [ ! -d "$archives_dir/prayers" ]; then
+        error "No prayers directory found in: $archives_dir"
+        echo "Please ensure $archives_dir/prayers directory exists with prayer files"
+        exit 1
+    fi
+    
+    header "Fix Prayer Content from Text Archives"
+    log "Archives directory: $archives_dir"
+    
+    if [ -n "$dry_run_flag" ]; then
+        log "Running in dry-run mode (preview only)"
+    fi
+    
+    # Count prayer files
+    local prayer_count=$(find "$archives_dir/prayers" -name "*.txt" | wc -l)
+    log "Found $prayer_count prayer files to process"
+    
+    if [ "$prayer_count" -eq 0 ]; then
+        warning "No prayer files found in $archives_dir/prayers"
+        exit 0
+    fi
+    
+    echo ""
+    log "Processing prayer files..."
+    
+    # Use find to process each prayer file
+    local processed=0
+    local updated=0
+    local skipped=0
+    local errors=0
+    
+    while IFS= read -r -d '' file; do
+        echo ""
+        echo "[$((++processed))/$prayer_count] Processing: $(basename "$file")"
+        
+        # Run the import command and capture result
+        if ./thywill import prayer "$file" --update-existing $dry_run_flag 2>&1 | grep -q "Updated existing prayer\|Would update existing prayer"; then
+            ((updated++))
+        elif ./thywill import prayer "$file" --update-existing $dry_run_flag 2>&1 | grep -q "Skipping import to avoid duplicate"; then
+            ((skipped++))
+        else
+            ((errors++))
+        fi
+    done < <(find "$archives_dir/prayers" -name "*.txt" -print0)
+    
+    echo ""
+    echo "============================================================"
+    
+    if [ -n "$dry_run_flag" ]; then
+        success "Preview completed!"
+        echo "Results (would be applied):"
+    else
+        success "Prayer content fix completed!"
+        echo "Results:"
+    fi
+    
+    echo "  📄 Total files processed: $processed"
+    echo "  🔄 Prayers updated: $updated"
+    echo "  ✅ Prayers already correct: $skipped"
+    echo "  ❌ Errors encountered: $errors"
+    
+    if [ "$errors" -gt 0 ]; then
+        echo ""
+        warning "Some prayers could not be processed. Check output above for details."
+    fi
+    
+    if [ -n "$dry_run_flag" ]; then
+        echo ""
+        log "To apply these changes, run: thywill fix-prayer-content"
+    fi
 }
 
 cmd_sync_users() {
@@ -2164,6 +2288,9 @@ main() {
             ;;
         heal-archives)
             cmd_heal_archives "$@"
+            ;;
+        fix-prayer-content)
+            cmd_fix_prayer_content "$@"
             ;;
         sync-users)
             cmd_sync_users "$@"

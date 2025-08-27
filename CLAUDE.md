@@ -32,6 +32,8 @@ python tools/update_env_defaults.py --backup-only # Just create backup
 ./thywill import <file>
 ./thywill import prayer <file>      # Import single prayer from text archive file
 ./thywill import prayer <file> --dry-run  # Preview single prayer import
+./thywill fix-prayer-content        # Fix all prayers with corrupted content from archives
+./thywill fix-prayer-content --dry-run   # Preview prayer content fixes
 ./thywill heal-archives   # Comprehensive archive healing with full activity data
 
 # Documentation Tools
@@ -178,6 +180,14 @@ SPECIFICITY_BADGES_ENABLED=false              # Show Personal/Community badges
 - Requires associated users to exist in database first
 - Supports dry-run mode for preview: `./thywill import prayer <file> --dry-run`
 - Preserves complete prayer content including multi-line generated prayers
+- Use `--update-existing` flag to fix prayers with corrupted content
+
+**fix-prayer-content**: Bulk fix prayers with corrupted content from text archives
+- Processes all prayer files in text_archives/prayers directory automatically
+- Updates existing prayers with correct content from their archive files
+- Provides detailed progress and summary statistics
+- Supports dry-run mode for preview: `./thywill fix-prayer-content --dry-run`
+- Essential for fixing prayers imported before parsing bug was resolved
 
 **User Attributes Archive**: `text_archives/users/user_attributes.txt`
 - Centralized file for all user attributes including supporter status
