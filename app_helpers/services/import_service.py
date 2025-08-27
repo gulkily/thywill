@@ -1139,7 +1139,7 @@ class ImportService:
         
         return not existing
     
-    def import_single_prayer_file(self, file_path: str, dry_run: bool = False) -> bool:
+    def import_single_prayer_file(self, file_path: str, dry_run: bool = False, update_existing: bool = False) -> bool:
         """Import a single prayer text file."""
         print(f"📥 Importing Single Prayer File: {file_path}")
         print("=" * 50)
@@ -1165,7 +1165,7 @@ class ImportService:
             
             from models import engine
             with DBSession(engine) as session:
-                success = self._import_single_prayer_file_internal(session, file_path_obj, dry_run)
+                success = self._import_single_prayer_file_internal(session, file_path_obj, dry_run, update_existing)
                 
                 if success:
                     print(f"\n✅ Single prayer import {'would complete' if dry_run else 'completed successfully'}!")
@@ -1230,7 +1230,7 @@ class ImportService:
             print(f"    ❌ Error reading file: {e}")
             return False
     
-    def _import_single_prayer_file_internal(self, session: DBSession, file_path: Path, dry_run: bool) -> bool:
+    def _import_single_prayer_file_internal(self, session: DBSession, file_path: Path, dry_run: bool, update_existing: bool = False) -> bool:
         """Internal method to import a single prayer file."""
         try:
             # Parse the prayer file using existing text archive service
@@ -1273,9 +1273,31 @@ class ImportService:
             # Check if prayer already exists (duplicate detection)
             existing_prayer = session.exec(select(Prayer).where(Prayer.id == prayer_id)).first()
             if existing_prayer:
-                print(f"    ⚠️  Prayer {prayer_id} already exists in database")
-                print(f"    ℹ️  Skipping import to avoid duplicate")
-                return True
+                if not update_existing:
+                    print(f"    ⚠️  Prayer {prayer_id} already exists in database")
+                    print(f"    ℹ️  Skipping import to avoid duplicate")
+                    print(f"    💡 Use --update-existing flag to update with current file content")
+                    return True
+                else:
+                    print(f"    🔄 Prayer {prayer_id} exists - updating with file content")
+                    if dry_run:
+                        print(f"    🔍 Would update existing prayer with {len(generated_prayer)} character generated prayer")
+                        return True
+                    else:
+                        # Update existing prayer with new content
+                        existing_prayer.text = parsed_data.get('original_request', '')
+                        existing_prayer.generated_prayer = parsed_data.get('generated_prayer')
+                        existing_prayer.project_tag = parsed_data.get('project_tag')
+                        existing_prayer.text_file_path = str(file_path)
+                        
+                        session.add(existing_prayer)
+                        session.commit()
+                        
+                        print(f"    ✅ Updated existing prayer: {prayer_id}")
+                        
+                        # Still import activities for updated prayer
+                        self._import_single_prayer_activities(session, existing_prayer, parsed_activities)
+                        return True
             
             if dry_run:
                 print(f"    🔍 Would import prayer {prayer_id} with {len(parsed_activities)} activities")
@@ -1316,7 +1338,6 @@ class ImportService:
                 text=parsed_data.get('original_request', ''),
                 generated_prayer=parsed_data.get('generated_prayer'),
                 project_tag=parsed_data.get('project_tag'),
-                target_audience=parsed_data.get('target_audience', 'all'),
                 text_file_path=str(file_path),
                 created_at=self._parse_single_timestamp(parsed_data.get('submitted', '')),
                 # Populate categorization fields from archive
@@ -1482,10 +1503,10 @@ def import_all_database_data(dry_run: bool = False) -> bool:
     return service.import_all(dry_run)
 
 
-def import_single_prayer_file(file_path: str, dry_run: bool = False) -> bool:
+def import_single_prayer_file(file_path: str, dry_run: bool = False, update_existing: bool = False) -> bool:
     """Import a single prayer text file."""
     service = ImportService()
-    return service.import_single_prayer_file(file_path, dry_run)
+    return service.import_single_prayer_file(file_path, dry_run, update_existing)
 
 
 if __name__ == "__main__":

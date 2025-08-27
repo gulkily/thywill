@@ -6,9 +6,6 @@ Allow users to mark prayers as done and/or answered and/or successful
 
 Remove tailwind dependency
 
-🙏 1 person prayed this 3 times
-this doesn't currently look right in dark mode when it's first added by js
-
 Option to keep the original request private (or not save it) 
 	and generate the prayer text in a way that retains privacy.
 
@@ -38,8 +35,6 @@ Available Backups
 /usr/local/bin/thywill: line 275: /usr/local/bin/deployment/backup_management.sh: No such file or directory
 
 When generating a prayer, have checkboxes for Christian / Interfaith
-
-Add a setting to show original request expanded by default (Mark)
 
 How to host on Heroku?
 

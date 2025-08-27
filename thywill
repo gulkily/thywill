@@ -813,12 +813,17 @@ cmd_import_prayers() {
 cmd_import_prayer() {
     local file_path=""
     local dry_run_flag=""
+    local update_existing_flag=""
     
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
             --dry-run)
                 dry_run_flag="--dry-run"
+                shift
+                ;;
+            --update-existing)
+                update_existing_flag="--update-existing"
                 shift
                 ;;
             *)
@@ -835,11 +840,12 @@ cmd_import_prayer() {
     
     if [ -z "$file_path" ]; then
         error "Prayer file path required"
-        echo "Usage: thywill import prayer <prayer_file> [--dry-run]"
+        echo "Usage: thywill import prayer <prayer_file> [--dry-run] [--update-existing]"
         echo ""
         echo "Examples:"
         echo "  thywill import prayer text_archives/prayers/2025/06/prayer.txt"
         echo "  thywill import prayer text_archives/prayers/2025/06/prayer.txt --dry-run"
+        echo "  thywill import prayer text_archives/prayers/2025/06/prayer.txt --update-existing"
         echo ""
         echo "The prayer file must be in text archive format with:"
         echo "  - Prayer ID and author on first line"
@@ -869,6 +875,10 @@ cmd_import_prayer() {
         log "Running in dry-run mode (preview only)"
     fi
     
+    if [ -n "$update_existing_flag" ]; then
+        log "Update existing mode enabled"
+    fi
+    
     # Execute Python import using the ImportService
     run_python -c "
 import sys
@@ -876,7 +886,8 @@ sys.path.append('.')
 from app_helpers.services.import_service import import_single_prayer_file
 
 dry_run = '$dry_run_flag' == '--dry-run'
-success = import_single_prayer_file('$file_path', dry_run=dry_run)
+update_existing = '$update_existing_flag' == '--update-existing'
+success = import_single_prayer_file('$file_path', dry_run=dry_run, update_existing=update_existing)
 sys.exit(0 if success else 1)
 "
 }

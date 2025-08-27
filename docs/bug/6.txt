@@ -1,0 +1,30 @@
+# Bug Report #6: Cancel Button Behavior Issue in Prayer Edit Dialog
+
+## Summary
+The "Cancel" button in the prayer request edit dialog incorrectly dismisses the entire dialog instead of returning to the previous state, causing data loss.
+
+## Steps to Reproduce
+1. Click "Add Prayer Request" 
+2. Enter a prayer request and click "Preview Prayer"
+3. Click "Edit Request" to modify the original request
+4. Click "Cancel" in the edit dialog
+
+## Expected Behavior
+- Should return to the previous state showing the generated prayer
+- User should be able to continue with the original generated prayer
+- No data loss should occur
+
+## Actual Behavior
+- Entire dialog is dismissed
+- All entered data (original request and generated prayer) is lost
+- User must start the entire process over
+
+## Impact
+- Poor user experience
+- Potential data loss
+- Breaks expected UI flow patterns
+
+## Technical Notes
+- Likely related to modal/dialog state management in HTMX
+- May involve incorrect event handling for cancel button
+- Could be in templates related to prayer generation workflow
