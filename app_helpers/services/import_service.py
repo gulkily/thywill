@@ -1139,6 +1139,259 @@ class ImportService:
         
         return not existing
     
+    def import_single_prayer_file(self, file_path: str, dry_run: bool = False) -> bool:
+        """Import a single prayer text file."""
+        print(f"📥 Importing Single Prayer File: {file_path}")
+        print("=" * 50)
+        
+        file_path_obj = Path(file_path)
+        
+        # Validate file exists
+        if not file_path_obj.exists():
+            print(f"❌ File not found: {file_path}")
+            return False
+        
+        # Validate file format
+        if not self._validate_prayer_text_file(file_path_obj):
+            print(f"❌ Invalid prayer text file format: {file_path}")
+            return False
+        
+        if dry_run:
+            print("🔍 DRY RUN MODE - No changes will be made")
+            print()
+        
+        try:
+            self._ensure_database_initialized(dry_run)
+            
+            from models import engine
+            with DBSession(engine) as session:
+                success = self._import_single_prayer_file_internal(session, file_path_obj, dry_run)
+                
+                if success:
+                    print(f"\n✅ Single prayer import {'would complete' if dry_run else 'completed successfully'}!")
+                    return True
+                else:
+                    print(f"\n❌ Single prayer import failed")
+                    return False
+                    
+        except Exception as e:
+            print(f"❌ Import error: {e}")
+            return False
+    
+    def _validate_prayer_text_file(self, file_path: Path) -> bool:
+        """Validate that the file is a properly formatted prayer text file."""
+        try:
+            content = file_path.read_text(encoding='utf-8')
+            lines = content.split('\n')
+            
+            # Check for required prayer header format
+            if len(lines) < 3:
+                return False
+                
+            # First line should start with "Prayer " and contain ID and author
+            first_line = lines[0].strip()
+            if not first_line.startswith("Prayer ") or " by " not in first_line:
+                return False
+            
+            # Second line should be submission timestamp
+            second_line = lines[1].strip()
+            if not second_line.startswith("Submitted "):
+                return False
+            
+            # Third line should be audience
+            third_line = lines[2].strip()
+            if not third_line.startswith("Audience: "):
+                return False
+            
+            return True
+            
+        except Exception:
+            return False
+    
+    def _import_single_prayer_file_internal(self, session: DBSession, file_path: Path, dry_run: bool) -> bool:
+        """Internal method to import a single prayer file."""
+        try:
+            # Parse the prayer file using existing text archive service
+            from app_helpers.services.text_archive_service import TextArchiveService
+            archive_service = TextArchiveService()
+            
+            parsed_data, parsed_activities = archive_service.parse_prayer_archive(str(file_path))
+            
+            if not parsed_data:
+                print(f"    ❌ No prayer data found in file")
+                return False
+            
+            prayer_id = parsed_data.get('id')
+            author_name = parsed_data.get('author')
+            
+            print(f"    📄 Prayer ID: {prayer_id}")
+            print(f"    👤 Author: {author_name}")
+            print(f"    📅 Activities: {len(parsed_activities)} records")
+            
+            # Check if prayer already exists (duplicate detection)
+            existing_prayer = session.exec(select(Prayer).where(Prayer.id == prayer_id)).first()
+            if existing_prayer:
+                print(f"    ⚠️  Prayer {prayer_id} already exists in database")
+                print(f"    ℹ️  Skipping import to avoid duplicate")
+                return True
+            
+            if dry_run:
+                print(f"    🔍 Would import prayer {prayer_id} with {len(parsed_activities)} activities")
+                return True
+            
+            # Find or create author user
+            author_user = session.exec(
+                select(User).where(User.display_name == author_name)
+            ).first()
+            
+            if not author_user:
+                print(f"    ❌ User '{author_name}' not found in database")
+                print(f"    💡 Please import user data first or create the user manually")
+                return False
+            
+            # Parse categorization metadata from archive
+            categorization = archive_service.parse_prayer_archive_categorization(str(file_path))
+            
+            # Create prayer record
+            prayer = Prayer(
+                id=prayer_id,
+                author_username=author_user.display_name,
+                text=parsed_data.get('original_request', ''),
+                generated_prayer=parsed_data.get('generated_prayer'),
+                project_tag=parsed_data.get('project_tag'),
+                target_audience=parsed_data.get('target_audience', 'all'),
+                text_file_path=str(file_path),
+                created_at=self._parse_single_timestamp(parsed_data.get('submitted', '')),
+                # Populate categorization fields from archive
+                safety_score=categorization.get('safety_score', 1.0),
+                safety_flags=json.dumps(categorization.get('safety_flags', [])),
+                categorization_method=categorization.get('categorization_method', 'default'),
+                specificity_type=categorization.get('specificity_type', 'unknown'),
+                specificity_confidence=categorization.get('categorization_confidence', 0.0),
+                subject_category=categorization.get('subject_category', 'general')
+            )
+            
+            session.add(prayer)
+            session.commit()
+            
+            print(f"    ✅ Imported prayer: {prayer_id}")
+            
+            # Import prayer activities
+            self._import_single_prayer_activities(session, prayer, parsed_activities)
+            
+            return True
+            
+        except Exception as e:
+            print(f"    ❌ Error importing prayer file: {e}")
+            return False
+    
+    def _import_single_prayer_activities(self, session: DBSession, prayer: Prayer, activities: List[Dict]):
+        """Import activities for a single prayer."""
+        imported_marks = 0
+        imported_attributes = 0
+        imported_logs = 0
+        
+        for activity in activities:
+            try:
+                action = activity.get('action')
+                user_name = activity.get('user')
+                timestamp_str = activity.get('timestamp')
+                
+                # Find user (required to exist for single prayer import)
+                user = session.exec(
+                    select(User).where(User.display_name == user_name)
+                ).first()
+                
+                if not user:
+                    print(f"    ⚠️  User '{user_name}' not found for activity, skipping")
+                    continue
+                
+                activity_time = self._parse_single_timestamp(timestamp_str)
+                
+                if action == 'prayed':
+                    # Check for existing prayer mark to avoid duplicates
+                    existing_mark = session.exec(
+                        select(PrayerMark).where(
+                            PrayerMark.prayer_id == prayer.id,
+                            PrayerMark.username == user.display_name,
+                            PrayerMark.created_at == activity_time
+                        )
+                    ).first()
+                    
+                    if not existing_mark:
+                        prayer_mark = PrayerMark(
+                            prayer_id=prayer.id,
+                            username=user.display_name,
+                            text_file_path=prayer.text_file_path,
+                            created_at=activity_time
+                        )
+                        session.add(prayer_mark)
+                        imported_marks += 1
+                
+                elif action in ['answered', 'archived', 'flagged']:
+                    # Check for existing attribute
+                    existing_attr = session.exec(
+                        select(PrayerAttribute).where(
+                            PrayerAttribute.prayer_id == prayer.id,
+                            PrayerAttribute.attribute_name == action,
+                            PrayerAttribute.created_by == user.display_name,
+                            PrayerAttribute.created_at == activity_time
+                        )
+                    ).first()
+                    
+                    if not existing_attr:
+                        prayer_attr = PrayerAttribute(
+                            prayer_id=prayer.id,
+                            attribute_name=action,
+                            attribute_value='true',
+                            created_by=user.display_name,
+                            created_at=activity_time
+                        )
+                        session.add(prayer_attr)
+                        imported_attributes += 1
+                
+                # Create activity log
+                existing_log = session.exec(
+                    select(PrayerActivityLog).where(
+                        PrayerActivityLog.prayer_id == prayer.id,
+                        PrayerActivityLog.user_id == user.display_name,
+                        PrayerActivityLog.action == action,
+                        PrayerActivityLog.created_at == activity_time
+                    )
+                ).first()
+                
+                if not existing_log:
+                    activity_log = PrayerActivityLog(
+                        prayer_id=prayer.id,
+                        user_id=user.display_name,
+                        action=action,
+                        old_value=None,
+                        new_value='true',
+                        text_file_path=prayer.text_file_path,
+                        created_at=activity_time
+                    )
+                    session.add(activity_log)
+                    imported_logs += 1
+                
+            except Exception as e:
+                print(f"    ⚠️  Error importing activity: {e}")
+                continue
+        
+        session.commit()
+        
+        if imported_marks > 0 or imported_attributes > 0 or imported_logs > 0:
+            print(f"    ✅ Imported activities: {imported_marks} marks, {imported_attributes} attributes, {imported_logs} logs")
+    
+    def _parse_single_timestamp(self, timestamp_str: str) -> datetime:
+        """Parse timestamp for single prayer import."""
+        try:
+            # Handle format: "June 29 2025 at 19:33"
+            return datetime.strptime(timestamp_str, "%B %d %Y at %H:%M")
+        except ValueError:
+            # Fallback to current time if parsing fails
+            print(f"    ⚠️  Failed to parse timestamp: {timestamp_str}, using current time")
+            return datetime.now()
+
     def _print_import_summary(self, dry_run: bool):
         """Print summary of imported data."""
         action = "Would import" if dry_run else "Imported"
@@ -1151,11 +1404,17 @@ class ImportService:
         print(f"\nTotal: {total_records} records {action.lower()}")
 
 
-# Convenience function for CLI usage
+# Convenience functions for CLI usage
 def import_all_database_data(dry_run: bool = False) -> bool:
     """Import all database data from text archives."""
     service = ImportService()
     return service.import_all(dry_run)
+
+
+def import_single_prayer_file(file_path: str, dry_run: bool = False) -> bool:
+    """Import a single prayer text file."""
+    service = ImportService()
+    return service.import_single_prayer_file(file_path, dry_run)
 
 
 if __name__ == "__main__":
