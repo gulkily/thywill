@@ -1184,28 +1184,50 @@ class ImportService:
             content = file_path.read_text(encoding='utf-8')
             lines = content.split('\n')
             
-            # Check for required prayer header format
-            if len(lines) < 3:
+            # Check for minimum required lines
+            if len(lines) < 2:
+                print(f"    ❌ File too short: expected at least 2 lines, found {len(lines)}")
                 return False
                 
             # First line should start with "Prayer " and contain ID and author
             first_line = lines[0].strip()
-            if not first_line.startswith("Prayer ") or " by " not in first_line:
+            if not first_line.startswith("Prayer "):
+                print(f"    ❌ Invalid first line: expected 'Prayer ...', found '{first_line[:50]}...'")
+                return False
+            
+            if " by " not in first_line:
+                print(f"    ❌ Missing author in first line: expected ' by <author>', found '{first_line}'")
                 return False
             
             # Second line should be submission timestamp
             second_line = lines[1].strip()
             if not second_line.startswith("Submitted "):
+                print(f"    ❌ Invalid second line: expected 'Submitted ...', found '{second_line[:50]}...'")
                 return False
             
-            # Third line should be audience
-            third_line = lines[2].strip()
-            if not third_line.startswith("Audience: "):
+            # Optional audience line - check if present but don't require it
+            # Some prayer files have "Audience: " on line 3, others don't
+            for i, line in enumerate(lines[:5]):  # Check first 5 lines
+                line = line.strip()
+                if line.startswith("Audience: "):
+                    # Found audience line - this is good but optional
+                    break
+            
+            # Must contain "Generated Prayer:" somewhere in the file
+            content_lower = content.lower()
+            if "generated prayer:" not in content_lower:
+                print(f"    ❌ Missing 'Generated Prayer:' section in file")
+                return False
+            
+            # Must contain "Activity:" somewhere in the file
+            if "activity:" not in content_lower:
+                print(f"    ❌ Missing 'Activity:' section in file")
                 return False
             
             return True
             
-        except Exception:
+        except Exception as e:
+            print(f"    ❌ Error reading file: {e}")
             return False
     
     def _import_single_prayer_file_internal(self, session: DBSession, file_path: Path, dry_run: bool) -> bool:
@@ -1218,15 +1240,35 @@ class ImportService:
             parsed_data, parsed_activities = archive_service.parse_prayer_archive(str(file_path))
             
             if not parsed_data:
-                print(f"    ❌ No prayer data found in file")
+                print(f"    ❌ Failed to parse prayer data from file")
+                print(f"    💡 Please check that the file follows the text archive format:")
+                print(f"       - First line: Prayer <ID> by <author>")
+                print(f"       - Second line: Submitted <date> at <time>")
+                print(f"       - Contains 'Generated Prayer:' section")
+                print(f"       - Contains 'Activity:' section")
                 return False
             
             prayer_id = parsed_data.get('id')
             author_name = parsed_data.get('author')
             
+            # Validate essential parsed data
+            if not prayer_id:
+                print(f"    ❌ No prayer ID found in parsed data")
+                return False
+            
+            if not author_name:
+                print(f"    ❌ No author name found in parsed data")
+                return False
+            
             print(f"    📄 Prayer ID: {prayer_id}")
             print(f"    👤 Author: {author_name}")
             print(f"    📅 Activities: {len(parsed_activities)} records")
+            
+            # Show additional details about what was parsed
+            original_request = parsed_data.get('original_request', '')
+            generated_prayer = parsed_data.get('generated_prayer', '')
+            print(f"    📝 Original request length: {len(original_request)} characters")
+            print(f"    🙏 Generated prayer length: {len(generated_prayer)} characters")
             
             # Check if prayer already exists (duplicate detection)
             existing_prayer = session.exec(select(Prayer).where(Prayer.id == prayer_id)).first()
@@ -1246,7 +1288,22 @@ class ImportService:
             
             if not author_user:
                 print(f"    ❌ User '{author_name}' not found in database")
-                print(f"    💡 Please import user data first or create the user manually")
+                print(f"    💡 Solutions:")
+                print(f"       1. Import user data first: ./thywill import-all")
+                print(f"       2. Create user manually in admin interface")
+                print(f"       3. Import text archive containing user registration")
+                
+                # List existing users to help with troubleshooting
+                existing_users = session.exec(select(User)).all()
+                if existing_users:
+                    print(f"    📋 Existing users in database:")
+                    for user in existing_users[:5]:  # Show first 5 users
+                        print(f"       - {user.display_name}")
+                    if len(existing_users) > 5:
+                        print(f"       ... and {len(existing_users) - 5} more users")
+                else:
+                    print(f"    📋 No users found in database")
+                
                 return False
             
             # Parse categorization metadata from archive
@@ -1283,6 +1340,20 @@ class ImportService:
             
         except Exception as e:
             print(f"    ❌ Error importing prayer file: {e}")
+            print(f"    🔍 Error details:")
+            print(f"       - Error type: {type(e).__name__}")
+            print(f"       - File path: {file_path}")
+            
+            # Provide specific help based on error type
+            if "IntegrityError" in str(type(e)):
+                print(f"    💡 Database integrity error - prayer may already exist or have invalid data")
+            elif "PermissionError" in str(type(e)):
+                print(f"    💡 File permission error - check file access permissions")
+            elif "UnicodeDecodeError" in str(type(e)):
+                print(f"    💡 File encoding error - ensure file is UTF-8 encoded")
+            else:
+                print(f"    💡 Unexpected error - please check file format and database connection")
+            
             return False
     
     def _import_single_prayer_activities(self, session: DBSession, prayer: Prayer, activities: List[Dict]):

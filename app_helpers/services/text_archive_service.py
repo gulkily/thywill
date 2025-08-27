@@ -467,8 +467,19 @@ class TextArchiveService:
                     prayer_data['target_audience'] = line.replace("Audience: ", "")
                 elif line == "Generated Prayer:":
                     current_section = "generated_prayer"
-                elif current_section == "generated_prayer" and line:
-                    prayer_data['generated_prayer'] = line
+                    prayer_data['generated_prayer'] = ""
+                elif current_section == "generated_prayer":
+                    # Capture entire multi-line generated prayer until we hit "Activity:" or end of non-activity content
+                    if 'generated_prayer' not in prayer_data:
+                        prayer_data['generated_prayer'] = ""
+                    if line:  # Non-empty line
+                        if prayer_data['generated_prayer']:
+                            prayer_data['generated_prayer'] += '\n' + line
+                        else:
+                            prayer_data['generated_prayer'] = line
+                    else:  # Empty line - preserve formatting
+                        if prayer_data['generated_prayer']:
+                            prayer_data['generated_prayer'] += '\n'
                 elif line and current_section == "header" and ":" not in line:
                     # This is likely the original request text (may be multi-line)
                     if 'original_request' not in prayer_data:
