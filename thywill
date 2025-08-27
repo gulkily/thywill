@@ -124,6 +124,7 @@ show_help() {
     echo "    auth cleanup            Clean up expired authentication requests"
     echo "    auth stats              Show authentication statistics"
     echo "    import prayers <file>   Import prayers from JSON file"
+    echo "    import prayer <file>    Import single prayer from text archive file"  
     echo "    import text-archives    Import data from text_archives/ directory"
     echo "    validate-archives       Check archive completeness and integrity"
     echo "    test-recovery          Simulate complete database recovery"
@@ -170,6 +171,8 @@ show_help() {
     echo "    thywill role grant \"Jane Doe\" moderator         # Grant moderator role"
     echo "    thywill admin token 24                            # Create 24-hour admin token"
     echo "    thywill import prayers backup.json               # Import prayer data"
+    echo "    thywill import prayer text_archives/prayers/2025/06/prayer.txt  # Import single prayer"
+    echo "    thywill import prayer text_archives/prayers/2025/06/prayer.txt --dry-run  # Preview single prayer import"
     echo "    thywill import text-archives --dry-run           # Preview text archive import"
     echo "    thywill import text-archives                     # Import from text_archives/"
     echo "    thywill validate-archives                        # Check archive integrity"
@@ -762,15 +765,20 @@ cmd_import() {
         text-archives)
             cmd_import_text_archives "${@:2}"
             ;;
+        prayer)
+            cmd_import_prayer "${@:2}"
+            ;;
         *)
             error "Unknown import type: $import_type"
-            echo "Available import types: prayers, text-archives"
+            echo "Available import types: prayers, text-archives, prayer"
             echo "Usage: thywill import <type> <file> [options]"
             echo ""
             echo "Examples:"
             echo "  thywill import prayers backup.json"
             echo "  thywill import text-archives"
             echo "  thywill import text-archives --dry-run"
+            echo "  thywill import prayer path/to/prayer.txt"
+            echo "  thywill import prayer path/to/prayer.txt --dry-run"
             exit 1
             ;;
     esac
@@ -802,6 +810,76 @@ cmd_import_prayers() {
     run_python -m app_helpers.cli.prayer_import "$file_path"
 }
 
+cmd_import_prayer() {
+    local file_path=""
+    local dry_run_flag=""
+    
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --dry-run)
+                dry_run_flag="--dry-run"
+                shift
+                ;;
+            *)
+                if [ -z "$file_path" ]; then
+                    file_path="$1"
+                else
+                    error "Unexpected argument: $1"
+                    exit 1
+                fi
+                shift
+                ;;
+        esac
+    done
+    
+    if [ -z "$file_path" ]; then
+        error "Prayer file path required"
+        echo "Usage: thywill import prayer <prayer_file> [--dry-run]"
+        echo ""
+        echo "Examples:"
+        echo "  thywill import prayer text_archives/prayers/2025/06/prayer.txt"
+        echo "  thywill import prayer text_archives/prayers/2025/06/prayer.txt --dry-run"
+        echo ""
+        echo "The prayer file must be in text archive format with:"
+        echo "  - Prayer ID and author on first line"
+        echo "  - Submission timestamp on second line" 
+        echo "  - Audience specification on third line"
+        echo "  - Prayer text and activities in proper format"
+        exit 1
+    fi
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
+        error "Must run from ThyWill project directory"
+        echo "Database or models.py not found"
+        exit 1
+    fi
+    
+    # Check if file exists
+    if [ ! -f "$file_path" ]; then
+        error "Prayer file not found: $file_path"
+        exit 1
+    fi
+    
+    header "Importing Single Prayer File"
+    log "File: $file_path"
+    
+    if [ -n "$dry_run_flag" ]; then
+        log "Running in dry-run mode (preview only)"
+    fi
+    
+    # Execute Python import using the ImportService
+    run_python -c "
+import sys
+sys.path.append('.')
+from app_helpers.services.import_service import import_single_prayer_file
+
+dry_run = '$dry_run_flag' == '--dry-run'
+success = import_single_prayer_file('$file_path', dry_run=dry_run)
+sys.exit(0 if success else 1)
+"
+}
 
 cmd_import_text_archives() {
     header "Importing Text Archives"
