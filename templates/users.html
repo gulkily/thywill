@@ -17,6 +17,25 @@
     {% endif %}
   </div>
 
+  <!-- Community Stats -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Community Overview</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="text-center">
+        <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ users|length }}</div>
+        <div class="text-sm text-gray-600 dark:text-gray-300">Total Members</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ users|sum(attribute='prayers_marked') }}</div>
+        <div class="text-sm text-gray-600 dark:text-gray-300">Total Prayers</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ users|sum(attribute='prayers_authored') }}</div>
+        <div class="text-sm text-gray-600 dark:text-gray-300">Prayer Requests</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Users Grid -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     {% for user_data in users %}
@@ -113,25 +132,6 @@
       </div>
     </div>
     {% endfor %}
-  </div>
-
-  <!-- Community Stats -->
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Community Overview</h3>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="text-center">
-        <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ users|length }}</div>
-        <div class="text-sm text-gray-600 dark:text-gray-300">Total Members</div>
-      </div>
-      <div class="text-center">
-        <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ users|sum(attribute='prayers_marked') }}</div>
-        <div class="text-sm text-gray-600 dark:text-gray-300">Total Prayers</div>
-      </div>
-      <div class="text-center">
-        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ users|sum(attribute='prayers_authored') }}</div>
-        <div class="text-sm text-gray-600 dark:text-gray-300">Prayer Requests</div>
-      </div>
-    </div>
   </div>
 </div>
 
