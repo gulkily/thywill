@@ -40,7 +40,7 @@ class StatisticsService:
             ORDER BY period_date
         """)
         
-        result = self.session.exec(query, {
+        result = self.session.execute(query, {
             "start_date": start_date.strftime("%Y-%m-%d"),
             "end_date": end_date.strftime("%Y-%m-%d")
         })
@@ -115,7 +115,7 @@ class StatisticsService:
             ORDER BY period_date
         """)
         
-        result = self.session.exec(query, {
+        result = self.session.execute(query, {
             "start_date": start_date.strftime("%Y-%m-%d"),
             "end_date": end_date.strftime("%Y-%m-%d")
         })
