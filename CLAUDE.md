@@ -111,13 +111,15 @@ SPECIFICITY_BADGES_ENABLED=false              # Show Personal/Community badges
 **Main**: `GET /`, `POST /prayers`, `POST /mark/{id}`, `POST /flag/{id}`
 **Prayer**: `POST /prayer/{id}/archive|restore|answered`
 **Auth**: `GET|POST /login`, `POST /auth/request|approve/{id}`, `GET /claim/{token}`
-**Admin**: `GET /admin/users`, `POST /admin/users/{user_id}/grant-admin`, `POST /admin/users/{user_id}/deactivate|reactivate`
+**Admin**: `GET /admin/users`, `POST /admin/users/{user_id}/grant-admin`, `POST /admin/users/{user_id}/deactivate|reactivate`, `GET /admin/statistics`
+**Statistics**: `GET /api/statistics/prayers`, `GET /api/statistics/summary`
 **Archive**: `GET /api/archive/user/{id}/download`, `GET /api/archive/community/download`
 
 ## Features
 **Prayer**: AI generation, multiple feeds, status management, text archives, praise reports
 **Auth**: Invite-only, multi-device approval, rate limiting, security logging  
-**Admin**: Web-based user management, admin rights granting, user deactivation/reactivation
+**Admin**: Web-based user management, admin rights granting, user deactivation/reactivation, statistics dashboard
+**Statistics**: Interactive analytics dashboard with prayer/user metrics, time-series charts, and community insights
 **Community**: Content flagging, lifecycle management, testimony sharing, transparency
 **UI**: Header logout removed (menu-only), praise reports terminology, updated prayer prompts
 
@@ -217,6 +219,13 @@ Whenever you see vmi2648361 in a command log, that means it was run on productio
 You don't have access to the production server, so please act accordingly.
 
 ## Recent Changes (August 2025)
+**Admin Statistics Dashboard**: Comprehensive analytics platform with interactive visualizations (August 29, 2025)
+- Created StatisticsService with prayer/user counting by time periods (daily/weekly/monthly/yearly)
+- Added REST API endpoints: `/api/statistics/prayers` and `/api/statistics/summary`
+- Built responsive dashboard UI at `/admin/statistics` with admin authentication
+- Integrated Chart.js for interactive line/bar charts showing prayer activity and user registration trends
+- Added comprehensive test coverage (21 tests) for service, API, and UI layers
+- Includes summary cards, time period controls, and real-time data visualization
 **Persistent Daily Priorities**: Implemented persistent daily priority system (August 18, 2025)
 - Daily priorities now persist until manually removed (no automatic daily expiration)  
 - Priority date serves as metadata showing when priority was set
