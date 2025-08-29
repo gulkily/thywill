@@ -124,6 +124,40 @@ def test_get_prayer_counts_by_period_invalid_period(test_session):
 
 
 @pytest.mark.unit
+def test_get_prayer_marks_counts_by_period(test_session):
+    """Test getting prayer marks counts by time period"""
+    service = StatisticsService(test_session)
+    
+    # Add test data
+    user = User(display_name="testuser")
+    prayer = Prayer(author_username="testuser", text="Test prayer")
+    
+    test_session.add(user)
+    test_session.add(prayer)
+    test_session.commit()
+    
+    # Add prayer marks with different dates (within test period)
+    mark1 = PrayerMark(username="testuser", prayer_id=prayer.id, created_at=datetime(2025, 1, 15))
+    mark2 = PrayerMark(username="testuser", prayer_id=prayer.id, created_at=datetime(2025, 1, 16))
+    
+    test_session.add(mark1)
+    test_session.add(mark2)
+    test_session.commit()
+    
+    # Test daily aggregation
+    counts = service.get_prayer_marks_counts_by_period(
+        "daily", 
+        date(2025, 1, 1), 
+        date(2025, 1, 31)
+    )
+    
+    # Should have counts for the days we added marks
+    assert len(counts) == 2
+    assert counts.get("2025-01-15") == 1
+    assert counts.get("2025-01-16") == 1
+
+
+@pytest.mark.unit
 def test_get_summary_statistics(test_session):
     """Test getting summary statistics"""
     service = StatisticsService(test_session)

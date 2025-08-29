@@ -23,6 +23,7 @@ def test_admin_statistics_page_loads(client, mock_admin_user):
     assert "Active Prayers" in response.text
     assert "Praise Reports" in response.text
     assert "Total Users" in response.text
+    assert "Prayers Prayed" in response.text
 
 
 @pytest.mark.integration
@@ -44,6 +45,8 @@ def test_admin_statistics_page_has_charts(client, mock_admin_user):
     # Check for chart canvas elements
     assert "prayer-chart" in response.text
     assert "user-chart" in response.text
+    assert "prayer-marks-chart" in response.text
     # Check for chart update functions
     assert "updatePrayerChart" in response.text
     assert "updateUserChart" in response.text
+    assert "updatePrayerMarksChart" in response.text

@@ -136,6 +136,45 @@ class StatisticsService:
         """Get total count of all prayer marks"""
         return self.session.exec(select(func.count(PrayerMark.id))).first()
     
+    def get_prayer_marks_counts_by_period(self, period: str, start_date: date, end_date: date) -> Dict[str, int]:
+        """Get prayer marks counts grouped by time period"""
+        
+        if period == "daily":
+            date_format = "%Y-%m-%d"
+            date_trunc = "date(created_at)"
+        elif period == "weekly":
+            date_format = "%Y-W%W"
+            date_trunc = "date(created_at, 'weekday 0', '-6 days')"
+        elif period == "monthly":
+            date_format = "%Y-%m"
+            date_trunc = "date(created_at, 'start of month')"
+        elif period == "yearly":
+            date_format = "%Y"
+            date_trunc = "date(created_at, 'start of year')"
+        else:
+            raise ValueError(f"Unsupported period: {period}")
+        
+        query = text(f"""
+            SELECT {date_trunc} as period_date, COUNT(*) as count
+            FROM prayermark 
+            WHERE date(created_at) >= :start_date AND date(created_at) <= :end_date
+            GROUP BY {date_trunc}
+            ORDER BY period_date
+        """)
+        
+        result = self.session.execute(query, {
+            "start_date": start_date.strftime("%Y-%m-%d"),
+            "end_date": end_date.strftime("%Y-%m-%d")
+        })
+        
+        counts = {}
+        for row in result:
+            period_date = datetime.strptime(row[0], "%Y-%m-%d").date()
+            formatted_date = period_date.strftime(date_format)
+            counts[formatted_date] = row[1]
+        
+        return counts
+    
     def get_summary_statistics(self) -> Dict[str, int]:
         """Get summary statistics for dashboard overview"""
         return {

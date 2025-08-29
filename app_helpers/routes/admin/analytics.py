@@ -72,6 +72,10 @@ async def get_prayer_statistics(
                 period, start_date_obj, end_date_obj
             )
             
+            prayer_marks_counts = stats_service.get_prayer_marks_counts_by_period(
+                period, start_date_obj, end_date_obj
+            )
+            
             summary = stats_service.get_summary_statistics()
             
             return {
@@ -80,6 +84,7 @@ async def get_prayer_statistics(
                 "end_date": end_date_obj.isoformat(),
                 "prayer_counts": prayer_counts,
                 "user_counts": user_counts,
+                "prayer_marks_counts": prayer_marks_counts,
                 "summary": summary
             }
         

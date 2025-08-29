@@ -21,6 +21,7 @@ def test_get_prayer_statistics_empty_db(client, mock_admin_user):
     assert "end_date" in data
     assert "prayer_counts" in data
     assert "user_counts" in data
+    assert "prayer_marks_counts" in data
     assert "summary" in data
     
     # Empty database should have zero prayers but may have mock admin user

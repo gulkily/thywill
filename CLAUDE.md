@@ -119,7 +119,7 @@ SPECIFICITY_BADGES_ENABLED=false              # Show Personal/Community badges
 **Prayer**: AI generation, multiple feeds, status management, text archives, praise reports
 **Auth**: Invite-only, multi-device approval, rate limiting, security logging  
 **Admin**: Web-based user management, admin rights granting, user deactivation/reactivation, statistics dashboard
-**Statistics**: Interactive analytics dashboard with prayer/user metrics, time-series charts, and community insights
+**Statistics**: Interactive analytics dashboard with prayer/user metrics, prayers prayed activity, time-series charts, and community insights
 **Community**: Content flagging, lifecycle management, testimony sharing, transparency
 **UI**: Header logout removed (menu-only), praise reports terminology, updated prayer prompts
 
@@ -224,8 +224,9 @@ You don't have access to the production server, so please act accordingly.
 - Added REST API endpoints: `/api/statistics/prayers` and `/api/statistics/summary`
 - Built responsive dashboard UI at `/admin/statistics` with admin authentication
 - Integrated Chart.js for interactive line/bar charts showing prayer activity and user registration trends
-- Added comprehensive test coverage (21 tests) for service, API, and UI layers
-- Includes summary cards, time period controls, and real-time data visualization
+- Enhanced with "Prayers Prayed" activity tracking showing community engagement through prayer marks
+- Added comprehensive test coverage (22 tests) for service, API, and UI layers
+- Includes 5 summary cards, 3 interactive charts, time period controls, and real-time data visualization
 **Persistent Daily Priorities**: Implemented persistent daily priority system (August 18, 2025)
 - Daily priorities now persist until manually removed (no automatic daily expiration)  
 - Priority date serves as metadata showing when priority was set

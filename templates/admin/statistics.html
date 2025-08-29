@@ -62,7 +62,7 @@
 </div>
 
 <!-- Summary Cards -->
-<div id="summary-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 hidden">
+<div id="summary-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 hidden">
   <!-- Total Prayers Card -->
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
     <div class="flex items-center">
@@ -130,6 +130,23 @@
       </div>
     </div>
   </div>
+
+  <!-- Prayers Prayed Card -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Prayers Prayed</p>
+        <p id="total-prayer-marks" class="text-2xl font-bold text-gray-900 dark:text-gray-100">-</p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Charts Container -->
@@ -147,6 +164,14 @@
     <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">User Registration Trends</h3>
     <div class="relative" style="height: 300px;">
       <canvas id="user-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Prayer Marks Chart -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Prayers Prayed Activity</h3>
+    <div class="relative" style="height: 300px;">
+      <canvas id="prayer-marks-chart"></canvas>
     </div>
   </div>
 </div>
@@ -184,6 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Chart instances
     let prayerChart = null;
     let userChart = null;
+    let prayerMarksChart = null;
     
     // Set default dates
     function setDefaultDates() {
@@ -303,6 +329,59 @@ document.addEventListener('DOMContentLoaded', function() {
         userChart = new Chart(ctx, config);
     }
     
+    // Create or update prayer marks chart
+    function updatePrayerMarksChart(data) {
+        const ctx = document.getElementById('prayer-marks-chart').getContext('2d');
+        
+        // Prepare data for chart
+        const labels = Object.keys(data.prayer_marks_counts).sort();
+        const prayerMarksData = labels.map(label => data.prayer_marks_counts[label] || 0);
+        
+        const chartData = {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Prayers Prayed',
+                    data: prayerMarksData,
+                    backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                    borderColor: 'rgb(99, 102, 241)',
+                    borderWidth: 1
+                }
+            ]
+        };
+        
+        const config = {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Community Prayer Activity'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        };
+        
+        if (prayerMarksChart) {
+            prayerMarksChart.destroy();
+        }
+        prayerMarksChart = new Chart(ctx, config);
+    }
+    
     // Load statistics data
     async function loadStatistics() {
         loading.classList.remove('hidden');
@@ -333,10 +412,12 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('active-prayers').textContent = data.summary.active_prayers.toLocaleString();
             document.getElementById('answered-prayers').textContent = data.summary.answered_prayers.toLocaleString();
             document.getElementById('total-users').textContent = data.summary.total_users.toLocaleString();
+            document.getElementById('total-prayer-marks').textContent = data.summary.total_prayer_marks.toLocaleString();
             
             // Update charts
             updatePrayerChart(data);
             updateUserChart(data);
+            updatePrayerMarksChart(data);
             
             // Show UI elements
             controls.classList.remove('hidden');
