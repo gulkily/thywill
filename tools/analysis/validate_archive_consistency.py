@@ -157,7 +157,7 @@ class ArchiveConsistencyValidator:
         self.validation_results['total_prayers_in_db'] = len(db_prayers)
         
         # Check for orphaned prayers (prayers without valid authors)
-        orphaned_prayers = [p for p in db_prayers if p.author_id is None]
+        orphaned_prayers = [p for p in db_prayers if not p.author_username]
         self.validation_results['orphaned_prayers'] = len(orphaned_prayers)
         
         if orphaned_prayers:
@@ -180,7 +180,7 @@ class ArchiveConsistencyValidator:
         self.validation_results['total_prayer_marks_in_db'] = len(db_prayer_marks)
         
         # Check for orphaned prayer marks (marks without valid users)
-        orphaned_marks = [m for m in db_prayer_marks if m.user_id is None]
+        orphaned_marks = [m for m in db_prayer_marks if not m.username]
         self.validation_results['orphaned_prayer_marks'] = len(orphaned_marks)
         
         if orphaned_marks:
