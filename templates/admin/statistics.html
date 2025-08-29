@@ -132,16 +132,21 @@
   </div>
 </div>
 
-<!-- Chart Placeholder -->
-<div id="chart-container" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700 hidden">
-  <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Prayer Activity Over Time</h3>
-  <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 text-center">
-    <div class="text-gray-500 dark:text-gray-400">
-      <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-      </svg>
-      <p class="text-lg font-medium">Chart visualization will be added in Stage 4</p>
-      <p class="text-sm mt-2">Prayer counts and user registration trends will be displayed here</p>
+<!-- Charts Container -->
+<div id="chart-container" class="space-y-6 hidden">
+  <!-- Prayer Activity Chart -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Prayer Activity Over Time</h3>
+    <div class="relative" style="height: 400px;">
+      <canvas id="prayer-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- User Registration Chart -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">User Registration Trends</h3>
+    <div class="relative" style="height: 300px;">
+      <canvas id="user-chart"></canvas>
     </div>
   </div>
 </div>
@@ -158,6 +163,9 @@
   </div>
 </div>
 
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+
 <script>
 // Statistics dashboard JavaScript
 document.addEventListener('DOMContentLoaded', function() {
@@ -173,6 +181,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const endDateInput = document.getElementById('end-date');
     const refreshBtn = document.getElementById('refresh-btn');
     
+    // Chart instances
+    let prayerChart = null;
+    let userChart = null;
+    
     // Set default dates
     function setDefaultDates() {
         const today = new Date();
@@ -181,6 +193,114 @@ document.addEventListener('DOMContentLoaded', function() {
         
         startDateInput.value = oneYearAgo.toISOString().split('T')[0];
         endDateInput.value = today.toISOString().split('T')[0];
+    }
+    
+    // Create or update prayer activity chart
+    function updatePrayerChart(data) {
+        const ctx = document.getElementById('prayer-chart').getContext('2d');
+        
+        // Prepare data for chart
+        const labels = Object.keys(data.prayer_counts).sort();
+        const prayerData = labels.map(label => data.prayer_counts[label] || 0);
+        const userRegistrations = labels.map(label => data.user_counts[label] || 0);
+        
+        const chartData = {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Prayers Created',
+                    data: prayerData,
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }
+            ]
+        };
+        
+        const config = {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Prayer Activity Trends'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        };
+        
+        if (prayerChart) {
+            prayerChart.destroy();
+        }
+        prayerChart = new Chart(ctx, config);
+    }
+    
+    // Create or update user registration chart
+    function updateUserChart(data) {
+        const ctx = document.getElementById('user-chart').getContext('2d');
+        
+        // Prepare data for chart
+        const labels = Object.keys(data.user_counts).sort();
+        const userData = labels.map(label => data.user_counts[label] || 0);
+        
+        const chartData = {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'New Users',
+                    data: userData,
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: 'rgb(16, 185, 129)',
+                    borderWidth: 1
+                }
+            ]
+        };
+        
+        const config = {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'User Registration Trends'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        };
+        
+        if (userChart) {
+            userChart.destroy();
+        }
+        userChart = new Chart(ctx, config);
     }
     
     // Load statistics data
@@ -213,6 +333,10 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('active-prayers').textContent = data.summary.active_prayers.toLocaleString();
             document.getElementById('answered-prayers').textContent = data.summary.answered_prayers.toLocaleString();
             document.getElementById('total-users').textContent = data.summary.total_users.toLocaleString();
+            
+            // Update charts
+            updatePrayerChart(data);
+            updateUserChart(data);
             
             // Show UI elements
             controls.classList.remove('hidden');

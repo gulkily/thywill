@@ -32,3 +32,18 @@ def test_admin_page_has_statistics_link(client, mock_admin_user):
     assert response.status_code == 200
     assert "/admin/statistics" in response.text
     assert "Statistics" in response.text
+
+
+@pytest.mark.integration
+def test_admin_statistics_page_has_charts(client, mock_admin_user):
+    """Test that statistics page includes chart functionality"""
+    response = client.get("/admin/statistics")
+    assert response.status_code == 200
+    # Check for Chart.js CDN
+    assert "chart.js" in response.text
+    # Check for chart canvas elements
+    assert "prayer-chart" in response.text
+    assert "user-chart" in response.text
+    # Check for chart update functions
+    assert "updatePrayerChart" in response.text
+    assert "updateUserChart" in response.text
