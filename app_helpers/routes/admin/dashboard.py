@@ -184,3 +184,28 @@ def auth_audit_log(request: Request, user_session: tuple = Depends(current_user)
         "audit_events": audit_events,
         "user_timezone": user_timezone
     })
+
+
+@router.get("/admin/statistics", response_class=HTMLResponse)
+def admin_statistics(request: Request, user_session: tuple = Depends(current_user)):
+    """
+    Admin Statistics Dashboard
+    
+    Displays comprehensive statistics and analytics about the platform including:
+    - Prayer counts by time period
+    - User registration trends
+    - Community engagement metrics
+    - Interactive charts and visualizations
+    
+    Requires admin privileges.
+    """
+    user, session = user_session
+    if not is_admin(user):
+        raise HTTPException(403)
+    
+    user_timezone = get_user_timezone_from_request(request)
+    return templates.TemplateResponse("admin/statistics.html", {
+        "request": request,
+        "user": user,
+        "user_timezone": user_timezone
+    })

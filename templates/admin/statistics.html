@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block title %}Statistics Dashboard - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <div class="flex justify-between items-start">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Statistics Dashboard</h1>
+      <p class="text-gray-600 dark:text-gray-400">Community analytics and platform metrics</p>
+    </div>
+    <div class="flex space-x-2">
+      <a href="/admin" class="inline-flex items-center px-3 py-2 text-sm bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-lg transition-colors">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        Back to Admin
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Indicator -->
+<div id="loading" class="text-center py-8">
+  <div class="inline-flex items-center">
+    <svg class="animate-spin h-8 w-8 text-blue-600 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+    <span class="text-lg text-gray-600 dark:text-gray-400">Loading statistics...</span>
+  </div>
+</div>
+
+<!-- Controls -->
+<div id="controls" class="mb-6 hidden">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+    <div class="flex flex-wrap gap-4 items-end">
+      <div class="min-w-40">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time Period</label>
+        <select id="period-select" class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100">
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly" selected>Monthly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+      </div>
+      <div class="min-w-40">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Date</label>
+        <input type="date" id="start-date" class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100">
+      </div>
+      <div class="min-w-40">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Date</label>
+        <input type="date" id="end-date" class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100">
+      </div>
+      <button id="refresh-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+        <svg class="w-4 h-4 mr-1 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div id="summary-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 hidden">
+  <!-- Total Prayers Card -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Prayers</p>
+        <p id="total-prayers" class="text-2xl font-bold text-gray-900 dark:text-gray-100">-</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Prayers Card -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Active Prayers</p>
+        <p id="active-prayers" class="text-2xl font-bold text-gray-900 dark:text-gray-100">-</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Answered Prayers Card -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Praise Reports</p>
+        <p id="answered-prayers" class="text-2xl font-bold text-gray-900 dark:text-gray-100">-</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Total Users Card -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
+        <p id="total-users" class="text-2xl font-bold text-gray-900 dark:text-gray-100">-</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart Placeholder -->
+<div id="chart-container" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700 hidden">
+  <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Prayer Activity Over Time</h3>
+  <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 text-center">
+    <div class="text-gray-500 dark:text-gray-400">
+      <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+      </svg>
+      <p class="text-lg font-medium">Chart visualization will be added in Stage 4</p>
+      <p class="text-sm mt-2">Prayer counts and user registration trends will be displayed here</p>
+    </div>
+  </div>
+</div>
+
+<!-- Error Display -->
+<div id="error-container" class="hidden">
+  <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg">
+    <div class="flex items-center">
+      <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+      </svg>
+      <span id="error-message" class="text-sm font-medium">Error loading statistics</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// Statistics dashboard JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    const loading = document.getElementById('loading');
+    const controls = document.getElementById('controls');
+    const summaryCards = document.getElementById('summary-cards');
+    const chartContainer = document.getElementById('chart-container');
+    const errorContainer = document.getElementById('error-container');
+    const errorMessage = document.getElementById('error-message');
+    
+    const periodSelect = document.getElementById('period-select');
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+    const refreshBtn = document.getElementById('refresh-btn');
+    
+    // Set default dates
+    function setDefaultDates() {
+        const today = new Date();
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(today.getFullYear() - 1);
+        
+        startDateInput.value = oneYearAgo.toISOString().split('T')[0];
+        endDateInput.value = today.toISOString().split('T')[0];
+    }
+    
+    // Load statistics data
+    async function loadStatistics() {
+        loading.classList.remove('hidden');
+        controls.classList.add('hidden');
+        summaryCards.classList.add('hidden');
+        chartContainer.classList.add('hidden');
+        errorContainer.classList.add('hidden');
+        
+        try {
+            const period = periodSelect.value;
+            const startDate = startDateInput.value;
+            const endDate = endDateInput.value;
+            
+            let url = `/api/statistics/prayers?period=${period}`;
+            if (startDate && endDate) {
+                url += `&start_date=${startDate}&end_date=${endDate}`;
+            }
+            
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            // Update summary cards
+            document.getElementById('total-prayers').textContent = data.summary.total_prayers.toLocaleString();
+            document.getElementById('active-prayers').textContent = data.summary.active_prayers.toLocaleString();
+            document.getElementById('answered-prayers').textContent = data.summary.answered_prayers.toLocaleString();
+            document.getElementById('total-users').textContent = data.summary.total_users.toLocaleString();
+            
+            // Show UI elements
+            controls.classList.remove('hidden');
+            summaryCards.classList.remove('hidden');
+            chartContainer.classList.remove('hidden');
+            
+        } catch (error) {
+            console.error('Error loading statistics:', error);
+            errorMessage.textContent = `Error loading statistics: ${error.message}`;
+            errorContainer.classList.remove('hidden');
+            controls.classList.remove('hidden');
+        } finally {
+            loading.classList.add('hidden');
+        }
+    }
+    
+    // Event listeners
+    refreshBtn.addEventListener('click', loadStatistics);
+    periodSelect.addEventListener('change', loadStatistics);
+    startDateInput.addEventListener('change', loadStatistics);
+    endDateInput.addEventListener('change', loadStatistics);
+    
+    // Initialize
+    setDefaultDates();
+    loadStatistics();
+});
+</script>
+
+{% endblock %}
