@@ -1138,13 +1138,27 @@ cmd_fix_prayer_content() {
         echo "[$((++processed))/$prayer_count] Processing: $(basename "$file")"
         
         # Run the import command and capture result
-        if ./thywill import prayer "$file" --update-existing $dry_run_flag 2>&1 | grep -q "Updated existing prayer\|Would update existing prayer"; then
+        temp_output="/tmp/prayer_import_$$.tmp"
+        ./thywill import prayer "$file" --update-existing $dry_run_flag > "$temp_output" 2>&1
+        
+        # Check patterns safely to avoid script exit with set -euo pipefail
+        set +e  # Temporarily disable exit on error
+        grep -q "Updated existing prayer\|Would update existing prayer" "$temp_output" 2>/dev/null
+        updated_match=$?
+        grep -q "Skipping import to avoid duplicate" "$temp_output" 2>/dev/null
+        skipped_match=$?
+        
+        if [ $updated_match -eq 0 ]; then
             ((updated++))
-        elif ./thywill import prayer "$file" --update-existing $dry_run_flag 2>&1 | grep -q "Skipping import to avoid duplicate"; then
+        elif [ $skipped_match -eq 0 ]; then
             ((skipped++))
         else
             ((errors++))
         fi
+        
+        set -e  # Re-enable exit on error
+        
+        rm -f "$temp_output"
     done < <(find "$archives_dir/prayers" -name "*.txt" -print0)
     
     echo ""
