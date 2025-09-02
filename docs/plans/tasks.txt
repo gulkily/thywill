@@ -46,3 +46,7 @@ Add provisions to prompt for negative requests
 For sponsorship, add specific expenses and offer sponsorship in their entirety
 
 if existing user follows an invite link have a better process for them
+
+weekly prayers
+
+suggested opening prayer
