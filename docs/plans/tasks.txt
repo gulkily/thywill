@@ -30,9 +30,7 @@ Printed prayers for nice prayers that have been generated
 	Wallet card
 	Bracelet
 
-wsl@Lenovo:~/thywill$ thywill list
-Available Backups
-/usr/local/bin/thywill: line 275: /usr/local/bin/deployment/backup_management.sh: No such file or directory
+✅ wsl@Lenovo:~/thywill$ thywill list - FIXED: backup list command now works correctly
 
 When generating a prayer, have checkboxes for Christian / Interfaith
 
