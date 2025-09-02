@@ -113,6 +113,7 @@ show_help() {
     echo "    admin revoke <name>     Revoke admin role from user"
     echo "    admin list              List all admin users"
     echo "    admin token [hours]     Create admin invite token (default: 12h, example: 720h = 30 days)"
+    echo "    invite token [hours] [max_uses] Create regular invite token (default: 12h, 1 use)"
     echo "    role list               List all available roles"
     echo "    role grant <user> <role> Grant specific role to user"
     echo "    role revoke <user> <role> Revoke specific role from user"
@@ -755,6 +756,57 @@ cmd_auth_stats() {
     
     # Use the auth manager tool
     run_python tools/auth_manager.py stats "$@"
+}
+
+# Invite commands
+cmd_invite() {
+    local subcommand="${1:-}"
+    shift || true
+    
+    case "$subcommand" in
+        token)
+            cmd_invite_token "$@"
+            ;;
+        *)
+            error "Unknown invite subcommand: $subcommand"
+            echo "Available subcommands: token"
+            echo "Usage: thywill invite <subcommand> [args]"
+            exit 1
+            ;;
+    esac
+}
+
+cmd_invite_token() {
+    local hours="${1:-12}"
+    local max_uses="${2:-1}"
+    
+    header "Creating Invite Token"
+    
+    # Validate hours
+    if ! [[ "$hours" =~ ^[0-9]+$ ]] || [ "$hours" -le 0 ]; then
+        error "Hours must be a positive number"
+        echo "Usage: thywill invite token [hours] [max_uses]"
+        exit 1
+    fi
+    
+    # Validate max_uses
+    if ! [[ "$max_uses" =~ ^[0-9]+$ ]] || [ "$max_uses" -le 0 ]; then
+        error "Max uses must be a positive number"
+        echo "Usage: thywill invite token [hours] [max_uses]"
+        exit 1
+    fi
+    
+    # Check if we're in the right directory
+    if [ ! -f "models.py" ] && [ ! -f "thywill.db" ]; then
+        error "Must run from ThyWill project directory"
+        exit 1
+    fi
+    
+    # Call the Python script to create invite token
+    if ! run_python scripts/admin/create_invite_token.py --hours "$hours" --max-uses "$max_uses"; then
+        error "Failed to create invite token"
+        exit 1
+    fi
 }
 
 cmd_import() {
@@ -2284,6 +2336,9 @@ main() {
             ;;
         auth)
             cmd_auth "$@"
+            ;;
+        invite)
+            cmd_invite "$@"
             ;;
         import)
             cmd_import "$@"
