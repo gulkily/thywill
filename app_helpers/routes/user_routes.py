@@ -2,7 +2,7 @@
 import os
 from datetime import datetime, timedelta
 from typing import Optional
-from fastapi import APIRouter, Request, Form, Depends, HTTPException
+from fastapi import APIRouter, Request, Form, Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select, func
@@ -10,6 +10,7 @@ from sqlmodel import Session, select, func
 from models import engine, User, Prayer, PrayerMark, Session as SessionModel
 from app_helpers.services.auth_helpers import current_user
 from app_helpers.services.auth.validation_helpers import log_security_event, is_admin
+from app_helpers.services.profile_data_service import ProfileDataService
 from app_helpers.utils.user_management import is_user_deactivated
 from app_helpers.timezone_utils import get_user_timezone_from_request
 
@@ -250,3 +251,137 @@ async def logout(request: Request, user_session: tuple = Depends(current_user)):
     response = RedirectResponse("/logged-out", status_code=303)
     response.delete_cookie("sid", path="/", domain=None)
     return response
+
+
+@router.get("/profile/{user_id}/prayers", response_class=HTMLResponse)
+def user_profile_prayers(
+    request: Request, 
+    user_id: str, 
+    page: int = Query(1, ge=1),
+    user_session: tuple = Depends(current_user)
+):
+    """Display paginated list of prayer requests by a specific user"""
+    user, session = user_session
+    
+    with Session(engine) as s:
+        # Get the profile user
+        profile_user = s.get(User, user_id)
+        if not profile_user:
+            raise HTTPException(404, "User not found")
+        
+        is_own_profile = user_id == user.display_name
+        
+        # Get prayer requests with pagination
+        prayers, total_count = ProfileDataService.get_user_prayer_requests(
+            user_id, s, page, 20
+        )
+        
+        # Get pagination info
+        pagination = ProfileDataService.get_pagination_info(total_count, page, 20)
+        
+        user_timezone = get_user_timezone_from_request(request)
+        
+        return templates.TemplateResponse(
+            "profile_prayers.html",
+            {
+                "request": request,
+                "profile_user": profile_user,
+                "me": user,
+                "session": session,
+                "is_own_profile": is_own_profile,
+                "prayers": prayers,
+                "pagination": pagination,
+                "user_timezone": user_timezone,
+                "is_admin": is_admin(user)
+            }
+        )
+
+
+@router.get("/profile/{user_id}/prayed", response_class=HTMLResponse)
+def user_profile_prayed(
+    request: Request, 
+    user_id: str, 
+    page: int = Query(1, ge=1),
+    user_session: tuple = Depends(current_user)
+):
+    """Display paginated list of prayers the user has marked/prayed for"""
+    user, session = user_session
+    
+    with Session(engine) as s:
+        # Get the profile user
+        profile_user = s.get(User, user_id)
+        if not profile_user:
+            raise HTTPException(404, "User not found")
+        
+        is_own_profile = user_id == user.display_name
+        
+        # Get prayers marked with pagination
+        prayer_data, total_count = ProfileDataService.get_user_prayers_marked(
+            user_id, s, page, 20
+        )
+        
+        # Get pagination info
+        pagination = ProfileDataService.get_pagination_info(total_count, page, 20)
+        
+        user_timezone = get_user_timezone_from_request(request)
+        
+        return templates.TemplateResponse(
+            "profile_prayed.html",
+            {
+                "request": request,
+                "profile_user": profile_user,
+                "me": user,
+                "session": session,
+                "is_own_profile": is_own_profile,
+                "prayer_data": prayer_data,
+                "pagination": pagination,
+                "user_timezone": user_timezone,
+                "is_admin": is_admin(user)
+            }
+        )
+
+
+@router.get("/profile/{user_id}/unique", response_class=HTMLResponse)
+def user_profile_unique(
+    request: Request, 
+    user_id: str, 
+    page: int = Query(1, ge=1),
+    user_session: tuple = Depends(current_user)
+):
+    """Display unique prayers information and breakdown for the user"""
+    user, session = user_session
+    
+    with Session(engine) as s:
+        # Get the profile user
+        profile_user = s.get(User, user_id)
+        if not profile_user:
+            raise HTTPException(404, "User not found")
+        
+        is_own_profile = user_id == user.display_name
+        
+        # Get unique prayers information
+        unique_data = ProfileDataService.get_user_unique_prayers_info(
+            user_id, s, page, 20
+        )
+        
+        # Get pagination info for sample prayers
+        pagination = ProfileDataService.get_pagination_info(
+            unique_data['unique_count'], page, 20
+        )
+        
+        user_timezone = get_user_timezone_from_request(request)
+        
+        return templates.TemplateResponse(
+            "profile_unique.html",
+            {
+                "request": request,
+                "profile_user": profile_user,
+                "me": user,
+                "session": session,
+                "is_own_profile": is_own_profile,
+                "unique_data": unique_data,
+                "pagination": pagination,
+                "user_timezone": user_timezone,
+                "is_admin": is_admin(user)
+            }
+        )

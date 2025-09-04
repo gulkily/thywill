@@ -61,6 +61,7 @@ When user requests a new feature, automatically create Step 1 document and wait 
 **Prayer**: `generate_prayer()`, `get_feed_counts()`, `prayer.set_attribute()`
 **Multi-device**: `create_auth_request()`, `approve_auth_request()`, rate limiting
 **Supporter Badges**: `supporter_badge_service.generate_user_badge_html()`, configurable multi-type system
+**Profile Data**: `ProfileDataService.get_user_prayer_requests()`, `get_user_prayers_marked()`, `get_user_unique_prayers_info()` - Profile statistics with pagination
 
 ## Environment Variables
 ```bash
@@ -114,6 +115,7 @@ SPECIFICITY_BADGES_ENABLED=false              # Show Personal/Community badges
 **Admin**: `GET /admin/users`, `POST /admin/users/{user_id}/grant-admin`, `POST /admin/users/{user_id}/deactivate|reactivate`, `GET /admin/statistics`
 **Statistics**: `GET /api/statistics/prayers`, `GET /api/statistics/summary`
 **Archive**: `GET /api/archive/user/{id}/download`, `GET /api/archive/community/download`
+**Profile**: `GET /profile/{user_id}/prayers`, `GET /profile/{user_id}/prayed`, `GET /profile/{user_id}/unique` - Interactive profile statistics details
 
 ## Features
 **Prayer**: AI generation, multiple feeds, status management, text archives, praise reports
@@ -218,7 +220,15 @@ This ensures documentation stays synchronized with codebase changes.
 Whenever you see vmi2648361 in a command log, that means it was run on production.
 You don't have access to the production server, so please act accordingly.
 
-## Recent Changes (August 2025)
+## Recent Changes (September 2025)
+**Profile Card Interactive Links**: Clickable statistics on user profiles (September 4, 2025)
+- Added three new routes: `/profile/{user_id}/prayers`, `/profile/{user_id}/prayed`, `/profile/{user_id}/unique`
+- Created ProfileDataService with paginated query methods for prayer statistics
+- Updated profile.html with clickable links for non-zero statistics (Prayer Requests, Times Prayed, Unique Prayers)
+- Built responsive detail views with breadcrumb navigation, pagination, and empty states
+- Maintains existing design patterns, supporter badges, and privacy controls
+- Zero values remain non-clickable for intuitive UX, links include hover states and smooth transitions
+
 **Admin Statistics Dashboard**: Comprehensive analytics platform with interactive visualizations (August 29, 2025)
 - Created StatisticsService with prayer/user counting by time periods (daily/weekly/monthly/yearly)
 - Added REST API endpoints: `/api/statistics/prayers` and `/api/statistics/summary`
