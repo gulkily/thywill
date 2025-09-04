@@ -33,6 +33,18 @@
         <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'all' %}bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-100{% else %}bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} rounded-full">{{ feed_counts.all or 0 }}</span>
       </a>
       
+      <a href="/?feed_type=daily_prayer" 
+         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'daily_prayer' %}bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+        <span>⭐ Daily Priority</span>
+        <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'daily_prayer' %}bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-100{% else %}bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} rounded-full">{{ feed_counts.daily_prayer or 0 }}</span>
+      </a>
+      
+      <a href="/?feed_type=prayers_needing_attention" 
+         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'prayers_needing_attention' %}bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+        <span>🕐 Need Attention</span>
+        <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'prayers_needing_attention' %}bg-orange-200 dark:bg-orange-800 text-orange-800 dark:text-orange-100{% else %}bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} rounded-full">{{ feed_counts.prayers_needing_attention or 0 }}</span>
+      </a>
+      
       <a href="/?feed_type=new_unprayed" 
          class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'new_unprayed' %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
         <span>New</span>
@@ -75,12 +87,6 @@
          class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'recent_activity' %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
         <span>Recent</span>
         <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'recent_activity' %}bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-100{% else %}bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} rounded-full">{{ feed_counts.recent_activity or 0 }}</span>
-      </a>
-      
-      <a href="/?feed_type=daily_prayer" 
-         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'daily_prayer' %}bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
-        <span>⭐ Daily</span>
-        <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'daily_prayer' %}bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-100{% else %}bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} rounded-full">{{ feed_counts.daily_prayer or 0 }}</span>
       </a>
       
       <a href="/?feed_type=answered" 

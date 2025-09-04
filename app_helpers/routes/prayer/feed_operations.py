@@ -156,11 +156,8 @@ def feed(request: Request, feed_type: str = "all", category: Optional[str] = Non
                 .limit(50)
             )
             stmt = apply_category_filters(stmt)
-        elif feed_type == "daily_prayer":
-            # Daily priority first, then by least recent prayer mark (oldest last prayer at top)
-            # This shows prayers that need prayer attention most
-            # Note: We don't use ORDER BY with LIMIT here because it would exclude priority prayers
-            # Instead we fetch all prayers and sort in Python
+        elif feed_type == "prayers_needing_attention":
+            # Prayers that haven't been prayed for the longest time (oldest prayer marks first)
             stmt = (
                 select(Prayer, User.display_name)
                 .outerjoin(User, Prayer.author_username == User.display_name)
@@ -168,7 +165,29 @@ def feed(request: Request, feed_type: str = "all", category: Optional[str] = Non
                 .where(Prayer.flagged == False)
                 .where(exclude_archived())
                 .group_by(Prayer.id)
+                .order_by(func.max(PrayerMark.created_at).asc())  # Oldest prayer marks first
+                .limit(50)
             )
+            stmt = apply_category_filters(stmt)
+        elif feed_type == "daily_prayer":
+            # Only prayers marked as daily priorities
+            if not os.getenv('DAILY_PRIORITY_ENABLED', 'false').lower() == 'true':
+                # If daily priority feature is disabled, show empty results
+                stmt = (
+                    select(Prayer, User.display_name)
+                    .outerjoin(User, Prayer.author_username == User.display_name)
+                    .where(Prayer.id == -1)  # This will return no results
+                )
+            else:
+                stmt = (
+                    select(Prayer, User.display_name)
+                    .outerjoin(User, Prayer.author_username == User.display_name)
+                    .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
+                    .where(Prayer.flagged == False)
+                    .where(exclude_archived())
+                    .where(PrayerAttribute.attribute_name == 'daily_priority')
+                    .order_by(Prayer.created_at.desc())
+                )
             stmt = apply_category_filters(stmt)
         elif feed_type == "answered":
             # Answered prayers (public celebration feed)
@@ -253,36 +272,7 @@ def feed(request: Request, feed_type: str = "all", category: Optional[str] = Non
             }
             prayers_with_authors.append(prayer_dict)
     
-    # Special sorting for daily_prayer feed: priority first, then by oldest prayer activity
-    if feed_type == "daily_prayer":
-        daily_priority_enabled = os.getenv('DAILY_PRIORITY_ENABLED', 'false').lower() == 'true'
-        
-        # Get the most recent prayer mark timestamp for each prayer (for sorting)
-        with Session(engine) as sort_session:
-            prayer_timestamps = {}
-            for prayer_dict in prayers_with_authors:
-                latest_mark = sort_session.exec(
-                    select(func.max(PrayerMark.created_at))
-                    .where(PrayerMark.prayer_id == prayer_dict['id'])
-                ).first()
-                prayer_timestamps[prayer_dict['id']] = latest_mark or datetime.min
-        
-        if daily_priority_enabled:
-            # Sort with daily priority first, then by oldest prayer mark (longest since last prayer)
-            priority_prayers = [p for p in prayers_with_authors if p['is_daily_priority']]
-            non_priority_prayers = [p for p in prayers_with_authors if not p['is_daily_priority']]
-            
-            # Sort non-priority prayers by oldest prayer mark first (ASC order)
-            non_priority_prayers.sort(key=lambda p: prayer_timestamps.get(p['id'], datetime.min))
-            
-            
-            prayers_with_authors = priority_prayers + non_priority_prayers
-        else:
-            # If priority disabled, just sort by oldest prayer mark
-            prayers_with_authors.sort(key=lambda p: prayer_timestamps.get(p['id'], datetime.min))
-        
-        # Apply limit after sorting
-        prayers_with_authors = prayers_with_authors[:50]
+    # No special sorting needed for daily_prayer feed anymore since it only shows priority prayers
     
     # Get feed counts
     feed_counts = get_feed_counts(user.display_name)

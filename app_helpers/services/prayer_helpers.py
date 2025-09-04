@@ -124,8 +124,26 @@ def get_feed_counts(user_id: str) -> dict:
             )
         ).first()
         
-        # Daily prayer count (same as recent_activity - prayers with any marks)
-        counts['daily_prayer'] = counts['recent_activity']
+        # Daily prayer count (only prayers marked as daily priorities)
+        if os.getenv('DAILY_PRIORITY_ENABLED', 'false').lower() == 'true':
+            counts['daily_prayer'] = s.exec(
+                select(func.count(func.distinct(Prayer.id)))
+                .select_from(Prayer)
+                .join(PrayerAttribute, Prayer.id == PrayerAttribute.prayer_id)
+                .where(Prayer.flagged == False)
+                .where(
+                    ~Prayer.id.in_(
+                        select(PrayerAttribute.prayer_id)
+                        .where(PrayerAttribute.attribute_name == 'archived')
+                    )
+                )
+                .where(PrayerAttribute.attribute_name == 'daily_priority')
+            ).first()
+        else:
+            counts['daily_prayer'] = 0
+            
+        # Prayers needing attention count (prayers with marks, same as recent_activity)
+        counts['prayers_needing_attention'] = counts['recent_activity']
         
         # Answered prayers count
         counts['answered'] = s.exec(

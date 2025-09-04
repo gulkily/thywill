@@ -146,8 +146,11 @@
     <h2 class="font-semibold mb-2 dark:text-gray-100">Recent Prayer Activity</h2>
     <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayers that have been recently prayed by the community.</p>
   {% elif current_feed == "daily_prayer" %}
-    <h2 class="font-semibold mb-2 text-yellow-700 dark:text-yellow-300">⭐ Daily Prayer Focus</h2>
-    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Priority prayers for today, followed by requests that need prayer attention most (longest since last prayer).</p>
+    <h2 class="font-semibold mb-2 text-yellow-700 dark:text-yellow-300">⭐ Daily Priority Prayers</h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayers manually selected as daily priorities by the community.</p>
+  {% elif current_feed == "prayers_needing_attention" %}
+    <h2 class="font-semibold mb-2 text-orange-700 dark:text-orange-300">🕐 Prayers Needing Attention</h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayer requests that haven't been prayed for the longest time - they need your attention most.</p>
   {% elif current_feed == "answered" %}
     <h2 class="font-semibold mb-2 text-green-700 dark:text-green-300">🎉 Praise Reports</h2>
     <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Celebrating how God has moved in these situations. Praise the Lord!</p>
@@ -178,8 +181,11 @@
         <p class="text-gray-500 dark:text-gray-400 mb-2">No recent prayer activity.</p>
         <p class="text-sm text-gray-400 dark:text-gray-500">Check the <a href="/?feed_type=all" class="text-purple-600 dark:text-purple-400 hover:underline">All Prayers</a> feed to start praying.</p>
       {% elif current_feed == "daily_prayer" %}
-        <p class="text-gray-500 dark:text-gray-400 mb-2">No daily prayer focus available.</p>
-        <p class="text-sm text-gray-400 dark:text-gray-500">Visit the <a href="/?feed_type=all" class="text-purple-600 dark:text-purple-400 hover:underline">All Prayers</a> feed to start praying.</p>
+        <p class="text-gray-500 dark:text-gray-400 mb-2">No daily priority prayers set.</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500">{% if is_admin %}Visit the <a href="/?feed_type=all" class="text-purple-600 dark:text-purple-400 hover:underline">All Prayers</a> feed to mark prayers as daily priorities.{% else %}Visit the <a href="/?feed_type=all" class="text-purple-600 dark:text-purple-400 hover:underline">All Prayers</a> feed to start praying.{% endif %}</p>
+      {% elif current_feed == "prayers_needing_attention" %}
+        <p class="text-gray-500 dark:text-gray-400 mb-2">No prayers need attention right now.</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500">All prayers have been prayed recently! Check the <a href="/?feed_type=new_unprayed" class="text-purple-600 dark:text-purple-400 hover:underline">New</a> feed for fresh requests.</p>
       {% elif current_feed == "answered" %}
         <p class="text-gray-500 dark:text-gray-400 mb-2">No praise reports yet.</p>
         <p class="text-sm text-gray-400 dark:text-gray-500">When prayer authors add praise reports, they'll appear here for the community to celebrate!</p>
