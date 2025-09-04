@@ -11,15 +11,6 @@ Option to keep the original request private (or not save it)
 
 ** How to achieve impact with little behavioral change? **
 
-
-After /auth/status succeeds, it should not stay at that URL, but change to whatever page
-
-Invite tree is empty? All users should appear on invite tree somehow
-
-✅ Maintain a text-based dump/backup of data that can be imported back at any time
-
-✅ Generate regular invite tokens from command line
-
 IDEAS
 
 Slider for religion / secularity
