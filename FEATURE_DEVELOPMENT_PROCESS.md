@@ -77,11 +77,13 @@ Each step MUST be a separate file in `docs/plans/`:
 - ALWAYS create separate files for each step
 - ALWAYS create feature branch before Step 4
 - Flag scope creep, return to appropriate step
+- **AVOID database schema changes when possible** - prefer using existing models and fields
 
 **User**:
 - Review and approve explicitly at each step
 - Flag issues early (easier to change)
 - Resist adding features mid-implementation
+- **Prefer solutions that avoid database migrations** - use existing schema when feasible
 
 ## Warning Signs
 - **Step 1**: >1 page, >4 options, verbose explanations
