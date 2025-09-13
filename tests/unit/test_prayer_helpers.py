@@ -242,6 +242,163 @@ class TestFeedCounts:
 
 
 @pytest.mark.unit
+class TestPersonDifferentiation:
+    """Test prayer person differentiation functionality"""
+    
+    def test_individual_request_generates_third_person_prayer(self):
+        """Test individual requests generate third-person community prayers"""
+        mock_response = Mock()
+        mock_content = Mock()
+        mock_content.text = "Divine Creator, we pray for our friend who seeks healing. May your peace be with them. Amen."
+        mock_response.content = [mock_content]
+        
+        with patch('app_helpers.services.prayer_helpers.anthropic_client') as mock_client:
+            mock_client.messages.create.return_value = mock_response
+            
+            # Test individual pronouns
+            test_cases = [
+                "Please help me with my anxiety",
+                "I need guidance for my job search", 
+                "Pray for my sick grandmother",
+                "My family needs healing"
+            ]
+            
+            for request in test_cases:
+                result = generate_prayer(request)
+                
+                # Verify third-person format is encouraged in prompt
+                call_args = mock_client.messages.create.call_args
+                system_prompt = call_args[1]['system']
+                
+                # Should encourage third person for individual requests
+                assert "them" in system_prompt or "they" in system_prompt
+                assert "our friend" in system_prompt
+    
+    def test_collective_request_generates_second_person_prayer(self):
+        """Test collective requests generate second-person community prayers"""
+        mock_response = Mock()
+        mock_content = Mock() 
+        mock_content.text = "Divine Creator, help us grow closer to You as a community. Guide us in unity. Amen."
+        mock_response.content = [mock_content]
+        
+        with patch('app_helpers.services.prayer_helpers.anthropic_client') as mock_client:
+            mock_client.messages.create.return_value = mock_response
+            
+            # Test collective pronouns
+            test_cases = [
+                "Help us grow closer as a church",
+                "Bless our community outreach efforts",
+                "We need guidance in our decisions",
+                "Guide us in unity"
+            ]
+            
+            for request in test_cases:
+                result = generate_prayer(request)
+                
+                # Verify differentiation instructions are included when enabled
+                call_args = mock_client.messages.create.call_args
+                system_prompt = call_args[1]['system']
+                
+                # Should include person differentiation instructions
+                if "COLLECTIVE PRONOUNS" in system_prompt:
+                    assert "us/our/we" in system_prompt
+                    assert "INDIVIDUAL/THIRD-PARTY PRONOUNS" in system_prompt
+    
+    @patch.dict('os.environ', {'PRAYER_PERSON_DIFFERENTIATION_ENABLED': 'true'})
+    def test_feature_flag_enabled_includes_differentiation_prompt(self):
+        """Test that enabling feature flag includes differentiation instructions"""
+        mock_response = Mock()
+        mock_content = Mock()
+        mock_content.text = "Test prayer"
+        mock_response.content = [mock_content]
+        
+        with patch('app_helpers.services.prayer_helpers.anthropic_client') as mock_client:
+            mock_client.messages.create.return_value = mock_response
+            
+            generate_prayer("Help us grow")
+            
+            call_args = mock_client.messages.create.call_args
+            system_prompt = call_args[1]['system']
+            
+            # Should include person differentiation instructions
+            assert "COLLECTIVE PRONOUNS" in system_prompt
+            assert "INDIVIDUAL/THIRD-PARTY PRONOUNS" in system_prompt
+            assert "us/our/we" in system_prompt
+            assert "me/my/I" in system_prompt
+    
+    @patch.dict('os.environ', {'PRAYER_PERSON_DIFFERENTIATION_ENABLED': 'false'})
+    def test_feature_flag_disabled_excludes_differentiation_prompt(self):
+        """Test that disabling feature flag excludes differentiation instructions"""
+        mock_response = Mock()
+        mock_content = Mock()
+        mock_content.text = "Test prayer"
+        mock_response.content = [mock_content]
+        
+        with patch('app_helpers.services.prayer_helpers.anthropic_client') as mock_client:
+            mock_client.messages.create.return_value = mock_response
+            
+            generate_prayer("Help us grow")
+            
+            call_args = mock_client.messages.create.call_args
+            system_prompt = call_args[1]['system']
+            
+            # Should NOT include person differentiation instructions
+            assert "COLLECTIVE PRONOUNS" not in system_prompt
+            assert "INDIVIDUAL/THIRD-PARTY PRONOUNS" not in system_prompt
+    
+    def test_mixed_pronoun_requests_handle_gracefully(self):
+        """Test requests with mixed pronouns are handled appropriately"""
+        mock_response = Mock()
+        mock_content = Mock()
+        mock_content.text = "Test prayer for mixed pronouns"
+        mock_response.content = [mock_content]
+        
+        with patch('app_helpers.services.prayer_helpers.anthropic_client') as mock_client:
+            mock_client.messages.create.return_value = mock_response
+            
+            # Test edge cases
+            test_cases = [
+                "Help me and our family heal",
+                "We need prayer for my surgery", 
+                "Pray that our church helps me find peace",
+                "I want us to grow together"
+            ]
+            
+            for request in test_cases:
+                result = generate_prayer(request)
+                
+                # Should handle gracefully without errors
+                assert result['prayer'] is not None
+                assert result['service_status'] == 'normal'
+    
+    def test_empty_and_ambiguous_requests_default_gracefully(self):
+        """Test that empty or ambiguous requests default to individual format"""
+        mock_response = Mock()
+        mock_content = Mock()
+        mock_content.text = "Default prayer format"
+        mock_response.content = [mock_content]
+        
+        with patch('app_helpers.services.prayer_helpers.anthropic_client') as mock_client:
+            mock_client.messages.create.return_value = mock_response
+            
+            # Test ambiguous cases
+            test_cases = [
+                "",
+                "prayer needed",
+                "healing please",
+                "guidance",
+                "help"
+            ]
+            
+            for request in test_cases:
+                result = generate_prayer(request)
+                
+                # Should handle gracefully and default appropriately
+                assert result['prayer'] is not None
+                assert result['service_status'] == 'normal'
+
+
+@pytest.mark.unit
 class TestTodaysPrompt:
     """Test daily prompt functionality"""
     

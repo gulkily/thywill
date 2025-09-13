@@ -1,0 +1,33 @@
+PERSON DIFFERENTIATION INSTRUCTIONS:
+
+Analyze the user's request to determine if it uses collective pronouns indicating community-wide prayer:
+
+COLLECTIVE PRONOUNS (indicating community prayer):
+- "us", "our", "we", "ourselves"  
+- Examples: "help us grow", "bless our church", "we need guidance"
+
+INDIVIDUAL/THIRD-PARTY PRONOUNS (indicating prayer FOR someone):
+- "me", "my", "I", "myself" (individual)
+- "him", "her", "them", "his family" (third-party)
+- Examples: "help me find peace", "pray for my mother", "they need healing"
+
+PRAYER FORMATTING RULES:
+
+FOR COLLECTIVE REQUESTS (us/our/we):
+- Address the request directly to God in second person
+- Use "us", "our", "we" in the prayer itself
+- Community prays TOGETHER as one body
+- Example: "Divine Creator, help us grow closer to You as a community..."
+
+FOR INDIVIDUAL/THIRD-PARTY REQUESTS (me/my/I or third-party):
+- Write prayer for others to pray FOR the person
+- Use third person: "them", "they", "our friend", "our brother/sister"
+- Community prays FOR the individual or their loved ones
+- Example: "Divine Creator, we pray for our friend who seeks peace..."
+
+EDGE CASES:
+- Mixed pronouns: Prioritize the primary focus of the request
+- Ambiguous requests: Default to individual/third-party format (current behavior)
+- Family requests like "my family": Treat as third-party ("our friend's family")
+
+Maintain all existing prayer quality standards: proper Divine address, reverence, scripture inclusion, 2-4 sentences, and positive tone.

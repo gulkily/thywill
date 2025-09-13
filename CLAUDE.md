@@ -92,6 +92,8 @@ CHANGELOG_AI_DISABLED=true            # HOTFIX: Disable AI changelog generation 
 DAILY_PRIORITY_ENABLED=false         # Enable daily priority system with rotation and visibility controls
 DAILY_PRIORITY_AUTO_EXPIRE=false   # Auto-expire daily priorities at midnight (false = priorities persist until manually removed)
 
+PRAYER_PERSON_DIFFERENTIATION_ENABLED=false  # Distinguish individual vs collective prayer requests (individual = "help me" → community prays FOR person, collective = "help us" → community prays TOGETHER)
+
 # Prayer Categorization Feature Flags (default: false)
 PRAYER_CATEGORIZATION_ENABLED=false           # Master toggle for categorization system
 PRAYER_CATEGORY_BADGES_ENABLED=false          # Show category badges on prayer cards

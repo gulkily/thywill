@@ -35,7 +35,8 @@ class PromptCompositionService:
             "prayer_generation_system.txt",
             "prayer_categorization_request_analysis.txt",
             "prayer_categorization_verification.txt", 
-            "prayer_categorization_output_format.txt"
+            "prayer_categorization_output_format.txt",
+            "prayer_person_differentiation.txt"
         ]
         
         for filename in required_files:
@@ -66,9 +67,15 @@ class PromptCompositionService:
         prayer_categorization_enabled = os.getenv("PRAYER_CATEGORIZATION_ENABLED", "false").lower() == "true"
         ai_categorization_enabled = os.getenv("AI_CATEGORIZATION_ENABLED", "false").lower() == "true"
         safety_scoring_enabled = os.getenv("SAFETY_SCORING_ENABLED", "false").lower() == "true"
+        person_differentiation_enabled = os.getenv("PRAYER_PERSON_DIFFERENTIATION_ENABLED", "false").lower() == "true"
         
         # Always start with base prayer generation prompt
         prompt_parts = [self._read_prompt_file("prayer_generation_system.txt")]
+        
+        # Add person differentiation instructions if enabled
+        if person_differentiation_enabled:
+            prompt_parts.append("")  # Blank line for readability
+            prompt_parts.append(self._read_prompt_file("prayer_person_differentiation.txt"))
         
         # Add categorization components only if enabled
         if prayer_categorization_enabled and ai_categorization_enabled:
@@ -114,8 +121,12 @@ class PromptCompositionService:
         prayer_categorization_enabled = os.getenv("PRAYER_CATEGORIZATION_ENABLED", "false").lower() == "true"
         ai_categorization_enabled = os.getenv("AI_CATEGORIZATION_ENABLED", "false").lower() == "true"
         safety_scoring_enabled = os.getenv("SAFETY_SCORING_ENABLED", "false").lower() == "true"
+        person_differentiation_enabled = os.getenv("PRAYER_PERSON_DIFFERENTIATION_ENABLED", "false").lower() == "true"
         
         components = ["prayer_generation_system.txt"]
+        
+        if person_differentiation_enabled:
+            components.append("prayer_person_differentiation.txt")
         
         if prayer_categorization_enabled and ai_categorization_enabled:
             components.extend([
@@ -131,7 +142,8 @@ class PromptCompositionService:
             "feature_flags": {
                 "PRAYER_CATEGORIZATION_ENABLED": prayer_categorization_enabled,
                 "AI_CATEGORIZATION_ENABLED": ai_categorization_enabled,
-                "SAFETY_SCORING_ENABLED": safety_scoring_enabled
+                "SAFETY_SCORING_ENABLED": safety_scoring_enabled,
+                "PRAYER_PERSON_DIFFERENTIATION_ENABLED": person_differentiation_enabled
             },
             "total_components": len(components)
         }
