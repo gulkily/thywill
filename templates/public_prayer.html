@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}Prayer - ThyWill Community{% endblock %}
+
+{% block content %}
+<!-- Back Navigation -->
+<section class="mb-6">
+  <a href="/" 
+     class="inline-flex items-center text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 transition-colors duration-200">
+    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+    </svg>
+    Back to Community Prayers
+  </a>
+</section>
+
+<!-- Prayer Content -->
+<section class="mb-8">
+  <div class="max-w-4xl mx-auto">
+    <!-- Loading State -->
+    <div id="prayer-loading" class="text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 dark:border-purple-400"></div>
+      <p class="mt-2 text-gray-600 dark:text-gray-400">Loading prayer...</p>
+    </div>
+    
+    <!-- Prayer Container -->
+    <div id="prayer-container" class="hidden">
+      <article class="bg-white dark:bg-gray-800 border-l-4 border-purple-300 dark:border-purple-500 rounded-lg shadow dark:shadow-gray-900/20 p-8">
+        
+        <!-- Generated Prayer (prominent) -->
+        <div id="generated-prayer-section" class="mb-8">
+          <h1 class="text-2xl font-semibold text-purple-600 dark:text-purple-300 mb-4 flex items-center">
+            <span class="text-2xl mr-2">🙏</span>
+            Community Prayer
+          </h1>
+          <div id="generated-prayer-content" class="text-xl leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap italic font-light">
+            <!-- Generated prayer will be inserted here -->
+          </div>
+        </div>
+        
+        <!-- Divider -->
+        <div class="border-t border-gray-200 dark:border-gray-700 my-8"></div>
+        
+        <!-- Original Request -->
+        <div class="mb-8">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-400 mb-4 flex items-center">
+            <span class="text-lg mr-2">📝</span>
+            Original Prayer Request
+          </h2>
+          <div id="original-request-content" class="text-lg leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+            <!-- Original request will be inserted here -->
+          </div>
+        </div>
+        
+        <!-- Prayer Footer -->
+        <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <span class="text-gray-600 dark:text-gray-400">
+                Shared by <span id="author-name" class="font-medium"><!-- Author will be inserted here --></span>
+              </span>
+              <span id="prayer-date" class="text-gray-500 dark:text-gray-500 text-sm">
+                <!-- Date will be inserted here -->
+              </span>
+            </div>
+            
+            <!-- Call to Action -->
+            <div class="flex flex-col sm:flex-row gap-2">
+              <a href="/login" 
+                 class="inline-flex items-center justify-center px-4 py-2 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400">
+                Join Community
+              </a>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+    
+    <!-- Error State -->
+    <div id="prayer-error" class="hidden text-center py-12">
+      <div class="text-red-500 dark:text-red-400 mb-4 text-4xl">⚠️</div>
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Prayer Not Found</h2>
+      <p class="text-gray-600 dark:text-gray-400 mb-6">This prayer may not be available for public viewing or may have been removed.</p>
+      <a href="/" 
+         class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white font-medium rounded-lg transition-colors duration-200">
+        Return to Community Prayers
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- About Community Section -->
+<section class="mb-8 bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
+  <div class="max-w-4xl mx-auto text-center">
+    <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Join Our Prayer Community</h2>
+    <p class="text-gray-600 dark:text-gray-300 mb-6">
+      ThyWill is an invite-only Christian community where members support each other through prayer, share life's challenges and blessings, and grow together in faith.
+    </p>
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+      <a href="/login" 
+         class="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400">
+        Request Community Access
+      </a>
+      <a href="/" 
+         class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-6 py-3 rounded-lg font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400">
+        Browse More Prayers
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- JavaScript for Loading Prayer -->
+<script>
+async function loadPrayer() {
+  try {
+    // Extract prayer ID from URL path
+    const pathParts = window.location.pathname.split('/');
+    const prayerId = pathParts[pathParts.length - 1];
+    
+    if (!prayerId) {
+      throw new Error('No prayer ID found in URL');
+    }
+    
+    document.getElementById('prayer-loading').classList.remove('hidden');
+    document.getElementById('prayer-container').classList.add('hidden');
+    document.getElementById('prayer-error').classList.add('hidden');
+    
+    const response = await fetch(`/api/public/prayer/${prayerId}`);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('Prayer not found');
+      }
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.success || !data.prayer) {
+      throw new Error('Invalid API response');
+    }
+    
+    const prayer = data.prayer;
+    
+    // Render prayer content
+    if (prayer.generated_prayer) {
+      document.getElementById('generated-prayer-content').textContent = prayer.generated_prayer;
+    } else {
+      document.getElementById('generated-prayer-section').style.display = 'none';
+    }
+    
+    document.getElementById('original-request-content').textContent = prayer.text;
+    document.getElementById('author-name').innerHTML = prayer.author_display_name;
+    
+    const createdDate = new Date(prayer.created_at).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+    document.getElementById('prayer-date').textContent = createdDate;
+    
+    // Update page title
+    document.title = `Prayer by ${prayer.author_username} - ThyWill Community`;
+    
+    // Update meta description
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', `Prayer request: ${prayer.text.substring(0, 150)}...`);
+    }
+    
+    // Show content
+    document.getElementById('prayer-loading').classList.add('hidden');
+    document.getElementById('prayer-container').classList.remove('hidden');
+    
+  } catch (error) {
+    console.error('Error loading prayer:', error);
+    document.getElementById('prayer-loading').classList.add('hidden');
+    document.getElementById('prayer-error').classList.remove('hidden');
+  }
+}
+
+// Load prayer when page loads
+document.addEventListener('DOMContentLoaded', loadPrayer);
+</script>
+
+<!-- SEO Meta Tags -->
+<meta name="description" content="View this prayer request and community response from ThyWill, a Christian prayer community focused on faith-based support and Scripture-based prayers.">
+<meta property="og:title" content="Community Prayer - ThyWill">
+<meta property="og:description" content="View this authentic prayer request and Scripture-based response from the ThyWill Christian community.">
+<meta property="og:type" content="article">
+
+{% endblock %}

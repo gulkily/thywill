@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Community Prayers{% endblock %}
+
+{% block content %}
+<!-- Public Homepage Header -->
+<section class="mb-8 text-center">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">ThyWill Community Prayers</h1>
+    <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">
+      Join our faith-based community where members pray together, support one another, and experience God's love through authentic prayer.
+    </p>
+    
+    <!-- Call to Action Buttons -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+      <a href="/login" 
+         class="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400">
+        Login to Community
+      </a>
+      <a href="/login" 
+         class="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400">
+        Request Community Access
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- About Section -->
+<section class="mb-8 bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
+  <div class="max-w-4xl mx-auto">
+    <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">About Our Community</h2>
+    <div class="grid md:grid-cols-3 gap-6 text-center">
+      <div>
+        <div class="text-3xl mb-2">🙏</div>
+        <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Scripture-Based Prayers</h3>
+        <p class="text-gray-600 dark:text-gray-300 text-sm">AI-generated prayers rooted in Biblical wisdom and Christian faith</p>
+      </div>
+      <div>
+        <div class="text-3xl mb-2">🤝</div>
+        <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Community Support</h3>
+        <p class="text-gray-600 dark:text-gray-300 text-sm">Members pray for one another and share in life's joys and challenges</p>
+      </div>
+      <div>
+        <div class="text-3xl mb-2">🔒</div>
+        <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Safe & Private</h3>
+        <p class="text-gray-600 dark:text-gray-300 text-sm">Invite-only community with community moderation and respect</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Recent Community Prayers -->
+<section class="mb-8">
+  <div class="max-w-4xl mx-auto">
+    <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Recent Community Prayers</h2>
+    
+    <!-- Loading State -->
+    <div id="prayers-loading" class="text-center py-8">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 dark:border-purple-400"></div>
+      <p class="mt-2 text-gray-600 dark:text-gray-400">Loading prayers...</p>
+    </div>
+    
+    <!-- Prayers Container -->
+    <div id="prayers-container" class="hidden">
+      <ul id="prayers-list" class="space-y-6">
+        <!-- Prayers will be loaded here via JavaScript -->
+      </ul>
+      
+      <!-- Pagination Controls -->
+      <div id="pagination-controls" class="mt-8 flex justify-center items-center space-x-4">
+        <button id="prev-btn" 
+                onclick="loadPage(currentPage - 1)" 
+                disabled
+                class="px-4 py-2 text-sm font-medium text-gray-500 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
+          Previous
+        </button>
+        
+        <span id="page-info" class="text-sm text-gray-700 dark:text-gray-300">
+          Page 1
+        </span>
+        
+        <button id="next-btn" 
+                onclick="loadPage(currentPage + 1)"
+                disabled
+                class="px-4 py-2 text-sm font-medium text-gray-500 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
+          Next
+        </button>
+      </div>
+    </div>
+    
+    <!-- Error State -->
+    <div id="prayers-error" class="hidden text-center py-8">
+      <div class="text-red-500 dark:text-red-400 mb-2">⚠️</div>
+      <p class="text-gray-600 dark:text-gray-400">Unable to load prayers. Please try again later.</p>
+    </div>
+  </div>
+</section>
+
+<!-- JavaScript for Loading Prayers -->
+<script>
+let currentPage = 1;
+let totalPages = 1;
+const pageSize = 10;
+
+async function loadPrayers(page = 1) {
+  try {
+    document.getElementById('prayers-loading').classList.remove('hidden');
+    document.getElementById('prayers-container').classList.add('hidden');
+    document.getElementById('prayers-error').classList.add('hidden');
+    
+    const response = await fetch(`/api/public/prayers?page=${page}&page_size=${pageSize}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error('API returned error');
+    }
+    
+    // Update pagination state
+    currentPage = data.pagination.page;
+    totalPages = data.pagination.total_pages;
+    
+    // Render prayers
+    renderPrayers(data.prayers);
+    updatePaginationControls();
+    
+    // Show content
+    document.getElementById('prayers-loading').classList.add('hidden');
+    document.getElementById('prayers-container').classList.remove('hidden');
+    
+  } catch (error) {
+    console.error('Error loading prayers:', error);
+    document.getElementById('prayers-loading').classList.add('hidden');
+    document.getElementById('prayers-error').classList.remove('hidden');
+  }
+}
+
+function renderPrayers(prayers) {
+  const prayersList = document.getElementById('prayers-list');
+  prayersList.innerHTML = '';
+  
+  prayers.forEach(prayer => {
+    const li = document.createElement('li');
+    li.className = 'bg-white dark:bg-gray-800 border-l-4 border-purple-300 dark:border-purple-500 p-6 rounded-lg shadow dark:shadow-gray-900/20';
+    
+    const createdDate = new Date(prayer.created_at).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long', 
+      day: 'numeric'
+    });
+    
+    li.innerHTML = `
+      <!-- Generated Prayer (prominent) -->
+      ${prayer.generated_prayer ? `
+      <div class="mb-4">
+        <h3 class="text-sm font-medium text-purple-600 dark:text-purple-300 mb-2">🙏 Prayer</h3>
+        <p class="text-lg leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap italic">${escapeHtml(prayer.generated_prayer)}</p>
+      </div>
+      ` : ''}
+      
+      <!-- Original Request -->
+      <div class="mb-4">
+        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">📝 Original Request</h4>
+        <p class="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">${escapeHtml(prayer.text)}</p>
+      </div>
+      
+      <!-- Prayer Footer -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div class="flex items-center space-x-4">
+          <span class="text-sm text-gray-600 dark:text-gray-400">
+            Shared by ${prayer.author_display_name}
+          </span>
+          <span class="text-sm text-gray-500 dark:text-gray-500">
+            ${createdDate}
+          </span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <a href="/prayer/${prayer.id}" 
+             class="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium transition-colors duration-200">
+            View Full Prayer →
+          </a>
+        </div>
+      </div>
+    `;
+    
+    prayersList.appendChild(li);
+  });
+}
+
+function updatePaginationControls() {
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
+  const pageInfo = document.getElementById('page-info');
+  
+  prevBtn.disabled = currentPage <= 1;
+  nextBtn.disabled = currentPage >= totalPages;
+  
+  prevBtn.classList.toggle('text-purple-600', !prevBtn.disabled);
+  prevBtn.classList.toggle('dark:text-purple-400', !prevBtn.disabled);
+  prevBtn.classList.toggle('hover:bg-purple-50', !prevBtn.disabled);
+  prevBtn.classList.toggle('dark:hover:bg-purple-900/20', !prevBtn.disabled);
+  
+  nextBtn.classList.toggle('text-purple-600', !nextBtn.disabled);
+  nextBtn.classList.toggle('dark:text-purple-400', !nextBtn.disabled);
+  nextBtn.classList.toggle('hover:bg-purple-50', !nextBtn.disabled);
+  nextBtn.classList.toggle('dark:hover:bg-purple-900/20', !nextBtn.disabled);
+  
+  pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+}
+
+function loadPage(page) {
+  if (page >= 1 && page <= totalPages && page !== currentPage) {
+    loadPrayers(page);
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Load initial prayers
+document.addEventListener('DOMContentLoaded', () => {
+  loadPrayers(1);
+});
+</script>
+
+<!-- SEO and Social Meta Tags -->
+<meta name="description" content="ThyWill is a faith-based prayer community where members pray together, support one another, and experience God's love through authentic prayer requests and Scripture-based responses.">
+<meta property="og:title" content="ThyWill - Community Prayers">
+<meta property="og:description" content="Join our faith-based prayer community. See authentic prayer requests and Scripture-based responses from our members.">
+<meta property="og:type" content="website">
+
+{% endblock %}

@@ -33,7 +33,7 @@ from app_helpers.shared_templates import templates
 router = APIRouter()
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/feed", response_class=HTMLResponse)
 def feed(request: Request, feed_type: str = "all", category: Optional[str] = None, 
          min_safety: Optional[float] = None, user_session: tuple = Depends(current_user)):
     """

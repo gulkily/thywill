@@ -103,6 +103,7 @@ from app_helpers.routes.changelog_routes import router as changelog_router
 from app_helpers.routes.archive_routes import router as archive_router
 from app_helpers.routes.file_routes import router as file_router
 from app_helpers.routes.email_settings_routes import router as email_settings_router
+from app_helpers.routes.public_routes import router as public_router
 
 app = FastAPI()
 
@@ -161,6 +162,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Include authentication routes
 app.include_router(auth_router)
+# Include public routes (must be before prayer routes for root route handling)
+app.include_router(public_router)
 # Include prayer routes
 app.include_router(prayer_router)
 # Include admin routes
