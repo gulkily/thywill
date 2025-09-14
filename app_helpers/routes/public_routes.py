@@ -7,12 +7,15 @@ Provides API endpoints for public prayer access with rate limiting.
 from fastapi import APIRouter, Request, HTTPException, Query
 from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timedelta
 from sqlmodel import Session, select, func
 from models import engine, SecurityLog, User, Session as SessionModel
 from app_helpers.services.public_prayer_service import PublicPrayerService
 from app_helpers.services.username_display_service import UsernameDisplayService
+from app_helpers.services.membership_application_service import MembershipApplicationService
+import os
 
 router = APIRouter()
 
@@ -22,6 +25,17 @@ templates = Jinja2Templates(directory="templates")
 # Rate limiting configuration
 PUBLIC_RATE_LIMIT_PER_MINUTE = 100  # Increased for development
 PUBLIC_RATE_LIMIT_PER_HOUR = 1000   # Increased for development
+
+# Application rate limiting (more restrictive)
+APPLICATION_RATE_LIMIT_PER_HOUR = 5  # 5 applications per hour per IP
+APPLICATION_RATE_LIMIT_PER_DAY = 10  # 10 applications per day per IP
+
+
+# Pydantic models for request validation
+class MembershipApplicationRequest(BaseModel):
+    username: str
+    essay: str
+    contact: Optional[str] = None
 
 
 def check_public_rate_limit(request: Request) -> bool:
@@ -76,6 +90,48 @@ def check_public_rate_limit(request: Request) -> bool:
         return True
 
 
+def check_application_rate_limit(request: Request) -> bool:
+    """
+    Check rate limiting for membership applications (more restrictive).
+
+    Args:
+        request: FastAPI request object
+
+    Returns:
+        True if request is allowed, False if rate limited
+    """
+    client_ip = request.client.host if request.client else "unknown"
+
+    with Session(engine) as session:
+        now = datetime.utcnow()
+        hour_ago = now - timedelta(hours=1)
+        day_ago = now - timedelta(days=1)
+
+        # Count applications in last hour
+        hour_count = session.exec(
+            select(func.count(SecurityLog.id))
+            .where(SecurityLog.ip_address == client_ip)
+            .where(SecurityLog.event_type == "membership_application")
+            .where(SecurityLog.created_at > hour_ago)
+        ).first() or 0
+
+        # Count applications in last day
+        day_count = session.exec(
+            select(func.count(SecurityLog.id))
+            .where(SecurityLog.ip_address == client_ip)
+            .where(SecurityLog.event_type == "membership_application")
+            .where(SecurityLog.created_at > day_ago)
+        ).first() or 0
+
+        # Check limits
+        if hour_count >= APPLICATION_RATE_LIMIT_PER_HOUR:
+            return False
+        if day_count >= APPLICATION_RATE_LIMIT_PER_DAY:
+            return False
+
+        return True
+
+
 def is_user_authenticated(request: Request) -> bool:
     """
     Check if user is authenticated without raising exceptions.
@@ -105,7 +161,7 @@ def is_user_authenticated(request: Request) -> bool:
 
 
 @router.get("/", response_class=HTMLResponse)
-async def public_homepage_or_redirect(request: Request):
+async def public_homepage_or_redirect(request: Request, show: str = None):
     """
     Root route that serves public homepage for unauthenticated users
     and redirects authenticated users to their feed.
@@ -115,9 +171,39 @@ async def public_homepage_or_redirect(request: Request):
         return RedirectResponse("/feed", status_code=302)
     else:
         # User is not authenticated, serve public homepage
+        membership_applications_enabled = os.getenv('MEMBERSHIP_APPLICATIONS_ENABLED', 'true').lower() == 'true'
         return templates.TemplateResponse(
             "public_homepage.html",
-            {"request": request}
+            {
+                "request": request,
+                "membership_applications_enabled": membership_applications_enabled,
+                "show_application_form": show == "apply"
+            }
+        )
+
+
+@router.get("/apply", response_class=HTMLResponse)
+async def membership_application_page(request: Request):
+    """
+    Direct link to membership application form.
+    Redirects authenticated users to feed.
+    """
+    if is_user_authenticated(request):
+        # User is authenticated, redirect to feed
+        return RedirectResponse("/feed", status_code=302)
+    else:
+        # User is not authenticated, serve homepage with application form shown
+        membership_applications_enabled = os.getenv('MEMBERSHIP_APPLICATIONS_ENABLED', 'true').lower() == 'true'
+
+        if not membership_applications_enabled:
+            # Feature disabled, redirect to homepage
+            return RedirectResponse("/", status_code=302)
+
+        return templates.TemplateResponse(
+            "membership_application.html",
+            {
+                "request": request
+            }
         )
 
 
@@ -355,3 +441,118 @@ async def get_public_prayer_statistics_api(
             status_code=500,
             detail="Internal server error"
         )
+
+
+
+@router.post("/api/membership/apply")
+async def submit_membership_application(
+    application_request: MembershipApplicationRequest,
+    request: Request
+):
+    """
+    Submit a membership application.
+
+    Rate limited: 5 applications per hour, 10 per day per IP.
+    """
+    # Check if feature is enabled
+    membership_applications_enabled = os.getenv('MEMBERSHIP_APPLICATIONS_ENABLED', 'true').lower() == 'true'
+    if not membership_applications_enabled:
+        raise HTTPException(
+            status_code=404,
+            detail="Membership applications are currently disabled"
+        )
+
+    # Check application rate limiting
+    if not check_application_rate_limit(request):
+        raise HTTPException(
+            status_code=429,
+            detail="Application rate limit exceeded. Please try again later."
+        )
+
+    try:
+        client_ip = request.client.host if request.client else "unknown"
+
+        # Validate input
+        username = application_request.username.strip()
+        essay = application_request.essay.strip()
+        contact = application_request.contact.strip() if application_request.contact else None
+
+        # Basic validation
+        if not username or len(username) < 2:
+            raise HTTPException(
+                status_code=400,
+                detail="Username must be at least 2 characters long"
+            )
+
+        if not essay or len(essay) < 20:
+            raise HTTPException(
+                status_code=400,
+                detail="Essay must be at least 20 characters long"
+            )
+
+        if len(username) > 50:
+            raise HTTPException(
+                status_code=400,
+                detail="Username must be 50 characters or less"
+            )
+
+        if len(essay) > 1000:
+            raise HTTPException(
+                status_code=400,
+                detail="Essay must be 1000 characters or less"
+            )
+
+        # Check if username already exists
+        with Session(engine) as session:
+            existing_user = session.get(User, username)
+            if existing_user:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Username already taken. Please choose a different username."
+                )
+
+        # Create application using service
+        application = MembershipApplicationService.create_application(
+            username=username,
+            essay=essay,
+            contact_info=contact,
+            ip_address=client_ip
+        )
+
+        # Log the application for rate limiting
+        with Session(engine) as session:
+            log_entry = SecurityLog(
+                user_id="public",
+                ip_address=client_ip,
+                event_type="membership_application",
+                details=f"Membership application submitted for username: {username}"
+            )
+            session.add(log_entry)
+            session.commit()
+
+        return JSONResponse({
+            "success": True,
+            "message": "Application submitted successfully",
+            "application_id": application.id
+        })
+
+    except HTTPException:
+        # Re-raise validation errors
+        raise
+    except Exception as e:
+        # Log error but dont expose details
+        with Session(engine) as session:
+            error_log = SecurityLog(
+                user_id="public",
+                ip_address=request.client.host if request.client else "unknown",
+                event_type="membership_application_error",
+                details=f"Error in /api/membership/apply: {str(e)}"
+            )
+            session.add(error_log)
+            session.commit()
+
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while processing application"
+        )
+
