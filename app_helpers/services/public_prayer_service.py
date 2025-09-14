@@ -281,7 +281,7 @@ class PublicPrayerService:
                     'id': mark.id,
                     'username': mark.username,
                     'display_name': display_name,
-                    'prayed_at': mark.created_at,
+                    'prayed_at': mark.created_at.isoformat(),  # Convert to ISO format for JSON serialization
                     'formatted_date': mark.created_at.strftime('%B %d, %Y at %I:%M %p')
                 })
             

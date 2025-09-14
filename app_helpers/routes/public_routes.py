@@ -20,8 +20,8 @@ router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 # Rate limiting configuration
-PUBLIC_RATE_LIMIT_PER_MINUTE = 10
-PUBLIC_RATE_LIMIT_PER_HOUR = 100
+PUBLIC_RATE_LIMIT_PER_MINUTE = 100  # Increased for development
+PUBLIC_RATE_LIMIT_PER_HOUR = 1000   # Increased for development
 
 
 def check_public_rate_limit(request: Request) -> bool:
@@ -284,25 +284,7 @@ async def get_public_prayer_api(
             detail="Internal server error"
         )
 
-
-@router.get("/prayer/{prayer_id}", response_class=HTMLResponse)
-async def public_prayer_page(
-    prayer_id: str,
-    request: Request
-):
-    """
-    Serve individual prayer page template for public viewing.
-    
-    This route serves the HTML template that will fetch prayer data via JavaScript.
-    The actual prayer data is loaded via the /api/public/prayer/{prayer_id} endpoint.
-    """
-    return templates.TemplateResponse(
-        "public_prayer.html",
-        {
-            "request": request,
-            "prayer_id": prayer_id
-        }
-    )
+# Duplicate route removed - already defined above at line 198
 
 @router.get("/api/public/prayer/{prayer_id}/statistics")
 async def get_public_prayer_statistics_api(
@@ -314,6 +296,8 @@ async def get_public_prayer_statistics_api(
     
     Rate limited: 10 requests per minute, 100 per hour per IP.
     """
+    print(f"DEBUG: Starting statistics API for prayer {prayer_id}")
+    
     # Check rate limiting
     if not check_public_rate_limit(request):
         raise HTTPException(
@@ -353,6 +337,10 @@ async def get_public_prayer_statistics_api(
         raise
     except Exception as e:
         # Log error but don't expose details
+        import traceback
+        print(f"DEBUG: Error in /api/public/prayer/{prayer_id}/statistics: {str(e)}")
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
+        
         with Session(engine) as session:
             error_log = SecurityLog(
                 user_id="public",
