@@ -154,6 +154,9 @@ async def get_public_prayers_api(
                     prayer.author_username, session
                 )
                 
+                # Get statistics for this prayer
+                prayer_stats = result['statistics'].get(prayer.id, {})
+                
                 formatted_prayer = {
                     'id': prayer.id,
                     'text': prayer.text,
@@ -162,8 +165,8 @@ async def get_public_prayers_api(
                     'author_display_name': display_name,
                     'created_at': prayer.created_at.isoformat(),
                     'project_tag': prayer.project_tag,
-                    'total_prayers': getattr(prayer, 'total_prayers', 0),
-                    'unique_people': getattr(prayer, 'unique_people', 0)
+                    'total_prayers': prayer_stats.get('total_prayers', 0),
+                    'unique_people': prayer_stats.get('unique_people', 0)
                 }
                 formatted_prayers.append(formatted_prayer)
         

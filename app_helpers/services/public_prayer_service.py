@@ -79,26 +79,35 @@ class PublicPrayerService:
             )
             prayers = list(session.exec(prayers_query).all())
             
-            # Add basic statistics for each prayer
-            prayers_with_stats = []
-            for prayer in prayers:
-                # Get basic statistics for this prayer
-                total_prayers = session.exec(
-                    select(func.count(PrayerMark.id))
-                    .where(PrayerMark.prayer_id == prayer.id)
-                ).first() or 0
-                
-                unique_people = session.exec(
-                    select(func.count(func.distinct(PrayerMark.username)))
-                    .where(PrayerMark.prayer_id == prayer.id)
-                ).first() or 0
-                
-                # Add statistics as attributes to the prayer object
-                prayer.total_prayers = total_prayers
-                prayer.unique_people = unique_people
-                prayers_with_stats.append(prayer)
+            # Get basic statistics for all prayers in one query
+            prayer_ids = [prayer.id for prayer in prayers]
+            statistics = {}
             
-            prayers = prayers_with_stats
+            if prayer_ids:
+                # Get total prayer counts for all prayers
+                total_counts = session.exec(
+                    select(PrayerMark.prayer_id, func.count(PrayerMark.id))
+                    .where(PrayerMark.prayer_id.in_(prayer_ids))
+                    .group_by(PrayerMark.prayer_id)
+                ).all()
+                
+                # Get unique people counts for all prayers
+                unique_counts = session.exec(
+                    select(PrayerMark.prayer_id, func.count(func.distinct(PrayerMark.username)))
+                    .where(PrayerMark.prayer_id.in_(prayer_ids))
+                    .group_by(PrayerMark.prayer_id)
+                ).all()
+                
+                # Build statistics dictionary
+                for prayer_id, count in total_counts:
+                    if prayer_id not in statistics:
+                        statistics[prayer_id] = {}
+                    statistics[prayer_id]['total_prayers'] = count
+                    
+                for prayer_id, count in unique_counts:
+                    if prayer_id not in statistics:
+                        statistics[prayer_id] = {}
+                    statistics[prayer_id]['unique_people'] = count
             
             # Calculate pagination metadata
             total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
@@ -107,6 +116,7 @@ class PublicPrayerService:
             
             return {
                 'prayers': prayers,
+                'statistics': statistics,
                 'pagination': {
                     'page': page,
                     'page_size': page_size,

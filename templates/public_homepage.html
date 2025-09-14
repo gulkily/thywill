@@ -183,11 +183,7 @@ function renderPrayers(prayers) {
               <span class="text-sm text-gray-600 dark:text-gray-400">
                 🙏 ${prayer.unique_people} ${prayer.unique_people === 1 ? 'person has' : 'people have'} prayed this ${prayer.total_prayers} ${prayer.total_prayers === 1 ? 'time' : 'times'}
               </span>
-            ` : `
-              <span class="text-sm text-gray-500 dark:text-gray-500">
-                No prayers yet
-              </span>
-            `}
+            ` : ''}
           </div>
           <div class="flex items-center space-x-2">
             <a href="/prayer/${prayer.id}" 

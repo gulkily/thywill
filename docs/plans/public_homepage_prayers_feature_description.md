@@ -39,13 +39,11 @@ Non-members visiting ThyWill have no visibility into the community's prayer qual
    - No login required to view featured content
    - Mobile-responsive design consistent with existing UI
 
-2. **Prayer Access and Display**
-   - Public homepage shows paginated list of all eligible prayers
+2. **Recent Prayer Display**
+   - Show 5-10 recent prayers with AI-generated responses
    - Display original prayer requests alongside generated prayers  
    - Include author attribution with supporter badges (trust indicators)
    - Show prayer dates for authenticity
-   - Individual prayer pages accessible via direct URLs
-   - Pagination controls for browsing through prayer history
 
 3. **Automatic Content Filtering**
    - Automatic exclusion of flagged prayers from public display
@@ -82,16 +80,15 @@ Non-members visiting ThyWill have no visibility into the community's prayer qual
 
 ### New Visitor Flow
 1. **Visitor navigates to main ThyWill URL**
-2. **Views paginated prayer list** - sees all eligible community prayers
-3. **Clicks individual prayers** - reads full prayer details on dedicated pages
-4. **Browses prayer history** - uses pagination to explore community prayer activity
-5. **Sees author attribution** - notices supporter badges indicating community trust
-6. **Discovers call-to-action** - finds "Request Community Access" button
-7. **Optional: Views more details** - expandable community information available
+2. **Views recent prayers section** - sees 5-10 authentic prayer examples
+3. **Reads generated prayers** - observes AI quality and Scripture integration
+4. **Sees author attribution** - notices supporter badges indicating community trust
+5. **Discovers call-to-action** - finds "Request Community Access" button
+6. **Optional: Views more details** - expandable community information available
 
 ### Returning Member Flow
 1. **Member visits main URL** 
-2. **Browses public prayer feed** - observes authentic community activity
+2. **Sees recent community prayers** - observes authentic community activity
 3. **Clicks "Login"** - proceeds to existing authentication system
 4. **Continues to full community** - accesses private prayer feeds and features
 
@@ -99,14 +96,13 @@ Non-members visiting ThyWill have no visibility into the community's prayer qual
 
 ### Primary Success Metrics
 - **Increased invite requests**: 25%+ increase in new member requests within first month
-- **Deep engagement**: Visitors browse multiple prayers and individual prayer pages
+- **Quality member conversion**: Featured prayer viewers show higher engagement after joining
 - **Reduced bounce rate**: < 60% bounce rate on public homepage (compared to current 401 error)
 
 ### Secondary Success Metrics  
-- **Prayer exploration**: Average visitor views 3+ individual prayer pages
-- **Community representation**: Public prayers represent diverse prayer topics and member types  
+- **Community representation**: Recent prayers represent diverse prayer topics and member types
 - **Mobile engagement**: 70%+ of public traffic successfully views prayer content on mobile
-- **Zero inappropriate content**: No flagged prayers appear on public pages
+- **Zero inappropriate content**: No flagged prayers appear on public page
 
 ### User Feedback Indicators
 - New members report "prayers drew me to join" in post-signup surveys
@@ -125,7 +121,6 @@ Non-members visiting ThyWill have no visibility into the community's prayer qual
 ### Constraints
 - **No database schema changes** - must use existing Prayer model and fields
 - Must maintain existing authentication system without breaking changes
-- Public page cannot expose any private member information beyond prayer text and author names
 - **No ongoing admin maintenance required** - system must be fully automatic
 - Implementation must not impact performance of authenticated user experience
 - Must automatically filter out flagged and archived prayers
