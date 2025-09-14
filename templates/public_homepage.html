@@ -177,7 +177,7 @@ function renderPrayers(prayers) {
             ${createdDate}
           </span>
         </div>
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-6">
           <div class="flex items-center space-x-4">
             ${prayer.total_prayers > 0 ? `
               <span class="text-sm text-gray-600 dark:text-gray-400">
@@ -185,7 +185,7 @@ function renderPrayers(prayers) {
               </span>
             ` : ''}
           </div>
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center space-x-2 flex-shrink-0">
             <a href="/prayer/${prayer.id}" 
                class="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium transition-colors duration-200">
               View Full Prayer →
