@@ -490,6 +490,12 @@ async def submit_membership_application(
                 detail="Essay must be at least 20 characters long"
             )
 
+        if not contact or len(contact.strip()) < 3:
+            raise HTTPException(
+                status_code=400,
+                detail="Contact information is required and must be at least 3 characters long"
+            )
+
         if len(username) > 50:
             raise HTTPException(
                 status_code=400,
@@ -554,5 +560,98 @@ async def submit_membership_application(
         raise HTTPException(
             status_code=500,
             detail="Internal server error while processing application"
+        )
+
+
+@router.get("/apply/status", response_class=HTMLResponse)
+def membership_application_status_page(request: Request):
+    """
+    Display application status lookup page
+    """
+    # Check if feature is enabled
+    membership_applications_enabled = os.getenv('MEMBERSHIP_APPLICATIONS_ENABLED', 'true').lower() == 'true'
+    if not membership_applications_enabled:
+        raise HTTPException(404)
+
+    return templates.TemplateResponse("membership_application_status.html", {
+        "request": request
+    })
+
+
+@router.post("/api/membership/status")
+async def get_membership_application_status(
+    status_request: dict,
+    request: Request
+):
+    """
+    Get status of a membership application by ID
+    """
+    # Check if feature is enabled
+    membership_applications_enabled = os.getenv('MEMBERSHIP_APPLICATIONS_ENABLED', 'true').lower() == 'true'
+    if not membership_applications_enabled:
+        raise HTTPException(404)
+
+    # Basic rate limiting (use public rate limit)
+    if not check_public_rate_limit(request):
+        raise HTTPException(429)
+
+    try:
+        application_id = status_request.get('application_id', '').strip()
+
+        if not application_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Application ID is required"
+            )
+
+        # Look up application
+        with Session(engine) as session:
+            stmt = select(MembershipApplication).where(MembershipApplication.id == application_id)
+            application = session.exec(stmt).first()
+
+            if not application:
+                return JSONResponse({
+                    "success": False,
+                    "error": "Application not found. Please check your Application ID."
+                })
+
+            # Return status information
+            status_info = {
+                "username": application.username,
+                "status": application.status,
+                "created_at": application.created_at.isoformat(),
+                "processed_at": application.processed_at.isoformat() if application.processed_at else None
+            }
+
+            # Add status-specific information
+            if application.status == "approved":
+                status_info["message"] = "Your application has been approved! You should have received an invite link at your contact information."
+            elif application.status == "rejected":
+                status_info["message"] = "Your application was not approved at this time."
+            else:
+                status_info["message"] = "Your application is pending review by our administrators."
+
+            return JSONResponse({
+                "success": True,
+                "application": status_info
+            })
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Log error
+        with Session(engine) as session:
+            error_log = SecurityLog(
+                user_id="public",
+                ip_address=request.client.host if request.client else "unknown",
+                event_type="membership_status_error",
+                details=f"Error in /api/membership/status: {str(e)}"
+            )
+            session.add(error_log)
+            session.commit()
+
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error"
         )
 

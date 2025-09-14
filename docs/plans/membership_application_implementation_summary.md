@@ -41,8 +41,14 @@ class MembershipApplication(SQLModel, table=True):
 **Text Archive Location**: `text_archives/membership_applications/`
 
 ### 3. Public Interface (`public_routes.py`)
-**Application Form URL**: `/` (public homepage)
-**API Endpoint**: `POST /api/membership/apply`
+**Application Form URLs**:
+- `/` (public homepage section)
+- `/apply` (dedicated application page)
+
+**API Endpoints**:
+- `POST /api/membership/apply` - Submit new application
+- `GET /apply/status` - Status checking page
+- `POST /api/membership/status` - Check application status by ID
 
 **Rate Limiting**:
 - 5 applications per hour per IP
@@ -52,7 +58,7 @@ class MembershipApplication(SQLModel, table=True):
 **Validation**:
 - Username: 2-50 characters, uniqueness check
 - Essay: 20-1000 characters (required)
-- Contact: Optional, max 100 characters
+- Contact: Required, min 3 characters, max 100 characters
 
 ### 4. Admin Interface (`admin/dashboard.py`)
 **Admin Panel**: `/admin` (new section)
@@ -72,15 +78,28 @@ class MembershipApplication(SQLModel, table=True):
 #### Public Homepage (`public_homepage.html`)
 - **Section**: "Join Our Prayer Community"
 - **Behavior**: Appears after viewing community prayers
-- **Form Fields**: Username, Essay (with character counter), Optional Contact
+- **Form Fields**: Username, Essay (with character counter), Required Contact
 - **States**: Button → Form → Success/Error messages
 - **JavaScript**: Real-time validation, AJAX submission
+
+#### Membership Application Page (`membership_application.html`)
+- **Dedicated Route**: `/apply` - focused application experience
+- **Form Fields**: Username, Essay (character counter), Required Contact Info
+- **Success State**: Shows Application ID for status checking
+- **Features**: Character counters, real-time validation, error handling
 
 #### Admin Dashboard (`admin.html`)
 - **Section**: "Pending Membership Applications"
 - **Display**: Application cards with full details
 - **Actions**: Approve/Reject buttons with confirmation
 - **Integration**: Seamless with existing admin workflow
+
+#### Application Status Page (`membership_application_status.html`)
+- **Dedicated Route**: `/apply/status` - application status checking
+- **Input**: Application ID lookup form with validation
+- **Display**: Application details with status-based styling
+- **Features**: Real-time status check, formatted dates, error handling
+- **Status Types**: Pending (yellow), Approved (green), Rejected (red)
 
 ## Feature Flag Implementation
 **Environment Variable**: `MEMBERSHIP_APPLICATIONS_ENABLED=true`
@@ -147,6 +166,13 @@ class MembershipApplication(SQLModel, table=True):
 5. **Application processed** + archive updated
 6. **Invite link** provided if approved
 
+### Application Status Checking Flow
+1. **User** saves Application ID from submission
+2. **Visits** `/apply/status` page
+3. **Enters** Application ID to lookup status
+4. **Views** application details with current status
+5. **Contacts admin** if approved but no invite received
+
 ## File Structure
 ```
 ├── models.py (MembershipApplication model)
@@ -158,7 +184,9 @@ class MembershipApplication(SQLModel, table=True):
 │       └── admin/
 │           └── dashboard.py (admin routes)
 ├── templates/
-│   ├── public_homepage.html (application form)
+│   ├── public_homepage.html (application form section)
+│   ├── membership_application.html (dedicated application page)
+│   ├── membership_application_status.html (status checking page)
 │   └── admin.html (review interface)
 ├── text_archives/
 │   └── membership_applications/ (archive files)
@@ -250,8 +278,9 @@ MEMBERSHIP_APPLICATIONS_ENABLED=true          # Enable public membership applica
 ### Required Before Production
 - [ ] **CRITICAL**: Create database migration
 - [ ] Add environment variable to production config
-- [ ] Test application submission flow
+- [ ] Test application submission flow (required contact info)
 - [ ] Test admin approval workflow
+- [ ] Test application status checking system
 - [ ] Verify rate limiting works
 - [ ] Test feature flag disable/enable
 
@@ -273,4 +302,10 @@ The membership application feature is **architecturally complete and well-design
 
 **One critical database migration is required** before deployment, but otherwise the feature is production-ready and follows all ThyWill conventions correctly.
 
-The feature successfully addresses the original problem of providing non-registered users a direct path to request community membership while maintaining quality control through admin review.
+**Recent Enhancements** (September 14, 2025):
+- ✅ **Required Contact Information**: Contact info is now mandatory, ensuring admins can reach approved applicants
+- ✅ **Application ID System**: Users receive Application IDs for status tracking and self-service
+- ✅ **Dedicated Status Page**: `/apply/status` allows applicants to check status independently
+- ✅ **Enhanced UX**: Dedicated `/apply` page with improved user experience
+
+The feature successfully addresses the original problem of providing non-registered users a direct path to request community membership while maintaining quality control through admin review. The addition of required contact info and application status checking resolves critical UX gaps in the approval workflow.

@@ -79,15 +79,16 @@
         <!-- Contact Info Field -->
         <div class="mb-8">
           <label for="contact" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Contact Information <span class="text-gray-400">(Optional)</span>
+            Contact Information <span class="text-red-500">*</span>
           </label>
           <input type="text"
                  id="contact"
                  name="contact"
+                 required
                  maxlength="100"
                  class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 dark:bg-gray-700 dark:text-white text-lg"
-                 placeholder="Email or other contact method (optional)">
-          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">We may use this to contact you about your application</p>
+                 placeholder="Email or other contact method">
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Required so we can contact you if your application is approved</p>
         </div>
 
         <!-- Submit Button -->
@@ -112,8 +113,20 @@
       <p class="text-green-700 dark:text-green-200 mb-4">
         Thank you for your interest in joining our prayer community. Your application has been received and will be reviewed by our administrators.
       </p>
+
+      <!-- Application ID Display -->
+      <div class="bg-green-100 dark:bg-green-800 border border-green-300 dark:border-green-600 rounded-lg p-4 mb-4">
+        <p class="text-sm text-green-600 dark:text-green-300 mb-1">Your Application ID:</p>
+        <p class="text-lg font-mono font-bold text-green-800 dark:text-green-100" id="application-id">
+          <!-- Will be populated by JavaScript -->
+        </p>
+        <p class="text-xs text-green-600 dark:text-green-400 mt-1">
+          Save this ID - you can use it to check your application status at <a href="/apply/status" class="underline hover:text-green-800 dark:hover:text-green-200">/apply/status</a>
+        </p>
+      </div>
+
       <p class="text-green-600 dark:text-green-300 mb-6">
-        You'll receive an invite link if your application is approved. We appreciate your patience during the review process.
+        You'll be contacted at the email address you provided if your application is approved. We appreciate your patience during the review process.
       </p>
       <a href="/" class="inline-block bg-white dark:bg-gray-800 text-green-600 dark:text-green-400 px-6 py-2 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
         View Community Prayers
@@ -212,6 +225,11 @@ async function submitApplication(event) {
       // Hide form and show success
       formSection.classList.add('hidden');
       document.getElementById('success-section').classList.remove('hidden');
+
+      // Display application ID
+      if (data.application_id) {
+        document.getElementById('application-id').textContent = data.application_id;
+      }
 
       // Reset form
       event.target.reset();
