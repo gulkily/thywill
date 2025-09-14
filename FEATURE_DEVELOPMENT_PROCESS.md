@@ -64,9 +64,9 @@
 
 ## File Naming Convention
 Each step MUST be a separate file in `docs/plans/`:
-- **Step 1**: `{feature_name}_solution_assessment.md`
-- **Step 2**: `{feature_name}_feature_description.md`
-- **Step 3**: `{feature_name}_development_plan.md`
+- **Step 1**: `{feature_name}_step1_solution_assessment.md`
+- **Step 2**: `{feature_name}_step2_feature_description.md`
+- **Step 3**: `{feature_name}_step3_development_plan.md`
 
 ## Key Rules
 
