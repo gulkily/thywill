@@ -51,6 +51,29 @@
           </div>
         </div>
         
+        <!-- Prayer Statistics -->
+        <div class="mb-8" id="prayer-statistics-section" style="display: none;">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-400 mb-4 flex items-center">
+            <span class="text-lg mr-2">📊</span>
+            Prayer Activity
+          </h2>
+          
+          <!-- Statistics Summary -->
+          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+            <div id="statistics-summary" class="text-gray-700 dark:text-gray-300">
+              <!-- Statistics will be inserted here -->
+            </div>
+          </div>
+          
+          <!-- Prayer Records -->
+          <div id="prayer-records-section" style="display: none;">
+            <h3 class="text-md font-medium text-gray-600 dark:text-gray-400 mb-3">Recent Prayer Activity</h3>
+            <div class="space-y-2" id="prayer-records-list">
+              <!-- Prayer records will be inserted here -->
+            </div>
+          </div>
+        </div>
+        
         <!-- Prayer Footer -->
         <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -173,10 +196,97 @@ async function loadPrayer() {
     document.getElementById('prayer-loading').classList.add('hidden');
     document.getElementById('prayer-container').classList.remove('hidden');
     
+    // Load prayer statistics
+    await loadPrayerStatistics(prayerId);
+    
   } catch (error) {
     console.error('Error loading prayer:', error);
     document.getElementById('prayer-loading').classList.add('hidden');
     document.getElementById('prayer-error').classList.remove('hidden');
+  }
+}
+
+async function loadPrayerStatistics(prayerId) {
+  try {
+    console.log(`Loading statistics for prayer ${prayerId}`);
+    
+    const response = await fetch(`/api/public/prayer/${prayerId}/statistics`);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log('Prayer statistics not found');
+        return;
+      }
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.success || !data.statistics) {
+      console.log('Invalid statistics response');
+      return;
+    }
+    
+    const stats = data.statistics;
+    console.log('Statistics loaded:', stats);
+    
+    // Show statistics section
+    document.getElementById('prayer-statistics-section').style.display = 'block';
+    
+    // Display statistics summary
+    const summaryElement = document.getElementById('statistics-summary');
+    if (stats.total_prayers === 0) {
+      summaryElement.innerHTML = `
+        <p class="text-center text-gray-500 dark:text-gray-400">
+          This prayer hasn't been prayed for yet. Be the first to join the community and pray for this request!
+        </p>
+      `;
+    } else {
+      const peopleText = stats.unique_people === 1 ? 'person has' : 'people have';
+      const timesText = stats.total_prayers === 1 ? 'time' : 'times';
+      summaryElement.innerHTML = `
+        <p class="text-center font-medium">
+          <span class="text-purple-600 dark:text-purple-400 text-lg font-bold">${stats.unique_people}</span> ${peopleText} prayed for this request 
+          <span class="text-purple-600 dark:text-purple-400 text-lg font-bold">${stats.total_prayers}</span> ${timesText}
+        </p>
+      `;
+      
+      // Show prayer records if there are any
+      if (stats.prayer_records && stats.prayer_records.length > 0) {
+        document.getElementById('prayer-records-section').style.display = 'block';
+        
+        const recordsList = document.getElementById('prayer-records-list');
+        recordsList.innerHTML = '';
+        
+        // Show up to 10 most recent records
+        const recentRecords = stats.prayer_records.slice(0, 10);
+        
+        recentRecords.forEach(record => {
+          const recordElement = document.createElement('div');
+          recordElement.className = 'flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600';
+          recordElement.innerHTML = `
+            <div class="flex items-center space-x-3">
+              <span class="text-gray-400 dark:text-gray-500 text-sm">🙏</span>
+              <span class="text-gray-700 dark:text-gray-300">${record.display_name_html} prayed for this</span>
+            </div>
+            <span class="text-gray-500 dark:text-gray-400 text-sm">${record.formatted_date}</span>
+          `;
+          recordsList.appendChild(recordElement);
+        });
+        
+        // Add "and more" text if there are additional records
+        if (stats.prayer_records.length > 10) {
+          const moreElement = document.createElement('div');
+          moreElement.className = 'text-center p-2';
+          moreElement.innerHTML = `<span class="text-gray-500 dark:text-gray-400 text-sm">and ${stats.prayer_records.length - 10} more...</span>`;
+          recordsList.appendChild(moreElement);
+        }
+      }
+    }
+    
+  } catch (error) {
+    console.error('Error loading prayer statistics:', error);
+    // Don't show error to user, just log it - statistics are optional
   }
 }
 

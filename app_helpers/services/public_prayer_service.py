@@ -6,7 +6,7 @@ Provides filtering, pagination, and data retrieval for public prayer display.
 
 from typing import List, Dict, Any, Optional, Tuple
 from sqlmodel import Session, select, func
-from models import Prayer, PrayerAttribute, User, engine
+from models import Prayer, PrayerAttribute, User, PrayerMark, engine
 
 
 class PublicPrayerService:
@@ -78,6 +78,27 @@ class PublicPrayerService:
                 .limit(page_size)
             )
             prayers = list(session.exec(prayers_query).all())
+            
+            # Add basic statistics for each prayer
+            prayers_with_stats = []
+            for prayer in prayers:
+                # Get basic statistics for this prayer
+                total_prayers = session.exec(
+                    select(func.count(PrayerMark.id))
+                    .where(PrayerMark.prayer_id == prayer.id)
+                ).first() or 0
+                
+                unique_people = session.exec(
+                    select(func.count(func.distinct(PrayerMark.username)))
+                    .where(PrayerMark.prayer_id == prayer.id)
+                ).first() or 0
+                
+                # Add statistics as attributes to the prayer object
+                prayer.total_prayers = total_prayers
+                prayer.unique_people = unique_people
+                prayers_with_stats.append(prayer)
+            
+            prayers = prayers_with_stats
             
             # Calculate pagination metadata
             total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
@@ -206,6 +227,59 @@ class PublicPrayerService:
                 return None
                 
             return (prayer, user)
+            
+        finally:
+            if should_close_session:
+                session.close()
+    
+    @staticmethod
+    def get_prayer_statistics(
+        prayer_id: str,
+        session: Optional[Session] = None
+    ) -> Dict[str, Any]:
+        """
+        Get prayer statistics including who prayed and how many times.
+        
+        Args:
+            prayer_id: Prayer ID to get statistics for
+            session: Optional database session
+            
+        Returns:
+            Dict with prayer statistics and records
+        """
+        should_close_session = session is None
+        if session is None:
+            session = Session(engine)
+            
+        try:
+            # Get all prayer marks for this prayer
+            prayer_marks = session.exec(
+                select(PrayerMark, User.display_name)
+                .join(User, PrayerMark.username == User.display_name)
+                .where(PrayerMark.prayer_id == prayer_id)
+                .order_by(PrayerMark.created_at.desc())
+            ).all()
+            
+            # Calculate statistics
+            total_prayers = len(prayer_marks)
+            unique_people = len(set(mark.username for mark, _ in prayer_marks))
+            
+            # Format prayer records with user display names
+            prayer_records = []
+            for mark, display_name in prayer_marks:
+                prayer_records.append({
+                    'id': mark.id,
+                    'username': mark.username,
+                    'display_name': display_name,
+                    'prayed_at': mark.created_at,
+                    'formatted_date': mark.created_at.strftime('%B %d, %Y at %I:%M %p')
+                })
+            
+            return {
+                'total_prayers': total_prayers,
+                'unique_people': unique_people,
+                'prayer_records': prayer_records
+            }
             
         finally:
             if should_close_session:

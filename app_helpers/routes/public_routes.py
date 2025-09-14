@@ -161,7 +161,9 @@ async def get_public_prayers_api(
                     'author_username': prayer.author_username,
                     'author_display_name': display_name,
                     'created_at': prayer.created_at.isoformat(),
-                    'project_tag': prayer.project_tag
+                    'project_tag': prayer.project_tag,
+                    'total_prayers': getattr(prayer, 'total_prayers', 0),
+                    'unique_people': getattr(prayer, 'unique_people', 0)
                 }
                 formatted_prayers.append(formatted_prayer)
         
@@ -298,3 +300,67 @@ async def public_prayer_page(
             "prayer_id": prayer_id
         }
     )
+
+@router.get("/api/public/prayer/{prayer_id}/statistics")
+async def get_public_prayer_statistics_api(
+    prayer_id: str,
+    request: Request
+):
+    """
+    Get prayer statistics including who prayed and when.
+    
+    Rate limited: 10 requests per minute, 100 per hour per IP.
+    """
+    # Check rate limiting
+    if not check_public_rate_limit(request):
+        raise HTTPException(
+            status_code=429,
+            detail="Rate limit exceeded. Please try again later."
+        )
+    
+    try:
+        # First check if prayer is public-eligible
+        prayer = PublicPrayerService.get_public_prayer_by_id(prayer_id)
+        if not prayer:
+            raise HTTPException(
+                status_code=404,
+                detail="Prayer not found or not available for public display"
+            )
+        
+        # Get prayer statistics
+        statistics = PublicPrayerService.get_prayer_statistics(prayer_id)
+        
+        # Format statistics with username display service for supporter badges
+        with Session(engine) as session:
+            username_service = UsernameDisplayService()
+            
+            # Add display names with supporter badges to prayer records
+            for record in statistics['prayer_records']:
+                record['display_name_html'] = username_service.render_username_with_badge(
+                    record['username'], session
+                )
+        
+        return JSONResponse({
+            'success': True,
+            'statistics': statistics
+        })
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions (like 404, 429)
+        raise
+    except Exception as e:
+        # Log error but don't expose details
+        with Session(engine) as session:
+            error_log = SecurityLog(
+                user_id="public",
+                ip_address=request.client.host if request.client else "unknown",
+                event_type="public_api_error", 
+                details=f"Error in /api/public/prayer/{prayer_id}/statistics: {str(e)}"
+            )
+            session.add(error_log)
+            session.commit()
+        
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error"
+        )
