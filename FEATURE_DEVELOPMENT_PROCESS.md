@@ -55,6 +55,7 @@
 - Complete each completed stage to the branch
 - Test before proceeding to next stage
 - Track progress with TodoWrite
+- Finish by writing implementation summary document
 
 **Completion Criteria**:
 - All stages implemented and tested
@@ -67,6 +68,7 @@ Each step MUST be a separate file in `docs/plans/`:
 - **Step 1**: `{feature_name}_step1_solution_assessment.md`
 - **Step 2**: `{feature_name}_step2_feature_description.md`
 - **Step 3**: `{feature_name}_step3_development_plan.md`
+- **Step 4**: `{feature_name}_step4_implementation_summary.md`
 
 ## Key Rules
 

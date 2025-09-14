@@ -94,6 +94,9 @@ DAILY_PRIORITY_AUTO_EXPIRE=false   # Auto-expire daily priorities at midnight (f
 
 PRAYER_PERSON_DIFFERENTIATION_ENABLED=false  # Distinguish individual vs collective prayer requests (individual = "help me" → community prays FOR person, collective = "help us" → community prays TOGETHER)
 
+# Membership Applications Feature Flag
+MEMBERSHIP_APPLICATIONS_ENABLED=true          # Enable public membership application form and admin review
+
 # Prayer Categorization Feature Flags (default: false)
 PRAYER_CATEGORIZATION_ENABLED=false           # Master toggle for categorization system
 PRAYER_CATEGORY_BADGES_ENABLED=false          # Show category badges on prayer cards
