@@ -338,6 +338,21 @@ class ChangelogEntry(SQLModel, table=True):
     commit_date: datetime
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+class MembershipApplication(SQLModel, table=True):
+    __tablename__ = 'membership_application'
+
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex, primary_key=True)
+    username: str  # Desired username for new member
+    essay: str  # Motivation/reason for joining
+    contact_info: str | None = None  # Optional email or contact method
+    ip_address: str | None = None  # For security/spam tracking
+    status: str = "pending"  # "pending", "approved", "rejected"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    processed_at: datetime | None = None  # When admin made decision
+    processed_by_user_id: str | None = None  # Admin who processed application
+    invite_token: str | None = None  # Generated invite token if approved
+    text_file_path: str | None = None  # Path to text archive file (archive-first)
+
 # Database engine configuration with intelligent path detection
 def get_database_path():
     """

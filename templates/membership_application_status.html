@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}Check Application Status{% endblock %}
+
+{% block content %}
+<!-- Application Status Check Header -->
+<section class="mb-8 text-center">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">Check Application Status</h1>
+    <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">
+      Enter your Application ID to check the status of your membership application.
+    </p>
+  </div>
+</section>
+
+<!-- Status Check Form -->
+<section class="mb-8">
+  <div class="max-w-2xl mx-auto">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+      <form id="status-form" onsubmit="checkStatus(event)">
+        <!-- Application ID Field -->
+        <div class="mb-6">
+          <label for="application-id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Application ID <span class="text-red-500">*</span>
+          </label>
+          <input type="text"
+                 id="application-id"
+                 name="application_id"
+                 required
+                 class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 dark:bg-gray-700 dark:text-white text-lg font-mono"
+                 placeholder="Enter your Application ID">
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            This was provided when you submitted your application
+          </p>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="text-center">
+          <button type="submit"
+                  id="check-btn"
+                  class="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white px-8 py-3 rounded-lg font-semibold text-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 min-w-48">
+            Check Status
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- Status Display (hidden initially) -->
+<section id="status-section" class="hidden mb-8">
+  <div class="max-w-2xl mx-auto">
+    <div id="status-card" class="rounded-lg shadow-lg p-8">
+      <h2 class="text-2xl font-semibold mb-4" id="status-title">Application Status</h2>
+
+      <!-- Application Details -->
+      <div class="space-y-4 mb-6">
+        <div class="flex justify-between border-b border-gray-200 dark:border-gray-600 pb-2">
+          <span class="font-medium text-gray-600 dark:text-gray-400">Username:</span>
+          <span class="text-gray-900 dark:text-gray-100" id="app-username">-</span>
+        </div>
+        <div class="flex justify-between border-b border-gray-200 dark:border-gray-600 pb-2">
+          <span class="font-medium text-gray-600 dark:text-gray-400">Status:</span>
+          <span id="app-status" class="font-semibold">-</span>
+        </div>
+        <div class="flex justify-between border-b border-gray-200 dark:border-gray-600 pb-2">
+          <span class="font-medium text-gray-600 dark:text-gray-400">Submitted:</span>
+          <span class="text-gray-900 dark:text-gray-100" id="app-created">-</span>
+        </div>
+        <div class="flex justify-between border-b border-gray-200 dark:border-gray-600 pb-2" id="processed-row">
+          <span class="font-medium text-gray-600 dark:text-gray-400">Processed:</span>
+          <span class="text-gray-900 dark:text-gray-100" id="app-processed">-</span>
+        </div>
+      </div>
+
+      <!-- Status Message -->
+      <div id="status-message" class="rounded-lg p-4 mb-6">
+        <p id="status-text" class="text-lg">-</p>
+      </div>
+
+      <!-- Action Button -->
+      <div class="text-center">
+        <button onclick="checkAnother()"
+                class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+          Check Another Application
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Error Message (hidden initially) -->
+<section id="error-section" class="hidden mb-8">
+  <div class="max-w-2xl mx-auto">
+    <div class="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg p-8 text-center">
+      <div class="text-red-500 text-4xl mb-4">⚠</div>
+      <h2 class="text-xl font-semibold text-red-800 dark:text-red-100 mb-4">Error</h2>
+      <p class="text-red-700 dark:text-red-200 mb-6" id="error-text">
+        There was a problem checking your application status.
+      </p>
+      <button onclick="checkAnother()"
+              class="inline-block bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+        Try Again
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- Back to Application -->
+<section class="text-center mb-8">
+  <p class="text-gray-600 dark:text-gray-400 mb-4">
+    Don't have an Application ID yet?
+  </p>
+  <a href="/apply" class="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium">
+    Submit New Application →
+  </a>
+</section>
+
+<!-- JavaScript -->
+<script>
+function checkAnother() {
+  // Hide status and error sections
+  document.getElementById('status-section').classList.add('hidden');
+  document.getElementById('error-section').classList.add('hidden');
+
+  // Show form section
+  const formSection = document.getElementById('status-form').parentElement.parentElement;
+  formSection.classList.remove('hidden');
+
+  // Clear and focus form
+  document.getElementById('application-id').value = '';
+  document.getElementById('application-id').focus();
+}
+
+async function checkStatus(event) {
+  event.preventDefault();
+
+  const checkBtn = document.getElementById('check-btn');
+  const originalText = checkBtn.textContent;
+  const formSection = document.getElementById('status-form').parentElement.parentElement;
+  const applicationId = document.getElementById('application-id').value.trim();
+
+  if (!applicationId) {
+    document.getElementById('error-text').textContent = 'Please enter your Application ID.';
+    document.getElementById('error-section').classList.remove('hidden');
+    return;
+  }
+
+  // Disable button and show loading
+  checkBtn.disabled = true;
+  checkBtn.textContent = 'Checking...';
+  checkBtn.classList.add('opacity-50');
+
+  try {
+    const response = await fetch('/api/membership/status', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        application_id: applicationId
+      })
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      // Hide form and show status
+      formSection.classList.add('hidden');
+      displayApplicationStatus(data.application);
+    } else {
+      // Show error
+      document.getElementById('error-text').textContent = data.error || 'Application not found. Please check your Application ID.';
+      formSection.classList.add('hidden');
+      document.getElementById('error-section').classList.remove('hidden');
+    }
+
+  } catch (error) {
+    console.error('Status check error:', error);
+    document.getElementById('error-text').textContent = 'Network error. Please check your connection and try again.';
+    formSection.classList.add('hidden');
+    document.getElementById('error-section').classList.remove('hidden');
+
+  } finally {
+    // Re-enable button
+    checkBtn.disabled = false;
+    checkBtn.textContent = originalText;
+    checkBtn.classList.remove('opacity-50');
+  }
+}
+
+function displayApplicationStatus(application) {
+  // Set basic information
+  document.getElementById('app-username').textContent = application.username;
+  document.getElementById('app-created').textContent = formatDate(application.created_at);
+
+  // Set processed date
+  const processedRow = document.getElementById('processed-row');
+  if (application.processed_at) {
+    document.getElementById('app-processed').textContent = formatDate(application.processed_at);
+    processedRow.classList.remove('hidden');
+  } else {
+    processedRow.classList.add('hidden');
+  }
+
+  // Set status with appropriate styling
+  const statusElement = document.getElementById('app-status');
+  const statusCard = document.getElementById('status-card');
+  const statusMessage = document.getElementById('status-message');
+  const statusText = document.getElementById('status-text');
+
+  statusElement.textContent = application.status.charAt(0).toUpperCase() + application.status.slice(1);
+  statusText.textContent = application.message;
+
+  // Style based on status
+  if (application.status === 'approved') {
+    statusElement.className = 'font-semibold text-green-600 dark:text-green-400';
+    statusCard.className = 'bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg shadow-lg p-8';
+    statusMessage.className = 'bg-green-100 dark:bg-green-800 border border-green-300 dark:border-green-600 text-green-800 dark:text-green-100 rounded-lg p-4 mb-6';
+  } else if (application.status === 'rejected') {
+    statusElement.className = 'font-semibold text-red-600 dark:text-red-400';
+    statusCard.className = 'bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg shadow-lg p-8';
+    statusMessage.className = 'bg-red-100 dark:bg-red-800 border border-red-300 dark:border-red-600 text-red-800 dark:text-red-100 rounded-lg p-4 mb-6';
+  } else {
+    statusElement.className = 'font-semibold text-yellow-600 dark:text-yellow-400';
+    statusCard.className = 'bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-lg shadow-lg p-8';
+    statusMessage.className = 'bg-yellow-100 dark:bg-yellow-800 border border-yellow-300 dark:border-yellow-600 text-yellow-800 dark:text-yellow-100 rounded-lg p-4 mb-6';
+  }
+
+  // Show status section
+  document.getElementById('status-section').classList.remove('hidden');
+  document.getElementById('status-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function formatDate(isoString) {
+  const date = new Date(isoString);
+  return date.toLocaleDateString() + ' at ' + date.toLocaleTimeString();
+}
+
+// Auto-focus the input field on page load
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('application-id').focus();
+});
+</script>
+
+<!-- SEO Meta Tags -->
+<meta name="description" content="Check the status of your ThyWill prayer community membership application using your Application ID.">
+<meta property="og:title" content="Check Membership Application Status - ThyWill">
+<meta property="og:description" content="Check the status of your prayer community membership application.">
+
+{% endblock %}
