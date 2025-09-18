@@ -179,19 +179,19 @@
         <p class="text-sm text-gray-400 dark:text-gray-500">Be the first to pray for someone's request!</p>
       {% elif current_feed == "my_prayers" %}
         <p class="text-gray-500 dark:text-gray-400 mb-2">You haven't marked any prayers as prayed yet.</p>
-        <p class="text-sm text-gray-400 dark:text-gray-500">Visit the <a href="/?feed_type=all" class="text-purple-600 dark:text-purple-400 hover:underline">All Prayers</a> feed to start praying.</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500">Visit the <a href="/feed?feed_type=all" class="text-purple-600 dark:text-purple-400 hover:underline">All Prayers</a> feed to start praying.</p>
       {% elif current_feed == "my_requests" %}
         <p class="text-gray-500 dark:text-gray-400 mb-2">You haven't submitted any prayer requests yet.</p>
         <p class="text-sm text-gray-400 dark:text-gray-500">Click the "Add Prayer Request" button above to share what's on your heart.</p>
       {% elif current_feed == "recent_activity" %}
         <p class="text-gray-500 dark:text-gray-400 mb-2">No recent prayer activity.</p>
-        <p class="text-sm text-gray-400 dark:text-gray-500">Check the <a href="/?feed_type=all" class="text-purple-600 dark:text-purple-400 hover:underline">All Prayers</a> feed to start praying.</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500">Check the <a href="/feed?feed_type=all" class="text-purple-600 dark:text-purple-400 hover:underline">All Prayers</a> feed to start praying.</p>
       {% elif current_feed == "daily_prayer" %}
         <p class="text-gray-500 dark:text-gray-400 mb-2">No daily priority prayers set.</p>
-        <p class="text-sm text-gray-400 dark:text-gray-500">{% if is_admin %}Visit the <a href="/?feed_type=all" class="text-purple-600 dark:text-purple-400 hover:underline">All Prayers</a> feed to mark prayers as daily priorities.{% else %}Visit the <a href="/?feed_type=all" class="text-purple-600 dark:text-purple-400 hover:underline">All Prayers</a> feed to start praying.{% endif %}</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500">{% if is_admin %}Visit the <a href="/feed?feed_type=all" class="text-purple-600 dark:text-purple-400 hover:underline">All Prayers</a> feed to mark prayers as daily priorities.{% else %}Visit the <a href="/feed?feed_type=all" class="text-purple-600 dark:text-purple-400 hover:underline">All Prayers</a> feed to start praying.{% endif %}</p>
       {% elif current_feed == "prayers_needing_attention" %}
         <p class="text-gray-500 dark:text-gray-400 mb-2">No prayers need attention right now.</p>
-        <p class="text-sm text-gray-400 dark:text-gray-500">All prayers have been prayed recently! Check the <a href="/?feed_type=new_unprayed" class="text-purple-600 dark:text-purple-400 hover:underline">New</a> feed for fresh requests.</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500">All prayers have been prayed recently! Check the <a href="/feed?feed_type=new_unprayed" class="text-purple-600 dark:text-purple-400 hover:underline">New</a> feed for fresh requests.</p>
       {% elif current_feed == "answered" %}
         <p class="text-gray-500 dark:text-gray-400 mb-2">No praise reports yet.</p>
         <p class="text-sm text-gray-400 dark:text-gray-500">When prayer authors add praise reports, they'll appear here for the community to celebrate!</p>

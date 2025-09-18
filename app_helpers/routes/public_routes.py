@@ -167,8 +167,12 @@ async def public_homepage_or_redirect(request: Request, show: str = None):
     and redirects authenticated users to their feed.
     """
     if is_user_authenticated(request):
-        # User is authenticated, redirect to feed  
-        return RedirectResponse("/feed", status_code=302)
+        # User is authenticated, redirect to feed and preserve any query parameters
+        query_string = request.url.query
+        redirect_target = "/feed"
+        if query_string:
+            redirect_target = f"/feed?{query_string}"
+        return RedirectResponse(redirect_target, status_code=302)
     else:
         # User is not authenticated, serve public homepage
         membership_applications_enabled = os.getenv('MEMBERSHIP_APPLICATIONS_ENABLED', 'true').lower() == 'true'
@@ -654,4 +658,3 @@ async def get_membership_application_status(
             status_code=500,
             detail="Internal server error"
         )
-
