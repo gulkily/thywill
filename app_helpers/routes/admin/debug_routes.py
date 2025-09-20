@@ -13,6 +13,11 @@ from sqlmodel import Session
 from app_helpers.services.auth_helpers import current_user, is_admin
 from models import InviteToken, engine
 from app_helpers.shared_templates import templates
+from app_helpers.services.ai_providers import (
+    AIConfigurationError,
+    get_ai_provider_config,
+    validate_ai_provider_config,
+)
 
 router = APIRouter()
 
@@ -32,6 +37,15 @@ def debug_environment(request: Request, user_session: tuple = Depends(current_us
     # Import token configuration from centralized service
     from app_helpers.services.token_service import get_token_expiration_config, TOKEN_EXP_H
     
+    # Resolve AI configuration
+    try:
+        ai_config = get_ai_provider_config()
+        ai_config_valid, ai_config_error = validate_ai_provider_config(raise_error=False)
+    except AIConfigurationError as exc:
+        ai_config = None
+        ai_config_valid = False
+        ai_config_error = str(exc)
+
     # Gather environment debug information
     debug_info = {
         # Current working directory and .env file detection
@@ -43,7 +57,11 @@ def debug_environment(request: Request, user_session: tuple = Depends(current_us
         'invite_token_expiration_hours_env': os.getenv('INVITE_TOKEN_EXPIRATION_HOURS'),
         'token_exp_h_calculated': TOKEN_EXP_H,
         'port': os.getenv('PORT', 'not set'),
-        'anthropic_api_key_set': bool(os.getenv('ANTHROPIC_API_KEY')),
+        'ai_provider': ai_config.provider if ai_config else 'unknown',
+        'anthropic_api_key_set': bool(ai_config and ai_config.anthropic_api_key),
+        'openai_api_key_set': bool(ai_config and ai_config.openai_api_key),
+        'ai_config_valid': ai_config_valid,
+        'ai_config_error': ai_config_error,
         
         # Time information
         'current_utc_time': datetime.utcnow(),
@@ -52,7 +70,7 @@ def debug_environment(request: Request, user_session: tuple = Depends(current_us
         # All relevant environment variables
         'relevant_env_vars': {
             key: value for key, value in os.environ.items() 
-            if any(word in key.upper() for word in ['TOKEN', 'HOUR', 'INVITE', 'PORT', 'ANTHROPIC'])
+            if any(word in key.upper() for word in ['TOKEN', 'HOUR', 'INVITE', 'PORT', 'ANTHROPIC', 'OPENAI', 'AI_PROVIDER'])
         }
     }
     

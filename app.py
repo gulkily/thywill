@@ -3,16 +3,29 @@ import os, uuid
 from datetime import datetime, timedelta, date
 from typing import Optional
 from dotenv import load_dotenv
-import anthropic
-
 from fastapi import FastAPI, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select, func
 
+from app_helpers.services.ai_providers import (
+    AIConfigurationError,
+    get_ai_provider_config,
+    validate_ai_provider_config,
+)
+
 # Load environment variables first
 load_dotenv()
+
+# Validate AI provider configuration early to fail fast on misconfiguration
+try:
+    validate_ai_provider_config()
+except AIConfigurationError as exc:
+    raise RuntimeError(f"Invalid AI provider configuration: {exc}") from exc
+
+# Cache current AI provider configuration for later use
+CURRENT_AI_PROVIDER_CONFIG = get_ai_provider_config()
 
 # Database path is now configured in models.py via intelligent detection
 
@@ -70,8 +83,7 @@ BATCH_CATEGORIZATION_ENABLED = os.getenv("BATCH_CATEGORIZATION_ENABLED", "false"
 # Use shared templates instance with filters registered
 from app_helpers.shared_templates import templates
 
-# Initialize Anthropic client
-anthropic_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+# (Provider instances are created on demand via app_helpers.services.ai_providers)
 
 # ───────── Import extracted helper functions for backward compatibility ─────────
 # These imports maintain all existing function entry points in app.py namespace

@@ -1,9 +1,6 @@
-"""
-Prayer-related helper functions extracted from app.py
-This module contains prayer management, filtering, and generation functions.
-"""
+"""Prayer management helpers, including feed counts and AI generation."""
 
-import anthropic
+import logging
 import os
 from datetime import datetime, timedelta, date
 from sqlmodel import Session, select, func, text
@@ -11,8 +8,12 @@ from models import (
     User, Prayer, PrayerMark, PrayerAttribute, engine
 )
 
-# Initialize Anthropic client
-anthropic_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+from app_helpers.services.ai_providers import (
+    PrayerGenerationError,
+    get_prayer_generation_provider,
+)
+
+logger = logging.getLogger(__name__)
 
 
 def get_feed_counts(user_id: str) -> dict:
@@ -213,47 +214,52 @@ def todays_prompt() -> str:
 
 
 def generate_prayer(prompt: str) -> dict:
-    """Generate a proper prayer from a user prompt using Anthropic API"""
+    """Generate a prayer from a prompt using the configured AI provider."""
+
+    provider = get_prayer_generation_provider()
+
     try:
         # Use dynamic prompt composition based on feature flags
         from app_helpers.services.prompt_composition_service import prompt_composition_service
         system_prompt = prompt_composition_service.build_prayer_generation_prompt()
-        
+
         # Determine max tokens based on categorization features
         try:
             from app import PRAYER_CATEGORIZATION_ENABLED, AI_CATEGORIZATION_ENABLED
         except ImportError:
-            import os
             PRAYER_CATEGORIZATION_ENABLED = os.getenv("PRAYER_CATEGORIZATION_ENABLED", "false").lower() == "true"
             AI_CATEGORIZATION_ENABLED = os.getenv("AI_CATEGORIZATION_ENABLED", "false").lower() == "true"
-        
-        # Increase max tokens if categorization analysis is enabled
+
         max_tokens = 400 if (PRAYER_CATEGORIZATION_ENABLED and AI_CATEGORIZATION_ENABLED) else 200
 
-        response = anthropic_client.messages.create(
-            model="claude-3-5-sonnet-20241022",
+        result = provider.generate_prayer(
+            prompt,
+            system_prompt=system_prompt,
             max_tokens=max_tokens,
             temperature=0.7,
-            system=system_prompt,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
         )
-        
-        ai_response = response.content[0].text.strip()
-        
+
+        ai_response = result.text.strip()
+
+        logger.debug("Prayer generated via %s provider", result.provider)
+
         return {
             'prayer': ai_response,
-            'full_response': ai_response,  # Include full response for categorization parsing
-            'service_status': 'normal'
+            'full_response': result.raw_response or ai_response,
+            'service_status': 'normal',
+            'provider': result.provider,
         }
-    except Exception as e:
-        print(f"Error generating prayer: {e}")
-        fallback_prayer = f"Divine Creator, we lift up our friend who asks for help with: {prompt}. May your will be done in their life. Amen."
+    except (PrayerGenerationError, Exception) as e:
+        logger.exception("Prayer generation failed via %s provider", getattr(provider, 'name', 'unknown'))
+        fallback_prayer = (
+            f"Divine Creator, we lift up our friend who asks for help with: {prompt}. "
+            "May your will be done in their life. Amen."
+        )
         return {
             'prayer': fallback_prayer,
-            'full_response': fallback_prayer,  # Consistent structure for error handling
-            'service_status': 'degraded'
+            'full_response': fallback_prayer,
+            'service_status': 'degraded',
+            'provider': getattr(provider, 'name', 'unknown'),
         }
 
 

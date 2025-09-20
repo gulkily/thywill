@@ -1,7 +1,7 @@
 # ThyWill - Claude Code Configuration
 
 ## Project Overview
-Prayer platform with FastAPI/SQLModel, Claude AI integration, HTMX frontend, invite-only auth.
+Prayer platform with FastAPI/SQLModel, configurable Anthropic/OpenAI prayer generation, HTMX frontend, invite-only auth.
 
 ## Key Commands
 ```bash
@@ -14,6 +14,7 @@ pip install -r requirements.txt && chmod +x thywill
 ./thywill start        # Production server
 ./thywill test         # Safe testing
 ./thywill status       # Database status
+./thywill config       # Show current paths, backups, and AI provider status
 pytest                 # Run tests
 
 # Environment Configuration
@@ -66,7 +67,11 @@ When user requests a new feature, automatically create Step 1 document and wait 
 ## Environment Variables
 ```bash
 # Required
-ANTHROPIC_API_KEY=your_claude_api_key
+AI_PROVIDER=anthropic                  # Supported: anthropic, openai
+ANTHROPIC_API_KEY=your_claude_api_key  # Required when provider=anthropic
+OPENAI_API_KEY=                        # Required when provider=openai
+OPENAI_MODEL=gpt-4o-mini               # Override default OpenAI model if needed
+OPENAI_API_BASE=                       # Optional custom OpenAI endpoint
 
 # Server Configuration
 PORT=8000                          # Server port (default: 8000)

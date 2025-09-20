@@ -2201,6 +2201,9 @@ cmd_config() {
     else
         echo "  Backup directory not found"
     fi
+
+    echo ""
+    run_python -m app_helpers.cli.ai_config_status
 }
 
 cmd_install() {

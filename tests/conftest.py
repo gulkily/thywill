@@ -272,20 +272,3 @@ def clean_db(test_session):
 def frozen_time():
     """Provide a consistent datetime for testing"""
     return datetime(2024, 1, 15, 12, 0, 0)
-
-
-# Mock external dependencies
-@pytest.fixture
-def mock_anthropic_client(monkeypatch):
-    """Mock the Anthropic API client"""
-    class MockResponse:
-        def __init__(self, text):
-            self.content = [type('obj', (object,), {'text': text})]
-    
-    class MockClient:
-        def messages_create(self, **kwargs):
-            return MockResponse("Divine Creator, we lift up our friend in prayer. Amen.")
-    
-    mock_client = MockClient()
-    monkeypatch.setattr("app.anthropic_client", mock_client)
-    return mock_client

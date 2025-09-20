@@ -7,14 +7,14 @@
 - Do not use sudo commands or system service commands in the development environment
 
 ## Project Overview
-**ThyWill** is a community prayer platform built with FastAPI and SQLModel. It allows users to submit prayer requests, generate proper prayers using AI (Anthropic's Claude), track community prayer activity, and moderate content through community-driven flagging.
+**ThyWill** is a community prayer platform built with FastAPI and SQLModel. It allows users to submit prayer requests, generate proper prayers using AI (Anthropic Claude or OpenAI), track community prayer activity, and moderate content through community-driven flagging.
 
 ## Core Architecture
 
 ### Technology Stack
 - **Backend**: FastAPI (Python web framework)
 - **Database**: SQLite with SQLModel ORM
-- **AI Integration**: Anthropic Claude API for prayer generation
+- **AI Integration**: Configurable Anthropic Claude or OpenAI API drivers for prayer generation
 - **Frontend**: Jinja2 templates with HTML/CSS/JavaScript + HTMX
 - **Authentication**: Cookie-based sessions with JWT tokens for invites
 
@@ -223,7 +223,11 @@ The prayer system now uses a flexible attributes approach instead of simple bool
 ## Environment Variables
 ```bash
 # Required
-ANTHROPIC_API_KEY=your_claude_api_key
+AI_PROVIDER=anthropic                  # Supported: anthropic, openai
+ANTHROPIC_API_KEY=your_claude_api_key  # Required when provider=anthropic
+OPENAI_API_KEY=                        # Required when provider=openai
+OPENAI_MODEL=gpt-4o-mini               # Optional override for OpenAI model
+OPENAI_API_BASE=                       # Optional custom OpenAI endpoint
 
 # Authentication Configuration (Optional - defaults shown)
 MULTI_DEVICE_AUTH_ENABLED=true              # Enable/disable multi-device authentication
@@ -240,6 +244,8 @@ JWT_SECRET=your_jwt_secret_for_tokens       # For invite token generation
 - **REQUIRE_APPROVAL_FOR_EXISTING_USERS**: `false` allows existing users to login from new devices without approval
 - **PEER_APPROVAL_COUNT**: Any positive integer, controls how many community members need to approve
 - **REQUIRE_VERIFICATION_CODE**: Enhanced security mode for verification codes (see notification system below)
+- **AI_PROVIDER**: Selects AI backend (`anthropic` or `openai`). Provider-specific keys must be present.
+- **OPENAI_MODEL / OPENAI_API_BASE**: Override default OpenAI model or endpoint when using the OpenAI driver.
 
 ### Login Feature Behavior
 - **When MULTI_DEVICE_AUTH_ENABLED=true**: Login buttons visible, `/login` route accessible, full lobby functionality
@@ -487,7 +493,7 @@ When making significant code changes, follow the successful patterns used in our
 ## Deployment Notes
 - SQLite database file: `thywill.db` (auto-migrates for multi-device auth)
 - Run with: `uvicorn app:app --reload`
-- Requires valid Anthropic API key
+- Requires valid AI provider configuration (Anthropic or OpenAI keys)
 - Static files served from templates directory
 - HTMX CDN dependency for interactive features
 - Automatic database migration on startup for existing installations

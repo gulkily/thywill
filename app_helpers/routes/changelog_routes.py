@@ -11,6 +11,10 @@ from app_helpers.services.changelog_helpers import (
     get_git_head_commit,
     get_last_cached_commit
 )
+from app_helpers.services.ai_providers import (
+    get_ai_provider_config,
+    validate_ai_provider_config,
+)
 
 router = APIRouter()
 # Use shared templates instance with filters registered
@@ -25,10 +29,22 @@ async def changelog(request: Request):
     
     if debug_mode:
         # Debug info for troubleshooting
+        config = None
+        try:
+            config = get_ai_provider_config()
+        except Exception:
+            config = None
+
+        is_valid, error_message = validate_ai_provider_config(raise_error=False)
+
         debug_info = {
             "git_head": get_git_head_commit(),
             "last_cached": get_last_cached_commit(),
-            "anthropic_key_exists": bool(os.getenv('ANTHROPIC_API_KEY')),
+            "ai_provider": config.provider if config else "unknown",
+            "anthropic_key_exists": bool(config and config.anthropic_api_key),
+            "openai_key_exists": bool(config and config.openai_api_key),
+            "ai_config_valid": is_valid,
+            "ai_config_error": error_message,
             "git_available": True,
             "entry_count": 0
         }
