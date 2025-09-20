@@ -76,6 +76,13 @@ June 25 2024 at 10:20 - test_user_1 marked this prayer as answered
         'created_at': datetime.now(),
         'expires_at': datetime.now() + timedelta(days=7)
     })
+
+    auth_writer.log_auth_approval({
+        'auth_request_id': 'sample_request',
+        'approver_user_id': 'test_user_2',
+        'created_at': datetime.now(),
+        'action': 'approved'
+    })
     
     auth_writer.log_security_event({
         'event_type': 'successful_login',
@@ -83,6 +90,24 @@ June 25 2024 at 10:20 - test_user_1 marked this prayer as answered
         'ip_address': '127.0.0.1',
         'user_agent': 'Test Browser',
         'details': 'Test login event'
+    })
+
+    auth_writer.log_notification_event({
+        'user_id': 'test_user_1',
+        'auth_request_id': 'sample_request',
+        'notification_type': 'auth_request',
+        'action': 'delivered',
+        'details': ''
+    })
+
+    auth_writer.log_session_creation({
+        'session_id': 'session_test_1',
+        'username': 'test_user_1',
+        'created_at': datetime.now(),
+        'expires_at': datetime.now() + timedelta(days=14),
+        'device_info': 'Integration Test Browser',
+        'ip_address': '127.0.0.1',
+        'is_fully_authenticated': True
     })
     
     # Create sample role archives
@@ -122,6 +147,8 @@ June 25 2024 at 10:20 - test_user_1 marked this prayer as answered
             'created_at': datetime.now()
         }
     ])
+
+    system_writer.log_invite_usage('test_token_123', 'test_user_2', 'test_user_1')
     
     system_writer.snapshot_system_config({
         'MULTI_DEVICE_AUTH_ENABLED': 'true',
@@ -150,7 +177,87 @@ Format: timestamp|prayer_id|user_id
 June 25 2024 at 10:15|test_prayer_1|test_user_2
 """
     marks_file.write_text(marks_content)
-    
+
+    # Aggregated prayer marks file (legacy export format)
+    flat_marks = temp_archive_dir / "prayers" / "prayer_marks.txt"
+    flat_marks.write_text(
+        """Prayer Marks (exported July 16 2025 at 17:56)
+Format: id|created_at|prayer_id|username
+
+mark-1|June 25 2024 at 10:15|test_prayer_1|test_user_2
+"""
+    )
+
+    # Aggregated prayer attributes file (legacy export format)
+    flat_attrs = temp_archive_dir / "prayers" / "prayer_attributes.txt"
+    flat_attrs.write_text(
+        """Prayer Attributes (exported July 16 2025 at 17:56)
+Format: id|created_at|prayer_id|attribute_name|attribute_value|created_by
+
+attr-1|June 25 2024 at 10:20|test_prayer_1|answered|true|test_user_1
+"""
+    )
+
+    # Prayer skips archive
+    skips_file = temp_archive_dir / "prayers" / "prayer_skips.txt"
+    skips_file.write_text(
+        """Prayer Skips (exported July 16 2025 at 17:56)
+Format: timestamp|prayer_id|user_id
+
+June 26 2024 at 10:00|test_prayer_1|test_user_2
+"""
+    )
+
+    # Invite token usage aggregate (legacy format)
+    invites_dir = temp_archive_dir / "invites"
+    invites_dir.mkdir(parents=True, exist_ok=True)
+    invites_file = invites_dir / "invite_token_usage.txt"
+    invites_file.write_text(
+        """Invite Token Usage (exported July 16 2025 at 17:56)
+Format: claimed_at|invite_token_id|user_id|ip_address
+
+July 16 2025 at 17:00|test_token_123|test_user_2|127.0.0.1
+"""
+    )
+
+    # Sessions aggregate (legacy format)
+    sessions_dir = temp_archive_dir / "sessions"
+    sessions_dir.mkdir(parents=True, exist_ok=True)
+    sessions_file = sessions_dir / "2025_07_sessions.txt"
+    sessions_file.write_text(
+        """Sessions for July 2025 (exported July 16 2025 at 17:56)
+Format: created_at|session_id|username|expires_at|device_info|ip_address|is_fully_authenticated
+
+July 05 2025 at 21:34|legacy_session_1|test_user_1|July 19 2025 at 21:34|Legacy Device|127.0.0.1|yes
+"""
+    )
+
+    # Membership application archive
+    membership_dir = temp_archive_dir / "membership_applications"
+    membership_dir.mkdir(parents=True, exist_ok=True)
+    membership_file = membership_dir / "20250615_120000_testapp.txt"
+    membership_file.write_text(
+        """MEMBERSHIP APPLICATION
+=====================
+
+Application ID: membership_test_1
+Submitted: 2025-06-15T12:00:00
+IP Address: 127.0.0.1
+
+USERNAME: new_applicant
+
+ESSAY/MOTIVATION:
+I would like to join the community.
+
+CONTACT INFO: applicant@example.com
+
+STATUS: pending
+
+APPROVED by admin at 2025-06-15T12:30:00
+Invite token: test_token_123
+"""
+    )
+
     return temp_archive_dir
 
 
@@ -237,7 +344,7 @@ class TestAuthenticationRecovery:
         recovery.import_authentication_data(dry_run=True)
         
         # Should parse auth files without errors
-        assert recovery.recovery_stats['auth_requests_recovered'] >= 0
+        assert recovery.recovery_stats['auth_requests_recovered'] > 0
         assert len(recovery.recovery_stats['errors']) == 0
     
     def test_import_security_events(self, sample_archive_data):
@@ -248,7 +355,7 @@ class TestAuthenticationRecovery:
         recovery.import_authentication_data(dry_run=True)
         
         # Should handle security events
-        assert recovery.recovery_stats['security_events_recovered'] >= 0
+        assert recovery.recovery_stats['security_events_recovered'] > 0
 
 
 class TestRoleSystemRecovery:
@@ -287,7 +394,24 @@ class TestSystemStateRecovery:
         recovery.import_system_state(dry_run=True)
         
         # Should handle invite tokens
-        assert recovery.recovery_stats['invite_tokens_recovered'] >= 0
+        assert recovery.recovery_stats['invite_tokens_recovered'] > 0
+
+    def test_import_sessions_and_usage(self, sample_archive_data):
+        """Test importing sessions and invite token usage"""
+        recovery = CompleteSystemRecovery(str(sample_archive_data))
+
+        recovery.import_system_state(dry_run=True)
+
+        assert recovery.recovery_stats['sessions_recovered'] > 0
+        assert recovery.recovery_stats['invite_token_usage_recovered'] > 0
+
+    def test_import_membership_applications(self, sample_archive_data):
+        """Test importing membership applications"""
+        recovery = CompleteSystemRecovery(str(sample_archive_data))
+
+        recovery.import_membership_applications(dry_run=True)
+
+        assert recovery.recovery_stats['membership_applications_recovered'] > 0
     
     def test_system_config_logging(self, sample_archive_data):
         """Test system configuration logging during recovery"""
@@ -313,7 +437,7 @@ class TestEnhancedPrayerRecovery:
         recovery.import_enhanced_prayer_data(dry_run=True)
         
         # Should handle prayer attributes
-        assert recovery.recovery_stats['prayer_attributes_recovered'] >= 0
+        assert recovery.recovery_stats['prayer_attributes_recovered'] > 0
     
     def test_import_prayer_marks(self, sample_archive_data):
         """Test importing prayer marks from archives"""
@@ -323,7 +447,7 @@ class TestEnhancedPrayerRecovery:
         recovery.import_enhanced_prayer_data(dry_run=True)
         
         # Should handle prayer marks
-        assert recovery.recovery_stats['prayer_marks_recovered'] >= 0
+        assert recovery.recovery_stats['prayer_marks_recovered'] > 0
 
 
 class TestRecoveryIntegrity:
@@ -369,9 +493,13 @@ class TestFullRecoveryIntegration:
         stats = result['stats']
         expected_stats = [
             'users_recovered', 'prayers_recovered', 'prayer_marks_recovered',
-            'prayer_attributes_recovered', 'roles_recovered', 'auth_requests_recovered'
+            'prayer_attributes_recovered', 'roles_recovered', 'auth_requests_recovered',
+            'auth_approvals_recovered', 'auth_audit_logs_recovered', 'security_events_recovered',
+            'invite_tokens_recovered', 'invite_token_usage_recovered',
+            'sessions_recovered', 'membership_applications_recovered',
+            'notifications_recovered', 'prayer_skips_recovered'
         ]
-        
+
         for stat in expected_stats:
             assert stat in stats
     
