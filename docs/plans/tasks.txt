@@ -39,3 +39,5 @@ if existing user follows an invite link have a better process for them
 weekly prayers
 
 suggested opening prayer
+
+Add integration coverage for minute-level prayer activity dedupe during complete recovery
