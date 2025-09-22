@@ -133,6 +133,7 @@ show_help() {
     echo "    full-recovery          Perform complete database reconstruction"
     echo "    repair-archives        Fix archive inconsistencies"
     echo "    heal-archives          Create missing archive files for existing prayers and users"
+    echo "    heal-prayer-activities Remove duplicate prayer marks/attributes/logs"
     echo "    sync-users             Export/sync users to text archives"
     echo "    export-sessions        Export active user sessions to JSON backup"
     echo "    export-all             Export ALL database data to text archives (invites, sessions, etc.)"
@@ -183,6 +184,7 @@ show_help() {
     echo "    thywill test-recovery                            # Simulate complete recovery"
     echo "    thywill full-recovery                            # Complete database reconstruction"
     echo "    thywill heal-archives                            # Create missing archive files for prayers and users"
+    echo "    thywill heal-prayer-activities --dry-run         # Preview duplicate cleanup"
     echo "    thywill sync-users                               # Export/sync users to text archives"
     echo "    thywill export-sessions                          # Export active sessions to JSON"
     echo "    thywill export-all                               # Export ALL database data to text archives"
@@ -1510,6 +1512,21 @@ cmd_heal_orphaned_prayers() {
     run_python -m app_helpers.cli.prayer_healing
 }
 
+cmd_heal_prayer_activities() {
+    header "Prayer Activity Deduplication"
+
+    # Check if we're in the right directory
+    if [ ! -f "app.py" ]; then
+        error "app.py not found in current directory"
+        echo "Please run this command from your ThyWill project directory"
+        exit 1
+    fi
+
+    log "Removing duplicate prayer activity rows created by archive updates..."
+
+    run_python tools/repair/deduplicate_prayer_activities.py "$@"
+}
+
 cmd_reconstruct_from_archives() {
     header "Archive-Based Database Reconstruction"
     
@@ -2360,6 +2377,9 @@ main() {
             ;;
         heal-archives)
             cmd_heal_archives "$@"
+            ;;
+        heal-prayer-activities)
+            cmd_heal_prayer_activities "$@"
             ;;
         fix-prayer-content)
             cmd_fix_prayer_content "$@"

@@ -9,9 +9,9 @@ Replaces separate import scripts with clean, maintainable code.
 import os
 import sys
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 
 # Add current directory to path for imports
 sys.path.append('.')
@@ -1401,16 +1401,23 @@ class ImportService:
                 activity_time = self._parse_single_timestamp(timestamp_str)
                 
                 if action == 'prayed':
-                    # Check for existing prayer mark to avoid duplicates
+                    # Check for existing prayer mark within the same minute (archives only store minute precision)
+                    window_start, window_end = self._activity_minute_window(activity_time)
                     existing_mark = session.exec(
                         select(PrayerMark).where(
                             PrayerMark.prayer_id == prayer.id,
                             PrayerMark.username == user.display_name,
-                            PrayerMark.created_at == activity_time
+                            PrayerMark.created_at >= window_start,
+                            PrayerMark.created_at < window_end
                         )
                     ).first()
                     
-                    if not existing_mark:
+                    if existing_mark:
+                        # Ensure archive path remains linked to the current text file
+                        if prayer.text_file_path and existing_mark.text_file_path != prayer.text_file_path:
+                            existing_mark.text_file_path = prayer.text_file_path
+                            session.add(existing_mark)
+                    else:
                         prayer_mark = PrayerMark(
                             prayer_id=prayer.id,
                             username=user.display_name,
@@ -1422,37 +1429,50 @@ class ImportService:
                 
                 elif action in ['answered', 'archived', 'flagged']:
                     # Check for existing attribute
+                    window_start, window_end = self._activity_minute_window(activity_time)
                     existing_attr = session.exec(
                         select(PrayerAttribute).where(
                             PrayerAttribute.prayer_id == prayer.id,
                             PrayerAttribute.attribute_name == action,
                             PrayerAttribute.created_by == user.display_name,
-                            PrayerAttribute.created_at == activity_time
+                            PrayerAttribute.created_at >= window_start,
+                            PrayerAttribute.created_at < window_end
                         )
                     ).first()
                     
-                    if not existing_attr:
+                    if existing_attr:
+                        if prayer.text_file_path and existing_attr.text_file_path != prayer.text_file_path:
+                            existing_attr.text_file_path = prayer.text_file_path
+                            session.add(existing_attr)
+                    else:
                         prayer_attr = PrayerAttribute(
                             prayer_id=prayer.id,
                             attribute_name=action,
                             attribute_value='true',
                             created_by=user.display_name,
-                            created_at=activity_time
+                            created_at=activity_time,
+                            text_file_path=prayer.text_file_path
                         )
                         session.add(prayer_attr)
                         imported_attributes += 1
                 
                 # Create activity log
+                window_start, window_end = self._activity_minute_window(activity_time)
                 existing_log = session.exec(
                     select(PrayerActivityLog).where(
                         PrayerActivityLog.prayer_id == prayer.id,
                         PrayerActivityLog.user_id == user.display_name,
                         PrayerActivityLog.action == action,
-                        PrayerActivityLog.created_at == activity_time
+                        PrayerActivityLog.created_at >= window_start,
+                        PrayerActivityLog.created_at < window_end
                     )
                 ).first()
                 
-                if not existing_log:
+                if existing_log:
+                    if prayer.text_file_path and existing_log.text_file_path != prayer.text_file_path:
+                        existing_log.text_file_path = prayer.text_file_path
+                        session.add(existing_log)
+                else:
                     activity_log = PrayerActivityLog(
                         prayer_id=prayer.id,
                         user_id=user.display_name,
@@ -1476,13 +1496,26 @@ class ImportService:
     
     def _parse_single_timestamp(self, timestamp_str: str) -> datetime:
         """Parse timestamp for single prayer import."""
-        try:
-            # Handle format: "June 29 2025 at 19:33"
-            return datetime.strptime(timestamp_str, "%B %d %Y at %H:%M")
-        except ValueError:
-            # Fallback to current time if parsing fails
-            print(f"    ⚠️  Failed to parse timestamp: {timestamp_str}, using current time")
-            return datetime.now()
+        formats = [
+            "%B %d %Y at %H:%M:%S",  # full precision with seconds
+            "%B %d %Y at %H:%M",     # default archive format
+            "%b %d %Y at %H:%M:%S",  # short month name variants
+            "%b %d %Y at %H:%M",
+        ]
+        for fmt in formats:
+            try:
+                return datetime.strptime(timestamp_str, fmt)
+            except ValueError:
+                continue
+        # Fallback to current time if parsing fails
+        print(f"    ⚠️  Failed to parse timestamp: {timestamp_str}, using current time")
+        return datetime.now()
+
+    def _activity_minute_window(self, timestamp: datetime) -> Tuple[datetime, datetime]:
+        """Return inclusive/exclusive window bounds covering the timestamp's minute."""
+        start = timestamp.replace(second=0, microsecond=0)
+        end = start + timedelta(minutes=1)
+        return start, end
 
     def _print_import_summary(self, dry_run: bool):
         """Print summary of imported data."""

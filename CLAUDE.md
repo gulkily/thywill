@@ -36,6 +36,7 @@ python tools/update_env_defaults.py --backup-only # Just create backup
 ./thywill fix-prayer-content        # Fix all prayers with corrupted content from archives
 ./thywill fix-prayer-content --dry-run   # Preview prayer content fixes
 ./thywill heal-archives   # Comprehensive archive healing with full activity data
+./thywill heal-prayer-activities --dry-run  # Preview duplicate activity cleanup
 
 # Documentation Tools
 python generate_app_overview.py     # Generate app overview with live stats
@@ -181,6 +182,12 @@ SPECIFICITY_BADGES_ENABLED=false              # Show Personal/Community badges
 - Fully idempotent - safe to run multiple times, detects incomplete archives
 - Content-based verification ensures archives contain all database activity
 - Round-trip compatible with text-archives import for complete data restoration
+
+**heal-prayer-activities**: Removes duplicate prayer marks/attributes/activity logs
+- Targets rows created by minute-rounded imports with `--update-existing`
+- Safely keeps the original second-precision record while updating archive paths
+- Supports `--dry-run` and `--show-details` for auditing before execution
+- Idempotent; re-running after cleanup yields zero further changes
 
 **import text-archives**: Fully idempotent import from text archive files
 - Restores complete database state including all activity data

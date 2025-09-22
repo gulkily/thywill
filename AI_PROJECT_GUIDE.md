@@ -544,6 +544,11 @@ When making significant code changes, follow the successful patterns used in our
 **📝 Note for AI Assistants**: This guide reflects the complete prayer lifecycle management system with flexible attributes architecture, community-driven moderation, and comprehensive multi-device authentication. The platform balances security with usability through configurable approval workflows while maintaining admin oversight for content moderation, authentication management, and prayer status transitions. The prayer attributes system allows unlimited status combinations and extensibility without breaking changes.
 
 **🔄 Recent Updates**: 
+- **Single Prayer Import Deduplication (July 2025)**: Stopped duplicate activity rows during `--update-existing` imports and added cleanup tooling
+  - Importer now compares activity timestamps within the minute to respect archive precision
+  - `_parse_single_timestamp` accepts seconds to avoid fallback-to-now behaviour
+  - New CLI: `./thywill heal-prayer-activities --dry-run` previews minute-level dedupe, `./thywill heal-prayer-activities` executes cleanup
+  - Maintenance script (`tools/repair/deduplicate_prayer_activities.py`) removes existing duplicates while preserving original second-precision entries
 - **Prayer Categorization System (July 2025)**: Implemented comprehensive archive-first categorization with 18 feature flags
   - Added AI-powered and keyword-based prayer categorization for safety, subject, and specificity
   - Created visual category badges on prayer cards with color-coded icons (🏥 Health, 💼 Work, etc.)
