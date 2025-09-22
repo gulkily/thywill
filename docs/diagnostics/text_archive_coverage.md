@@ -7,8 +7,8 @@
 | --- | --- | --- | --- |
 | `User` | `users/YYYY_MM_users.txt` (monthly registrations) + `users/user_attributes.txt` | `TextImporterService._create_or_update_user()` + `_update_user_attributes()` | ✅ Covered |
 | `Prayer` | `prayers/YYYY/MM/*.txt` (per-prayer files) | `TextImporterService._import_prayer_archive_file()` | ✅ Covered |
-| `PrayerMark` | `prayers/marks/*_marks.txt` | `CompleteSystemRecovery._import_prayer_marks()` (**stub**) | ⚠️ Archive present, import TODO |
-| `PrayerAttribute` | `prayers/attributes/*_attributes.txt` | `CompleteSystemRecovery._import_prayer_attributes()` (**stub**) | ⚠️ Archive present, import TODO |
+| `PrayerMark` | `prayers/marks/*_marks.txt` | `CompleteSystemRecovery._import_prayer_marks()` | ✅ Covered |
+| `PrayerAttribute` | `prayers/attributes/*_attributes.txt` | `CompleteSystemRecovery._import_prayer_attributes()` | ✅ Covered |
 | `PrayerActivityLog` | Embedded in prayer files ("Activity:" section) + monthly activity logs | Imported as part of `_import_prayer_archive_file()` | ✅ Covered |
 | `PrayerSkip` | `prayers/prayer_skips.txt`, `prayers/skips/*_skips.txt` | `_import_prayer_skips()` | ✅ Covered |
 | `InviteToken` | `system/invite_tokens.txt`, `invites/invite_tokens.txt` | `_import_invite_tokens()` | ✅ Covered |
@@ -29,6 +29,7 @@
 ## Status
 - All tables covered by the recovery pipeline (`CompleteSystemRecovery`) now have deterministic archive sources and import routines.
 - Integration tests (`tests/integration/test_complete_recovery.py`) exercise the recovery flow end-to-end, including invite usage, sessions, notifications, and membership applications.
+- Single-prayer updates now preserve archive idempotency by minute-level activity dedupe; existing duplicate marks/attributes/logs can be repaired with `./thywill heal-prayer-activities`.
 - Remaining archive-only references (e.g., `system/changelog_entries.txt`) are informational and do not require SQL reconstruction.
 
 Recovery now achieves the “100% archive coverage” goal; the SQL database can be rebuilt entirely from text archives without legacy migration scripts.
