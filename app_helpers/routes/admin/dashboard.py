@@ -24,6 +24,7 @@ from app_helpers.services.auth_helpers import (
 )
 from app_helpers.services.membership_application_service import MembershipApplicationService
 import os
+from urllib.parse import quote
 
 # Initialize templates
 # Use shared templates instance with filters registered
@@ -254,9 +255,14 @@ def approve_membership_application(
                 application = db.exec(stmt).first()
 
                 if application and application.invite_token:
-                    # Redirect with success message and invite token info
+                    claim_url = str(request.url_for("claim_get", token=application.invite_token))
+                    success_message = "Membership application approved successfully"
                     return RedirectResponse(
-                        url=f"/admin?success=Membership application approved successfully&login_url=http://localhost:8000/claim/{application.invite_token}&username={application.username}",
+                        url=(
+                            f"/admin?success={quote(success_message)}"
+                            f"&login_url={quote(claim_url)}"
+                            f"&username={quote(application.username)}"
+                        ),
                         status_code=302
                     )
 
