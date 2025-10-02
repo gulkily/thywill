@@ -474,6 +474,35 @@ uvicorn app:app --host 127.0.0.1 --port 8000
 uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
+**"/admin" returns 500 after deployment:**
+```bash
+# Check application logs first for the exact error
+journalctl -u thywill -n 100 | grep membership_application || true
+
+# If you see: "sqlite3.OperationalError: no such table: membership_application"
+# the production database is missing the new membership application table.
+
+# 1. Back up the database before making changes
+./thywill backup
+
+# 2. Create the missing table using the project's virtualenv
+cd /home/thywill/thywill
+source venv/bin/activate
+python - <<'PY'
+import models
+from sqlmodel import SQLModel
+
+# Safely creates only the tables that are missing
+SQLModel.metadata.create_all(models.engine)
+PY
+
+# 3. Verify the table now exists (optional)
+sqlite3 thywill.db ".schema membership_application"
+
+# 4. After deploying migration 012_membership_applications,
+# run ./thywill migrate new to propagate the schema everywhere.
+```
+
 **Systemd service conflicts:**
 ```bash
 # Stop existing service

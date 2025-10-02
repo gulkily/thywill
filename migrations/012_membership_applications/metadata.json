@@ -1,0 +1,8 @@
+{
+  "version": "012",
+  "name": "membership_applications",
+  "description": "Add membership_application table for admin review workflow",
+  "created_at": "2025-10-02T00:00:00Z",
+  "requires_data_migration": false,
+  "rollback_safe": true
+}
