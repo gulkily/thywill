@@ -20,6 +20,7 @@ from app_helpers.utils.user_management import (
 )
 from app_helpers.services.token_service import create_user_login_token
 from app_helpers.utils.username_helpers import find_users_with_equivalent_usernames
+from app_helpers.timezone_utils import get_user_timezone_from_request
 from datetime import datetime
 
 # Initialize templates
@@ -64,6 +65,35 @@ def admin_users(request: Request, user_session: tuple = Depends(current_user)):
                 select(func.count(PrayerMark.id))
                 .where(PrayerMark.username == profile_user.display_name)
             ).first() or 0
+
+            distinct_prayers_marked = s.exec(
+                select(func.count(func.distinct(PrayerMark.prayer_id)))
+                .where(PrayerMark.username == profile_user.display_name)
+            ).first() or 0
+
+            # Determine last activity based on latest prayer or mark
+            last_activity = None
+            last_prayer_mark = s.exec(
+                select(PrayerMark.created_at)
+                .where(PrayerMark.username == profile_user.display_name)
+                .order_by(PrayerMark.created_at.desc())
+                .limit(1)
+            ).first()
+
+            last_prayer_request = s.exec(
+                select(Prayer.created_at)
+                .where(Prayer.author_username == profile_user.display_name)
+                .where(Prayer.flagged == False)
+                .order_by(Prayer.created_at.desc())
+                .limit(1)
+            ).first()
+
+            if last_prayer_mark and last_prayer_request:
+                last_activity = max(last_prayer_mark, last_prayer_request)
+            elif last_prayer_mark:
+                last_activity = last_prayer_mark
+            elif last_prayer_request:
+                last_activity = last_prayer_request
             
             # Check deactivation status
             is_deactivated = is_user_deactivated(profile_user.display_name, s)
@@ -75,17 +105,23 @@ def admin_users(request: Request, user_session: tuple = Depends(current_user)):
                 'user': profile_user,
                 'prayers_authored': prayers_authored,
                 'prayers_marked': prayers_marked,
+                'distinct_prayers_marked': distinct_prayers_marked,
+                'last_activity': last_activity,
+                'is_me': profile_user.display_name == user.display_name,
                 'is_admin': profile_user.has_role("admin", s),
                 'is_deactivated': is_deactivated,
                 'deactivation_info': deactivation_info
             })
-    
+
+    user_timezone = get_user_timezone_from_request(request)
+
     return templates.TemplateResponse(
         "users.html", {
             "request": request,
             "users": users_with_stats,
             "me": user,
             "session": session,
+            "user_timezone": user_timezone,
             "is_admin_view": True  # Flag to show admin controls
         }
     )
