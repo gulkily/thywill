@@ -55,6 +55,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Setup prayer editing functionality
     setupPrayerEditing();
+
+    // Setup invite creation button
+    setupInviteButton();
     
     // Setup collapsible original request in preview
     const toggleOriginal = document.getElementById('toggle-original');
@@ -298,6 +301,56 @@ function hidePreviewSection() {
 }
 
 // Invite modal functions
+function setupInviteButton() {
+    const button = document.getElementById('invite-btn');
+    if (!button) {
+        return;
+    }
+
+    const defaultText = button.textContent;
+
+    button.addEventListener('click', async function(event) {
+        event.preventDefault();
+
+        if (button.dataset.loading === 'true') {
+            return;
+        }
+
+        button.dataset.loading = 'true';
+        button.disabled = true;
+        button.textContent = '📧 Creating...';
+
+        try {
+            const response = await fetch('/invites', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'HX-Request': 'true'
+                },
+                body: new URLSearchParams(),
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Invite request failed with status ${response.status}`);
+            }
+
+            const html = await response.text();
+
+            // Ensure we only have one invite modal in the DOM
+            closeInviteModal();
+            document.body.insertAdjacentHTML('beforeend', html);
+        } catch (error) {
+            console.error('Invite creation failed:', error);
+            alert('Failed to create invite. Please try again.');
+        } finally {
+            button.disabled = false;
+            button.textContent = defaultText;
+            delete button.dataset.loading;
+        }
+    });
+}
+
 function closeInviteModal() {
     const modal = document.getElementById('invite-modal');
     if (modal) {
@@ -640,40 +693,5 @@ function cancelPrayerEdit() {
     document.getElementById('edit-prayer-btn').style.display = 'inline-block';
 }
 
-// Safari-specific fix for invite button
-function handleInviteClick(button) {
-    // Only use fallback on Safari where HTMX events may fail
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    
-    if (!isSafari) {
-        // Let HTMX handle it on other browsers
-        return;
-    }
-    
-    // Safari fallback
-    if (button.disabled) return;
-    
-    button.disabled = true;
-    button.textContent = '📧 Creating...';
-    
-    fetch('/invites', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        credentials: 'same-origin'
-    })
-    .then(response => response.text())
-    .then(html => {
-        document.body.insertAdjacentHTML('beforeend', html);
-    })
-    .catch(error => {
-        console.error('Invite creation failed:', error);
-        alert('Failed to create invite. Please try again.');
-    })
-    .finally(() => {
-        button.disabled = false;
-        button.textContent = '📧 Invite Someone';
-    });
-}
+// Safari-specific fallback no longer required; invite button handled via fetch for all browsers
 </script>

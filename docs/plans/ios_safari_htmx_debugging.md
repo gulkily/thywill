@@ -48,10 +48,6 @@ Added Safari-specific fallback to the invite button:
 **File: `templates/feed.html`**
 ```html
 <button id="invite-btn"
-        hx-post="/invites"
-        hx-target="body"
-        hx-swap="beforeend"
-        onclick="handleInviteClick(this)"
         class="...">
   📧 Invite Someone
 </button>
@@ -59,24 +55,56 @@ Added Safari-specific fallback to the invite button:
 
 **File: `templates/components/feed_scripts.html`**
 ```javascript
-function handleInviteClick(button) {
-    // Only use fallback on Safari where HTMX events may fail
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    
-    if (!isSafari) {
-        // Let HTMX handle it on other browsers
+function setupInviteButton() {
+    const button = document.getElementById('invite-btn');
+    if (!button) {
         return;
     }
-    
-    // Safari fallback using fetch()
-    // ... manual implementation
+
+    const defaultText = button.textContent;
+
+    button.addEventListener('click', async (event) => {
+        event.preventDefault();
+
+        if (button.dataset.loading === 'true') {
+            return;
+        }
+
+        button.dataset.loading = 'true';
+        button.disabled = true;
+        button.textContent = '📧 Creating...';
+
+        try {
+            const response = await fetch('/invites', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'HX-Request': 'true'
+                },
+                body: new URLSearchParams(),
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Invite request failed with status ${response.status}`);
+            }
+
+            const html = await response.text();
+            closeInviteModal();
+            document.body.insertAdjacentHTML('beforeend', html);
+        } finally {
+            button.disabled = false;
+            button.textContent = defaultText;
+            delete button.dataset.loading;
+        }
+    });
 }
 ```
 
 ### Strategy
-1. **Safari detection** using user agent
-2. **Graceful degradation** - HTMX for other browsers, fetch() for Safari
-3. **Preserved functionality** - same end result across all browsers
+1. **Single code path** - use fetch() for invite creation on every browser
+2. **Progressive enhancement** - only inject modal after successful response
+3. **Graceful recovery** - maintain loading state and clear existing modal
 
 ## Key Learnings
 
@@ -90,7 +118,7 @@ function handleInviteClick(button) {
 1. **Cross-browser testing** revealed Safari-specific issue
 2. **Git history analysis** identified the breaking change
 3. **Incremental fixes** - tried removing `defer` first, then added fallback
-4. **Targeted solution** - Safari-specific rather than universal changes
+4. **Final solution** - retired HTMX trigger and moved to a universal fetch handler
 
 ### Prevention
 - **Test on iOS Safari** specifically, not just iOS Firefox
@@ -101,21 +129,21 @@ function handleInviteClick(button) {
 ## Files Modified
 
 1. `templates/base.html` - Removed `defer` from HTMX script (partial fix)
-2. `templates/feed.html` - Added `onclick` handler and ID to invite button
-3. `templates/components/feed_scripts.html` - Added Safari fallback function
+2. `templates/feed.html` - Simplified invite button markup
+3. `templates/components/feed_scripts.html` - Added universal fetch-based invite handler
 
 ## Related Commits
 
 - `63e11d6` - Original share functionality (introduced the issue)
 - `bfe8b34` - Removed defer from HTMX (partial fix attempt)
-- [Current] - Added Safari-specific fallback (full resolution)
+- [Current] - Replaced HTMX trigger with universal fetch-based handler
 
 ## Testing Notes
 
 - **Works**: iOS Firefox, Android Chrome, Desktop browsers
-- **Fixed**: iOS Safari (was broken, now works with fallback)
-- **Behavior**: HTMX on compatible browsers, fetch() fallback on Safari
-- **User experience**: Identical across all browsers
+- **Fixed**: iOS Safari (was broken, now works with unified fetch flow)
+- **Behavior**: Dedicated fetch() request manages invite creation on every browser
+- **User experience**: Identical across all browsers, no duplicate modals
 
 ---
 
