@@ -237,6 +237,7 @@ REQUIRE_VERIFICATION_CODE=false             # Enhanced security for verification
 
 # Optional
 JWT_SECRET=your_jwt_secret_for_tokens       # For invite token generation
+OFFLINE_PWA_ENABLED=true                    # Enable offline-first PWA shell, IndexedDB cache, and prayer mark queue
 ```
 
 ### Configuration Options
@@ -244,12 +245,20 @@ JWT_SECRET=your_jwt_secret_for_tokens       # For invite token generation
 - **REQUIRE_APPROVAL_FOR_EXISTING_USERS**: `false` allows existing users to login from new devices without approval
 - **PEER_APPROVAL_COUNT**: Any positive integer, controls how many community members need to approve
 - **REQUIRE_VERIFICATION_CODE**: Enhanced security mode for verification codes (see notification system below)
+- **OFFLINE_PWA_ENABLED**: Master toggle for the offline-first experience (service worker, IndexedDB caching, prayer mark queue)
 - **AI_PROVIDER**: Selects AI backend (`anthropic` or `openai`). Provider-specific keys must be present.
 - **OPENAI_MODEL / OPENAI_API_BASE**: Override default OpenAI model or endpoint when using the OpenAI driver.
 
 ### Login Feature Behavior
 - **When MULTI_DEVICE_AUTH_ENABLED=true**: Login buttons visible, `/login` route accessible, full lobby functionality
 - **When MULTI_DEVICE_AUTH_ENABLED=false**: Login buttons hidden, `/login` returns 404, invite-only access
+
+## Offline Experience
+- **Installable PWA shell**: Service worker precaches core HTML, JS, and icons to load the app shell while offline
+- **Cached prayer browsing**: IndexedDB stores recent feed markup and category options for offline navigation
+- **Queued prayer marks**: Offline marks persist in IndexedDB with original timestamps and sync automatically
+- **Connectivity indicator**: Inline banner surfaces offline status and pending queue counts
+- **Local telemetry**: Recent sync outcomes recorded in `localStorage` (`thywill_offline_telemetry`) for debugging
 
 ## Real-Time Notification System
 

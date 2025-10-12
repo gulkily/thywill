@@ -1,0 +1,27 @@
+# Bug Report #7: Offline Prayer Marks Sync Multiple Times
+
+## Summary
+Prayer marks created while offline are syncing multiple times when the browser reconnects, adding 3–5 marks instead of just one.
+
+## Steps to Reproduce
+1. Load ThyWill in a supported browser.
+2. Disable network (e.g., Chrome DevTools > Network > Offline).
+3. Note the current prayer mark count, then click "Prayed" on a prayer.
+4. Reload the page one or more times while still offline.
+5. Re-enable the network connection.
+6. Reload the page and observe the updated prayer count.
+
+## Expected Behavior
+- The prayer mark count increases by exactly one after the offline action syncs.
+
+## Actual Behavior
+- The count jumps by several marks (3–5), indicating duplicate sync submissions for the same offline action.
+
+## Impact
+- Inflated prayer statistics and misleading activity history.
+- Undermines user trust in offline functionality and analytics accuracy.
+
+## Technical Notes
+- Offline queue entries may be duplicated during reloads because each offline POST intercept adds a new record without idempotency checks.
+- Both the foreground sync (on visibility change/online events) and service worker Background Sync may replay the same queue entries.
+- Need de-duplication or a uniqueness constraint (e.g., stable action IDs) before enqueueing or during sync flushing.

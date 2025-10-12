@@ -91,6 +91,9 @@ TEXT_ARCHIVE_ENABLED=true
 PAYPAL_USERNAME=
 VENMO_HANDLE=
 
+# Offline Experience
+OFFLINE_PWA_ENABLED=true              # Enable service worker shell caching, IndexedDB seed, and offline mark queue
+
 # Changelog Configuration
 CHANGELOG_AI_DISABLED=true            # HOTFIX: Disable AI changelog generation to prevent server lockups
 

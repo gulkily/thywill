@@ -41,3 +41,13 @@ weekly prayers
 suggested opening prayer
 
 Add integration coverage for minute-level prayer activity dedupe during complete recovery
+
+As a traveler, I want to be able to load and use the application offline.
+	 I want to be able to browse all the prayer categories offline.
+	 I want to be able to pray and record prayer marks offline.
+	 I want all my activity to be stored in LocalStorage until it can be uploaded to the server.
+	 I want the prayer marks to be recorded retroactively with the timestamp they were actually prayed at.
+
+Ideas from another project:
+	Find testimony from someone else and present it
+	Create AI video with testimony

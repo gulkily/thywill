@@ -1,0 +1,28 @@
+{
+  "name": "ThyWill",
+  "short_name": "ThyWill",
+  "description": "Pray, track, and stay connected with your prayer community—even offline.",
+  "start_url": "/",
+  "display": "standalone",
+  "scope": "/",
+  "background_color": "#4c1d95",
+  "theme_color": "#4c1d95",
+  "icons": [
+    {
+      "src": "/static/logos/logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/favicon-32.ico",
+      "sizes": "32x32",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/static/favicon-16.ico",
+      "sizes": "16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

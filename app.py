@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, date
 from typing import Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Form, Depends, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select, func
@@ -73,6 +73,7 @@ SAFETY_BADGES_VISIBLE = os.getenv("SAFETY_BADGES_VISIBLE", "false").lower() == "
 SPECIFICITY_BADGES_ENABLED = os.getenv("SPECIFICITY_BADGES_ENABLED", "false").lower() == "true"
 CATEGORY_FILTER_DROPDOWN_ENABLED = os.getenv("CATEGORY_FILTER_DROPDOWN_ENABLED", "false").lower() == "true"
 FILTER_PERSISTENCE_ENABLED = os.getenv("FILTER_PERSISTENCE_ENABLED", "false").lower() == "true"
+OFFLINE_PWA_ENABLED = os.getenv("OFFLINE_PWA_ENABLED", "true").lower() == "true"
 CATEGORIZATION_METADATA_EXPORT = os.getenv("CATEGORIZATION_METADATA_EXPORT", "false").lower() == "true"
 HISTORICAL_CATEGORIZATION_ENABLED = os.getenv("HISTORICAL_CATEGORIZATION_ENABLED", "false").lower() == "true"
 ADMIN_CATEGORIZATION_OVERRIDE = os.getenv("ADMIN_CATEGORIZATION_OVERRIDE", "false").lower() == "true"
@@ -168,6 +169,19 @@ async def test_share(request: Request):
         "test_url": "https://thywill.com/claim/abcd1234test5678",
         "test_title": "Join ThyWill Prayer Community"
     })
+
+
+if OFFLINE_PWA_ENABLED:
+    @app.get("/service-worker.js", include_in_schema=False)
+    async def service_worker_asset():
+        """Serve the PWA service worker from the root scope."""
+        return FileResponse("static/js/service-worker.js", media_type="application/javascript")
+
+
+    @app.get("/manifest.webmanifest", include_in_schema=False)
+    async def manifest_asset():
+        """Expose the web app manifest for install prompts."""
+        return FileResponse("static/manifest.webmanifest", media_type="application/manifest+json")
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")

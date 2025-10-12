@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ThyWill – {% block title %}{% endblock %}</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  {% if OFFLINE_PWA_ENABLED %}
+  <link rel="manifest" href="/manifest.webmanifest">
+  {% endif %}
+  <meta name="theme-color" content="#4c1d95" />
   
   <!-- Session State for Session Persistence Script -->
   {% if user %}
@@ -37,6 +41,12 @@
   <script src="/static/js/htmx.min.js"></script>
   <!-- Session persistence -->
   <script src="/static/js/session-persistence.js"></script>
+  {% if OFFLINE_PWA_ENABLED %}
+  <!-- Offline data helpers -->
+  <script src="/static/js/offline-data.js"></script>
+  <!-- Offline prayer mark queue -->
+  <script src="/static/js/prayer-sync.js"></script>
+  {% endif %}
   <style>
     /* HTMX loading indicators */
     .htmx-indicator {
@@ -249,7 +259,17 @@
     </button>
     {% endif %}
    </div>
-  </header>
+ </header>
+
+  {% if OFFLINE_PWA_ENABLED %}
+  <div id="offline-status-banner" class="hidden bg-yellow-100 dark:bg-yellow-900 border-b border-yellow-200 dark:border-yellow-800">
+   <div class="max-w-3xl mx-auto px-4 py-2 flex items-center gap-3 text-sm text-yellow-800 dark:text-yellow-100">
+    <span aria-hidden="true">📡</span>
+    <span id="offline-status-message" class="flex-1">Offline mode: changes will sync when you reconnect.</span>
+    <span id="offline-status-count" class="text-xs font-semibold text-yellow-900 dark:text-yellow-200 hidden"></span>
+   </div>
+  </div>
+  {% endif %}
 
   <!-- Welcome Message for new users -->
   {% include "components/welcome_message.html" %}
@@ -367,6 +387,20 @@
       updateAutoExpandMenuToggle();
     });
   </script>
+  {% if OFFLINE_PWA_ENABLED %}
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(function(registration) {
+            console.log('[PWA] Service worker registered for scope:', registration.scope);
+          })
+          .catch(function(error) {
+            console.error('[PWA] Service worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+  {% endif %}
  </body>
 </html>
-
