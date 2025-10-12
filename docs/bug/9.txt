@@ -1,0 +1,24 @@
+# Bug Report #9: Feed Selector Scroll Resets After Navigation
+
+## Summary
+When browsing online, selecting a feed that sits off-screen in the horizontal selector (e.g., far to the right) causes the page to reload and the selector scroll position resets to the left, hiding the active tab.
+
+## Steps to Reproduce
+1. Visit `/feed` while online.
+2. Horizontally scroll the navigation pills to reveal a feed near the right end (e.g., "Praise Reports").
+3. Click that feed.
+4. After the page reloads, observe the selector position.
+
+## Expected Behavior
+- The feed navigation should remain scrolled so the active pill stays visible after navigation completes.
+
+## Actual Behavior
+- The selector snaps back to its initial position, hiding the active pill off-screen and forcing the user to scroll again to find it.
+
+## Impact
+- Poor usability when switching to non-primary feeds, especially on smaller screens.
+- Inconsistent navigation experience between online (reload) and offline (client-side) navigation.
+
+## Technical Notes
+- Navigation triggers a full page reload. On load, the selector doesn’t restore its previous `scrollLeft` value.
+- Potential fix: persist the scroll position (e.g., in sessionStorage) and restore it on DOMContentLoaded, or adjust server response to mark the active pill in view.

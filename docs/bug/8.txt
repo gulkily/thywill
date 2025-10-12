@@ -1,0 +1,24 @@
+# Bug Report #8: Offline Feed Navigation Falls Back to All
+
+## Summary
+When browsing offline, attempting to switch from the default "All" feed to another feed (e.g., "Daily Priority") reloads the page but falls back to the "All" feed instead of rendering the requested view.
+
+## Steps to Reproduce
+1. Visit `/feed` while online and ensure the service worker has installed.
+2. Switch Chrome DevTools to Offline mode.
+3. On the feed page, click the "Daily Priority" navigation pill.
+4. Observe the page refresh.
+
+## Expected Behavior
+- The "Daily Priority" feed renders from offline cache/IndexedDB so that the user can continue browsing while offline.
+
+## Actual Behavior
+- The page reloads but returns to the "All" feed, suggesting the requested feed wasn't available offline.
+
+## Impact
+- Users cannot access category-specific prayer feeds while traveling without connectivity.
+- Undermines the offline browsing story for curated feeds (daily priority, need attention, etc.).
+
+## Technical Notes
+- Navigation triggers a full page request to `/feed?feed_type=...`. When offline, the service worker falls back to the cached root (`/`), losing the requested feed type.
+- Need to precache or render alternative feed snapshots from IndexedDB and intercept offline navigation to serve them without a network fetch.

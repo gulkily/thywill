@@ -26,27 +26,60 @@
           scroll-behavior: smooth;
         }
       </style>
+      {% set nav_base = "flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200" %}
+      {% set nav_inactive = "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700" %}
+      {% set nav_active_all = "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 shadow-sm" %}
+      {% set nav_active_daily = "bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-200 shadow-sm" %}
+      {% set nav_active_attention = "bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200 shadow-sm" %}
+      {% set nav_active_new = "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 shadow-sm" %}
+      {% set nav_active_most = "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 shadow-sm" %}
+      {% set nav_active_my_prayers = "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 shadow-sm" %}
+      {% set nav_active_my_unprayed = "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 shadow-sm" %}
+      {% set nav_active_my_requests = "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 shadow-sm" %}
+      {% set nav_active_recent = "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 shadow-sm" %}
+      {% set nav_active_answered = "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 shadow-sm" %}
+      {% set nav_active_archived = "bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-200 shadow-sm" %}
       
-      <a href="/feed?feed_type=all" 
-         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'all' %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+      <a href="/feed?feed_type=all"
+         class="{{ nav_base }} {% if current_feed == 'all' %}{{ nav_active_all }}{% else %}{{ nav_inactive }}{% endif %}"
+         data-feed-type="all"
+         data-base-class="{{ nav_base }}"
+         data-active-class="{{ nav_active_all }}"
+         data-inactive-class="{{ nav_inactive }}"
+         aria-current="{% if current_feed == 'all' %}page{% else %}false{% endif %}">
         <span>All</span>
         <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'all' %}bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-100{% else %}bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} rounded-full">{{ feed_counts.all or 0 }}</span>
       </a>
       
-      <a href="/feed?feed_type=daily_prayer" 
-         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'daily_prayer' %}bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+      <a href="/feed?feed_type=daily_prayer"
+         class="{{ nav_base }} {% if current_feed == 'daily_prayer' %}{{ nav_active_daily }}{% else %}{{ nav_inactive }}{% endif %}"
+         data-feed-type="daily_prayer"
+         data-base-class="{{ nav_base }}"
+         data-active-class="{{ nav_active_daily }}"
+         data-inactive-class="{{ nav_inactive }}"
+         aria-current="{% if current_feed == 'daily_prayer' %}page{% else %}false{% endif %}">
         <span>⭐ Daily Priority</span>
         <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'daily_prayer' %}bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-100{% else %}bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} rounded-full">{{ feed_counts.daily_prayer or 0 }}</span>
       </a>
       
-      <a href="/feed?feed_type=prayers_needing_attention" 
-         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'prayers_needing_attention' %}bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+      <a href="/feed?feed_type=prayers_needing_attention"
+         class="{{ nav_base }} {% if current_feed == 'prayers_needing_attention' %}{{ nav_active_attention }}{% else %}{{ nav_inactive }}{% endif %}"
+         data-feed-type="prayers_needing_attention"
+         data-base-class="{{ nav_base }}"
+         data-active-class="{{ nav_active_attention }}"
+         data-inactive-class="{{ nav_inactive }}"
+         aria-current="{% if current_feed == 'prayers_needing_attention' %}page{% else %}false{% endif %}">
         <span>🕐 Need Attention</span>
         <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'prayers_needing_attention' %}bg-orange-200 dark:bg-orange-800 text-orange-800 dark:text-orange-100{% else %}bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} rounded-full">{{ feed_counts.prayers_needing_attention or 0 }}</span>
       </a>
       
-      <a href="/feed?feed_type=new_unprayed" 
-         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'new_unprayed' %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+      <a href="/feed?feed_type=new_unprayed"
+         class="{{ nav_base }} {% if current_feed == 'new_unprayed' %}{{ nav_active_new }}{% else %}{{ nav_inactive }}{% endif %}"
+         data-feed-type="new_unprayed"
+         data-base-class="{{ nav_base }}"
+         data-active-class="{{ nav_active_new }}"
+         data-inactive-class="{{ nav_inactive }}"
+         aria-current="{% if current_feed == 'new_unprayed' %}page{% else %}false{% endif %}">
         <span>New</span>
         {% if feed_counts.new_unprayed > 0 %}
           <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-full animate-pulse">{{ feed_counts.new_unprayed }}</span>
@@ -55,20 +88,35 @@
         {% endif %}
       </a>
       
-      <a href="/feed?feed_type=most_prayed" 
-         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'most_prayed' %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+      <a href="/feed?feed_type=most_prayed"
+         class="{{ nav_base }} {% if current_feed == 'most_prayed' %}{{ nav_active_most }}{% else %}{{ nav_inactive }}{% endif %}"
+         data-feed-type="most_prayed"
+         data-base-class="{{ nav_base }}"
+         data-active-class="{{ nav_active_most }}"
+         data-inactive-class="{{ nav_inactive }}"
+         aria-current="{% if current_feed == 'most_prayed' %}page{% else %}false{% endif %}">
         <span>Popular</span>
         <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'most_prayed' %}bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-100{% else %}bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} rounded-full">{{ feed_counts.most_prayed or 0 }}</span>
       </a>
       
-      <a href="/feed?feed_type=my_prayers" 
-         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'my_prayers' %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+      <a href="/feed?feed_type=my_prayers"
+         class="{{ nav_base }} {% if current_feed == 'my_prayers' %}{{ nav_active_my_prayers }}{% else %}{{ nav_inactive }}{% endif %}"
+         data-feed-type="my_prayers"
+         data-base-class="{{ nav_base }}"
+         data-active-class="{{ nav_active_my_prayers }}"
+         data-inactive-class="{{ nav_inactive }}"
+         aria-current="{% if current_feed == 'my_prayers' %}page{% else %}false{% endif %}">
         <span>My Prayers</span>
         <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'my_prayers' %}bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-100{% else %}bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} rounded-full">{{ feed_counts.my_prayers or 0 }}</span>
       </a>
       
-      <a href="/feed?feed_type=my_unprayed" 
-         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'my_unprayed' %}bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+      <a href="/feed?feed_type=my_unprayed"
+         class="{{ nav_base }} {% if current_feed == 'my_unprayed' %}{{ nav_active_my_unprayed }}{% else %}{{ nav_inactive }}{% endif %}"
+         data-feed-type="my_unprayed"
+         data-base-class="{{ nav_base }}"
+         data-active-class="{{ nav_active_my_unprayed }}"
+         data-inactive-class="{{ nav_inactive }}"
+         aria-current="{% if current_feed == 'my_unprayed' %}page{% else %}false{% endif %}">
         <span>🔍 Not Prayed Yet</span>
         {% if feed_counts.my_unprayed > 0 %}
           <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full">{{ feed_counts.my_unprayed }}</span>
@@ -77,20 +125,35 @@
         {% endif %}
       </a>
       
-      <a href="/feed?feed_type=my_requests" 
-         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'my_requests' %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+      <a href="/feed?feed_type=my_requests"
+         class="{{ nav_base }} {% if current_feed == 'my_requests' %}{{ nav_active_my_requests }}{% else %}{{ nav_inactive }}{% endif %}"
+         data-feed-type="my_requests"
+         data-base-class="{{ nav_base }}"
+         data-active-class="{{ nav_active_my_requests }}"
+         data-inactive-class="{{ nav_inactive }}"
+         aria-current="{% if current_feed == 'my_requests' %}page{% else %}false{% endif %}">
         <span>My Prayer Requests</span>
         <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'my_requests' %}bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-100{% else %}bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} rounded-full">{{ feed_counts.my_requests or 0 }}</span>
       </a>
       
-      <a href="/feed?feed_type=recent_activity" 
-         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'recent_activity' %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+      <a href="/feed?feed_type=recent_activity"
+         class="{{ nav_base }} {% if current_feed == 'recent_activity' %}{{ nav_active_recent }}{% else %}{{ nav_inactive }}{% endif %}"
+         data-feed-type="recent_activity"
+         data-base-class="{{ nav_base }}"
+         data-active-class="{{ nav_active_recent }}"
+         data-inactive-class="{{ nav_inactive }}"
+         aria-current="{% if current_feed == 'recent_activity' %}page{% else %}false{% endif %}">
         <span>Recent</span>
         <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'recent_activity' %}bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-100{% else %}bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} rounded-full">{{ feed_counts.recent_activity or 0 }}</span>
       </a>
       
-      <a href="/feed?feed_type=answered" 
-         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'answered' %}bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}"
+      <a href="/feed?feed_type=answered"
+         class="{{ nav_base }} {% if current_feed == 'answered' %}{{ nav_active_answered }}{% else %}{{ nav_inactive }}{% endif %}"
+         data-feed-type="answered"
+         data-base-class="{{ nav_base }}"
+         data-active-class="{{ nav_active_answered }}"
+         data-inactive-class="{{ nav_inactive }}"
+         aria-current="{% if current_feed == 'answered' %}page{% else %}false{% endif %}"
          title="View praise reports - click for celebration page!"
          oncontextmenu="window.location.href='/answered'; return false;">
         <span>🙏 Praise Reports</span>
@@ -98,8 +161,13 @@
       </a>
       
       {% if feed_counts.archived > 0 %}
-      <a href="/feed?feed_type=archived" 
-         class="flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {% if current_feed == 'archived' %}bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-200 shadow-sm{% else %}text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+      <a href="/feed?feed_type=archived"
+         class="{{ nav_base }} {% if current_feed == 'archived' %}{{ nav_active_archived }}{% else %}{{ nav_inactive }}{% endif %}"
+         data-feed-type="archived"
+         data-base-class="{{ nav_base }}"
+         data-active-class="{{ nav_active_archived }}"
+         data-inactive-class="{{ nav_inactive }}"
+         aria-current="{% if current_feed == 'archived' %}page{% else %}false{% endif %}">
         <span>📁 Archived</span>
         <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold {% if current_feed == 'archived' %}bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-100{% else %}bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} rounded-full">{{ feed_counts.archived }}</span>
       </a>
@@ -120,6 +188,7 @@
     const nav = document.getElementById('feedNavigation');
     const leftIndicator = document.getElementById('scrollLeft');
     const rightIndicator = document.getElementById('scrollRight');
+    const scrollStorageKey = 'thywill_feed_nav_scroll';
     
     if (!nav || !leftIndicator || !rightIndicator) return;
     
@@ -131,7 +200,7 @@
         nav.scrollLeft += e.deltaY;
       }
     }, { passive: false });
-    
+
     // Update scroll indicators
     function updateScrollIndicators() {
       const canScrollLeft = nav.scrollLeft > 0;
@@ -143,11 +212,61 @@
       // Show right indicator if can scroll right  
       rightIndicator.style.opacity = canScrollRight ? '0.8' : '0';
     }
-    
+
+    function clampScroll(value) {
+      return Math.max(0, Math.min(value, nav.scrollWidth - nav.clientWidth));
+    }
+
+    function focusNavLink(link) {
+      if (!link) {
+        return;
+      }
+      const linkRect = link.getBoundingClientRect();
+      const navRect = nav.getBoundingClientRect();
+      const offset = linkRect.left - navRect.left;
+      const target = nav.scrollLeft + offset - (nav.clientWidth - linkRect.width) / 2;
+      nav.scrollLeft = clampScroll(target);
+      const adjustedRect = link.getBoundingClientRect();
+      if (adjustedRect.left < navRect.left) {
+        nav.scrollLeft = clampScroll(nav.scrollLeft + (adjustedRect.left - navRect.left) - 8);
+      } else if (adjustedRect.right > navRect.right) {
+        nav.scrollLeft = clampScroll(nav.scrollLeft + (adjustedRect.right - navRect.right) + 8);
+      }
+      updateScrollIndicators();
+      sessionStorage.setItem(scrollStorageKey, String(nav.scrollLeft || 0));
+    }
+
+    const storedScroll = sessionStorage.getItem(scrollStorageKey);
+    const activeLink = nav.querySelector('a[aria-current="page"]');
+    requestAnimationFrame(function () {
+      if (storedScroll !== null) {
+        const value = clampScroll(parseInt(storedScroll, 10) || 0);
+        nav.scrollLeft = value;
+        updateScrollIndicators();
+        sessionStorage.removeItem(scrollStorageKey);
+      } else if (activeLink && typeof activeLink.scrollIntoView === 'function') {
+        focusNavLink(activeLink);
+        return;
+      }
+    });
+
+    nav.addEventListener('click', function (event) {
+      const link = event.target.closest('a[data-feed-type]');
+      if (!link) {
+        return;
+      }
+      const linkRect = link.getBoundingClientRect();
+      const navRect = nav.getBoundingClientRect();
+      const offset = linkRect.left - navRect.left;
+      const desired = nav.scrollLeft + offset - (nav.clientWidth - linkRect.width) / 2;
+      const clamped = clampScroll(desired);
+      sessionStorage.setItem(scrollStorageKey, String(clamped));
+    }, true);
+
     // Initialize and update indicators on scroll
     nav.addEventListener('scroll', updateScrollIndicators);
     window.addEventListener('resize', updateScrollIndicators);
-    
+
     // Initial check
     setTimeout(updateScrollIndicators, 100);
   });

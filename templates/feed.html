@@ -132,36 +132,54 @@
 
 <!-- Prayer list (now the main focus) -->
 <section>
-  {% if current_feed == "new_unprayed" %}
-    <h2 class="font-semibold mb-2 dark:text-gray-100">New & Unprayed Requests</h2>
-    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayer requests that need your attention - new submissions and prayers that haven't been prayed by anyone yet.</p>
-  {% elif current_feed == "most_prayed" %}
-    <h2 class="font-semibold mb-2 dark:text-gray-100">Most Prayed Prayers</h2>
-    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">The prayers that have touched the most hearts in our community.</p>
-  {% elif current_feed == "my_prayers" %}
-    <h2 class="font-semibold mb-2 dark:text-gray-100">Prayers I've Prayed</h2>
-    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">All the prayers you've marked as prayed, ordered by when you last prayed them.</p>
-  {% elif current_feed == "my_requests" %}
-    <h2 class="font-semibold mb-2 dark:text-gray-100">My Prayer Requests</h2>
-    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayer requests you've submitted to the community.</p>
-  {% elif current_feed == "recent_activity" %}
-    <h2 class="font-semibold mb-2 dark:text-gray-100">Recent Prayer Activity</h2>
-    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayers that have been recently prayed by the community.</p>
-  {% elif current_feed == "daily_prayer" %}
-    <h2 class="font-semibold mb-2 text-yellow-700 dark:text-yellow-300">⭐ Daily Priority Prayers</h2>
-    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayers manually selected as daily priorities by the community.</p>
-  {% elif current_feed == "prayers_needing_attention" %}
-    <h2 class="font-semibold mb-2 text-orange-700 dark:text-orange-300">🕐 Prayers Needing Attention</h2>
-    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayer requests that haven't been prayed for the longest time - they need your attention most.</p>
-  {% elif current_feed == "answered" %}
-    <h2 class="font-semibold mb-2 text-green-700 dark:text-green-300">🎉 Praise Reports</h2>
-    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Celebrating how God has moved in these situations. Praise the Lord!</p>
-  {% elif current_feed == "archived" %}
-    <h2 class="font-semibold mb-2 text-amber-700 dark:text-amber-300">📁 Your Archived Prayers</h2>
-    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayer requests you've archived for personal reference.</p>
-  {% endif %}
+  <div id="feed-headings" data-feed-headings="true" class="mb-2">
+    <div data-feed-for="all" class="{% if current_feed != 'all' %}hidden{% endif %}">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Community Prayers</h1>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Join our community in prayer</p>
+    </div>
+    <div data-feed-for="daily_prayer" class="{% if current_feed != 'daily_prayer' %}hidden{% endif %}">
+      <h2 class="font-semibold mb-2 text-yellow-700 dark:text-yellow-300">⭐ Daily Priority Prayers</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayers manually selected as daily priorities by the community.</p>
+    </div>
+    <div data-feed-for="prayers_needing_attention" class="{% if current_feed != 'prayers_needing_attention' %}hidden{% endif %}">
+      <h2 class="font-semibold mb-2 text-orange-700 dark:text-orange-300">🕐 Prayers Needing Attention</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayer requests that haven't been prayed for the longest time - they need your attention most.</p>
+    </div>
+    <div data-feed-for="new_unprayed" class="{% if current_feed != 'new_unprayed' %}hidden{% endif %}">
+      <h2 class="font-semibold mb-2 dark:text-gray-100">New &amp; Unprayed Requests</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayer requests that need your attention - new submissions and prayers that haven't been prayed by anyone yet.</p>
+    </div>
+    <div data-feed-for="most_prayed" class="{% if current_feed != 'most_prayed' %}hidden{% endif %}">
+      <h2 class="font-semibold mb-2 dark:text-gray-100">Popular</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">The prayers that have touched the most hearts in our community.</p>
+    </div>
+    <div data-feed-for="my_prayers" class="{% if current_feed != 'my_prayers' %}hidden{% endif %}">
+      <h2 class="font-semibold mb-2 dark:text-gray-100">Prayers I've Prayed</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">All the prayers you've marked as prayed, ordered by when you last prayed them.</p>
+    </div>
+    <div data-feed-for="my_unprayed" class="{% if current_feed != 'my_unprayed' %}hidden{% endif %}">
+      <h2 class="font-semibold mb-2 text-blue-700 dark:text-blue-300">🔍 Not Prayed Yet</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Requests you haven't prayed for yet—perfect for a quick focus session.</p>
+    </div>
+    <div data-feed-for="my_requests" class="{% if current_feed != 'my_requests' %}hidden{% endif %}">
+      <h2 class="font-semibold mb-2 dark:text-gray-100">My Prayer Requests</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayer requests you've submitted to the community.</p>
+    </div>
+    <div data-feed-for="recent_activity" class="{% if current_feed != 'recent_activity' %}hidden{% endif %}">
+      <h2 class="font-semibold mb-2 dark:text-gray-100">Recent Prayer Activity</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayers that have been recently prayed by the community.</p>
+    </div>
+    <div data-feed-for="answered" class="{% if current_feed != 'answered' %}hidden{% endif %}">
+      <h2 class="font-semibold mb-2 text-green-700 dark:text-green-300">🎉 Praise Reports</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Celebrating how God has moved in these situations. Praise the Lord!</p>
+    </div>
+    <div data-feed-for="archived" class="{% if current_feed != 'archived' %}hidden{% endif %}">
+      <h2 class="font-semibold mb-2 text-amber-700 dark:text-amber-300">📁 Your Archived Prayers</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Prayer requests you've archived for personal reference.</p>
+    </div>
+  </div>
   
-  <ul class="space-y-6">
+  <ul id="prayer-feed-list" class="space-y-6" data-feed-type="{{ current_feed }}">
     {% for p in prayers %}
       {% set prayer_session = session %}
       {% include "components/prayer_card.html" %}
@@ -438,6 +456,173 @@ document.addEventListener('DOMContentLoaded', function() {
     safetyFilter.checked = parseFloat(safetyParam) >= 0.8;
   }
   {% endif %}
+
+  if (window.ThywillOffline) {
+    const listElement = document.getElementById('prayer-feed-list');
+    const filterElement = document.getElementById('category-filter');
+    const feedType = listElement ? listElement.getAttribute('data-feed-type') : '{{ current_feed }}';
+
+    window.ThywillOffline.seedFeedData({
+      feedType: feedType,
+      listElement: listElement,
+      filterElement: filterElement
+    }).catch(function (error) {
+      console.error('[Offline] Failed to seed feed snapshot:', error);
+    });
+
+    window.ThywillOffline.ensureFeedReady(feedType, listElement, filterElement)
+      .catch(function (error) {
+        console.error('[Offline] Failed to hydrate feed from cache:', error);
+      });
+  }
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (!window.ThywillOffline) {
+    return;
+  }
+
+  const nav = document.getElementById('feedNavigation');
+  const listElement = document.getElementById('prayer-feed-list');
+  const filterElement = document.getElementById('category-filter');
+  const headingContainer = document.querySelector('[data-feed-headings]');
+  const initialFeedType = listElement ? listElement.getAttribute('data-feed-type') || '{{ current_feed }}' : '{{ current_feed }}';
+  const scrollStorageKey = 'thywill_feed_nav_scroll';
+
+  function setActiveNav(feedType) {
+    if (!nav) {
+      return;
+    }
+    const links = nav.querySelectorAll('a[data-feed-type]');
+    links.forEach(function (link) {
+      const baseClass = link.dataset.baseClass || '';
+      const activeClass = link.dataset.activeClass || '';
+      const inactiveClass = link.dataset.inactiveClass || '';
+      const isActive = link.dataset.feedType === feedType;
+      if (baseClass) {
+        link.className = baseClass + ' ' + (isActive ? activeClass : inactiveClass);
+      }
+      link.setAttribute('aria-current', isActive ? 'page' : 'false');
+    });
+  }
+
+  function clampScroll(value) {
+    if (!nav) {
+      return value;
+    }
+    return Math.max(0, Math.min(value, nav.scrollWidth - nav.clientWidth));
+  }
+
+  function ensureNavPosition(feedType) {
+    if (!nav) {
+      return;
+    }
+    const targetLink = nav.querySelector('a[data-feed-type="' + feedType + '"]');
+    if (targetLink) {
+      const linkRect = targetLink.getBoundingClientRect();
+      const navRect = nav.getBoundingClientRect();
+      const offset = linkRect.left - navRect.left;
+      const desired = nav.scrollLeft + offset - (nav.clientWidth - linkRect.width) / 2;
+      nav.scrollLeft = clampScroll(desired);
+      const adjustedRect = targetLink.getBoundingClientRect();
+      if (adjustedRect.left < navRect.left) {
+        nav.scrollLeft = clampScroll(nav.scrollLeft + (adjustedRect.left - navRect.left) - 8);
+      } else if (adjustedRect.right > navRect.right) {
+        nav.scrollLeft = clampScroll(nav.scrollLeft + (adjustedRect.right - navRect.right) + 8);
+      }
+      sessionStorage.setItem(scrollStorageKey, String(nav.scrollLeft || 0));
+    }
+  }
+
+  function updateHeadings(feedType) {
+    if (!headingContainer) {
+      return;
+    }
+    const sections = headingContainer.querySelectorAll('[data-feed-for]');
+    sections.forEach(function (section) {
+      if (section.getAttribute('data-feed-for') === feedType) {
+        section.classList.remove('hidden');
+      } else {
+        section.classList.add('hidden');
+      }
+    });
+  }
+
+  function showMissingSnapshotMessage() {
+    if (!listElement) {
+      return;
+    }
+    listElement.innerHTML = '<li class="text-sm text-gray-500 dark:text-gray-400">Offline view not yet available for this feed. Reconnect to load it.</li>';
+  }
+
+  function renderOfflineFeed(feedType, shouldUpdateHistory) {
+    setActiveNav(feedType);
+    updateHeadings(feedType);
+
+    if (listElement) {
+      listElement.setAttribute('data-feed-type', feedType);
+      listElement.innerHTML = '';
+    }
+
+    if (shouldUpdateHistory !== false) {
+      const url = new URL(window.location.href);
+      if (feedType) {
+        url.searchParams.set('feed_type', feedType);
+      } else {
+        url.searchParams.delete('feed_type');
+      }
+      history.replaceState({ feedType: feedType }, '', url);
+    }
+
+    window.ThywillOffline.ensureFeedReady(feedType, listElement, filterElement)
+      .then(function () {
+        return window.ThywillOffline.hasFeedSnapshot(feedType);
+      })
+      .then(function (exists) {
+        if (!exists) {
+          showMissingSnapshotMessage();
+        }
+      })
+      .catch(function () {
+        showMissingSnapshotMessage();
+      });
+
+    ensureNavPosition(feedType);
+  }
+
+  if (nav) {
+    nav.addEventListener('click', function (event) {
+      const link = event.target.closest('a[data-feed-type]');
+      if (!link) {
+        return;
+      }
+
+      if (navigator.onLine) {
+        return;
+      }
+
+      event.preventDefault();
+      const feedType = link.dataset.feedType || 'all';
+      renderOfflineFeed(feedType, true);
+    });
+  }
+
+  window.addEventListener('popstate', function () {
+    if (navigator.onLine) {
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    const feedType = params.get('feed_type') || 'all';
+    renderOfflineFeed(feedType, false);
+  });
+
+  if (!navigator.onLine) {
+    setActiveNav(initialFeedType);
+    updateHeadings(initialFeedType);
+    ensureNavPosition(initialFeedType);
+  }
 });
 </script>
 
