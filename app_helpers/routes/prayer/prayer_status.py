@@ -7,7 +7,8 @@ Extracted from prayer_routes.py for better maintainability.
 """
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
+from json import JSONDecodeError
 from typing import Optional
 from fastapi import APIRouter, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -29,8 +30,23 @@ from app_helpers.shared_templates import templates
 router = APIRouter()
 
 
+def _parse_iso_timestamp(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        iso_value = value.strip()
+        if iso_value.endswith('Z'):
+            iso_value = iso_value[:-1] + '+00:00'
+        parsed = datetime.fromisoformat(iso_value)
+        if parsed.tzinfo:
+            return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+        return parsed
+    except ValueError:
+        return None
+
+
 @router.post("/mark/{prayer_id}")
-def mark_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(current_user)):
+async def mark_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(current_user)):
     """
     Mark a prayer as prayed (add a prayer mark).
     
@@ -46,6 +62,25 @@ def mark_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(
         For regular: Redirect to prayer anchor
     """
     user, session = user_session
+
+    prayed_at_iso: Optional[str] = None
+
+    content_type = request.headers.get("content-type", "")
+    if "application/json" in content_type:
+        try:
+            payload = await request.json()
+            if isinstance(payload, dict):
+                prayed_at_iso = payload.get("prayed_at")
+        except (JSONDecodeError, ValueError):
+            prayed_at_iso = None
+    else:
+        try:
+            form = await request.form()
+            prayed_at_iso = form.get("prayed_at") if form else None
+        except Exception:
+            prayed_at_iso = None
+
+    prayed_at_dt = _parse_iso_timestamp(prayed_at_iso)
     if not session.is_fully_authenticated:
         raise HTTPException(403, "Full authentication required to mark prayers")
     with Session(engine) as s:
@@ -55,7 +90,7 @@ def mark_prayer(prayer_id: str, request: Request, user_session: tuple = Depends(
             raise HTTPException(404, "Prayer not found")
         
         # Use archive-first approach: write to text archive FIRST, then database
-        append_prayer_activity_with_archive(prayer_id, "prayed", user)
+        append_prayer_activity_with_archive(prayer_id, "prayed", user, timestamp=prayed_at_dt)
         
         # If this is an HTMX request, return just the updated prayer mark section
         if request.headers.get("HX-Request"):

@@ -9,7 +9,7 @@ This ensures text files are always the authoritative source of truth.
 import json
 from datetime import datetime
 from typing import Dict, Optional, Tuple
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from models import engine, Prayer, User, PrayerMark, PrayerAttribute, PrayerActivityLog
 from app_helpers.services.text_archive_service import text_archive_service
@@ -104,7 +104,7 @@ def create_prayer_with_text_archive(prayer_data: Dict) -> Tuple[Prayer, str]:
     return prayer, temp_file_path
 
 
-def append_prayer_activity_with_archive(prayer_id: str, action: str, user: User, extra: str = "") -> None:
+def append_prayer_activity_with_archive(prayer_id: str, action: str, user: User, extra: str = "", timestamp: datetime | None = None) -> None:
     """
     Append prayer activity using archive-first approach:
     1. Write to text archive FIRST
@@ -158,26 +158,50 @@ def append_prayer_activity_with_archive(prayer_id: str, action: str, user: User,
                 s.commit()
                 logger.info(f"Text archives disabled - set placeholder path for prayer {prayer_id}")
         
-        # Step 1: Write to text archive FIRST (if enabled)
-        if text_archive_service.enabled and not prayer.text_file_path.startswith("disabled_archive_"):
-            text_archive_service.append_prayer_activity(
-                prayer.text_file_path, 
-                action, 
-                user.display_name, 
-                extra
-            )
-        
+        activity_time = timestamp or datetime.now()
+
+        duplicate_offline_prayer = False
+        if action == "prayed" and timestamp:
+            existing_mark = s.exec(
+                select(PrayerMark)
+                .where(
+                    PrayerMark.prayer_id == prayer_id,
+                    PrayerMark.username == user.display_name,
+                    PrayerMark.created_at == activity_time
+                )
+            ).first()
+            duplicate_offline_prayer = existing_mark is not None
+
+        if not duplicate_offline_prayer:
+            # Step 1: Write to text archive FIRST (if enabled)
+            if text_archive_service.enabled and not prayer.text_file_path.startswith("disabled_archive_"):
+                if action == "prayed" and timestamp:
+                    text_archive_service.append_prayer_activity_with_timestamp(
+                        prayer.text_file_path,
+                        action,
+                        user.display_name,
+                        activity_time,
+                        extra
+                    )
+                else:
+                    text_archive_service.append_prayer_activity(
+                        prayer.text_file_path,
+                        action,
+                        user.display_name,
+                        extra
+                    )
+
         # Step 2: Create database record with same archive path
-        if action == "prayed":
+        if action == "prayed" and not duplicate_offline_prayer:
             # Create PrayerMark record
             prayer_mark = PrayerMark(
                 prayer_id=prayer_id,
                 username=user.display_name,
                 text_file_path=prayer.text_file_path,  # Same archive path
-                created_at=datetime.now()
+                created_at=activity_time
             )
             s.add(prayer_mark)
-            
+
         elif action in ["answered", "archived", "flagged"]:
             # Create or update PrayerAttribute
             prayer.set_attribute(action, "true", user.display_name, s)
@@ -218,7 +242,7 @@ def append_prayer_activity_with_archive(prayer_id: str, action: str, user: User,
         
         # Create activity log entry only for actions that don't already create logs
         # set_attribute already creates logs, so we skip for those actions
-        if action in ["prayed"]:  # Only actions that don't use set_attribute
+        if action in ["prayed"] and not duplicate_offline_prayer:  # Only actions that don't use set_attribute
             activity_record = PrayerActivityLog(
                 prayer_id=prayer_id,
                 user_id=user.display_name,
@@ -226,16 +250,26 @@ def append_prayer_activity_with_archive(prayer_id: str, action: str, user: User,
                 old_value=None,
                 new_value=extra if extra else "true",
                 text_file_path=prayer.text_file_path,  # Same archive path
-                created_at=datetime.now()
+                created_at=activity_time
             )
             s.add(activity_record)
-        
+
         s.commit()
-        
-        logger.info(f"Added {action} activity for prayer {prayer_id} by {user.display_name}")
+
+        if duplicate_offline_prayer:
+            logger.info(
+                "Deduped offline prayer mark for %s by %s at %s",
+                prayer_id,
+                user.display_name,
+                activity_time.isoformat()
+            )
+        else:
+            logger.info(f"Added {action} activity for prayer {prayer_id} by {user.display_name}")
     
     # Log to monthly activity
     if text_archive_service.enabled:
+        if action == "prayed" and duplicate_offline_prayer:
+            return
         if action == "prayed":
             activity_text = f"prayed for prayer {prayer_id}"
         elif action == "answered":
