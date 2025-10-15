@@ -3,8 +3,9 @@ Invite system helper functions extracted from app.py
 This module contains invite tree management and statistics functions.
 """
 
-import os
 from datetime import datetime, timedelta
+from collections import defaultdict
+
 from sqlmodel import Session, select, func
 from models import User, InviteToken, engine
 
@@ -48,9 +49,9 @@ def _build_user_tree_node_with_orphans(user: User, db: Session, depth: int = 0) 
     descendants_stmt = (
         select(User)
         .where(User.invited_by_username == user.display_name)
-        .order_by(User.created_at.asc())
+        .order_by(User.created_at.asc(), User.display_name.asc())
     )
-    direct_descendants = db.exec(descendants_stmt).all()
+    direct_descendants = list(db.exec(descendants_stmt).all())
     
     # If this is the root user (depth 0), also include orphaned users (users with no invited_by_username except root itself)
     if depth == 0:
@@ -58,10 +59,16 @@ def _build_user_tree_node_with_orphans(user: User, db: Session, depth: int = 0) 
             select(User)
             .where(User.invited_by_username.is_(None))
             .where(User.display_name != user.display_name)  # Don't include root user itself
-            .order_by(User.created_at.asc())
+            .order_by(User.created_at.asc(), User.display_name.asc())
         )
-        orphaned_users = db.exec(orphaned_users_stmt).all()
+        orphaned_users = list(db.exec(orphaned_users_stmt).all())
         direct_descendants.extend(orphaned_users)
+
+    # Ensure deterministic ordering when orphaned users are merged in
+    direct_descendants = sorted(
+        direct_descendants,
+        key=lambda descendant: (descendant.created_at, descendant.display_name)
+    )
     
     # Count total invites sent by this user
     invites_sent = db.exec(
@@ -105,9 +112,9 @@ def _build_user_tree_node(user: User, db: Session, depth: int = 0) -> dict:
     descendants_stmt = (
         select(User)
         .where(User.invited_by_username == user.display_name)
-        .order_by(User.created_at.asc())
+        .order_by(User.created_at.asc(), User.display_name.asc())
     )
-    direct_descendants = db.exec(descendants_stmt).all()
+    direct_descendants = list(db.exec(descendants_stmt).all())
     
     # Count total invites sent by this user
     invites_sent = db.exec(
@@ -161,18 +168,18 @@ def get_user_descendants(user_id: str) -> list[dict]:
             # Get invite stats for this descendant
             invites_sent = s.exec(
                 select(func.count(InviteToken.token))
-                .where(InviteToken.created_by_user == desc.id)
+                .where(InviteToken.created_by_user == desc.display_name)
             ).first() or 0
-            
+
             # Count their direct descendants
             direct_children = s.exec(
                 select(func.count(User.display_name))
-                .where(User.invited_by_username == desc.id)
+                .where(User.invited_by_username == desc.display_name)
             ).first() or 0
-            
+
             enriched_descendants.append({
                 "user": {
-                    "id": desc.id,
+                    "id": desc.display_name,
                     "display_name": desc.display_name,
                     "created_at": desc.created_at.isoformat(),
                     "invited_by_username": desc.invited_by_username,
@@ -198,13 +205,15 @@ def _collect_descendants(user_id: str, db: Session, descendants: list, visited: 
     
     # Get direct children
     direct_children = db.exec(
-        select(User).where(User.invited_by_username == user_id)
+        select(User)
+        .where(User.invited_by_username == user_id)
+        .order_by(User.created_at.asc(), User.display_name.asc())
     ).all()
-    
+
     for child in direct_children:
         descendants.append(child)
         # Recursively get their descendants
-        _collect_descendants(child.id, db, descendants, visited)
+        _collect_descendants(child.display_name, db, descendants, visited)
 
 
 def get_user_invite_path(user_id: str) -> list[dict]:
@@ -277,15 +286,15 @@ def get_invite_stats() -> dict:
         # Calculate max depth by finding the longest invite chain
         max_depth = _calculate_max_depth(s)
         
-        # Top inviters (users who have successfully invited the most people)
-        # Get all users who have invited someone
-        inviters = s.exec(
-            select(User.invited_by_username, func.count(User.display_name).label('count'))
+        # Top inviters with deterministic ordering for ties
+        inviters_stmt = (
+            select(User.invited_by_username, func.count(User.display_name).label('invite_count'))
             .where(User.invited_by_username.isnot(None))
             .group_by(User.invited_by_username)
-            .order_by(func.count(User.display_name).desc())
-        ).all()
-        
+            .order_by(func.count(User.display_name).desc(), User.invited_by_username.asc())
+        )
+        inviters = list(s.exec(inviters_stmt).all())
+
         top_inviters = []
         for inviter_id, count in inviters[:5]:
             inviter = s.get(User, inviter_id)
@@ -315,53 +324,66 @@ def get_invite_stats() -> dict:
             "invite_success_rate": round((used_invites / total_invites_sent * 100)) if total_invites_sent > 0 else 0
         }
 
-
 def _calculate_max_depth(db: Session) -> int:
-    """Calculate the maximum depth of the invite tree"""
-    # Find the root user (admin or earliest created)
-    admin_user = db.get(User, "admin")
-    if not admin_user:
-        earliest_user_stmt = select(User).order_by(User.created_at.asc()).limit(1)
-        admin_user = db.exec(earliest_user_stmt).first()
-    
-    if not admin_user:
-        return 0
-    
-    def get_depth(user_id: str, visited: set = None, current_depth: int = 0) -> int:
-        if visited is None:
-            visited = set()
-        
-        if user_id in visited:
-            return current_depth
-        
-        visited.add(user_id)
-        
-        # Get all users invited by this user
-        descendants = db.exec(
-            select(User.display_name).where(User.invited_by_username == user_id)
+    """Calculate the maximum depth across the entire invite forest."""
+
+    user_rows = list(
+        db.exec(
+            select(User.display_name, User.invited_by_username)
+            .order_by(User.created_at.asc(), User.display_name.asc())
         ).all()
-        
-        if not descendants:
-            return current_depth
-        
-        max_child_depth = current_depth
-        for descendant_id in descendants:
-            child_depth = get_depth(descendant_id, visited.copy(), current_depth + 1)
-            max_child_depth = max(max_child_depth, child_depth)
-        
-        return max_child_depth
-    
-    # Since orphaned users are treated as depth 1 under root, the minimum depth is 1 if there are orphaned users
-    depth = get_depth(admin_user.display_name)
-    
-    # Check if there are orphaned users (if so, min depth is 1)
-    orphaned_count = db.exec(
-        select(func.count(User.display_name))
-        .where(User.invited_by_username.is_(None))
-        .where(User.display_name != admin_user.display_name)
-    ).first() or 0
-    
-    return max(depth, 1 if orphaned_count > 0 else 0)
+    )
+
+    if not user_rows:
+        return 0
+
+    children: dict[str, list[str]] = defaultdict(list)
+    known_users = {display_name for display_name, _ in user_rows}
+
+    for display_name, invited_by in user_rows:
+        if invited_by:
+            children[invited_by].append(display_name)
+
+    for inviter in children:
+        children[inviter].sort()
+
+    # Identify roots: users with no inviter or whose inviter is missing
+    roots = [
+        display_name
+        for display_name, invited_by in user_rows
+        if not invited_by or invited_by not in known_users
+    ]
+
+    if not roots:
+        # Fallback to the earliest user if every user references another
+        roots = [user_rows[0][0]]
+
+    max_depth = 0
+    visited_nodes: set[str] = set()
+
+    def dfs(node: str, depth: int, stack: set[str]) -> None:
+        nonlocal max_depth
+        if node in stack:
+            return  # Cycle detected; stop this path
+
+        stack.add(node)
+        visited_nodes.add(node)
+        max_depth = max(max_depth, depth)
+
+        for child in children.get(node, []):
+            dfs(child, depth + 1, stack)
+
+        stack.remove(node)
+
+    for root in roots:
+        dfs(root, 0, set())
+
+    # Catch any disconnected components or cycles without clear roots
+    for display_name, _ in user_rows:
+        if display_name not in visited_nodes:
+            dfs(display_name, 0, set())
+
+    return max_depth
 
 
 # Intent-Based Authentication Functions

@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 """
-Migration script for invite tree orphaned user recovery
-Run this script to reconstruct missing invite relationships for existing users
+Migration script for invite tree orphaned user recovery.
 
-This script addresses the critical issue where 90% of users are orphaned
-(not connected to the invite tree) due to historical data gaps.
+⚠️ This script is intentionally disabled.
 
-Recovery Strategy:
-1. Analyze historical invite tokens and correlate with user creation timestamps
-2. Match users to their likely inviters based on token usage patterns
-3. Set admin as fallback inviter for users with no clear invitation path
-4. Update User.invited_by_user_id for all orphaned users
+The invite system now uses ``User.invited_by_username`` as its canonical
+relationship field, but this migration still references the deprecated
+``invited_by_user_id`` column. Running it against a modern database will corrupt
+invite relationships.
+
+Port the logic to ``invited_by_username`` (or build a fresh migration) before
+attempting to run it.
 """
+
+raise RuntimeError(
+    "migrate_invite_tree_recovery.py relies on the deprecated 'invited_by_user_id' "
+    "column. Port it to 'invited_by_username' before executing."
+)
 
 import sys
 import os

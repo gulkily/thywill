@@ -27,6 +27,10 @@ python tools/update_env_defaults.py --backup-only # Just create backup
 ./validate_templates.py  # Comprehensive template field validation
 ./check_templates.sh     # Quick static analysis for common issues
 
+# Diagnostics
+python tools/analysis/invite_relationship_diagnostics.py                         # Inspect invite tree health for current DB
+DATABASE_PATH=thywill.prod.db python tools/analysis/invite_relationship_diagnostics.py  # Target a specific database file
+
 # Database
 ./thywill backup
 ./thywill restore <file>

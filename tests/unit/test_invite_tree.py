@@ -141,8 +141,26 @@ class TestInviteTreeLogic:
         assert len(stats['top_inviters']) == 2
         assert stats['top_inviters'][0]['display_name'] == "User1"
         assert stats['top_inviters'][0]['invite_count'] == 1
-        assert stats['top_inviters'][1]['display_name'] == "Admin User"
+        assert stats['top_inviters'][1]['display_name'] == "admin"
         assert stats['top_inviters'][1]['invite_count'] == 1
+
+    def test_get_invite_stats_with_multi_root_depth(self, test_session):
+        """Depth calculation should include chains from every root node."""
+        root_a = UserFactory.create(display_name="RootA", invited_by_username=None)
+        root_b = UserFactory.create(display_name="RootB", invited_by_username=None)
+        level_1 = UserFactory.create(display_name="Child1", invited_by_username="RootA")
+        level_2 = UserFactory.create(display_name="Child2", invited_by_username="Child1")
+        level_3 = UserFactory.create(display_name="Child3", invited_by_username="Child2")
+        lateral_child = UserFactory.create(display_name="Sibling", invited_by_username="RootB")
+
+        test_session.add_all([root_a, root_b, level_1, level_2, level_3, lateral_child])
+        test_session.commit()
+
+        with patch('app_helpers.services.invite_helpers.Session') as mock_session:
+            mock_session.return_value.__enter__.return_value = test_session
+            stats = get_invite_stats()
+
+        assert stats['max_depth'] == 3
     
     def test_get_user_descendants_empty(self, test_session):
         """Test getting descendants for user with no descendants"""

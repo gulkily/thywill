@@ -553,7 +553,11 @@ When making significant code changes, follow the successful patterns used in our
 
 **📝 Note for AI Assistants**: This guide reflects the complete prayer lifecycle management system with flexible attributes architecture, community-driven moderation, and comprehensive multi-device authentication. The platform balances security with usability through configurable approval workflows while maintaining admin oversight for content moderation, authentication management, and prayer status transitions. The prayer attributes system allows unlimited status combinations and extensibility without breaking changes.
 
-**🔄 Recent Updates**: 
+-**🔄 Recent Updates**: 
+- **Invite Tree Forest Traversal & Diagnostics (July 2025)**: Rebuilt invite depth calculation to handle multiple roots and exposed a reusable diagnostics script
+  - `_calculate_max_depth` now walks the full inviter graph, guards cycles, and reports the longest legitimate chain even when the legacy `admin` user is missing
+  - Invite descendant helpers and stats switched to `display_name` identifiers with deterministic ordering, keeping UI trees and badge counts in sync
+  - New CLI: `python tools/analysis/invite_relationship_diagnostics.py` (set `DATABASE_PATH=/path/to.db` to target prod backups) for max-depth cross-checks, root sampling, and token mismatch reporting
 - **Single Prayer Import Deduplication (July 2025)**: Stopped duplicate activity rows during `--update-existing` imports and added cleanup tooling
   - Importer now compares activity timestamps within the minute to respect archive precision
   - `_parse_single_timestamp` accepts seconds to avoid fallback-to-now behaviour
