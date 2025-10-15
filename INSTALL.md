@@ -59,6 +59,9 @@ Initialize the database tables:
 # Recommended - uses ThyWill CLI with safety protections
 ./thywill start
 
+# Stop the development server gracefully
+./thywill stop
+
 # Alternative - direct uvicorn (development only)
 uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -88,6 +91,7 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 
 # Application management  
 ./thywill start                     # Start development server
+./thywill stop                      # Stop development server
 ./thywill health                    # Check application health
 ./thywill logs                      # View application logs
 

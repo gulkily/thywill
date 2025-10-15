@@ -11,7 +11,8 @@ pip install -r requirements.txt && chmod +x thywill
 ./thywill init
 
 # Development  
-./thywill start        # Production server
+./thywill start        # Start development server
+./thywill stop         # Stop development server
 ./thywill test         # Safe testing
 ./thywill status       # Database status
 ./thywill config       # Show current paths, backups, and AI provider status

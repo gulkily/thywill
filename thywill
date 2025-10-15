@@ -15,6 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$SCRIPT_DIR"
 DEPLOYMENT_DIR="$APP_DIR/deployment"
 BACKUP_DIR="$APP_DIR/backups"
+DEV_SERVER_PID_FILE="$APP_DIR/.thywill_dev_server.pid"
 
 # Colors for output
 RED='\033[0;31m'
@@ -44,6 +45,77 @@ warning() {
 
 header() {
     echo -e "${BOLD}${CYAN}$1${NC}"
+}
+
+# Try to resolve the working directory for a process in a cross-platform way
+get_process_cwd() {
+    local pid="$1"
+
+    if [ -z "$pid" ]; then
+        return 1
+    fi
+
+    if [ -d "/proc/$pid" ] && [ -L "/proc/$pid/cwd" ]; then
+        python3 - "$pid" <<'PY'
+import os
+import sys
+
+pid = sys.argv[1]
+link_path = f"/proc/{pid}/cwd"
+
+try:
+    target = os.readlink(link_path)
+    print(os.path.realpath(target))
+except OSError:
+    pass
+PY
+        return 0
+    fi
+
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -a -d cwd -p "$pid" -Fn 2>/dev/null | sed -n 's/^n//p' | head -n1
+        return 0
+    fi
+
+    return 1
+}
+
+# Determine whether the given PID belongs to the ThyWill dev server
+is_thywill_dev_server() {
+    local pid="$1"
+
+    if [ -z "$pid" ]; then
+        return 1
+    fi
+
+    if ! kill -0 "$pid" 2>/dev/null; then
+        return 1
+    fi
+
+    local cmdline
+    cmdline=$(ps -p "$pid" -o args= 2>/dev/null || true)
+
+    if [[ -z "$cmdline" || "$cmdline" != *uvicorn* || "$cmdline" != *app:app* ]]; then
+        return 1
+    fi
+
+    local owner
+    owner=$(ps -p "$pid" -o user= 2>/dev/null | tr -d ' ')
+    local current_user
+    current_user=$(id -un 2>/dev/null || whoami)
+
+    if [[ -n "$owner" && -n "$current_user" && "$owner" != "$current_user" ]]; then
+        return 1
+    fi
+
+    local proc_cwd
+    proc_cwd=$(get_process_cwd "$pid" 2>/dev/null || true)
+
+    if [[ -n "$proc_cwd" && "$proc_cwd" != "$APP_DIR" ]]; then
+        return 1
+    fi
+
+    return 0
 }
 
 # Virtual environment activation function
@@ -93,6 +165,7 @@ show_help() {
     echo ""
     header "  Development Commands:"
     echo "    start [port]        Start local development server (default: 8000)"
+    echo "    stop                Stop local development server"
     echo ""
     header "  Deployment Commands:"
     echo "    deploy              Deploy application with automatic rollback"
@@ -231,6 +304,22 @@ cmd_start() {
     local host="${2:-127.0.0.1}"
     
     header "Starting Development Server"
+
+    local pid_file="$DEV_SERVER_PID_FILE"
+
+    if [ -f "$pid_file" ]; then
+        local existing_pid
+        existing_pid=$(cat "$pid_file" 2>/dev/null || true)
+
+        if is_thywill_dev_server "$existing_pid"; then
+            warning "Detected running development server (PID $existing_pid)."
+            warning "Run './thywill stop' before starting a new server."
+            exit 1
+        else
+            warning "Removing stale development server PID file."
+            rm -f "$pid_file"
+        fi
+    fi
     
     # Check if we're in the right directory
     if [ ! -f "app.py" ]; then
@@ -313,12 +402,82 @@ EOF
         pip install uvicorn
     fi
     
+    echo $$ > "$pid_file"
+
     log "Starting development server on http://$host:$port"
     log "Press Ctrl+C to stop the server"
     echo ""
     
     # Start the development server
     exec uvicorn app:app --host "$host" --port "$port" --reload
+}
+
+cmd_stop() {
+    local pid_file="$DEV_SERVER_PID_FILE"
+    local target_pid=""
+    local found=0
+
+    if [ -f "$pid_file" ]; then
+        local recorded_pid
+        recorded_pid=$(cat "$pid_file" 2>/dev/null || true)
+
+        if is_thywill_dev_server "$recorded_pid"; then
+            target_pid="$recorded_pid"
+            found=1
+        else
+            warning "Removing stale development server PID file."
+            rm -f "$pid_file"
+        fi
+    fi
+
+    if [ "$found" -eq 0 ]; then
+        mapfile -t candidate_pids < <(pgrep -f "uvicorn.*app:app" 2>/dev/null || true)
+
+        if [ "${#candidate_pids[@]}" -gt 0 ]; then
+            for pid in "${candidate_pids[@]}"; do
+                if is_thywill_dev_server "$pid"; then
+                    target_pid="$pid"
+                    found=1
+                    break
+                fi
+            done
+        fi
+    fi
+
+    if [ "$found" -eq 0 ] || [ -z "$target_pid" ]; then
+        warning "No running ThyWill development server found."
+        return 0
+    fi
+
+    header "Stopping Development Server"
+    log "Sending SIGINT to dev server (PID $target_pid)..."
+
+    if ! kill -2 "$target_pid" 2>/dev/null; then
+        error "Failed to signal process $target_pid"
+        return 1
+    fi
+
+    local elapsed=0
+    local max_wait=20
+
+    while kill -0 "$target_pid" 2>/dev/null; do
+        sleep 0.5
+        elapsed=$((elapsed + 1))
+
+        if [ "$elapsed" -ge "$max_wait" ]; then
+            warning "Process $target_pid did not exit after 10 seconds. Sending SIGTERM."
+            kill -15 "$target_pid" 2>/dev/null || true
+            break
+        fi
+    done
+
+    if kill -0 "$target_pid" 2>/dev/null; then
+        warning "Process $target_pid is still running. You may need to stop it manually."
+        return 1
+    fi
+
+    rm -f "$pid_file"
+    success "Development server stopped."
 }
 
 # Deployment commands
@@ -2311,6 +2470,9 @@ main() {
         # Development commands
         start)
             cmd_start "$@"
+            ;;
+        stop)
+            cmd_stop "$@"
             ;;
         
         # Deployment commands

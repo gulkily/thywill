@@ -5,6 +5,7 @@
 - Never attempt to diagnose or fix production server issues directly
 - For production issues, provide diagnostic commands for the user to run on their production server
 - Do not use sudo commands or system service commands in the development environment
+- Use `./thywill start` and `./thywill stop` to manage the local development server lifecycle
 
 ## Project Overview
 **ThyWill** is a community prayer platform built with FastAPI and SQLModel. It allows users to submit prayer requests, generate proper prayers using AI (Anthropic Claude or OpenAI), track community prayer activity, and moderate content through community-driven flagging.

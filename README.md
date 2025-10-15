@@ -77,6 +77,9 @@ A community-driven prayer platform that creates a safe, faith-based environment 
    ```bash
    # Start server with protection
    ./thywill start
+
+   # Stop server gracefully
+   ./thywill stop
    
    # Or manually with uvicorn (advanced)
    uvicorn app:app --reload --host 0.0.0.0 --port 8000
@@ -109,6 +112,7 @@ The `thywill` command provides a unified interface for all database and server o
 ### Server Management
 ```bash
 ./thywill start                   # Start server with protection
+./thywill stop                    # Stop development server safely
 ./thywill test                    # Run test suite
 ./thywill migrate                 # Run database migrations
 ```
@@ -118,6 +122,7 @@ The `thywill` command provides a unified interface for all database and server o
 # Daily operations
 ./thywill backup                              # Create backup
 ./thywill start                               # Start server
+./thywill stop                                # Stop server when finished
 
 # Data recovery
 ./thywill import community_export_2024.zip   # Restore from export
