@@ -54,7 +54,6 @@
 - Complete stages atomically (<2 hours each)
 - Complete each completed stage to the branch
 - Test before proceeding to next stage
-- Track progress with TodoWrite
 - Finish by writing implementation summary document
 
 **Completion Criteria**:
