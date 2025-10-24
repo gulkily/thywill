@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Nicene Creed{% endblock %}
+
+{% block content %}
+<section class="mb-8">
+  <div class="max-w-3xl mx-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-6 sm:p-10">
+    <header class="mb-6 text-center">
+      <p class="text-sm uppercase tracking-widest text-purple-500 dark:text-purple-300 mb-2">Statement of Faith</p>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">The Nicene Creed</h1>
+      <p class="mt-3 text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+        This creed expresses the historic confession shared by the global church. We display it so that guests and members alike can see the doctrinal foundation of ThyWill.
+      </p>
+    </header>
+
+    <div class="space-y-5 text-base md:text-lg leading-relaxed text-gray-800 dark:text-gray-200">
+      <p>
+        We believe in one God, the Father Almighty, maker of heaven and earth, of all things visible and invisible.
+      </p>
+      <p>
+        We believe in one Lord, Jesus Christ, the only Son of God, begotten from the Father before all ages, God from God, Light from Light, true God from true God, begotten, not made; of the same essence as the Father. Through him all things were made. For us and for our salvation he came down from heaven; he became incarnate by the Holy Spirit and the virgin Mary, and was made human. He was crucified for us under Pontius Pilate; he suffered and was buried. The third day he rose again, according to the Scriptures. He ascended to heaven and is seated at the right hand of the Father. He will come again with glory to judge the living and the dead. His kingdom will never end.
+      </p>
+      <p>
+        We believe in the Holy Spirit, the Lord, the giver of life. He proceeds from the Father and the Son, and with the Father and the Son is worshiped and glorified. He spoke through the prophets. We believe in one holy catholic and apostolic church. We affirm one baptism for the forgiveness of sins. We look forward to the resurrection of the dead, and to life in the world to come. Amen.
+      </p>
+    </div>
+
+    <div class="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <a href="/" class="inline-flex items-center justify-center px-5 py-3 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold transition-colors duration-200">
+        ← Back to Homepage
+      </a>
+      <a href="/login" class="inline-flex items-center justify-center px-5 py-3 rounded-lg border border-purple-600 text-purple-600 hover:bg-purple-50 dark:text-purple-300 dark:border-purple-400 dark:hover:bg-purple-900/40 font-semibold transition-colors duration-200">
+        Request Community Access
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

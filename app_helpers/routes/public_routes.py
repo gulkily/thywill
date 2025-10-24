@@ -6,21 +6,19 @@ Provides API endpoints for public prayer access with rate limiting.
 
 from fastapi import APIRouter, Request, HTTPException, Query
 from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timedelta
 from sqlmodel import Session, select, func
 from models import engine, SecurityLog, User, Session as SessionModel
+from app_helpers.shared_templates import templates
 from app_helpers.services.public_prayer_service import PublicPrayerService
+from app_helpers.services.auth_helpers import current_user
 from app_helpers.services.username_display_service import UsernameDisplayService
 from app_helpers.services.membership_application_service import MembershipApplicationService
 import os
 
 router = APIRouter()
-
-# Templates
-templates = Jinja2Templates(directory="templates")
 
 # Rate limiting configuration
 PUBLIC_RATE_LIMIT_PER_MINUTE = 100  # Increased for development
@@ -158,6 +156,25 @@ def is_user_authenticated(request: Request) -> bool:
             return True
     except Exception:
         return False
+
+
+@router.get("/nicene-creed", response_class=HTMLResponse)
+async def nicene_creed_page(request: Request):
+    """Render the Nicene Creed page for both public visitors and authenticated members."""
+    user = None
+    session_model = None
+    try:
+        user, session_model = current_user(request)
+    except HTTPException as exc:
+        if exc.status_code not in (401, 403):
+            raise
+    context = {
+        "request": request,
+        "me": user,
+        "session": session_model,
+        "is_authenticated": user is not None
+    }
+    return templates.TemplateResponse("nicene_creed.html", context)
 
 
 @router.get("/", response_class=HTMLResponse)

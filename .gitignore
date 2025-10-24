@@ -25,6 +25,8 @@ instance/
 *.db
 *.sqlite
 *.sqlite3
+*.db-shm
+*.db-wal
 
 # IDE/Editor files
 .vscode/
@@ -57,3 +59,4 @@ screenshot/
 # Text archives
 text_archives/
 sessions_backup.json
+.thywill_dev_server.pid
