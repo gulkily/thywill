@@ -6,7 +6,7 @@ Manage pending authentication requests from the command line.
 
 import sys
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 import argparse
 
@@ -16,9 +16,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from sqlmodel import Session, select
 from models import engine, AuthenticationRequest, AuthApproval, User
 
+def utcnow() -> datetime:
+    """Return a naive UTC datetime for DB compatibility."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 def format_relative_time(dt: datetime, future: bool = False) -> str:
     """Simple relative time formatting"""
-    now = datetime.utcnow()
+    now = utcnow()
     if future:
         diff = dt - now
         if diff.total_seconds() < 0:
@@ -46,7 +50,7 @@ def get_pending_requests() -> List[dict]:
         stmt = select(AuthenticationRequest, User).where(
             AuthenticationRequest.status == "pending",
             AuthenticationRequest.user_id == User.display_name,
-            AuthenticationRequest.expires_at > datetime.utcnow()
+            AuthenticationRequest.expires_at > utcnow()
         )
         
         results = session.exec(stmt).all()
@@ -150,7 +154,7 @@ def approve_request(request_id: str, approver: str = "admin") -> bool:
         approval = AuthApproval(
             auth_request_id=auth_req.id,
             approver_user_id=approver,
-            approved_at=datetime.utcnow()
+            approved_at=utcnow()
         )
         session.add(approval)
         
@@ -163,7 +167,7 @@ def approve_request(request_id: str, approver: str = "admin") -> bool:
         
         if len(approval_count) + 1 >= required_approvals:  # +1 for the one we're adding
             auth_req.status = "approved"
-            auth_req.approved_at = datetime.utcnow()
+            auth_req.approved_at = utcnow()
             auth_req.approved_by_user_id = approver
             print(f"✅ Request FULLY APPROVED and ready for login")
         else:
@@ -221,7 +225,7 @@ def cleanup_expired_requests() -> int:
         expired_requests = session.exec(
             select(AuthenticationRequest).where(
                 AuthenticationRequest.status == "pending",
-                AuthenticationRequest.expires_at < datetime.utcnow()
+                AuthenticationRequest.expires_at < utcnow()
             )
         ).all()
         
@@ -246,21 +250,21 @@ def show_stats() -> None:
         pending_count = session.exec(
             select(AuthenticationRequest).where(
                 AuthenticationRequest.status == "pending",
-                AuthenticationRequest.expires_at > datetime.utcnow()
+                AuthenticationRequest.expires_at > utcnow()
             )
         ).all()
         
         approved_today = session.exec(
             select(AuthenticationRequest).where(
                 AuthenticationRequest.status == "approved",
-                AuthenticationRequest.approved_at > datetime.utcnow() - timedelta(days=1)
+                AuthenticationRequest.approved_at > utcnow() - timedelta(days=1)
             )
         ).all()
         
         rejected_today = session.exec(
             select(AuthenticationRequest).where(
                 AuthenticationRequest.status == "rejected",
-                AuthenticationRequest.approved_at > datetime.utcnow() - timedelta(days=1)
+                AuthenticationRequest.approved_at > utcnow() - timedelta(days=1)
             )
         ).all()
         
