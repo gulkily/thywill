@@ -1,0 +1,14 @@
+User Attributes
+
+username: Mark
+is_supporter: true
+supporter_since: 2025-07-02
+
+username: ilyag
+is_supporter: true
+supporter_since: 2025-06-11
+
+username: lisonok
+is_supporter: true
+supporter_since: 2025-06-11
+
